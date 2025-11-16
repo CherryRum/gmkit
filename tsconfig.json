@@ -20,5 +20,5 @@
     "noFallthroughCasesInSwitch": true,
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test","vite.config.ts"]
+  "exclude": ["node_modules", "dist", "test","vite.config.ts","tsup.config.ts"]
 }
