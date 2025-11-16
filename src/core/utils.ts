@@ -287,3 +287,113 @@ export function autoDecodeString(str: string): Uint8Array {
   // 默认尝试十六进制解码
   return hexToBytes(str);
 }
+
+
+export type RNGPolicy = 'strict' | 'warn' | 'allow';
+let rngPolicy: RNGPolicy = 'warn';
+let customRNG: ((len: number) => Uint8Array) | null = null;
+// 配置函数
+export function configureRNG(policy: RNGPolicy) {
+  rngPolicy = policy;
+}
+
+export function setCustomRNG(fn: (len: number) => Uint8Array) {
+  customRNG = fn;
+}
+
+
+function tryWebCrypto(len: number): Uint8Array | null {
+  try {
+    const cryptoObj = (globalThis as any).crypto;
+    if (cryptoObj?.getRandomValues) {
+      const buf = new Uint8Array(len);
+      cryptoObj.getRandomValues(buf);
+      return buf;
+    }
+  } catch (_) {}
+  return null;
+}
+
+/**
+ * Node.js RNG（动态 require，避免 bundler 报错）
+ */
+function tryNodeCrypto(len: number): Uint8Array | null {
+  try {
+    if (typeof require !== 'undefined') {
+      const { randomBytes } = require('node:crypto');
+      if (typeof randomBytes === 'function') {
+        return new Uint8Array(randomBytes(len));
+      }
+    }
+  } catch (_) {}
+  return null;
+}
+
+function unsafeFallbackRandom(len: number): Uint8Array {
+  console.warn(
+    '[smkit][RNG] WARNING: using unsafe fallback RNG. This is NOT cryptographically secure!'
+  );
+  const out = new Uint8Array(len);
+  let seed = (Date.now() ^ (Math.random() * 0xffffffff)) >>> 0;
+
+  // splitmix32
+  const next = () => {
+    seed = (seed + 0x9e3779b9) >>> 0;
+    let z = seed;
+    z = (z ^ (z >>> 16)) * 0x85ebca6b;
+    z = (z ^ (z >>> 13)) * 0xc2b2ae35;
+    z = (z ^ (z >>> 16)) >>> 0;
+    return z & 0xff;
+  };
+
+  for (let i = 0; i < len; i++) {
+    out[i] = next();
+  }
+  return out;
+}
+/**
+ * 生成随机字节的跨平台函数
+ * 优雅地处理 Node.js 和浏览器环境，提供三重回退机制
+ *
+ * 优先级（从高到低）:
+ * 1. Web Crypto API (crypto.getRandomValues) - 密码学安全的随机数生成器
+ *    - 浏览器环境：window.crypto.getRandomValues
+ *    - Node.js 15+：globalThis.crypto.getRandomValues
+ *    - 这是最安全的方式，使用操作系统提供的 CSPRNG
+ *
+ * 2. Node.js Crypto Module (crypto.randomBytes) - 密码学安全的随机数生成器
+ *    - 同样使用操作系统提供的 CSPRNG
+ *    - 为旧版本 Node.js 提供安全的随机数
+ *
+ * 3. 时间戳 + Math.random() - 应急回退方案
+ *    -  警告：这不是密码学安全的！
+ *    - 不应在生产环境中使用,我提醒了你！
+ *    - 会在控制台输出警告信息！
+ *
+ * 设计理念：
+ * - 优先使用最安全的随机数源
+ * - 在不可用时自动降级到次优方案
+ * - 确保在各种环境（浏览器、Node.js、小程序）中都能正常工作
+ * - 通过警告信息提醒开发者当前使用的随机数源质量
+ *
+ * 在 Node.js 环境中，通过 test/setup.ts 中的 polyfill 提供 crypto.getRandomValues
+ * 在浏览器环境中，直接使用 Web Crypto API
+ * 在微信小程序等环境中，可能需要自行实现回退方案
+ */
+export function getRandomBytes(len: number = 32): Uint8Array {
+  if (len <= 0) throw new Error('Invalid length for random bytes');
+
+  // WebCrypto
+  const webCryptoRes = tryWebCrypto(len);
+  if (webCryptoRes) return webCryptoRes;
+  // NodeCrypto
+  const nodeCryptoRes = tryNodeCrypto(len);
+  if (nodeCryptoRes) return nodeCryptoRes;
+  // Custom RNG
+  if (customRNG) return customRNG(len);
+  // Unsafe fallback
+  if (rngPolicy === 'strict') {
+    throw new Error('[smkit][RNG] No cryptographically secure random generator available.');
+  }
+  return unsafeFallbackRandom(len);
+}
