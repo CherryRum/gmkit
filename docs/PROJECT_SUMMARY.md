@@ -96,10 +96,10 @@ SMKit is a pure TypeScript implementation of Chinese national cryptographic algo
 All functions are pure and stateless:
 ```typescript
 // Direct imports
-import { digest, sm4Encrypt, generateKeyPair } from 'smkit';
+import { digest, sm4Encrypt, generateKeyPair } from 'gmkit';
 
 // Namespace imports
-import { SM3, SM4, SM2 } from 'smkit';
+import { SM3, SM4, SM2 } from 'gmkit';
 SM3.digest('data');
 SM4.encrypt(key, data);
 SM2.generateKeyPair();

@@ -145,7 +145,7 @@ function tau(a: number): number {
 
 **Usage 使用方法:**
 ```typescript
-import { sm4Encrypt, sm4Decrypt, CipherMode } from 'smkit';
+import { sm4Encrypt, sm4Decrypt, CipherMode } from 'gmkit';
 
 const key = '0123456789abcdeffedcba9876543210';
 const iv = '000000000000000000000000'; // 12 bytes for GCM

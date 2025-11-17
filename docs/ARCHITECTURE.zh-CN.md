@@ -129,7 +129,7 @@ SM4 分组密码算法实现。
 ### 函数式 API
 
 ```typescript
-import { digest, sm4Encrypt, generateKeyPair } from 'smkit';
+import { digest, sm4Encrypt, generateKeyPair } from 'gmkit';
 
 // SM3 哈希
 const hash = digest('Hello, World!');
@@ -145,7 +145,7 @@ const keyPair = generateKeyPair();
 ### 面向对象 API
 
 ```typescript
-import { SM2, SM3, SM4 } from 'smkit';
+import { SM2, SM3, SM4 } from 'gmkit';
 
 // SM3 哈希
 const sm3 = new SM3();

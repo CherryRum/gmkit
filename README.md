@@ -1,10 +1,10 @@
-# SMKit
+# GMKit
 
 <div align="center">
 
-[![npm version](https://img.shields.io/npm/v/smkit.svg?style=flat-square)](https://www.npmjs.com/package/smkit)
-[![npm downloads](https://img.shields.io/npm/dm/smkit.svg?style=flat-square)](https://www.npmjs.com/package/smkit)
-[![License](https://img.shields.io/npm/l/smkit.svg?style=flat-square)](https://github.com/CherryRum/smkit/blob/main/LICENSE)
+[![npm version](https://img.shields.io/npm/v/gmkit.svg?style=flat-square)](https://www.npmjs.com/package/gmkit)
+[![npm downloads](https://img.shields.io/npm/dm/gmkit.svg?style=flat-square)](https://www.npmjs.com/package/gmkit)
+[![License](https://img.shields.io/npm/l/gmkit.svg?style=flat-square)](https://github.com/CherryRum/gmkit/blob/main/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg?style=flat-square)](https://www.typescriptlang.org/)
 
 **中国国密算法（SM2、SM3、SM4、ZUC）和国际标准算法（SHA-256、SHA-384、SHA-512）的 TypeScript 实现**
@@ -17,8 +17,8 @@
 
 ## 📑 目录
 
-- [什么是 SMKit？](#什么是-smkit)
-- [为什么选择 SMKit？](#为什么选择-smkit)
+- [什么是 GMKit？](#什么是-gmkit)
+- [为什么选择 GMKit？](#为什么选择-gmkit)
 - [特性](#特性)
 - [快速开始](#快速开始)
   - [安装](#安装)
@@ -32,14 +32,14 @@
 
 ---
 
-## 什么是 SMKit？
+## 什么是 GMKit？
 
-SMKit 是一个功能完整的国密算法工具库，让您在前端和 Node.js 环境中轻松使用中国商用密码算法（国密算法）。
+GMKit 是一个功能完整的国密算法工具库，让您在前端和 Node.js 环境中轻松使用中国商用密码算法（国密算法）。
 
 **国密算法是什么？**
 国密算法是由中国国家密码管理局制定的商用密码标准，包括 SM2（非对称加密）、SM3（哈希算法）、SM4（对称加密）和 ZUC（流密码）等。这些算法在金融、政务、电信等领域被广泛应用，特别是在需要符合中国信息安全法规的场景中。
 
-**SMKit 能做什么？**
+**GMKit 能做什么？**
 - 🔐 **数据加密**: 使用 SM2 或 SM4 加密敏感数据
 - ✍️ **数字签名**: 使用 SM2 对数据进行签名和验证
 - 🔑 **密钥交换**: 安全地在双方之间协商共享密钥
@@ -48,11 +48,11 @@ SMKit 是一个功能完整的国密算法工具库，让您在前端和 Node.js
 
 ---
 
-## 为什么选择 SMKit？
+## 为什么选择 GMKit？
 
 ### 与其他国密库的对比
 
-| 特性 | SMKit                  | 其他库 |
+| 特性 | GMKit                  | 其他库 |
 |------|------------------------|--------|
 | **类型支持** | ✅ 完整的 TypeScript 类型定义  | ⚠️ 部分库缺少类型 |
 | **模块化** | ✅ 支持 Tree-shaking，按需加载 | ⚠️ 通常需要加载整个库 |
@@ -89,13 +89,13 @@ SMKit 是一个功能完整的国密算法工具库，让您在前端和 Node.js
 
 ```bash
 # 使用 npm
-npm install smkit
+npm install gmkit
 
 # 使用 yarn
-yarn add smkit
+yarn add gmkit
 
 # 使用 pnpm
-pnpm add smkit
+pnpm add gmkit
 ```
 
 ### 5 分钟上手
@@ -107,7 +107,7 @@ pnpm add smkit
 适用于现代前端项目（Vue、React、Angular 等）和 Node.js (>= 18)
 
 ```typescript
-import { digest, sm4Encrypt, generateKeyPair } from 'smkit';
+import { digest, sm4Encrypt, generateKeyPair } from 'gmkit';
 
 // 1. 哈希计算 - 最简单的入门
 const hash = digest('Hello, SM3!');
@@ -129,7 +129,7 @@ console.log('私钥:', keyPair.privateKey);
 适用于传统 Node.js 项目
 
 ```javascript
-const { digest, sm4Encrypt, generateKeyPair } = require('smkit');
+const { digest, sm4Encrypt, generateKeyPair } = require('gmkit');
 
 // 使用方法与 ES Module 相同
 const hash = digest('Hello, SM3!');
@@ -143,18 +143,18 @@ const hash = digest('Hello, SM3!');
 <!DOCTYPE html>
 <html>
 <head>
-  <title>SMKit 快速开始</title>
+  <title>GMKit 快速开始</title>
 </head>
 <body>
-  <script src="https://unpkg.com/smkit@latest/dist/smkit.umd.js"></script>
+  <script src="https://unpkg.com/gmkit@latest/dist/gmkit.umd.js"></script>
   <script>
-    // 通过全局对象 SMKit 访问所有功能
-    const hash = SMKit.digest('Hello, World!');
+    // 通过全局对象 GMKit 访问所有功能
+    const hash = GMKit.digest('Hello, World!');
     console.log('哈希值:', hash);
     
     // 加密示例
     const key = '0123456789abcdeffedcba9876543210';
-    const encrypted = SMKit.sm4Encrypt(key, '秘密信息');
+    const encrypted = GMKit.sm4Encrypt(key, '秘密信息');
     console.log('加密后:', encrypted);
   </script>
 </body>
@@ -164,7 +164,7 @@ const hash = digest('Hello, SM3!');
 ### 完整示例：实现一个简单的加密通信
 
 ```typescript
-import { generateKeyPair, sm2Encrypt, sm2Decrypt, sign, verify } from 'smkit';
+import { generateKeyPair, sm2Encrypt, sm2Decrypt, sign, verify } from 'gmkit';
 
 // 场景：Alice 要发送加密消息给 Bob
 
@@ -193,7 +193,7 @@ console.log('签名验证:', isValid ? '✅ 通过' : '❌ 失败');
 
 ## 在线演示
 
-想快速体验 SMKit？我们提供了两种交互式演示页面：
+想快速体验 GMKit？我们提供了两种交互式演示页面：
 
 ### Vue 3 现代化演示（推荐）
 
@@ -201,8 +201,8 @@ console.log('签名验证:', isValid ? '✅ 通过' : '❌ 失败');
 
 ```bash
 # 克隆仓库
-git clone https://github.com/CherryRum/smkit.git
-cd smkit
+git clone https://github.com/CherryRum/gmkit.git
+cd gmkit
 
 # 安装依赖
 npm install
@@ -329,13 +329,13 @@ const keystream = zucEncrypt(key, iv, '实时数据流');
 
 ### 输出格式配置
 
-SMKit 支持灵活的输出格式配置，所有加密和哈希函数都支持以下格式：
+GMKit 支持灵活的输出格式配置，所有加密和哈希函数都支持以下格式：
 
 - **hex**（十六进制）：默认格式，易于阅读和调试
 - **base64**：更紧凑的格式，节省约 25% 空间，适合网络传输
 
 ```typescript
-import { digest, OutputFormat } from 'smkit';
+import { digest, OutputFormat } from 'gmkit';
 
 // 十六进制格式（默认）
 const hexHash = digest('Hello, World!');
@@ -353,7 +353,7 @@ console.log(base64Hash); // "m3HSJLLy83h..."
 #### SM3 哈希算法
 
 ```typescript
-import { digest, hmac, OutputFormat } from 'smkit';
+import { digest, hmac, OutputFormat } from 'gmkit';
 
 // 计算哈希（默认 hex 格式）
 const hash = digest('Hello, SM3!');
@@ -373,10 +373,10 @@ const base64Mac = hmac('secret-key', 'data', { outputFormat: OutputFormat.BASE64
 
 #### SHA 哈希算法（国际标准）
 
-SMKit 还提供高性能的 SHA 系列哈希算法：
+GMKit 还提供高性能的 SHA 系列哈希算法：
 
 ```typescript
-import { sha256, sha384, sha512, hmacSha256, OutputFormat } from 'smkit';
+import { sha256, sha384, sha512, hmacSha256, OutputFormat } from 'gmkit';
 
 // SHA-256
 const hash256 = sha256('Hello, World!');
@@ -401,7 +401,7 @@ console.log(mac);
 #### SM4 分组密码
 
 ```typescript
-import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'smkit';
+import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkit';
 
 const key = '0123456789abcdeffedcba9876543210'; // 128 位密钥（32 个十六进制字符）
 const plaintext = 'Hello, SM4!';
@@ -439,7 +439,7 @@ const decryptedGCM = sm4Decrypt(key, gcmResult, { mode: CipherMode.GCM, iv: gcmI
 #### SM2 椭圆曲线密码
 
 ```typescript
-import { generateKeyPair, getPublicKeyFromPrivateKey, sm2Encrypt, sm2Decrypt, sign, verify, SM2CipherMode } from 'smkit';
+import { generateKeyPair, getPublicKeyFromPrivateKey, sm2Encrypt, sm2Decrypt, sign, verify, SM2CipherMode } from 'gmkit';
 
 // 生成密钥对（使用 @noble/curves 提供的安全随机数生成）
 const keyPair = generateKeyPair();
@@ -495,7 +495,7 @@ const encryptedBinary = sm2Encrypt(keyPair.publicKey, binaryData);
 const signatureBinary = sign(keyPair.privateKey, binaryData);
 
 // SM2 密钥交换（基于 GM/T 0003.3-2012 及 GM/T 0009-2023）
-import { keyExchange } from 'smkit';
+import { keyExchange } from 'gmkit';
 
 // 假设 Alice 和 Bob 需要协商共享密钥
 const aliceKeyPair = generateKeyPair();
@@ -532,7 +532,7 @@ console.log(aliceResult.sharedKey === bobResult.sharedKey); // true
 #### ZUC 流密码算法
 
 ```typescript
-import { zucEncrypt, zucDecrypt, zucKeystream, eea3, eia3 } from 'smkit';
+import { zucEncrypt, zucDecrypt, zucKeystream, eea3, eia3 } from 'gmkit';
 
 const key = '00112233445566778899aabbccddeeff'; // 128 位密钥（32 个十六进制字符）
 const iv = 'ffeeddccbbaa99887766554433221100';  // 128 位 IV（32 个十六进制字符）
@@ -579,7 +579,7 @@ console.log(decryptedBinary); // 'Hello'
 #### SM3 - 哈希操作
 
 ```typescript
-import { SM3, OutputFormat } from 'smkit';
+import { SM3, OutputFormat } from 'gmkit';
 
 // 静态方法（默认 hex 格式）
 const hash = SM3.digest('Hello, SM3!');
@@ -602,7 +602,7 @@ const base64Result = sm3Base64.digest();
 #### SHA - 哈希算法（国际标准）
 
 ```typescript
-import { SHA256, SHA384, SHA512, OutputFormat } from 'smkit';
+import { SHA256, SHA384, SHA512, OutputFormat } from 'gmkit';
 
 // SHA-256 静态方法
 const hash = SHA256.digest('Hello, World!');
@@ -631,7 +631,7 @@ const sha512 = new SHA512();
 #### SM4 - 分组密码
 
 ```typescript
-import { SM4, CipherMode, PaddingMode } from 'smkit';
+import { SM4, CipherMode, PaddingMode } from 'gmkit';
 
 const key = '0123456789abcdeffedcba9876543210';
 const iv = 'fedcba98765432100123456789abcdef';
@@ -657,7 +657,7 @@ sm4.setPadding(PaddingMode.PKCS7);
 #### SM2 - 椭圆曲线密码
 
 ```typescript
-import { SM2, SM2CipherMode } from 'smkit';
+import { SM2, SM2CipherMode } from 'gmkit';
 
 // 生成密钥对
 const sm2 = SM2.generateKeyPair();
@@ -722,7 +722,7 @@ const sm2Custom = SM2.generateKeyPair(curveParams);
 #### ZUC - 流密码
 
 ```typescript
-import { ZUC } from 'smkit';
+import { ZUC } from 'gmkit';
 
 const key = '00112233445566778899aabbccddeeff';
 const iv = 'ffeeddccbbaa99887766554433221100';
@@ -752,7 +752,7 @@ const mac = ZUC.eia3(key, 0x12345678, 5, 0, 'Message to authenticate');
 ### 工具函数
 
 ```typescript
-import { hexToBytes, bytesToHex, stringToBytes, bytesToString } from 'smkit';
+import { hexToBytes, bytesToHex, stringToBytes, bytesToString } from 'gmkit';
 
 // 在十六进制和字节之间转换
 const bytes = hexToBytes('48656c6c6f');
@@ -767,7 +767,7 @@ const str = bytesToString(strBytes);
 
 ### 密码模式
 ```typescript
-import { CipherMode } from 'smkit';
+import { CipherMode } from 'gmkit';
 
 // 分组密码模式
 CipherMode.ECB  // 'ecb' - 电码本模式
@@ -791,7 +791,7 @@ CipherMode.GCM  // 'gcm' - 伽罗瓦/计数器模式（已实现）
 
 ### 填充模式
 ```typescript
-import { PaddingMode } from 'smkit';
+import { PaddingMode } from 'gmkit';
 
 PaddingMode.PKCS7  // 'pkcs7' - PKCS#7 填充（默认）
 PaddingMode.NONE   // 'none' - 无填充
@@ -806,7 +806,7 @@ PaddingMode.ZERO   // 'zero' - 零填充
 
 ### SM2 密文模式
 ```typescript
-import { SM2CipherMode } from 'smkit';
+import { SM2CipherMode } from 'gmkit';
 
 SM2CipherMode.C1C3C2  // 'C1C3C2' (推荐)
 SM2CipherMode.C1C2C3  // 'C1C2C3'
@@ -823,7 +823,7 @@ SM2CipherMode.C1C2C3  // 'C1C2C3'
 
 ### OID（对象标识符）
 ```typescript
-import { OID } from 'smkit';
+import { OID } from 'gmkit';
 
 OID.SM2            // '1.2.156.10197.1.301' - SM2 椭圆曲线公钥密码算法
 OID.SM2_SM3        // '1.2.156.10197.1.501' - SM2 签名（使用 SM3）
@@ -847,7 +847,7 @@ OID.EC_PUBLIC_KEY  // '1.2.840.10045.2.1' - 标准 EC 公钥（OpenSSL 1.x 对 S
 
 ### 默认值
 ```typescript
-import { DEFAULT_USER_ID } from 'smkit';
+import { DEFAULT_USER_ID } from 'gmkit';
 
 DEFAULT_USER_ID  // '1234567812345678' - SM2 签名的默认用户 ID（向后兼容）
                  // GM/T 0009-2023 推荐使用空字符串 ''
@@ -996,7 +996,7 @@ DEFAULT_USER_ID  // '1234567812345678' - SM2 签名的默认用户 ID（向后�
 
 ## 架构
 
-SMKit 采用模块化、分层的架构设计，便于扩展和维护：
+GMKit 采用模块化、分层的架构设计，便于扩展和维护：
 
 ```text
 src/
@@ -1054,7 +1054,7 @@ npm test
 
 ## 与 Hutool 后端对接
 
-如果你需要在前端使用 SMKit 与后端 Hutool (Java) 进行国密算法对接，我们提供了完整的集成指南：
+如果你需要在前端使用 GMKit 与后端 Hutool (Java) 进行国密算法对接，我们提供了完整的集成指南：
 
 ```bash
 # 查看对接指南
@@ -1102,7 +1102,7 @@ Apache-2.0
 
 ## 注意
 
-SMKit 已实现完整的 SM2、SM3、SM4 和 ZUC 算法，所有核心功能均已实现并可用于生产环境。通过了完整的单元测试覆盖，包括基础加密功能、边界情况和标准测试向量验证。
+GMKit 已实现完整的 SM2、SM3、SM4 和 ZUC 算法，所有核心功能均已实现并可用于生产环境。通过了完整的单元测试覆盖，包括基础加密功能、边界情况和标准测试向量验证。
 
 ## 文档
 
@@ -1126,10 +1126,10 @@ SMKit 已实现完整的 SM2、SM3、SM4 和 ZUC 算法，所有核心功能均�
 <details>
 <summary><strong>❓ 如何在 TypeScript 项目中使用？</strong></summary>
 
-SMKit 原生支持 TypeScript，无需额外配置：
+GMKit 原生支持 TypeScript，无需额外配置：
 
 ```typescript
-import { digest, sm4Encrypt, type KeyPair } from 'smkit';
+import { digest, sm4Encrypt, type KeyPair } from 'gmkit';
 
 // TypeScript 会自动提供类型提示和检查
 const keyPair: KeyPair = generateKeyPair();
@@ -1147,14 +1147,14 @@ const keyPair: KeyPair = generateKeyPair();
 // vite.config.js
 export default {
   optimizeDeps: {
-    include: ['smkit']
+    include: ['gmkit']
   }
 }
 ```
 
 **或直接使用 UMD 版本：**
 ```html
-<script src="https://unpkg.com/smkit@latest/dist/smkit.umd.js"></script>
+<script src="https://unpkg.com/gmkit@latest/dist/gmkit.umd.js"></script>
 ```
 
 </details>
@@ -1170,7 +1170,7 @@ node --version  # 应该 >= v18.0.0
 
 如果使用 CommonJS，确保正确导入：
 ```javascript
-const { digest } = require('smkit');
+const { digest } = require('gmkit');
 ```
 
 </details>

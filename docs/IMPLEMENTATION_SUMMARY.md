@@ -50,12 +50,12 @@ Now the build generates three formats:
 
 **ES Module (推荐 / Recommended)**
 ```javascript
-import { digest, sm4Encrypt, generateKeyPair } from 'smkit';
+import { digest, sm4Encrypt, generateKeyPair } from 'gmkit';
 ```
 
 **CommonJS (Node.js)**
 ```javascript
-const { digest, sm4Encrypt, generateKeyPair } = require('smkit');
+const { digest, sm4Encrypt, generateKeyPair } = require('gmkit');
 ```
 
 **UMD (浏览器 / Browser)**
