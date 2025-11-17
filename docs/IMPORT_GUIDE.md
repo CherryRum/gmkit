@@ -1,6 +1,6 @@
-# SMKit 导入方式示例
+# GMKit 导入方式示例
 
-SMKit 支持多种灵活的导入方式，满足不同场景的需求。
+GMKit 支持多种灵活的导入方式，满足不同场景的需求。
 
 ## 1. 算法模块导入（推荐）
 
@@ -98,15 +98,15 @@ const hash2 = digest('Hello');
 ```html
 <script src="https://unpkg.com/gmkit@latest/dist/index.global.js"></script>
 <script>
-  // SMKit 会被注册为全局变量
+  // GMKit 会被注册为全局变量
   
   // 方式 1: 使用算法模块
-  const keyPair = SMKit.sm2.generateKeyPair();
-  const hash = SMKit.sm3.digest('Hello, World!');
+  const keyPair = GMKit.sm2.generateKeyPair();
+  const hash = GMKit.sm3.digest('Hello, World!');
   
   // 方式 2: 使用具名函数（通过 default 访问）
-  const hash2 = SMKit.default.digest('Hello');
-  const encrypted = SMKit.default.sm2Encrypt(keyPair.publicKey, 'Hello');
+  const hash2 = GMKit.default.digest('Hello');
+  const encrypted = GMKit.default.sm2Encrypt(keyPair.publicKey, 'Hello');
 </script>
 ```
 

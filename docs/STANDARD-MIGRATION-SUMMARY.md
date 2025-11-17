@@ -2,7 +2,7 @@
 
 ## 概述
 
-本文档总结了 SMKit 库从 GMT 0009-2012 到 GMT 0009-2023 标准的迁移工作。
+本文档总结了 GMKit 库从 GMT 0009-2012 到 GMT 0009-2023 标准的迁移工作。
 
 ## 迁移日期
 
@@ -387,14 +387,14 @@ const signature = sign(privateKey, data, { userId });
 
 - 中国国家密码管理局发布的 GMT 标准
 - @noble/curves 和 @noble/hashes 库的优秀实现
-- SMKit 社区的反馈和贡献
+- GMKit 社区的反馈和贡献
 
 ## 联系方式
 
 如有任何问题或建议：
 
 - GitHub Issues: https://github.com/CherryRum/gmkit/issues
-- NPM: https://www.npmjs.com/package/smkit
+- NPM: https://www.npmjs.com/package/GMKit
 
 ## 附录
 
@@ -408,7 +408,7 @@ const signature = sign(privateKey, data, { userId });
 
 ### B. 相关链接
 
-- [SMKit 主页](https://github.com/CherryRum/gmkit)
+- [GMKit 主页](https://github.com/CherryRum/gmkit)
 - [GMT 标准符合性文档](./GMT-0009-COMPLIANCE.md)
 - [性能优化指南](./PERFORMANCE-OPTIMIZATIONS.md)
 
@@ -416,5 +416,5 @@ const signature = sign(privateKey, data, { userId });
 
 **文档版本**: 1.0  
 **更新日期**: 2025年10月  
-**作者**: SMKit 开发团队  
+**作者**: GMKit 开发团队  
 **许可证**: Apache-2.0

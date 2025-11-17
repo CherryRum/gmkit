@@ -1,7 +1,7 @@
-# SMKit Project Summary
+# GMKit Project Summary
 
 ## Overview
-SMKit is a pure TypeScript implementation of Chinese national cryptographic algorithms (SM2, SM3, SM4) following modern JavaScript/TypeScript best practices.
+GMKit is a pure TypeScript implementation of Chinese national cryptographic algorithms (SM2, SM3, SM4) following modern JavaScript/TypeScript best practices.
 
 ## Implementation Status
 

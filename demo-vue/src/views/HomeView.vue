@@ -112,7 +112,7 @@ const navigateToTool = (route: string) => {
 <template>
   <div class="home-container">
     <div class="header">
-      <h1 class="title">🔐 SMKit</h1>
+      <h1 class="title">🔐 GMKit</h1>
       <p class="subtitle">密码算法工具集</p>
       <p class="description">
         提供中国国密算法（SM2、SM3、SM4）和国际标准算法的在线测试工具
@@ -162,7 +162,7 @@ const navigateToTool = (route: string) => {
 
     <footer class="footer">
       <p>
-        <a href="https://github.com/CherryRum/smkit" target="_blank">GitHub</a>
+        <a href="https://github.com/CherryRum/GMKit" target="_blank">GitHub</a>
         · 基于 Vue 3 + TypeScript 构建
         · Apache 2.0 License
       </p>

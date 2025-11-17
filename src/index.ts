@@ -1,5 +1,5 @@
 /**
- * SMKit - 中国国密算法库和国际标准算法库
+ * GMKit - 中国国密算法库和国际标准算法库
  * 纯 TypeScript 实现的 SM2、SM3、SM4、ZUC 算法
  * 国际标准算法：SHA-256、SHA-384、SHA-512
  *

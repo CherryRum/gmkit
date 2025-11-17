@@ -193,8 +193,8 @@ A: 这是 OpenSSL 版本差异导致的历史遗留问题：
 
 欢迎提交问题和贡献代码！
 
-- GitHub: https://github.com/CherryRum/smkit
-- NPM: https://www.npmjs.com/package/smkit
+- GitHub: https://github.com/CherryRum/GMKit
+- NPM: https://www.npmjs.com/package/GMKit
 
 ## 许可证
 

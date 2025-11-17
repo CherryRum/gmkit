@@ -71,7 +71,7 @@ const goHome = () => {
     <aside class="sidebar">
       <!-- 顶部标题区域 Top title area -->
       <div class="sidebar-header" @click="goHome">
-        <h1 class="logo">🔐 SMKit</h1>
+        <h1 class="logo">🔐 GMKit</h1>
         <p class="tagline">信创国密算法工具集</p>
       </div>
 
@@ -94,7 +94,7 @@ const goHome = () => {
       <!-- 底部信息 Footer information -->
       <div class="sidebar-footer">
         <p>
-          <a href="https://github.com/CherryRum/smkit" target="_blank" rel="noopener noreferrer">
+          <a href="https://github.com/CherryRum/GMKit" target="_blank" rel="noopener noreferrer">
             GitHub
           </a>
         </p>

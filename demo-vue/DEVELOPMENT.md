@@ -1,6 +1,6 @@
-# SMKit Vue 3 演示 - 开发指南
+# GMKit Vue 3 演示 - 开发指南
 
-本文档提供详细的开发指南，帮助您扩展和维护 SMKit Vue 3 演示应用。
+本文档提供详细的开发指南，帮助您扩展和维护 GMKit Vue 3 演示应用。
 
 ## 快速开始
 
@@ -359,7 +359,7 @@ defineProps<Props>()
 }
 ```
 
-### 2. 按需导入 SMKit
+### 2. 按需导入 GMKit
 
 ```typescript
 // 只导入需要的函数

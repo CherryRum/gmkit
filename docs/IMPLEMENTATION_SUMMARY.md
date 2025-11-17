@@ -42,8 +42,8 @@ formats: ['es', 'cjs', 'umd']  // 原来只有 ['es', 'cjs']
 现在构建会生成三种格式：
 Now the build generates three formats:
 
-1. **ES Module** (`dist/smkit.js`) - 用于现代打包工具 / For modern bundlers
-2. **CommonJS** (`dist/smkit.cjs`) - 用于 Node.js / For Node.js
+1. **ES Module** (`dist/GMKit.js`) - 用于现代打包工具 / For modern bundlers
+2. **CommonJS** (`dist/GMKit.cjs`) - 用于 Node.js / For Node.js
 3. **UMD** (`dist/index.global.js`) - 用于浏览器直接引入 / For direct browser usage
 
 #### 使用示例 / Usage Examples
@@ -67,9 +67,9 @@ const { digest, sm4Encrypt, generateKeyPair } = require('gmkit');
 <script src="https://cdn.jsdelivr.net/npm/gmkit@latest/dist/index.global.js"></script>
 
 <script>
-  // 全局变量 SMKit 可用
-  // Global variable SMKit is available
-  const hash = SMKit.digest('Hello, World!');
+  // 全局变量 GMKit 可用
+  // Global variable GMKit is available
+  const hash = GMKit.digest('Hello, World!');
   console.log(hash);
 </script>
 ```
@@ -202,7 +202,7 @@ To use automatic publishing, you need to:
 Vite 使用 Rollup 内部处理 UMD 构建，自动处理：
 Vite uses Rollup internally to handle UMD builds, automatically handling:
 
-- 全局变量命名（`SMKit`）/ Global variable naming (`SMKit`)
+- 全局变量命名（`GMKit`）/ Global variable naming (`GMKit`)
 - CommonJS 和 AMD 兼容性 / CommonJS and AMD compatibility
 - 浏览器全局变量注入 / Browser global variable injection
 

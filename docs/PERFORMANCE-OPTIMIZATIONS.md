@@ -1,6 +1,6 @@
 # 性能优化建议 (Performance Optimization Guide)
 
-基于 GMT 0009-2023 标准的 SMKit 性能优化指南。
+基于 GMT 0009-2023 标准的 GMKit 性能优化指南。
 
 ## 已实现的优化
 

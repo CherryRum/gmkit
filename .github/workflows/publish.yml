@@ -110,17 +110,17 @@ jobs:
 
             ### 安装 / Installation
             ```bash
-            npm install smkit@${{ github.ref_name }}
+            npm install GMKit@${{ github.ref_name }}
             ```
 
             ### 变更日志 / Changelog
-            请查看 [CHANGELOG.md](https://github.com/CherryRum/smkit/blob/main/CHANGELOG.md)
-            See [CHANGELOG.md](https://github.com/CherryRum/smkit/blob/main/CHANGELOG.md)
+            请查看 [CHANGELOG.md](https://github.com/CherryRum/GMKit/blob/main/CHANGELOG.md)
+            See [CHANGELOG.md](https://github.com/CherryRum/GMKit/blob/main/CHANGELOG.md)
 
             ### 构建产物 / Build Artifacts
-            - ES Module: `dist/smkit.js`
-            - CommonJS: `dist/smkit.cjs`
-            - UMD: `dist/smkit.umd.js`
+            - ES Module: `dist/GMKit.js`
+            - CommonJS: `dist/GMKit.cjs`
+            - UMD: `dist/GMKit.umd.js`
             - TypeScript 定义 / TypeScript Definitions: `dist/index.d.ts`
           draft: false
           prerelease: false

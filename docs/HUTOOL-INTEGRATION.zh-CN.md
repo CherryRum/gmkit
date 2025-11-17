@@ -1,6 +1,6 @@
 # 与 Hutool 后端对接指南
 
-本文档介绍如何在前端使用 SMKit 与后端 Hutool（Java）进行国密算法对接。
+本文档介绍如何在前端使用 GMKit 与后端 Hutool（Java）进行国密算法对接。
 
 ## Hutool 简介
 
@@ -10,9 +10,9 @@
 
 ### 数据格式
 
-SMKit 和 Hutool 在数据格式上需要保持一致：
+GMKit 和 Hutool 在数据格式上需要保持一致：
 
-| 数据类型 | SMKit 格式 | Hutool 格式 | 注意事项 |
+| 数据类型 | GMKit 格式 | Hutool 格式 | 注意事项 |
 |---------|-----------|------------|---------|
 | 密钥 | 十六进制字符串（小写） | 十六进制字符串 | Hutool 可能返回大写，需要转换 |
 | 明文 | UTF-8 字符串或 Uint8Array | UTF-8 字符串 | 编码保持一致 |
@@ -42,7 +42,7 @@ public class SM3Example {
 }
 ```
 
-### SMKit 端（TypeScript/JavaScript）
+### GMKit 端（TypeScript/JavaScript）
 
 ```typescript
 import { digest } from 'gmkit';
@@ -62,14 +62,14 @@ console.log('匹配:', isMatch);
 ### 注意事项
 
 1. **字符编码**：确保前后端使用相同的字符编码（UTF-8）
-2. **大小写**：SMKit 返回小写十六进制，Hutool 可能返回大写，需要转换
+2. **大小写**：GMKit 返回小写十六进制，Hutool 可能返回大写，需要转换
 3. **HMAC**：Hutool 的 HMAC-SM3 实现与标准实现一致
 
 ## SM4 对称加密对接
 
 ### 核心参数对照
 
-| 参数 | SMKit | Hutool | 说明 |
+| 参数 | GMKit | Hutool | 说明 |
 |-----|-------|--------|------|
 | 密钥 | 32位十六进制 | 16字节或32位十六进制 | 128位密钥 |
 | IV | 32位十六进制 | 16字节或32位十六进制 | CBC/CTR等模式需要 |
@@ -114,7 +114,7 @@ public class SM4Example {
 }
 ```
 
-### SMKit 端（TypeScript/JavaScript）
+### GMKit 端（TypeScript/JavaScript）
 
 ```typescript
 import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkit';
@@ -166,14 +166,14 @@ SM2 是最复杂的部分，需要特别注意以下几点：
 
 ### 密钥格式
 
-| 格式 | SMKit | Hutool | 转换 |
+| 格式 | GMKit | Hutool | 转换 |
 |-----|-------|--------|------|
 | 公钥 | 非压缩（04前缀）130字符 | 可压缩可非压缩 | 保持一致 |
 | 私钥 | 64位十六进制 | 32字节或64位十六进制 | 转换为十六进制 |
 
 ### 密文模式
 
-| 模式 | SMKit | Hutool | 说明 |
+| 模式 | GMKit | Hutool | 说明 |
 |-----|-------|--------|------|
 | C1C3C2 | 默认 | 推荐 | 国密标准推荐 |
 | C1C2C3 | 支持 | 支持 | 旧标准 |
@@ -223,7 +223,7 @@ public class SM2Example {
 }
 ```
 
-### SMKit 端（TypeScript/JavaScript）
+### GMKit 端（TypeScript/JavaScript）
 
 ```typescript
 import { 
@@ -267,7 +267,7 @@ console.log('验签结果:', isValid);
 
 1. **密钥格式转换**：
    - Hutool 的公钥可能包含 ASN.1 头部，需要提取原始坐标
-   - SMKit 使用 04 + X + Y 的非压缩格式（130个十六进制字符）
+   - GMKit 使用 04 + X + Y 的非压缩格式（130个十六进制字符）
    
 2. **密文模式**：
    - 默认都使用 C1C3C2 模式
@@ -275,19 +275,19 @@ console.log('验签结果:', isValid);
    
 3. **用户 ID**：
    - Hutool 默认用户 ID 可能不同
-   - SMKit 默认为 '1234567812345678'
+   - GMKit 默认为 '1234567812345678'
    - 签名验签时必须使用相同的用户 ID
 
 4. **签名格式**：
    - Hutool 可能使用 DER 编码
-   - SMKit 支持 Raw 和 DER 两种格式
+   - GMKit 支持 Raw 和 DER 两种格式
    - 通过 `{ der: true }` 选项切换
 
 ## 完整对接示例
 
 ### 场景：前端加密，后端解密
 
-#### 前端（SMKit）
+#### 前端（GMKit）
 
 ```typescript
 import { sm2Encrypt, SM2CipherMode } from 'gmkit';
@@ -356,7 +356,7 @@ public Map<String, String> getData() {
 }
 ```
 
-#### 前端（SMKit）
+#### 前端（GMKit）
 
 ```typescript
 import { verify } from 'gmkit';
@@ -409,7 +409,7 @@ const validDER = verify(publicKey, data, sigDER, { der: true });
 
 ### 3. 密钥格式转换
 
-**Hutool 公钥转 SMKit 格式**：
+**Hutool 公钥转 GMKit 格式**：
 
 如果 Hutool 返回的公钥包含 ASN.1 头部，需要提取原始坐标：
 
@@ -489,7 +489,7 @@ async function testIntegration() {
 
 ## 进一步阅读
 
-- [SMKit API 文档](../README.md)
+- [GMKit API 文档](../README.md)
 - [Hutool 官方文档](https://hutool.cn/docs/)
 - [国密算法标准](../docs/STANDARDS.md)
 

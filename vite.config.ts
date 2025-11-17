@@ -14,7 +14,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
-      name: 'SMKit',
+      name: 'GMKit',
       formats: ['es', 'cjs', 'umd'],
       fileName: format => {
         if (format === 'es') return 'index.mjs';

@@ -1,14 +1,14 @@
 # 发布指南 / Publishing Guide
 
-本文档介绍如何发布 SMKit 到 NPM，以及如何使用不同的模块格式。
+本文档介绍如何发布 GMKit 到 NPM，以及如何使用不同的模块格式。
 
-This document describes how to publish SMKit to NPM and how to use different module formats.
+This document describes how to publish GMKit to NPM and how to use different module formats.
 
 ## 模块格式支持 / Module Format Support
 
-SMKit 现在支持三种模块格式，确保在各种环境下都能正常工作：
+GMKit 现在支持三种模块格式，确保在各种环境下都能正常工作：
 
-SMKit now supports three module formats to ensure it works in various environments:
+GMKit now supports three module formats to ensure it works in various environments:
 
 ### 1. ES Module (ESM)
 最现代的模块格式，支持 tree-shaking，推荐在现代 JavaScript 项目中使用。
@@ -52,24 +52,24 @@ Universal Module Definition, can be used directly in browsers with `<script>` ta
 ```html
 <!-- 通过 CDN 使用（推荐） -->
 <!-- Use via CDN (recommended) -->
-<script src="https://unpkg.com/smkit@latest/dist/gmkit.umd.js"></script>
+<script src="https://unpkg.com/GMKit@latest/dist/gmkit.umd.js"></script>
 <script>
-  // 全局变量 SMKit 现在可用
-  // Global variable SMKit is now available
-  const hash = SMKit.digest('Hello, World!');
+  // 全局变量 GMKit 现在可用
+  // Global variable GMKit is now available
+  const hash = GMKit.digest('Hello, World!');
   console.log(hash);
 </script>
 
 <!-- 或使用 jsDelivr -->
 <!-- Or use jsDelivr -->
-<script src="https://cdn.jsdelivr.net/npm/smkit@latest/dist/gmkit.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/GMKit@latest/dist/gmkit.umd.js"></script>
 ```
 
 **文件位置 / File Location:** `dist/gmkit.umd.js`
 
 **CDN 链接 / CDN Links:**
-- unpkg: `https://unpkg.com/smkit@latest/dist/gmkit.umd.js`
-- jsDelivr: `https://cdn.jsdelivr.net/npm/smkit@latest/dist/gmkit.umd.js`
+- unpkg: `https://unpkg.com/GMKit@latest/dist/gmkit.umd.js`
+- jsDelivr: `https://cdn.jsdelivr.net/npm/GMKit@latest/dist/gmkit.umd.js`
 
 ## 发布流程 / Publishing Process
 

@@ -427,9 +427,9 @@
 
         <!-- About Tab -->
         <div id="about" class="tab-content">
-            <h2>关于 SMKit</h2>
+            <h2>关于 GMKit</h2>
             <p style="line-height: 1.8; margin: 20px 0;">
-                SMKit 是一个纯 TypeScript 实现的中国国密算法库，包含 SM2、SM3、SM4 算法的完整实现。
+                GMKit 是一个纯 TypeScript 实现的中国国密算法库，包含 SM2、SM3、SM4 算法的完整实现。
             </p>
 
             <h3 style="margin-top: 30px; margin-bottom: 15px;">✨ 特性</h3>
@@ -442,12 +442,12 @@
 
             <h3 style="margin-top: 30px; margin-bottom: 15px;">📦 安装</h3>
             <div class="code-snippet">
-                <code>npm install smkit</code>
+                <code>npm install GMKit</code>
             </div>
 
             <h3 style="margin-top: 30px; margin-bottom: 15px;">💻 使用示例</h3>
             <div class="code-snippet">
-                <code>import { digest, sm4Encrypt, generateKeyPair } from 'smkit';
+                <code>import { digest, sm4Encrypt, generateKeyPair } from 'GMKit';
 
 // SM3 哈希
 const hash = digest('Hello, World!');
@@ -461,42 +461,42 @@ const keyPair = generateKeyPair();</code>
 
             <h3 style="margin-top: 30px; margin-bottom: 15px;">🔗 链接</h3>
             <ul style="line-height: 2; margin-left: 20px;">
-                <li><a href="https://github.com/CherryRum/smkit" target="_blank" style="color: #667eea;">GitHub 仓库</a></li>
-                <li><a href="https://www.npmjs.com/package/smkit" target="_blank" style="color: #667eea;">NPM 包</a></li>
+                <li><a href="https://github.com/CherryRum/GMKit" target="_blank" style="color: #667eea;">GitHub 仓库</a></li>
+                <li><a href="https://www.npmjs.com/package/GMKit" target="_blank" style="color: #667eea;">NPM 包</a></li>
             </ul>
         </div>
     </div>
 
     <script type="module">
-        // 导入 SMKit 库（使用本地构建的版本）
-        import * as smkit from '../dist/smkit.js';
+        // 导入 GMKit 库（使用本地构建的版本）
+        import * as GMKit from '../dist/GMKit.js';
 
-        // 将 smkit 暴露到全局 window 对象，方便 inline script 使用
-        window.smkit = smkit;
+        // 将 GMKit 暴露到全局 window 对象，方便 inline script 使用
+        window.GMKit = GMKit;
 
         // 为了方便使用，创建包装函数
-        window.smkitHelpers = {
-            digest: (text) => smkit.digest(text),
-            sm4Encrypt: (key, plaintext) => smkit.sm4Encrypt(key, plaintext, {
-                mode: smkit.CipherMode.ECB,
-                padding: smkit.PaddingMode.PKCS7
+        window.GMKitHelpers = {
+            digest: (text) => GMKit.digest(text),
+            sm4Encrypt: (key, plaintext) => GMKit.sm4Encrypt(key, plaintext, {
+                mode: GMKit.CipherMode.ECB,
+                padding: GMKit.PaddingMode.PKCS7
             }),
-            sm4Decrypt: (key, ciphertext) => smkit.sm4Decrypt(key, ciphertext, {
-                mode: smkit.CipherMode.ECB,
-                padding: smkit.PaddingMode.PKCS7
+            sm4Decrypt: (key, ciphertext) => GMKit.sm4Decrypt(key, ciphertext, {
+                mode: GMKit.CipherMode.ECB,
+                padding: GMKit.PaddingMode.PKCS7
             }),
-            generateKeyPair: (compressed) => smkit.generateKeyPair(compressed),
-            getPublicKeyFromPrivateKey: (privateKey, compressed) => smkit.getPublicKeyFromPrivateKey(privateKey, compressed),
-            compressPublicKey: (publicKey) => smkit.compressPublicKey(publicKey),
-            decompressPublicKey: (publicKey) => smkit.decompressPublicKey(publicKey),
-            sign: (privateKey, message, options) => smkit.sign(privateKey, message, options),
-            verify: (publicKey, message, signature, options) => smkit.verify(publicKey, message, signature, options),
-            sm2Encrypt: (publicKey, plaintext) => smkit.sm2Encrypt(publicKey, plaintext),
-            sm2Decrypt: (privateKey, ciphertext) => smkit.sm2Decrypt(privateKey, ciphertext),
-            rawToDer: (raw) => smkit.rawToDer(raw),
-            derToRaw: (der) => smkit.derToRaw(der),
-            signatureToXml: (signature, isDer) => smkit.signatureToXml(signature, isDer),
-            bytesToHex: (bytes) => smkit.bytesToHex(bytes)
+            generateKeyPair: (compressed) => GMKit.generateKeyPair(compressed),
+            getPublicKeyFromPrivateKey: (privateKey, compressed) => GMKit.getPublicKeyFromPrivateKey(privateKey, compressed),
+            compressPublicKey: (publicKey) => GMKit.compressPublicKey(publicKey),
+            decompressPublicKey: (publicKey) => GMKit.decompressPublicKey(publicKey),
+            sign: (privateKey, message, options) => GMKit.sign(privateKey, message, options),
+            verify: (publicKey, message, signature, options) => GMKit.verify(publicKey, message, signature, options),
+            sm2Encrypt: (publicKey, plaintext) => GMKit.sm2Encrypt(publicKey, plaintext),
+            sm2Decrypt: (privateKey, ciphertext) => GMKit.sm2Decrypt(privateKey, ciphertext),
+            rawToDer: (raw) => GMKit.rawToDer(raw),
+            derToRaw: (der) => GMKit.derToRaw(der),
+            signatureToXml: (signature, isDer) => GMKit.signatureToXml(signature, isDer),
+            bytesToHex: (bytes) => GMKit.bytesToHex(bytes)
         };
     </script>
 
@@ -518,7 +518,7 @@ const keyPair = generateKeyPair();</code>
         function testSM3() {
             try {
                 const input = document.getElementById('sm3-input').value;
-                const hash = window.smkitHelpers.digest(input);
+                const hash = window.GMKitHelpers.digest(input);
 
                 document.getElementById('sm3-result').innerHTML = `
                     <div class="result">
@@ -551,7 +551,7 @@ const keyPair = generateKeyPair();</code>
 
                 // 处理密钥格式
                 if (keyFormat === 'text') {
-                    key = window.smkitHelpers.bytesToHex(new TextEncoder().encode(key));
+                    key = window.GMKitHelpers.bytesToHex(new TextEncoder().encode(key));
                 }
 
                 if (key.length !== 32) {
@@ -561,13 +561,13 @@ const keyPair = generateKeyPair();</code>
 
                 // 处理 IV 格式
                 if (ivFormat === 'text') {
-                    iv = window.smkitHelpers.bytesToHex(new TextEncoder().encode(iv));
+                    iv = window.GMKitHelpers.bytesToHex(new TextEncoder().encode(iv));
                 }
 
                 // 构建选项
                 const options = {
-                    mode: window.smkit.CipherMode[mode.toUpperCase()],
-                    padding: window.smkit.PaddingMode[padding.toUpperCase()]
+                    mode: window.GMKit.CipherMode[mode.toUpperCase()],
+                    padding: window.GMKit.PaddingMode[padding.toUpperCase()]
                 };
 
                 if (mode !== 'ecb' && iv) {
@@ -578,7 +578,7 @@ const keyPair = generateKeyPair();</code>
                     options.iv = iv;
                 }
 
-                const ciphertext = window.smkit.sm4Encrypt(key, plaintext, options);
+                const ciphertext = window.GMKit.sm4Encrypt(key, plaintext, options);
 
                 // 处理输出格式
                 let displayResult = ciphertext;
@@ -636,7 +636,7 @@ const keyPair = generateKeyPair();</code>
 
                 // 处理密钥格式
                 if (keyFormat === 'text') {
-                    key = window.smkitHelpers.bytesToHex(new TextEncoder().encode(key));
+                    key = window.GMKitHelpers.bytesToHex(new TextEncoder().encode(key));
                 }
 
                 if (key.length !== 32) {
@@ -646,15 +646,15 @@ const keyPair = generateKeyPair();</code>
 
                 // 构建选项
                 const options = {
-                    mode: window.smkit.CipherMode[window.currentSM4Mode.toUpperCase()],
-                    padding: window.smkit.PaddingMode[window.currentSM4Padding.toUpperCase()]
+                    mode: window.GMKit.CipherMode[window.currentSM4Mode.toUpperCase()],
+                    padding: window.GMKit.PaddingMode[window.currentSM4Padding.toUpperCase()]
                 };
 
                 if (window.currentSM4Mode !== 'ecb' && window.currentSM4IV) {
                     options.iv = window.currentSM4IV;
                 }
 
-                const plaintext = window.smkit.sm4Decrypt(key, window.currentSM4Ciphertext, options);
+                const plaintext = window.GMKit.sm4Decrypt(key, window.currentSM4Ciphertext, options);
 
                 document.getElementById('sm4-result').innerHTML = `
                     <div class="result">
@@ -678,14 +678,14 @@ const keyPair = generateKeyPair();</code>
         function generateSM2KeyPair() {
             try {
                 // 生成非压缩格式的密钥对
-                const keyPair = window.smkitHelpers.generateKeyPair(false);
+                const keyPair = window.GMKitHelpers.generateKeyPair(false);
 
                 // 填充输入框（使用非压缩公钥）
                 document.getElementById('sm2-private-key').value = keyPair.privateKey;
                 document.getElementById('sm2-public-key').value = keyPair.publicKey;
 
                 // 生成压缩格式的公钥
-                const compressedKey = window.smkitHelpers.compressPublicKey(keyPair.publicKey);
+                const compressedKey = window.GMKitHelpers.compressPublicKey(keyPair.publicKey);
                 const uncompressedKey = keyPair.publicKey;
 
                 // 提取公钥坐标 X 和 Y（去掉04前缀，前64个字符是X，后64个字符是Y）
@@ -787,7 +787,7 @@ const keyPair = generateKeyPair();</code>
                     return;
                 }
 
-                currentCiphertext = window.smkitHelpers.sm2Encrypt(publicKey, plaintext);
+                currentCiphertext = window.GMKitHelpers.sm2Encrypt(publicKey, plaintext);
 
                 document.getElementById('sm2-encrypt-result').innerHTML = `
                     <div class="result">
@@ -822,7 +822,7 @@ const keyPair = generateKeyPair();</code>
                     return;
                 }
 
-                const plaintext = window.smkitHelpers.sm2Decrypt(privateKey, currentCiphertext);
+                const plaintext = window.GMKitHelpers.sm2Decrypt(privateKey, currentCiphertext);
 
                 document.getElementById('sm2-encrypt-result').innerHTML = `
                     <div class="result">
@@ -861,7 +861,7 @@ const keyPair = generateKeyPair();</code>
                     options.userId = userId;
                 }
 
-                currentSignature = window.smkitHelpers.sign(privateKey, message, options);
+                currentSignature = window.GMKitHelpers.sign(privateKey, message, options);
 
                 document.getElementById('sm2-result').innerHTML = `
                     <div class="result">
@@ -906,7 +906,7 @@ const keyPair = generateKeyPair();</code>
                     options.userId = userId;
                 }
 
-                const isValid = window.smkitHelpers.verify(publicKey, message, currentSignature, options);
+                const isValid = window.GMKitHelpers.verify(publicKey, message, currentSignature, options);
 
                 const statusColor = isValid ? '#4CAF50' : '#f44336';
                 const statusIcon = isValid ? '✅' : '❌';
@@ -938,7 +938,7 @@ const keyPair = generateKeyPair();</code>
                     return;
                 }
 
-                const publicKey = window.smkitHelpers.getPublicKeyFromPrivateKey(privateKey, compressed);
+                const publicKey = window.GMKitHelpers.getPublicKeyFromPrivateKey(privateKey, compressed);
                 const format = compressed ? '压缩格式' : '非压缩格式';
                 const prefix = publicKey.substring(0, 2);
 
@@ -973,10 +973,10 @@ const keyPair = generateKeyPair();</code>
                 let result, format;
 
                 if (type === 'compress') {
-                    result = window.smkitHelpers.compressPublicKey(publicKey);
+                    result = window.GMKitHelpers.compressPublicKey(publicKey);
                     format = '压缩格式';
                 } else {
-                    result = window.smkitHelpers.decompressPublicKey(publicKey);
+                    result = window.GMKitHelpers.decompressPublicKey(publicKey);
                     format = '非压缩格式';
                 }
 
@@ -1013,8 +1013,8 @@ const keyPair = generateKeyPair();</code>
                 let resultHtml;
 
                 if (type === 'raw-to-der') {
-                    const der = window.smkitHelpers.rawToDer(signature);
-                    const derHex = window.smkitHelpers.bytesToHex(der);
+                    const der = window.GMKitHelpers.rawToDer(signature);
+                    const derHex = window.GMKitHelpers.bytesToHex(der);
                     resultHtml = `
                         <div class="result">
                             <h3>DER 编码签名：</h3>
@@ -1029,7 +1029,7 @@ const keyPair = generateKeyPair();</code>
                     for (let i = 0; i < derBytes.length; i++) {
                         derBytes[i] = parseInt(signature.substring(i * 2, i * 2 + 2), 16);
                     }
-                    const raw = window.smkitHelpers.derToRaw(derBytes);
+                    const raw = window.GMKitHelpers.derToRaw(derBytes);
                     resultHtml = `
                         <div class="result">
                             <h3>Raw 格式签名：</h3>
@@ -1041,7 +1041,7 @@ const keyPair = generateKeyPair();</code>
                 } else if (type === 'to-xml') {
                     // 自动检测格式
                     const isDer = signature.startsWith('30');
-                    const xml = window.smkitHelpers.signatureToXml(signature, isDer);
+                    const xml = window.GMKitHelpers.signatureToXml(signature, isDer);
                     resultHtml = `
                         <div class="result">
                             <h3>XML 格式：</h3>
@@ -1069,7 +1069,7 @@ const keyPair = generateKeyPair();</code>
                 const startTime = Date.now();
 
                 for (let i = 0; i < 5; i++) {
-                    keyPairs.push(window.smkitHelpers.generateKeyPair());
+                    keyPairs.push(window.GMKitHelpers.generateKeyPair());
                 }
 
                 const endTime = Date.now();

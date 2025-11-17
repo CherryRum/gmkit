@@ -1,5 +1,5 @@
 /**
- * Example usage of SMKit
+ * Example usage of GMKit
  * Run with: npx tsx examples.ts
  */
 
@@ -45,7 +45,7 @@ import {
   DEFAULT_USER_ID,
 } from './src/index';
 
-console.log('=== SMKit Examples ===\n');
+console.log('=== GMKit Examples ===\n');
 
 // Constants Examples
 console.log('--- Constants ---');

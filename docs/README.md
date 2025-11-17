@@ -1,6 +1,6 @@
-# SMKit 文档索引
+# GMKit 文档索引
 
-本目录包含 SMKit 的技术文档和开发指南。
+本目录包含 GMKit 的技术文档和开发指南。
 
 ## 📚 文档分类
 
@@ -43,7 +43,7 @@
 
 ### 我想...
 
-- **开始使用 SMKit** → [README.md](../README.md)
+- **开始使用 GMKit** → [README.md](../README.md)
 - **测试功能** → 运行 `npx tsx test-local.ts` 或 `npm test`
 - **使用国际标准算法** → [INTERNATIONAL-ALGORITHMS.zh-CN.md](./INTERNATIONAL-ALGORITHMS.zh-CN.md)
 - **与后端对接** → [HUTOOL-INTEGRATION.zh-CN.md](./HUTOOL-INTEGRATION.zh-CN.md)
@@ -56,7 +56,7 @@
 
 ### 新用户
 
-1. [README.md](../README.md) - 了解 SMKit 是什么
+1. [README.md](../README.md) - 了解 GMKit 是什么
 2. 运行 `npx tsx test-local.ts` - 快速测试功能
 3. [HUTOOL-INTEGRATION.zh-CN.md](./HUTOOL-INTEGRATION.zh-CN.md) - 与后端对接（如需要）
 
@@ -76,5 +76,5 @@
 ## 🔍 更多资源
 
 - [GitHub 仓库](https://github.com/CherryRum/gmkit)
-- [NPM 包](https://www.npmjs.com/package/smkit)
+- [NPM 包](https://www.npmjs.com/package/GMKit)
 - [在线演示](../demo-vue/README.md)

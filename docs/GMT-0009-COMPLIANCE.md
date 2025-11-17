@@ -1,6 +1,6 @@
 # GMT 0009 标准符合性说明
 
-本文档详细说明 SMKit 库对 GMT 0009 标准的实现情况，以及从 GMT 0009-2012 到 GMT 0009-2023 的演进和兼容性考虑。
+本文档详细说明 GMKit 库对 GMT 0009 标准的实现情况，以及从 GMT 0009-2012 到 GMT 0009-2023 的演进和兼容性考虑。
 
 ## 标准概述
 
@@ -23,7 +23,7 @@
 4. **安全性增强**：增强了对密钥长度和参数验证的安全建议
 5. **椭圆曲线参数**：继续使用 GM/T 0003-2012 定义的曲线参数，无变化
 
-## SMKit 实现状态
+## GMKit 实现状态
 
 ### 1. 默认用户 ID (User ID / ENTL)
 
@@ -271,7 +271,7 @@ function kdf(z: Uint8Array, klen: number): Uint8Array {
 
 ## 兼容性矩阵
 
-| 特性 | GMT 0009-2012 | GMT 0009-2023 | SMKit 实现 | 兼容性 |
+| 特性 | GMT 0009-2012 | GMT 0009-2023 | GMKit 实现 | 兼容性 |
 |------|---------------|---------------|------------|--------|
 | 默认用户 ID | '1234567812345678' | '' | '1234567812345678' | 向后兼容，支持显式指定 |
 | 密文模式 | C1C3C2/C1C2C3 | C1C3C2（推荐） | C1C3C2（默认） | ✅ 符合最新标准 |
@@ -330,7 +330,7 @@ const uncompressedKey = decompressPublicKey(compressedKey);
 
 ### 向后兼容性保证
 
-SMKit 通过以下机制确保向后兼容：
+GMKit 通过以下机制确保向后兼容：
 
 1. **默认值保持不变**：DEFAULT_USER_ID 仍为 `'1234567812345678'`
 2. **支持两种密文模式**：C1C3C2 和 C1C2C3
@@ -374,7 +374,7 @@ SMKit 通过以下机制确保向后兼容：
 
 ### 单元测试覆盖
 
-SMKit 包含 147 个单元测试，覆盖：
+GMKit 包含 147 个单元测试，覆盖：
 
 1. ✅ 默认用户 ID 和自定义用户 ID 的签名验签
 2. ✅ C1C3C2 和 C1C2C3 密文模式的加密解密
@@ -437,8 +437,8 @@ SMKit 包含 147 个单元测试，覆盖：
 
 ### 相关链接
 
-- [SMKit GitHub](https://github.com/CherryRum/gmkit)
-- [SMKit NPM](https://www.npmjs.com/package/smkit)
+- [GMKit GitHub](https://github.com/CherryRum/gmkit)
+- [GMKit NPM](https://www.npmjs.com/package/GMKit)
 - [中国商用密码标准](http://www.gmbz.org.cn/)
 
 ## 版本历史
