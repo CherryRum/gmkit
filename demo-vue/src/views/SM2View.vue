@@ -9,7 +9,7 @@
 -->
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { generateKeyPair, sm2Encrypt, sm2Decrypt, sign, verify, getPublicKeyFromPrivateKey } from 'smkit'
+import { generateKeyPair, sm2Encrypt, sm2Decrypt, sign, verify, getPublicKeyFromPrivateKey } from 'gmkit'
 
 // ========== 标签页管理 Tab Management ==========
 type TabType = 'keygen' | 'encrypt' | 'decrypt' | 'sign' | 'verify' | 'getpubkey'

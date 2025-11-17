@@ -7,7 +7,7 @@ SMKit 支持多种灵活的导入方式，满足不同场景的需求。
 这是最推荐的导入方式，可以清晰地组织代码，并且支持 tree-shaking。
 
 ```typescript
-import { sm2, sm3, sm4, zuc } from 'smkit';
+import { sm2, sm3, sm4, zuc } from 'gmkit';
 
 // 使用 SM2
 const keyPair = sm2.generateKeyPair();
@@ -47,7 +47,7 @@ import {
   zucDecrypt,
   CipherMode,
   PaddingMode
-} from 'smkit';
+} from 'gmkit';
 
 // 直接使用函数
 const keyPair = generateKeyPair();
@@ -64,7 +64,7 @@ const cipher = sm4Encrypt(key, 'Hello', {
 适合需要在运行时动态选择算法的场景。
 
 ```typescript
-import * as smkit from 'smkit';
+import * as smkit from 'gmkit';
 
 // 通过命名空间访问
 const keyPair = smkit.sm2.generateKeyPair();
@@ -83,13 +83,13 @@ const encrypted = smkit.sm2Encrypt(keyPair.publicKey, 'Hello');
 
 ```javascript
 // 导入算法模块
-const { sm2, sm3, sm4, zuc } = require('smkit');
+const { sm2, sm3, sm4, zuc } = require('gmkit');
 
 const keyPair = sm2.generateKeyPair();
 const hash = sm3.digest('Hello');
 
 // 或者导入具名函数
-const { digest, sm4Encrypt } = require('smkit');
+const { digest, sm4Encrypt } = require('gmkit');
 const hash2 = digest('Hello');
 ```
 
@@ -117,14 +117,14 @@ const hash2 = digest('Hello');
 ```typescript
 // 只在需要时加载 SM2
 async function useSM2() {
-  const { sm2 } = await import('smkit');
+  const { sm2 } = await import('gmkit');
   const keyPair = sm2.generateKeyPair();
   return keyPair;
 }
 
 // 按需加载特定功能
 async function hashData(data: string) {
-  const { digest } = await import('smkit');
+  const { digest } = await import('gmkit');
   return digest(data);
 }
 ```

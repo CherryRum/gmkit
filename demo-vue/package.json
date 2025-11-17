@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "pinia": "^3.0.3",
-    "smkit": "file:..",
+    "gmkit": "file:..",
     "vue": "^3.5.22",
     "vue-router": "^4.5.1"
   },

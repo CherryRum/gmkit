@@ -23,7 +23,7 @@ SM4 Encrypted: 47bcf9db0b4b507d63fab7930c300447...
 
 **使用方法:**
 ```javascript
-import { digest, sm4Encrypt, generateKeyPair } from 'smkit';
+import { digest, sm4Encrypt, generateKeyPair } from 'gmkit';
 ```
 
 ### ✅ CommonJS (CJS)
@@ -40,7 +40,7 @@ SM4 Encrypted: 47bcf9db0b4b507d63fab7930c300447...
 
 **使用方法:**
 ```javascript
-const { digest, sm4Encrypt, generateKeyPair } = require('smkit');
+const { digest, sm4Encrypt, generateKeyPair } = require('gmkit');
 ```
 
 ### ✅ UMD (Universal Module Definition)

@@ -1,10 +1,10 @@
-# SMKit
+# GMKit
 
 <div align="center">
 
-[![npm version](https://img.shields.io/npm/v/smkit.svg?style=flat-square)](https://www.npmjs.com/package/smkit)
-[![npm downloads](https://img.shields.io/npm/dm/smkit.svg?style=flat-square)](https://www.npmjs.com/package/smkit)
-[![License](https://img.shields.io/npm/l/smkit.svg?style=flat-square)](https://github.com/CherryRum/smkit/blob/main/LICENSE)
+[![npm version](https://img.shields.io/npm/v/gmkit.svg?style=flat-square)](https://www.npmjs.com/package/gmkit)
+[![npm downloads](https://img.shields.io/npm/dm/gmkit.svg?style=flat-square)](https://www.npmjs.com/package/gmkit)
+[![License](https://img.shields.io/npm/l/gmkit.svg?style=flat-square)](https://github.com/CherryRum/gmkit/blob/main/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg?style=flat-square)](https://www.typescriptlang.org/)
 
 **Pure TypeScript implementation of Chinese national cryptographic algorithms (SM2, SM3, SM4, ZUC) and international standards (SHA-256, SHA-384, SHA-512)**
@@ -17,8 +17,8 @@
 
 ## 📑 Table of Contents
 
-- [What is SMKit?](#what-is-smkit)
-- [Why SMKit?](#why-smkit)
+- [What is GMKit?](#what-is-gmkit)
+- [Why GMKit?](#why-gmkit)
 - [Features](#features)
 - [Quick Start](#quick-start)
   - [Installation](#installation)
@@ -32,14 +32,14 @@
 
 ---
 
-## What is SMKit?
+## What is GMKit?
 
-SMKit is a comprehensive cryptographic library that makes it easy to use Chinese national cryptographic algorithms (SM algorithms) in frontend and Node.js environments.
+GMKit is a comprehensive cryptographic library that makes it easy to use Chinese national cryptographic algorithms (SM algorithms) in frontend and Node.js environments.
 
 **What are SM algorithms?**
 SM algorithms are commercial cryptographic standards developed by the State Cryptography Administration of China, including SM2 (asymmetric encryption), SM3 (hash algorithm), SM4 (symmetric encryption), and ZUC (stream cipher). These algorithms are widely used in finance, government affairs, telecommunications, and especially in scenarios that need to comply with Chinese information security regulations.
 
-**What can SMKit do?**
+**What can GMKit do?**
 - 🔐 **Data Encryption**: Encrypt sensitive data using SM2 or SM4
 - ✍️ **Digital Signatures**: Sign and verify data using SM2
 - 🔑 **Key Exchange**: Securely negotiate shared keys between parties
@@ -48,11 +48,11 @@ SM algorithms are commercial cryptographic standards developed by the State Cryp
 
 ---
 
-## Why SMKit?
+## Why GMKit?
 
 ### Comparison with Other SM Libraries
 
-| Feature | SMKit | Other Libraries |
+| Feature | GMKit | Other Libraries |
 |---------|-------|-----------------|
 | **Type Support** | ✅ Complete TypeScript definitions | ⚠️ Some lack types |
 | **Modular** | ✅ Tree-shaking, load on demand | ⚠️ Usually load entire library |
@@ -89,13 +89,13 @@ SM algorithms are commercial cryptographic standards developed by the State Cryp
 
 ```bash
 # Using npm
-npm install smkit
+npm install gmkit
 
 # Using yarn
-yarn add smkit
+yarn add gmkit
 
 # Using pnpm
-pnpm add smkit
+pnpm add gmkit
 ```
 
 ### 5-Minute Tutorial
@@ -107,7 +107,7 @@ Choose the module format you're familiar with:
 For modern frontend projects (Vue, React, Angular, etc.) and Node.js (>= 18)
 
 ```typescript
-import { digest, sm4Encrypt, generateKeyPair } from 'smkit';
+import { digest, sm4Encrypt, generateKeyPair } from 'gmkit';
 
 // 1. Hash computation - simplest entry point
 const hash = digest('Hello, SM3!');
@@ -129,7 +129,7 @@ console.log('Private Key:', keyPair.privateKey);
 For traditional Node.js projects
 
 ```javascript
-const { digest, sm4Encrypt, generateKeyPair } = require('smkit');
+const { digest, sm4Encrypt, generateKeyPair } = require('gmkit');
 
 // Usage is the same as ES Module
 const hash = digest('Hello, SM3!');
@@ -143,18 +143,18 @@ For projects without build tools
 <!DOCTYPE html>
 <html>
 <head>
-  <title>SMKit Quick Start</title>
+  <title>GMKit Quick Start</title>
 </head>
 <body>
-  <script src="https://unpkg.com/smkit@latest/dist/smkit.umd.js"></script>
+  <script src="https://unpkg.com/gmkit@latest/dist/gmkit.umd.js"></script>
   <script>
-    // Access all features through global SMKit object
-    const hash = SMKit.digest('Hello, World!');
+    // Access all features through global GMKit object
+    const hash = GMKit.digest('Hello, World!');
     console.log('Hash:', hash);
     
     // Encryption example
     const key = '0123456789abcdeffedcba9876543210';
-    const encrypted = SMKit.sm4Encrypt(key, 'secret message');
+    const encrypted = GMKit.sm4Encrypt(key, 'secret message');
     console.log('Encrypted:', encrypted);
   </script>
 </body>
@@ -164,7 +164,7 @@ For projects without build tools
 ### Complete Example: Secure Communication
 
 ```typescript
-import { generateKeyPair, sm2Encrypt, sm2Decrypt, sign, verify } from 'smkit';
+import { generateKeyPair, sm2Encrypt, sm2Decrypt, sign, verify } from 'gmkit';
 
 // Scenario: Alice wants to send an encrypted message to Bob
 
@@ -193,7 +193,7 @@ console.log('Signature verification:', isValid ? '✅ Valid' : '❌ Invalid');
 
 ## Online Demo
 
-Want to try SMKit quickly? We provide two interactive demo pages:
+Want to try GMKit quickly? We provide two interactive demo pages:
 
 ### Vue 3 Modern Demo (Recommended)
 
@@ -201,8 +201,8 @@ Modern web application built with Vue 3 + TypeScript, providing better user expe
 
 ```bash
 # Clone the repository
-git clone https://github.com/CherryRum/smkit.git
-cd smkit
+git clone https://github.com/CherryRum/gmkit.git
+cd gmkit
 
 # Install dependencies
 npm install
@@ -334,7 +334,7 @@ const keystream = zucEncrypt(key, iv, 'Real-time data stream');
 #### SM3 Hash Algorithm
 
 ```typescript
-import { digest, hmac } from 'smkit';
+import { digest, hmac } from 'gmkit';
 
 // Hash a string
 const hash = digest('Hello, SM3!');
@@ -348,7 +348,7 @@ console.log(mac); // lowercase hex string (64 characters)
 #### SM4 Block Cipher
 
 ```typescript
-import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'smkit';
+import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkit';
 
 const key = '0123456789abcdeffedcba9876543210'; // 128-bit key (32 hex chars)
 const plaintext = 'Hello, SM4!';
@@ -386,7 +386,7 @@ const decryptedGCM = sm4Decrypt(key, gcmResult, { mode: CipherMode.GCM, iv: gcmI
 #### SM2 Elliptic Curve Cryptography
 
 ```typescript
-import { generateKeyPair, getPublicKeyFromPrivateKey, sm2Encrypt, sm2Decrypt, sign, verify, SM2CipherMode } from 'smkit';
+import { generateKeyPair, getPublicKeyFromPrivateKey, sm2Encrypt, sm2Decrypt, sign, verify, SM2CipherMode } from 'gmkit';
 
 // Generate key pair (using secure random number generation from @noble/curves)
 const keyPair = generateKeyPair();
@@ -433,7 +433,7 @@ const encryptedBinary = sm2Encrypt(keyPair.publicKey, binaryData);
 const signatureBinary = sign(keyPair.privateKey, binaryData);
 
 // SM2 Key Exchange (based on GM/T 0003.3-2012 and GM/T 0009-2023)
-import { keyExchange } from 'smkit';
+import { keyExchange } from 'gmkit';
 
 // Suppose Alice and Bob need to negotiate a shared key
 const aliceKeyPair = generateKeyPair();
@@ -472,7 +472,7 @@ console.log(aliceResult.sharedKey === bobResult.sharedKey); // true
 #### SM3 - Hash Operations
 
 ```typescript
-import { SM3 } from 'smkit';
+import { SM3 } from 'gmkit';
 
 // Static methods
 const hash = SM3.digest('Hello, SM3!');
@@ -487,7 +487,7 @@ const result = sm3.digest();
 #### SM4 - Block Cipher
 
 ```typescript
-import { SM4, CipherMode, PaddingMode } from 'smkit';
+import { SM4, CipherMode, PaddingMode } from 'gmkit';
 
 const key = '0123456789abcdeffedcba9876543210';
 const iv = 'fedcba98765432100123456789abcdef';
@@ -513,7 +513,7 @@ sm4.setPadding(PaddingMode.PKCS7);
 #### SM2 - Elliptic Curve Cryptography
 
 ```typescript
-import { SM2, SM2CipherMode } from 'smkit';
+import { SM2, SM2CipherMode } from 'gmkit';
 
 // Generate key pair
 const sm2 = SM2.generateKeyPair();
@@ -578,7 +578,7 @@ const sm2Custom = SM2.generateKeyPair(curveParams);
 #### ZUC - Stream Cipher
 
 ```typescript
-import { ZUC } from 'smkit';
+import { ZUC } from 'gmkit';
 
 const key = '00112233445566778899aabbccddeeff';
 const iv = 'ffeeddccbbaa99887766554433221100';
@@ -608,7 +608,7 @@ const mac = ZUC.eia3(key, 0x12345678, 5, 0, 'Message to authenticate');
 ### Utility Functions
 
 ```typescript
-import { hexToBytes, bytesToHex, stringToBytes, bytesToString } from 'smkit';
+import { hexToBytes, bytesToHex, stringToBytes, bytesToString } from 'gmkit';
 
 // Convert between hex and bytes
 const bytes = hexToBytes('48656c6c6f');
@@ -623,7 +623,7 @@ const str = bytesToString(strBytes);
 
 ### Cipher Modes
 ```typescript
-import { CipherMode } from 'smkit';
+import { CipherMode } from 'gmkit';
 
 // Block cipher modes
 CipherMode.ECB  // 'ecb' - Electronic Codebook
@@ -647,7 +647,7 @@ CipherMode.GCM  // 'gcm' - Galois/Counter Mode (implemented)
 
 ### Padding Modes
 ```typescript
-import { PaddingMode } from 'smkit';
+import { PaddingMode } from 'gmkit';
 
 PaddingMode.PKCS7  // 'pkcs7' - PKCS#7 padding (default)
 PaddingMode.NONE   // 'none' - No padding
@@ -662,7 +662,7 @@ PaddingMode.ZERO   // 'zero' - Zero padding
 
 ### SM2 Cipher Modes
 ```typescript
-import { SM2CipherMode } from 'smkit';
+import { SM2CipherMode } from 'gmkit';
 
 SM2CipherMode.C1C3C2  // 'C1C3C2' (recommended)
 SM2CipherMode.C1C2C3  // 'C1C2C3'
@@ -670,7 +670,7 @@ SM2CipherMode.C1C2C3  // 'C1C2C3'
 
 ### OID (Object Identifier)
 ```typescript
-import { OID } from 'smkit';
+import { OID } from 'gmkit';
 
 OID.SM2            // '1.2.156.10197.1.301' - SM2 algorithm
 OID.SM2_SM3        // '1.2.156.10197.1.501' - SM2 signature with SM3
@@ -694,7 +694,7 @@ OID.EC_PUBLIC_KEY  // '1.2.840.10045.2.1' - Standard EC public key (incorrect SM
 
 ### Default Values
 ```typescript
-import { DEFAULT_USER_ID } from 'smkit';
+import { DEFAULT_USER_ID } from 'gmkit';
 
 DEFAULT_USER_ID  // '1234567812345678' - Default user ID for SM2 signature (backward compatible)
                  // GM/T 0009-2023 recommends using empty string ''
@@ -843,7 +843,7 @@ DEFAULT_USER_ID  // '1234567812345678' - Default user ID for SM2 signature (back
 
 ## Architecture
 
-SMKit follows functional programming principles with all features implemented as independent, pure functions. It also provides object-oriented APIs for better state management and ease of use. This enables:
+GMKit follows functional programming principles with all features implemented as independent, pure functions. It also provides object-oriented APIs for better state management and ease of use. This enables:
 
 - **Tree-shaking**: Only import what you need
 - **Easy testing**: Pure functions with fixed input/output
@@ -888,7 +888,7 @@ Test coverage:
 
 ## Integration with Hutool Backend
 
-If you need to integrate SMKit on the frontend with Hutool (Java) on the backend, we provide a complete integration guide:
+If you need to integrate GMKit on the frontend with Hutool (Java) on the backend, we provide a complete integration guide:
 
 ```bash
 # View integration guide
@@ -933,7 +933,7 @@ Key updates in GMT 0009-2023 compared to GMT 0009-2012:
 
 ## Note
 
-SMKit provides full implementations of SM2, SM3, SM4, and ZUC algorithms, validated by 214+ unit tests. All core features are implemented and production-ready.
+GMKit provides full implementations of SM2, SM3, SM4, and ZUC algorithms, validated by 214+ unit tests. All core features are implemented and production-ready.
 
 ## Documentation
 
@@ -956,10 +956,10 @@ For a complete documentation index, see [docs/README.md](./docs/README.md)
 <details>
 <summary><strong>❓ How to use in TypeScript projects?</strong></summary>
 
-SMKit has native TypeScript support, no additional configuration needed:
+GMKit has native TypeScript support, no additional configuration needed:
 
 ```typescript
-import { digest, sm4Encrypt, type KeyPair } from 'smkit';
+import { digest, sm4Encrypt, type KeyPair } from 'gmkit';
 
 // TypeScript automatically provides type hints and checks
 const keyPair: KeyPair = generateKeyPair();
@@ -977,14 +977,14 @@ If using build tools like Vite or Webpack, ensure correct configuration:
 // vite.config.js
 export default {
   optimizeDeps: {
-    include: ['smkit']
+    include: ['gmkit']
   }
 }
 ```
 
 **Or use UMD version directly:**
 ```html
-<script src="https://unpkg.com/smkit@latest/dist/smkit.umd.js"></script>
+<script src="https://unpkg.com/gmkit@latest/dist/gmkit.umd.js"></script>
 ```
 
 </details>
@@ -1000,7 +1000,7 @@ node --version  # Should be >= v18.0.0
 
 If using CommonJS, ensure correct import:
 ```javascript
-const { digest } = require('smkit');
+const { digest } = require('gmkit');
 ```
 
 </details>

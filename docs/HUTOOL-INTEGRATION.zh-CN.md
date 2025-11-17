@@ -45,7 +45,7 @@ public class SM3Example {
 ### SMKit 端（TypeScript/JavaScript）
 
 ```typescript
-import { digest } from 'smkit';
+import { digest } from 'gmkit';
 
 const data = 'Hello, World!';
 const hash = digest(data);
@@ -117,7 +117,7 @@ public class SM4Example {
 ### SMKit 端（TypeScript/JavaScript）
 
 ```typescript
-import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'smkit';
+import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkit';
 
 // ECB 模式
 const key = '0123456789abcdeffedcba9876543210';
@@ -233,7 +233,7 @@ import {
   sign,
   verify,
   SM2CipherMode
-} from 'smkit';
+} from 'gmkit';
 
 // 方案 1: 前端生成密钥对（不推荐生产环境）
 const keyPair = generateKeyPair();
@@ -290,7 +290,7 @@ console.log('验签结果:', isValid);
 #### 前端（SMKit）
 
 ```typescript
-import { sm2Encrypt, SM2CipherMode } from 'smkit';
+import { sm2Encrypt, SM2CipherMode } from 'gmkit';
 
 // 从后端获取公钥
 const publicKey = '04...'; // 后端提供
@@ -359,7 +359,7 @@ public Map<String, String> getData() {
 #### 前端（SMKit）
 
 ```typescript
-import { verify } from 'smkit';
+import { verify } from 'gmkit';
 
 // 从后端获取数据
 const response = await fetch('/api/data').then(r => r.json());
@@ -453,7 +453,7 @@ function base64ToHex(base64: string): string {
 
 ```typescript
 // test-hutool-integration.ts
-import { sm2Encrypt, sm2Decrypt, sign, verify } from 'smkit';
+import { sm2Encrypt, sm2Decrypt, sign, verify } from 'gmkit';
 
 async function testIntegration() {
   // 1. 从后端获取公钥

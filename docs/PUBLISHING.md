@@ -18,11 +18,11 @@ The most modern module format with tree-shaking support, recommended for modern 
 ```javascript
 // 在现代打包工具中使用（Vite, Webpack 5+, Rollup）
 // Use with modern bundlers (Vite, Webpack 5+, Rollup)
-import { digest, sm4Encrypt, generateKeyPair } from 'smkit';
+import { digest, sm4Encrypt, generateKeyPair } from 'gmkit';
 
 // 或导入全部
 // Or import everything
-import * as smkit from 'smkit';
+import * as smkit from 'gmkit';
 ```
 
 **文件位置 / File Location:** `dist/smkit.js`
@@ -35,11 +35,11 @@ Traditional Node.js module format, compatible with older Node.js versions and bu
 ```javascript
 // 在 Node.js 或旧版打包工具中使用
 // Use with Node.js or older bundlers
-const { digest, sm4Encrypt, generateKeyPair } = require('smkit');
+const { digest, sm4Encrypt, generateKeyPair } = require('gmkit');
 
 // 或导入全部
 // Or import everything
-const smkit = require('smkit');
+const smkit = require('gmkit');
 ```
 
 **文件位置 / File Location:** `dist/smkit.cjs`
@@ -201,11 +201,11 @@ npm view smkit version
 
 # 在新项目中安装测试
 # Install and test in a new project
-npm install smkit@latest
+npm install gmkit@latest
 
 # 测试不同的导入方式
 # Test different import methods
-node -e "const smkit = require('smkit'); console.log(smkit.digest('test'));"
+node -e "const smkit = require('gmkit'); console.log(smkit.digest('test'));"
 ```
 
 ## 版本管理最佳实践 / Version Management Best Practices
@@ -239,8 +239,8 @@ git push origin v0.2.0-rc.1
 Install pre-release versions:
 
 ```bash
-npm install smkit@beta
-npm install smkit@0.2.0-beta.1
+npm install gmkit@beta
+npm install gmkit@0.2.0-beta.1
 ```
 
 ## 故障排除 / Troubleshooting

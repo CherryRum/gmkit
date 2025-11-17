@@ -8,7 +8,7 @@
 -->
 <script setup lang="ts">
 import { ref } from 'vue'
-import { digest, hmac } from 'smkit'
+import { digest, hmac } from 'gmkit'
 
 // ========== SM3 哈希计算 SM3 Hash Calculation ==========
 // 输入文本 Input text

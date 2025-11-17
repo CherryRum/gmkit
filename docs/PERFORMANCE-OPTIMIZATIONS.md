@@ -133,7 +133,7 @@ const decrypted = sm2Decrypt(privateKey, encrypted); // 需要尝试多种格式
 如果需要进行大量签名/加密操作：
 
 ```typescript
-import { SM2 } from 'smkit';
+import { SM2 } from 'gmkit';
 
 // ✅ 推荐：复用 SM2 实例
 const sm2 = SM2.fromPrivateKey(privateKey);
@@ -294,7 +294,7 @@ const worker = new Worker('crypto-worker.js');
 worker.postMessage({ operation: 'sign', privateKey, data });
 
 // crypto-worker.js
-import { sign } from 'smkit';
+import { sign } from 'gmkit';
 self.onmessage = (e) => {
   const { operation, privateKey, data } = e.data;
   if (operation === 'sign') {

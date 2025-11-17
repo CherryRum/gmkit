@@ -3,7 +3,7 @@ import { defineConfig } from 'tsup';
 export default defineConfig({
   entry: ['src/index.ts'],          // 入口文件
   format: ['esm', 'cjs', 'iife'],     // 输出格式：ESM / CommonJS / UMD
-  globalName: 'smkit',              // UMD global name -> window.smkit
+  globalName: 'GMKit',              // UMD global name -> window.GMKit
   outDir: 'dist',                   // 输出目录
   dts: true,                        // 生成类型声明
   sourcemap: true,                  // 生成 source map
