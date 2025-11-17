@@ -36,7 +36,7 @@ GMKit 采用参数配置方式而非函数名后缀方式，原因如下：
 #### SM3 哈希算法
 
 ```typescript
-import { digest, hmac, OutputFormat } from 'gmkit';
+import { digest, hmac, OutputFormat } from 'gmkitx';
 
 // 十六进制格式（默认）
 const hexHash = digest('Hello, World!');
@@ -54,7 +54,7 @@ const base64Mac = hmac('key', 'data', { outputFormat: OutputFormat.BASE64 });
 #### 面向对象 API
 
 ```typescript
-import { SM3, OutputFormat } from 'gmkit';
+import { SM3, OutputFormat } from 'gmkitx';
 
 // 在构造时指定输出格式
 const sm3 = new SM3(OutputFormat.BASE64);
@@ -74,7 +74,7 @@ const hash2 = SM3.digest('test', { outputFormat: OutputFormat.BASE64 });
 #### SM4 分组密码算法
 
 ```typescript
-import { sm4Encrypt, sm4Decrypt, OutputFormat, CipherMode } from 'gmkit';
+import { sm4Encrypt, sm4Decrypt, OutputFormat, CipherMode } from 'gmkitx';
 
 const key = '0123456789abcdeffedcba9876543210';
 const plaintext = 'Hello, SM4!';
@@ -114,7 +114,7 @@ JavaScript 中的 PKCS7 填充等同于 Java 中的 PKCS5Padding：
 #### SM2 椭圆曲线密码算法
 
 ```typescript
-import { generateKeyPair, sm2Encrypt, sm2Decrypt, OutputFormat } from 'gmkit';
+import { generateKeyPair, sm2Encrypt, sm2Decrypt, OutputFormat } from 'gmkitx';
 
 const keyPair = generateKeyPair();
 const plaintext = 'Hello, SM2!';
@@ -138,7 +138,7 @@ const encrypted = sm2Encrypt(keyPair.publicKey, plaintext, 'C1C3C2');
 #### ZUC 流密码算法
 
 ```typescript
-import { zucEncrypt, zucDecrypt, OutputFormat } from 'gmkit';
+import { zucEncrypt, zucDecrypt, OutputFormat } from 'gmkitx';
 
 const key = '00000000000000000000000000000000';
 const iv = '00000000000000000000000000000000';
@@ -171,7 +171,7 @@ GMKit 基于高性能的 `@noble/hashes` 库提供以下 SHA 算法：
 ### 函数式 API
 
 ```typescript
-import { sha256, sha384, sha512, sha1, OutputFormat } from 'gmkit';
+import { sha256, sha384, sha512, sha1, OutputFormat } from 'gmkitx';
 
 // SHA-256
 const hash256 = sha256('Hello, World!');
@@ -196,7 +196,7 @@ console.log(hash1); // 十六进制，40 个字符
 ### HMAC-SHA
 
 ```typescript
-import { hmacSha256, hmacSha384, hmacSha512, OutputFormat } from 'gmkit';
+import { hmacSha256, hmacSha384, hmacSha512, OutputFormat } from 'gmkitx';
 
 // HMAC-SHA256
 const mac256 = hmacSha256('secret-key', 'message');
@@ -215,7 +215,7 @@ const mac512 = hmacSha512('secret-key', 'message');
 ### 面向对象 API
 
 ```typescript
-import { SHA256, SHA384, SHA512, SHA1, OutputFormat } from 'gmkit';
+import { SHA256, SHA384, SHA512, SHA1, OutputFormat } from 'gmkitx';
 
 // SHA-256
 const sha = new SHA256();

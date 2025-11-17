@@ -2,8 +2,8 @@
 
 <div align="center">
 
-[![npm version](https://img.shields.io/npm/v/gmkit.svg?style=flat-square)](https://www.npmjs.com/package/gmkit)
-[![npm downloads](https://img.shields.io/npm/dm/gmkit.svg?style=flat-square)](https://www.npmjs.com/package/gmkit)
+[![npm version](https://img.shields.io/npm/v/gmkitx.svg?style=flat-square)](https://www.npmjs.com/package/gmkitx)
+[![npm downloads](https://img.shields.io/npm/dm/gmkitx.svg?style=flat-square)](https://www.npmjs.com/package/gmkitx)
 [![License](https://img.shields.io/npm/l/gmkit.svg?style=flat-square)](https://github.com/CherryRum/gmkit/blob/main/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg?style=flat-square)](https://www.typescriptlang.org/)
 
@@ -89,13 +89,13 @@ gmkit 是一个功能完整的国密算法工具库，让您在前端和 Node.js
 
 ```bash
 # 使用 npm
-npm install gmkit
+npm install gmkitx
 
 # 使用 yarn
-yarn add gmkit
+yarn add gmkitx
 
 # 使用 pnpm
-pnpm add gmkit
+pnpm add gmkitx
 ```
 
 ### 5 分钟上手
@@ -107,7 +107,7 @@ pnpm add gmkit
 适用于现代前端项目（Vue、React、Angular 等）和 Node.js (>= 18)
 
 ```typescript
-import { digest, sm4Encrypt, generateKeyPair } from 'gmkit';
+import { digest, sm4Encrypt, generateKeyPair } from 'gmkitx';
 
 // 1. 哈希计算 - 最简单的入门
 const hash = digest('Hello, SM3!');
@@ -129,7 +129,7 @@ console.log('私钥:', keyPair.privateKey);
 适用于传统 Node.js 项目
 
 ```javascript
-const { digest, sm4Encrypt, generateKeyPair } = require('gmkit');
+const { digest, sm4Encrypt, generateKeyPair } = require('gmkitx');
 
 // 使用方法与 ES Module 相同
 const hash = digest('Hello, SM3!');
@@ -146,7 +146,7 @@ const hash = digest('Hello, SM3!');
   <title>gmkit 快速开始</title>
 </head>
 <body>
-  <script src="https://unpkg.com/gmkit@latest/dist/index.global.js"></script>
+  <script src="https://unpkg.com/gmkitx@latest/dist/index.global.js"></script>
   <script>
     // 通过全局对象 GMKit 访问所有功能
     const hash = GMKit.digest('Hello, World!');
@@ -164,7 +164,7 @@ const hash = digest('Hello, SM3!');
 ### 完整示例：实现一个简单的加密通信
 
 ```typescript
-import { generateKeyPair, sm2Encrypt, sm2Decrypt, sign, verify } from 'gmkit';
+import { generateKeyPair, sm2Encrypt, sm2Decrypt, sign, verify } from 'gmkitx';
 
 // 场景：Alice 要发送加密消息给 Bob
 
@@ -335,7 +335,7 @@ gmkit 支持灵活的输出格式配置，所有加密和哈希函数都支持�
 - **base64**：更紧凑的格式，节省约 25% 空间，适合网络传输
 
 ```typescript
-import { digest, OutputFormat } from 'gmkit';
+import { digest, OutputFormat } from 'gmkitx';
 
 // 十六进制格式（默认）
 const hexHash = digest('Hello, World!');
@@ -353,7 +353,7 @@ console.log(base64Hash); // "m3HSJLLy83h..."
 #### SM3 哈希算法
 
 ```typescript
-import { digest, hmac, OutputFormat } from 'gmkit';
+import { digest, hmac, OutputFormat } from 'gmkitx';
 
 // 计算哈希（默认 hex 格式）
 const hash = digest('Hello, SM3!');
@@ -376,7 +376,7 @@ const base64Mac = hmac('secret-key', 'data', { outputFormat: OutputFormat.BASE64
 gmkit 还提供高性能的 SHA 系列哈希算法：
 
 ```typescript
-import { sha256, sha384, sha512, hmacSha256, OutputFormat } from 'gmkit';
+import { sha256, sha384, sha512, hmacSha256, OutputFormat } from 'gmkitx';
 
 // SHA-256
 const hash256 = sha256('Hello, World!');
@@ -401,7 +401,7 @@ console.log(mac);
 #### SM4 分组密码
 
 ```typescript
-import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkit';
+import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkitx';
 
 const key = '0123456789abcdeffedcba9876543210'; // 128 位密钥（32 个十六进制字符）
 const plaintext = 'Hello, SM4!';
@@ -439,7 +439,7 @@ const decryptedGCM = sm4Decrypt(key, gcmResult, { mode: CipherMode.GCM, iv: gcmI
 #### SM2 椭圆曲线密码
 
 ```typescript
-import { generateKeyPair, getPublicKeyFromPrivateKey, sm2Encrypt, sm2Decrypt, sign, verify, SM2CipherMode } from 'gmkit';
+import { generateKeyPair, getPublicKeyFromPrivateKey, sm2Encrypt, sm2Decrypt, sign, verify, SM2CipherMode } from 'gmkitx';
 
 // 生成密钥对（使用 @noble/curves 提供的安全随机数生成）
 const keyPair = generateKeyPair();
@@ -495,7 +495,7 @@ const encryptedBinary = sm2Encrypt(keyPair.publicKey, binaryData);
 const signatureBinary = sign(keyPair.privateKey, binaryData);
 
 // SM2 密钥交换（基于 GM/T 0003.3-2012 及 GM/T 0009-2023）
-import { keyExchange } from 'gmkit';
+import { keyExchange } from 'gmkitx';
 
 // 假设 Alice 和 Bob 需要协商共享密钥
 const aliceKeyPair = generateKeyPair();
@@ -532,7 +532,7 @@ console.log(aliceResult.sharedKey === bobResult.sharedKey); // true
 #### ZUC 流密码算法
 
 ```typescript
-import { zucEncrypt, zucDecrypt, zucKeystream, eea3, eia3 } from 'gmkit';
+import { zucEncrypt, zucDecrypt, zucKeystream, eea3, eia3 } from 'gmkitx';
 
 const key = '00112233445566778899aabbccddeeff'; // 128 位密钥（32 个十六进制字符）
 const iv = 'ffeeddccbbaa99887766554433221100';  // 128 位 IV（32 个十六进制字符）
@@ -579,7 +579,7 @@ console.log(decryptedBinary); // 'Hello'
 #### SM3 - 哈希操作
 
 ```typescript
-import { SM3, OutputFormat } from 'gmkit';
+import { SM3, OutputFormat } from 'gmkitx';
 
 // 静态方法（默认 hex 格式）
 const hash = SM3.digest('Hello, SM3!');
@@ -602,7 +602,7 @@ const base64Result = sm3Base64.digest();
 #### SHA - 哈希算法（国际标准）
 
 ```typescript
-import { SHA256, SHA384, SHA512, OutputFormat } from 'gmkit';
+import { SHA256, SHA384, SHA512, OutputFormat } from 'gmkitx';
 
 // SHA-256 静态方法
 const hash = SHA256.digest('Hello, World!');
@@ -631,7 +631,7 @@ const sha512 = new SHA512();
 #### SM4 - 分组密码
 
 ```typescript
-import { SM4, CipherMode, PaddingMode } from 'gmkit';
+import { SM4, CipherMode, PaddingMode } from 'gmkitx';
 
 const key = '0123456789abcdeffedcba9876543210';
 const iv = 'fedcba98765432100123456789abcdef';
@@ -657,7 +657,7 @@ sm4.setPadding(PaddingMode.PKCS7);
 #### SM2 - 椭圆曲线密码
 
 ```typescript
-import { SM2, SM2CipherMode } from 'gmkit';
+import { SM2, SM2CipherMode } from 'gmkitx';
 
 // 生成密钥对
 const sm2 = SM2.generateKeyPair();
@@ -722,7 +722,7 @@ const sm2Custom = SM2.generateKeyPair(curveParams);
 #### ZUC - 流密码
 
 ```typescript
-import { ZUC } from 'gmkit';
+import { ZUC } from 'gmkitx';
 
 const key = '00112233445566778899aabbccddeeff';
 const iv = 'ffeeddccbbaa99887766554433221100';
@@ -752,7 +752,7 @@ const mac = ZUC.eia3(key, 0x12345678, 5, 0, 'Message to authenticate');
 ### 工具函数
 
 ```typescript
-import { hexToBytes, bytesToHex, stringToBytes, bytesToString } from 'gmkit';
+import { hexToBytes, bytesToHex, stringToBytes, bytesToString } from 'gmkitx';
 
 // 在十六进制和字节之间转换
 const bytes = hexToBytes('48656c6c6f');
@@ -767,7 +767,7 @@ const str = bytesToString(strBytes);
 
 ### 密码模式
 ```typescript
-import { CipherMode } from 'gmkit';
+import { CipherMode } from 'gmkitx';
 
 // 分组密码模式
 CipherMode.ECB  // 'ecb' - 电码本模式
@@ -791,7 +791,7 @@ CipherMode.GCM  // 'gcm' - 伽罗瓦/计数器模式（已实现）
 
 ### 填充模式
 ```typescript
-import { PaddingMode } from 'gmkit';
+import { PaddingMode } from 'gmkitx';
 
 PaddingMode.PKCS7  // 'pkcs7' - PKCS#7 填充（默认）
 PaddingMode.NONE   // 'none' - 无填充
@@ -806,7 +806,7 @@ PaddingMode.ZERO   // 'zero' - 零填充
 
 ### SM2 密文模式
 ```typescript
-import { SM2CipherMode } from 'gmkit';
+import { SM2CipherMode } from 'gmkitx';
 
 SM2CipherMode.C1C3C2  // 'C1C3C2' (推荐)
 SM2CipherMode.C1C2C3  // 'C1C2C3'
@@ -823,7 +823,7 @@ SM2CipherMode.C1C2C3  // 'C1C2C3'
 
 ### OID（对象标识符）
 ```typescript
-import { OID } from 'gmkit';
+import { OID } from 'gmkitx';
 
 OID.SM2            // '1.2.156.10197.1.301' - SM2 椭圆曲线公钥密码算法
 OID.SM2_SM3        // '1.2.156.10197.1.501' - SM2 签名（使用 SM3）
@@ -847,7 +847,7 @@ OID.EC_PUBLIC_KEY  // '1.2.840.10045.2.1' - 标准 EC 公钥（OpenSSL 1.x 对 S
 
 ### 默认值
 ```typescript
-import { DEFAULT_USER_ID } from 'gmkit';
+import { DEFAULT_USER_ID } from 'gmkitx';
 
 DEFAULT_USER_ID  // '1234567812345678' - SM2 签名的默认用户 ID（向后兼容）
                  // GM/T 0009-2023 推荐使用空字符串 ''
@@ -1129,7 +1129,7 @@ gmkit 已实现完整的 SM2、SM3、SM4 和 ZUC 算法，所有核心功能均�
 gmkit 原生支持 TypeScript，无需额外配置：
 
 ```typescript
-import { digest, sm4Encrypt, type KeyPair } from 'gmkit';
+import { digest, sm4Encrypt, type KeyPair } from 'gmkitx';
 
 // TypeScript 会自动提供类型提示和检查
 const keyPair: KeyPair = generateKeyPair();
@@ -1147,14 +1147,14 @@ const keyPair: KeyPair = generateKeyPair();
 // vite.config.js
 export default {
   optimizeDeps: {
-    include: ['gmkit']
+    include: ['gmkitx']
   }
 }
 ```
 
 **或直接使用 UMD 版本：**
 ```html
-<script src="https://unpkg.com/gmkit@latest/dist/index.global.js"></script>
+<script src="https://unpkg.com/gmkitx@latest/dist/index.global.js"></script>
 ```
 
 </details>
@@ -1170,7 +1170,7 @@ node --version  # 应该 >= v18.0.0
 
 如果使用 CommonJS，确保正确导入：
 ```javascript
-const { digest } = require('gmkit');
+const { digest } = require('gmkitx');
 ```
 
 </details>

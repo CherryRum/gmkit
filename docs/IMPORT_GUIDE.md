@@ -7,7 +7,7 @@ GMKit 支持多种灵活的导入方式，满足不同场景的需求。
 这是最推荐的导入方式，可以清晰地组织代码，并且支持 tree-shaking。
 
 ```typescript
-import { sm2, sm3, sm4, zuc } from 'gmkit';
+import { sm2, sm3, sm4, zuc } from 'gmkitx';
 
 // 使用 SM2
 const keyPair = sm2.generateKeyPair();
@@ -47,7 +47,7 @@ import {
   zucDecrypt,
   CipherMode,
   PaddingMode
-} from 'gmkit';
+} from 'gmkitx';
 
 // 直接使用函数
 const keyPair = generateKeyPair();
@@ -64,7 +64,7 @@ const cipher = sm4Encrypt(key, 'Hello', {
 适合需要在运行时动态选择算法的场景。
 
 ```typescript
-import * as gmkit from 'gmkit';
+import * as gmkitx from 'gmkitx';
 
 // 通过命名空间访问
 const keyPair = gmkit.sm2.generateKeyPair();
@@ -83,20 +83,20 @@ const encrypted = gmkit.sm2Encrypt(keyPair.publicKey, 'Hello');
 
 ```javascript
 // 导入算法模块
-const { sm2, sm3, sm4, zuc } = require('gmkit');
+const { sm2, sm3, sm4, zuc } = require('gmkitx');
 
 const keyPair = sm2.generateKeyPair();
 const hash = sm3.digest('Hello');
 
 // 或者导入具名函数
-const { digest, sm4Encrypt } = require('gmkit');
+const { digest, sm4Encrypt } = require('gmkitx');
 const hash2 = digest('Hello');
 ```
 
 ## 5. UMD（浏览器直接引入）
 
 ```html
-<script src="https://unpkg.com/gmkit@latest/dist/index.global.js"></script>
+<script src="https://unpkg.com/gmkitx@latest/dist/index.global.js"></script>
 <script>
   // GMKit 会被注册为全局变量
   
