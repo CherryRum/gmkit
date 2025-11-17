@@ -48,7 +48,7 @@ demo-vue/
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue'
-import { generateKeyPair, sign, verify } from 'gmkit'
+import { generateKeyPair, sign, verify } from 'gmkitx'
 
 const privateKey = ref('')
 const publicKey = ref('')
@@ -363,10 +363,10 @@ defineProps<Props>()
 
 ```typescript
 // 只导入需要的函数
-import { digest } from 'gmkit'
+import { digest } from 'gmkitx'
 
 // 而不是
-import * as gmkit from 'gmkit'
+import * as gmkit from 'gmkitx'
 ```
 
 ### 3. 使用 computed 缓存计算结果

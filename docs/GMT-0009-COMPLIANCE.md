@@ -46,7 +46,7 @@ export const DEFAULT_USER_ID = '1234567812345678';
 符合 GMT 0009-2023 最新标准的用法：
 
 ```typescript
-import { sign, verify } from 'gmkit';
+import { sign, verify } from 'gmkitx';
 
 // 签名时显式指定空字符串 userId
 const signature = sign(privateKey, data, { userId: '' });
@@ -58,7 +58,7 @@ const isValid = verify(publicKey, data, signature, { userId: '' });
 保持向后兼容的用法（默认）：
 
 ```typescript
-import { sign, verify } from 'gmkit';
+import { sign, verify } from 'gmkitx';
 
 // 使用默认 userId '1234567812345678'
 const signature = sign(privateKey, data);
@@ -179,7 +179,7 @@ export function getPublicKeyFromPrivateKey(
 #### 格式转换支持
 
 ```typescript
-import { compressPublicKey, decompressPublicKey } from 'gmkit';
+import { compressPublicKey, decompressPublicKey } from 'gmkitx';
 
 // 压缩公钥
 const compressed = compressPublicKey(uncompressedKey);

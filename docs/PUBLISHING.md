@@ -18,11 +18,11 @@ The most modern module format with tree-shaking support, recommended for modern 
 ```javascript
 // 在现代打包工具中使用（Vite, Webpack 5+, Rollup）
 // Use with modern bundlers (Vite, Webpack 5+, Rollup)
-import { digest, sm4Encrypt, generateKeyPair } from 'gmkit';
+import { digest, sm4Encrypt, generateKeyPair } from 'gmkitx';
 
 // 或导入全部
 // Or import everything
-import * as gmkit from 'gmkit';
+import * as gmkit from 'gmkitx';
 ```
 
 **文件位置 / File Location:** `dist/gmkit.js`
@@ -35,11 +35,11 @@ Traditional Node.js module format, compatible with older Node.js versions and bu
 ```javascript
 // 在 Node.js 或旧版打包工具中使用
 // Use with Node.js or older bundlers
-const { digest, sm4Encrypt, generateKeyPair } = require('gmkit');
+const { digest, sm4Encrypt, generateKeyPair } = require('gmkitx');
 
 // 或导入全部
 // Or import everything
-const gmkit = require('gmkit');
+const gmkit = require('gmkitx');
 ```
 
 **文件位置 / File Location:** `dist/gmkit.cjs`
@@ -62,14 +62,14 @@ Universal Module Definition, can be used directly in browsers with `<script>` ta
 
 <!-- 或使用 jsDelivr -->
 <!-- Or use jsDelivr -->
-<script src="https://cdn.jsdelivr.net/npm/GMKit@latest/dist/gmkit.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gmkitx@latest/dist/gmkit.umd.js"></script>
 ```
 
 **文件位置 / File Location:** `dist/gmkit.umd.js`
 
 **CDN 链接 / CDN Links:**
 - unpkg: `https://unpkg.com/GMKit@latest/dist/gmkit.umd.js`
-- jsDelivr: `https://cdn.jsdelivr.net/npm/GMKit@latest/dist/gmkit.umd.js`
+- jsDelivr: `https://cdn.jsdelivr.net/npm/gmkitx@latest/dist/gmkit.umd.js`
 
 ## 发布流程 / Publishing Process
 
@@ -201,11 +201,11 @@ npm view gmkit version
 
 # 在新项目中安装测试
 # Install and test in a new project
-npm install gmkit@latest
+npm install gmkitx@latest
 
 # 测试不同的导入方式
 # Test different import methods
-node -e "const gmkit = require('gmkit'); console.log(gmkit.digest('test'));"
+node -e "const gmkit = require('gmkitx'); console.log(gmkit.digest('test'));"
 ```
 
 ## 版本管理最佳实践 / Version Management Best Practices
@@ -239,8 +239,8 @@ git push origin v0.2.0-rc.1
 Install pre-release versions:
 
 ```bash
-npm install gmkit@beta
-npm install gmkit@0.2.0-beta.1
+npm install gmkitx@beta
+npm install gmkitx@0.2.0-beta.1
 ```
 
 ## 故障排除 / Troubleshooting

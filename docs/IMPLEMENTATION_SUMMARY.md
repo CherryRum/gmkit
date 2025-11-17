@@ -50,18 +50,18 @@ Now the build generates three formats:
 
 **ES Module (推荐 / Recommended)**
 ```javascript
-import { digest, sm4Encrypt, generateKeyPair } from 'gmkit';
+import { digest, sm4Encrypt, generateKeyPair } from 'gmkitx';
 ```
 
 **CommonJS (Node.js)**
 ```javascript
-const { digest, sm4Encrypt, generateKeyPair } = require('gmkit');
+const { digest, sm4Encrypt, generateKeyPair } = require('gmkitx');
 ```
 
 **UMD (浏览器 / Browser)**
 ```html
 <!-- Via unpkg -->
-<script src="https://unpkg.com/gmkit@latest/dist/index.global.js"></script>
+<script src="https://unpkg.com/gmkitx@latest/dist/index.global.js"></script>
 
 <!-- Via jsDelivr -->
 <script src="https://cdn.jsdelivr.net/npm/gmkit@latest/dist/index.global.js"></script>
@@ -224,7 +224,7 @@ Following [Semantic Versioning](https://semver.org/):
 通过 `unpkg` 和 `jsdelivr` 字段，包会自动在以下 CDN 上可用：
 Through `unpkg` and `jsdelivr` fields, the package is automatically available on:
 
-- unpkg: `https://unpkg.com/gmkit@latest/dist/index.global.js`
+- unpkg: `https://unpkg.com/gmkitx@latest/dist/index.global.js`
 - jsDelivr: `https://cdn.jsdelivr.net/npm/gmkit@latest/dist/index.global.js`
 
 ## 测试验证 / Testing and Validation
