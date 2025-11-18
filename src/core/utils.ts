@@ -335,19 +335,18 @@ function unsafeFallbackRandom(len: number): Uint8Array {
   );
   const out = new Uint8Array(len);
   let seed = (Date.now() ^ (Math.random() * 0xffffffff)) >>> 0;
-
-  // splitmix32
-  const next = () => {
-    seed = (seed + 0x9e3779b9) >>> 0;
+  let i = 0;
+  while (i < len) {
+    // 状态推进 (Weyl Sequence)
+    seed = (seed + 0x9e3779b9) | 0;
     let z = seed;
-    z = (z ^ (z >>> 16)) * 0x85ebca6b;
-    z = (z ^ (z >>> 13)) * 0xc2b2ae35;
-    z = (z ^ (z >>> 16)) >>> 0;
-    return z & 0xff;
-  };
-
-  for (let i = 0; i < len; i++) {
-    out[i] = next();
+    z = Math.imul(z ^ (z >>> 16), 0x85ebca6b);
+    z = Math.imul(z ^ (z >>> 13), 0xc2b2ae35);
+    z = z ^ (z >>> 16);
+    if (i < len) out[i++] = z & 0xff;
+    if (i < len) out[i++] = (z >>> 8) & 0xff;
+    if (i < len) out[i++] = (z >>> 16) & 0xff;
+    if (i < len) out[i++] = (z >>> 24) & 0xff;
   }
   return out;
 }
