@@ -27,14 +27,24 @@ export function hexToBytes(hex: string): Uint8Array {
 }
 
 /**
- * 将 Uint8Array 转换为小写十六进制字符串
+ * 预计算的 Hex 字符串表 (00-ff)
+ */
+const HEX_STRINGS = Array.from({ length: 256 }, (_, i) =>
+  i.toString(16).padStart(2, '0')
+);
+
+/**
+ * 将 Uint8Array 转换为小写十六进制字符串 (高性能版)
  * @param bytes - 要转换的 Uint8Array
  * @returns 小写十六进制字符串
  */
 export function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes)
-    .map(byte => byte.toString(16).padStart(2, '0'))
-    .join('');
+  const len = bytes.length;
+  const parts = new Array(len);
+  for (let i = 0; i < len; i++) {
+    parts[i] = HEX_STRINGS[bytes[i]];
+  }
+  return parts.join('');
 }
 
 /**
