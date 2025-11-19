@@ -51,21 +51,17 @@ describe('SM2 国密算法测试', () => {
 
   describe('从私钥派生公钥', () => {
     it('应该能够从私钥派生非压缩公钥', () => {
-      const privateKey = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+      const privateKey = '228049e009de869baf9aba74f8f8c52e09cde1b52cafb0df7ab154ba4593743e';
       const publicKey = getPublicKeyFromPrivateKey(privateKey);
       expect(publicKey).toBeTruthy();
-      expect(publicKey).toMatch(/^[0-9a-f]+$/);
-      expect(publicKey.startsWith('04')).toBe(true); // 非压缩格式
-      expect(publicKey.length).toBe(130); // 65 bytes = 130 hex chars
+      expect(publicKey).toEqual('045647ebf2adcaf54f8102bea9a7ca8905794a3f2f29622593269bb55d72e0a140dc81f3dce73bb609f8a056640db0e04c08e0bd8be79140702bbdb0206e95b7ac');
     });
 
     it('应该能够从私钥派生压缩公钥', () => {
-      const privateKey = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+      const privateKey = '228049e009de869baf9aba74f8f8c52e09cde1b52cafb0df7ab154ba4593743e';
       const publicKey = getPublicKeyFromPrivateKey(privateKey, true);
       expect(publicKey).toBeTruthy();
-      expect(publicKey).toMatch(/^[0-9a-f]+$/);
-      expect(publicKey.startsWith('02') || publicKey.startsWith('03')).toBe(true); // 压缩格式
-      expect(publicKey.length).toBe(66); // 33 bytes = 66 hex chars
+      expect(publicKey).toEqual('025647ebf2adcaf54f8102bea9a7ca8905794a3f2f29622593269bb55d72e0a140');
     });
   });
 
@@ -108,10 +104,8 @@ describe('SM2 国密算法测试', () => {
     it('应该能够自动检测非压缩点格式（0x04 开头）', () => {
       const keyPair = generateKeyPair();
       const plaintext = 'Test auto-detection';
-
       // 加密（默认使用非压缩格式）
       const encrypted = encrypt(keyPair.publicKey, plaintext);
-
       // 验证密文以 04 开头（非压缩格式）
       expect(encrypted.startsWith('04')).toBe(true);
 
