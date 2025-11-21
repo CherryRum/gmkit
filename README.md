@@ -134,7 +134,7 @@ const isValid = sm2Instance.verify('核心指令', signature);
 const cipher = sm2Instance.encrypt('数据', SM2CipherMode.C1C3C2);
 ```
 
-### SM4 (无线局域网标准分组算法)
+### SM4 (分组密码算法)
 
 支持多种分组模式：`ECB` | `CBC` | `CTR` | `CFB` | `OFB` | `GCM`。
 

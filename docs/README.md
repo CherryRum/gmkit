@@ -4,6 +4,14 @@
 
 ## 📚 文档分类
 
+### 算法文档
+
+- [SM2.md](./SM2.md) - SM2 椭圆曲线公钥密码算法完整文档
+- [SM3.md](./SM3.md) - SM3 密码杂凑算法完整文档
+- [SM4.md](./SM4.md) - SM4 分组密码算法完整文档
+- [ZUC.md](./ZUC.md) - ZUC 祖冲之序列密码算法完整文档
+- [SHA.md](./SHA.md) - SHA 系列密码杂凑算法完整文档
+
 ### 用户指南
 
 - [README.md](../README.md) - 主要文档，快速开始和 API 参考
@@ -44,6 +52,11 @@
 ### 我想...
 
 - **开始使用 GMKit** → [README.md](../README.md)
+- **了解 SM2 算法** → [SM2.md](./SM2.md)
+- **了解 SM3 算法** → [SM3.md](./SM3.md)
+- **了解 SM4 算法** → [SM4.md](./SM4.md)
+- **了解 ZUC 算法** → [ZUC.md](./ZUC.md)
+- **了解 SHA 算法** → [SHA.md](./SHA.md)
 - **测试功能** → 运行 `npx tsx test-local.ts` 或 `npm test`
 - **使用国际标准算法** → [INTERNATIONAL-ALGORITHMS.zh-CN.md](./INTERNATIONAL-ALGORITHMS.zh-CN.md)
 - **与后端对接** → [HUTOOL-INTEGRATION.zh-CN.md](./HUTOOL-INTEGRATION.zh-CN.md)
