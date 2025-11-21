@@ -1041,7 +1041,8 @@ export function verify(
         r = decoded.r;
         s = decoded.s;
       } else {
-        throw new Error('Invalid signature format');
+        // 无效的签名格式，直接返回 false, throw new Error('Invalid signature format')不太合理
+        return false;
       }
     }
 
