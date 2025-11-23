@@ -9,6 +9,7 @@
     "build": "vuepress build .",
     "clean": "rm -rf .vuepress/.cache .vuepress/.temp"
   },
+  "dependencies": {},
   "devDependencies": {
     "@vuepress/bundler-webpack": "^2.0.0-rc.24",
     "katex": "^0.16.25",
