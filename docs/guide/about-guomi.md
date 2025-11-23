@@ -2,8 +2,8 @@
 title: 关于国密算法
 icon: info-circle
 order: 1
-author: GMKitX Team
-date: 2024-11-22
+author: mumu
+date: 2025-11-23
 category:
   - 指南
   - 国密算法

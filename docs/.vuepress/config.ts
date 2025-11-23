@@ -15,20 +15,20 @@ export default defineUserConfig({
 
   theme: hopeTheme({
     hostname: 'https://cherryrum.github.io/gmkit',
-    
+
     // 仓库配置
     repo: 'CherryRum/gmkit',
     repoLabel: 'GitHub',
     repoDisplay: true,
-    
+
     // 文档目录配置
     docsDir: 'docs',
     docsBranch: 'main',
-    
+
     // 导航栏
     navbar: [
       { text: '首页', link: '/' },
-      { 
+      {
         text: '指南',
         children: [
           { text: '快速开始', link: '/guide/getting-started' },
@@ -71,7 +71,7 @@ export default defineUserConfig({
         ],
       },
     ],
-    
+
     // 侧边栏
     sidebar: {
       '/guide/': [
@@ -151,26 +151,26 @@ export default defineUserConfig({
         },
       ],
     },
-    
+
     // 插件配置
     plugins: {
       // 代码复制
       copyCode: {
         showInMobile: true,
       },
-      
+
       // 版权信息 - 禁用全局模式，避免污染所有页面
       copyright: false,
-      
+
       // Git 信息
       git: true,
-      
+
       // 阅读时间
       readingTime: {
         wordPerMinute: 200,
       },
     },
-    
+
     // Markdown 配置 (使用新的 API)
     markdown: {
       codeTabs: true,
@@ -193,22 +193,22 @@ export default defineUserConfig({
       tabs: true,
       hint: true,
     },
-    
+
     // 页脚
-    footer: 'Apache-2.0 Licensed | Copyright © 2024-present GMKitX',
+    footer: 'Apache-2.0 Licensed | Copyright © 2025-present mumu',
     displayFooter: true,
-    
+
     // 加密配置
     encrypt: {
       config: {},
     },
-    
+
     // 作者信息
     author: {
-      name: 'GMKitX Team',
+      name: 'mumu',
       email: 'yulin.1996@foxmail.com',
     },
-    
+
     // 页面元信息
     metaLocales: {
       editLink: '在 GitHub 上编辑此页',

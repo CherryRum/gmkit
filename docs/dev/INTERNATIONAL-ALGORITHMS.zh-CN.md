@@ -2,8 +2,8 @@
 title: 国际标准算法使用指南
 icon: globe
 order: 4
-author: GMKitX Team
-date: 2024-11-22
+author: mumu
+date: 2025-11-23
 category:
   - 开发指南
   - 国际算法

@@ -1,30 +1,31 @@
 // 等宽字体配置
+@import url("https://fontsapi.zeoseven.com/521/main/result.css");
 code, kbd, pre, samp {
-  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: 'JetBrains Maple Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
 }
 
 // 页面内容区域样式 - 增强可读性和代码块样式
 .theme-hope-content {
   line-height: 1.7;
-  
+
   // 代码块样式增强 - 更清爽的外观
   div[class*='language-'] {
     border-radius: 8px;
     margin: 1.5rem 0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     border: 1px solid rgba(0, 0, 0, 0.06);
-    
+
     pre {
-      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+      font-family: 'JetBrains Maple Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
       font-size: 14px;
       line-height: 1.6;
       padding: 1.25rem 1.5rem;
     }
-    
+
     code {
-      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+      font-family: 'JetBrains Maple Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
     }
-    
+
     // 语言标签样式优化
     &::before {
       opacity: 0.6;
@@ -33,38 +34,38 @@ code, kbd, pre, samp {
       border-radius: 0 0 4px 4px;
     }
   }
-  
+
   // 标题样式
   h1, h2, h3, h4, h5, h6 {
     margin-top: 2rem;
     margin-bottom: 1rem;
     font-weight: 600;
   }
-  
+
   // 段落样式
   p {
     margin: 1rem 0;
   }
-  
+
   // 列表样式
   ul, ol {
     padding-left: 1.5rem;
     margin: 1rem 0;
-    
+
     li {
       margin: 0.5rem 0;
     }
   }
-  
+
   // API 文档表格样式 - 更好的可读性
   table {
     border-collapse: collapse;
     margin: 1.5rem 0;
     width: 100%;
-    
+
     thead {
       background-color: rgba(127, 127, 127, 0.05);
-      
+
       th {
         padding: 0.75rem 1rem;
         font-weight: 600;
@@ -72,21 +73,21 @@ code, kbd, pre, samp {
         border-bottom: 2px solid rgba(127, 127, 127, 0.15);
       }
     }
-    
+
     tbody {
       tr {
         border-bottom: 1px solid rgba(127, 127, 127, 0.08);
-        
+
         &:hover {
           background-color: rgba(127, 127, 127, 0.03);
         }
       }
-      
+
       td {
         padding: 0.75rem 1rem;
       }
     }
-    
+
     code {
       background-color: transparent;
       padding: 0;
@@ -98,7 +99,7 @@ code, kbd, pre, samp {
 
 // 行内代码样式 - 更清晰不突兀
 :not(pre) > code {
-  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: 'JetBrains Maple Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 0.88em;
   padding: 0.2em 0.5em;
   border-radius: 4px;
@@ -118,18 +119,18 @@ html.dark :not(pre) > code {
 // 代码标签样式
 .code-tabs {
   margin: 1.5rem 0;
-  
+
   .code-tabs__nav {
     background-color: rgba(127, 127, 127, 0.04);
     border-radius: 8px 8px 0 0;
     padding: 0.5rem 0.5rem 0;
-    
+
     button {
-      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+      font-family: 'JetBrains Maple Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
       padding: 0.5rem 1rem;
       border-radius: 6px 6px 0 0;
       transition: all 0.2s ease;
-      
+
       &.active {
         background-color: rgba(127, 127, 127, 0.1);
       }

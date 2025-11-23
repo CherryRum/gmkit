@@ -1,8 +1,8 @@
 ---
 title: STANDARD MIGRATION SUMMARY
 icon: file-alt
-author: GMKitX Team
-date: 2024-11-22
+author: mumu
+date: 2025-11-23
 category:
   - 技术总结
 tag:

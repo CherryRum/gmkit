@@ -2,8 +2,8 @@
 title: 快速开始
 icon: rocket
 order: 1
-author: GMKitX Team
-date: 2024-11-22
+author: mumu
+date: 2025-11-23
 category:
   - 指南
 tag:

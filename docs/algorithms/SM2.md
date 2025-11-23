@@ -2,8 +2,8 @@
 title: SM2 椭圆曲线公钥密码算法
 icon: key
 order: 1
-author: GMKitX Team
-date: 2024-11-22
+author: mumu
+date: 2025-11-23
 category:
   - 国密算法
   - 椭圆曲线密码

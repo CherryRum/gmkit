@@ -2,8 +2,8 @@
 title: 导入方式指南
 icon: download
 order: 2
-author: GMKitX Team
-date: 2024-11-22
+author: mumu
+date: 2025-11-23
 category:
   - 开发指南
   - 使用方法

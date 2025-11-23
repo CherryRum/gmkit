@@ -2,8 +2,8 @@
 title: TypeScript 实现
 icon: code
 order: 1
-author: GMKitX Team
-date: 2024-11-22
+author: mumu
+date: 2025-11-23
 category:
   - 实现
   - TypeScript

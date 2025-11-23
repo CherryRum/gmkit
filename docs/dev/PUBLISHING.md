@@ -2,8 +2,8 @@
 title: 发布流程指南
 icon: upload
 order: 5
-author: GMKitX Team
-date: 2024-11-22
+author: mumu
+date: 2025-11-23
 category:
   - 开发指南
   - 发布

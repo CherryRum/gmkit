@@ -2,8 +2,8 @@
 title: 性能优化说明
 icon: rocket
 order: 2
-author: GMKitX Team
-date: 2024-11-22
+author: mumu
+date: 2025-11-23
 category:
   - 性能
   - 优化

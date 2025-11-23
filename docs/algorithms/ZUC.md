@@ -2,8 +2,8 @@
 title: ZUC 祖冲之序列密码算法
 icon: stream
 order: 4
-author: GMKitX Team
-date: 2024-11-22
+author: mumu
+date: 2025-11-23
 category:
   - 国密算法
   - 流密码

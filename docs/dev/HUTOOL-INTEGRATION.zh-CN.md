@@ -2,8 +2,8 @@
 title: Hutool 集成指南
 icon: plug
 order: 3
-author: GMKitX Team
-date: 2024-11-22
+author: mumu
+date: 2025-11-23
 category:
   - 开发指南
   - 集成

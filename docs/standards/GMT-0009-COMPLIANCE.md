@@ -2,8 +2,8 @@
 title: GMT-0009 标准合规性
 icon: certificate
 order: 1
-author: GMKitX Team
-date: 2024-11-22
+author: mumu
+date: 2025-11-23
 category:
   - 标准与合规
   - 国家标准

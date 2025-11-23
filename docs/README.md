@@ -3,8 +3,7 @@ home: true
 icon: home
 title: GMKitX
 heroImage: /logo.svg
-heroText: GMKitX
-tagline: 国密算法与国际标准的全场景 TypeScript 解决方案
+heroText: Gmkit
 actions:
   - text: 快速开始 💡
     link: /guide/getting-started
@@ -16,16 +15,10 @@ actions:
 features:
   - title: 全栈覆盖
     icon: laptop-code
-    details: 一套代码无缝运行于 Node.js (>= 18) 与浏览器环境，无需 polyfill
+    details: 一套代码无缝运行于 Node.js (>= 18) 与浏览器环境
   - title: 双重范式
     icon: code
     details: 既支持现代的纯函数式（Functional）调用，也保留了传统的面向对象（OOP）封装
-  - title: 按需加载
-    icon: tree
-    details: 支持 Tree-shaking，你可以只导入 sm2，而不必引入整个库
-  - title: 类型安全
-    icon: shield-alt
-    details: 内建完整的 .d.ts 类型定义，编码即文档
   - title: 标准对齐
     icon: check
     details: 严格遵循 GM/T 系列国密标准文档，兼容 OpenSSL 等主流实现的密文格式
@@ -34,12 +27,12 @@ features:
     details: 纯 TypeScript 实现，性能优化，适用于各种生产环境
 
 copyright: false
-footer: Apache-2.0 Licensed | Copyright © 2024-present GMKitX
+footer: Apache-2.0 Licensed | Copyright © 2025-present mumu
 ---
 
 ## ✨ 核心特性
 
-`gmkitx` 是一套纯 **TypeScript** 实现的密码学工具集。它不仅严格复现了 **SM2 / SM3 / SM4 / ZUC** 等国密标准，还集成了 **SHA** 系列国际算法。
+`gmkitx` 是一套纯 **TypeScript** 实现的密码学工具集。它不仅实现了 **SM2 / SM3 / SM4 / ZUC** 等国密标准，还集成了 **SHA** 系列国际算法。
 
 设计的初衷很简单：提供一套**同构**（Isomorphic）的代码库，让开发者在**服务端**和 **现代浏览器** 前端，都能使用完全一致的 API 进行加密、解密、签名与哈希运算。
 

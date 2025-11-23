@@ -2,8 +2,8 @@
 title: SHA 系列密码杂凑算法
 icon: hash
 order: 5
-author: GMKitX Team
-date: 2024-11-22
+author: mumu
+date: 2025-11-23
 category:
   - 国际算法
   - 哈希算法
