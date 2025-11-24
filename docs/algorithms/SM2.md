@@ -79,6 +79,8 @@ const uncompressed = decompressPublicKey(compressed);
 
 SM2 支持非对称加密，使用公钥加密、私钥解密。
 
+> 文本默认按 UTF-8 处理；如需加密二进制数据，请传入 `Uint8Array`。
+
 ### 基本用法
 
 ```typescript
@@ -158,6 +160,8 @@ const signature = sm2Sign(privateKey, message);
 const isValid = sm2Verify(publicKey, message, signature);
 console.log('签名有效:', isValid);
 ```
+
+> 签名/验签同样默认将字符串按 UTF-8 处理；二进制消息请使用 `Uint8Array`。
 
 ### 带用户 ID 的签名
 

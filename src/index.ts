@@ -102,6 +102,7 @@ export { SM2 } from './crypto/sm2/class';
 // SM3 哈希算法
 export {
   digest,
+  sm3Digest,
   hmac,
   type SM3Options,
 } from './crypto/sm3';

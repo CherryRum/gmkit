@@ -61,57 +61,41 @@ console.log(hash);
 
 ## 📖 导入方式
 
-GMKitX 支持多种导入方式，您可以根据项目需求选择：
+根据场景选择即可：按需导入（最优 Tree-shaking）、类实例化（面向对象），或浏览器直引。
 
-### 方式一：按需导入（推荐）
-
-最佳 Tree-shaking 支持，只打包您使用的功能。
+### 按需导入（函数或命名空间，推荐）
 
 ```typescript
-import {
-  digest,           // SM3 哈希
-  sm4Encrypt,       // SM4 加密
-  sm4Decrypt,       // SM4 解密
-  generateKeyPair,  // SM2 密钥生成
-  sm2Encrypt,       // SM2 加密
-  sm2Decrypt,       // SM2 解密
-} from 'gmkitx';
-```
+// 函数级别：仅打包所需 API
+import { digest, sm4Encrypt, sm4Decrypt, generateKeyPair } from 'gmkitx';
 
-### 方式二：命名空间导入
-
-结构清晰，便于管理。
-
-```typescript
+// 命名空间：结构清晰，便于批量使用
 import { sm2, sm3, sm4, zuc, sha } from 'gmkitx';
-
-// 使用命名空间
-const hash = sm3.digest('Hello');
+const hash = sm3.digest('订单摘要');
 const keypair = sm2.generateKeyPair();
 ```
 
-### 方式三：类导入
+### 类实例化
 
-面向对象风格，适合复杂场景。
+适合需要持久上下文（流式更新、重复加解密）的场景。
 
 ```typescript
 import { SM2, SM3, SM4 } from 'gmkitx';
 
 const sm3Instance = new SM3();
-sm3Instance.update('data1');
-sm3Instance.update('data2');
-const hash = sm3Instance.digest();
+sm3Instance.update('订单摘要');
+sm3Instance.update('附件摘要');
+const hash = sm3Instance.digest(); // 默认 Hex
 ```
 
-### 方式四：浏览器 CDN
+### 浏览器直引（CDN）
 
-无需构建工具，直接在 HTML 中使用。
+无需构建工具，脚本直接可用。
 
 ```html
 <script src="https://unpkg.com/gmkitx@latest/dist/index.global.js"></script>
 <script>
   const { digest, sm4Encrypt } = GMKit;
-  
   console.log('SM3 Hash:', digest('Browser Test'));
 </script>
 ```
@@ -124,20 +108,22 @@ const hash = sm3Instance.digest();
 import { digest, OutputFormat } from 'gmkitx';
 
 // 默认输出 16 进制
-const hexHash = digest('Hello, World!');
+const hexHash = digest('订单摘要');
 
 // 输出 Base64
-const base64Hash = digest('Hello, World!', {
+const base64Hash = digest('订单摘要', {
   format: OutputFormat.BASE64
 });
 
 // 输出字节数组
-const bytesHash = digest('Hello, World!', {
+const bytesHash = digest('订单摘要', {
   format: OutputFormat.BYTES
 });
 ```
 
 ### 场景 2：对称加密（SM4）
+
+密钥与 IV 均为 32 字符十六进制字符串（128 位）；不要混用 UTF-8 文本。
 
 ```typescript
 import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkitx';

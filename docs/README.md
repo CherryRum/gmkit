@@ -3,7 +3,7 @@ home: true
 icon: home
 title: GMKitX
 heroImage: /logo.svg
-heroText: Gmkit
+heroText: GMKitX
 actions:
   - text: 快速开始 💡
     link: /guide/getting-started
@@ -15,16 +15,16 @@ actions:
 features:
   - title: 全栈覆盖
     icon: laptop-code
-    details: 一套代码无缝运行于 Node.js (>= 18) 与浏览器环境
+    details: 同构 API，Node.js (>= 18) 与现代浏览器一致可用
   - title: 双重范式
     icon: code
-    details: 既支持现代的纯函数式（Functional）调用，也保留了传统的面向对象（OOP）封装
+    details: 函数式 / OOP 双轨 API，友好按需加载与 Tree-shaking
   - title: 标准对齐
     icon: check
-    details: 严格遵循 GM/T 系列国密标准文档，兼容 OpenSSL 等主流实现的密文格式
+    details: 对齐 GM/T 标准，兼容 OpenSSL 等主流实现的密文格式
   - title: 高性能
     icon: rocket
-    details: 纯 TypeScript 实现，性能优化，适用于各种生产环境
+    details: 纯 TypeScript、零额外依赖，适合生产环境性能优化
 
 copyright: false
 footer: Apache-2.0 Licensed | Copyright © 2025-present mumu

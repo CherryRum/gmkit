@@ -192,6 +192,9 @@ export function digest(data: string | Uint8Array, options?: SM3Options): string 
   return options?.outputFormat === OutputFormat.BASE64 ? bytesToBase64(result) : bytesToHex(result);
 }
 
+// 兼容命名：与文档示例保持一致
+export const sm3Digest = digest;
+
 /**
  * 计算 SM3-HMAC
  * @param key - 密钥（字符串或 Uint8Array）

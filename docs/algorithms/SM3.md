@@ -40,15 +40,14 @@ SM3 是中国国家密码管理局于 2010 年 12 月 17 日发布的密码杂�
 ```typescript
 import { sm3Digest } from 'gmkitx';
 
-// 计算字符串的 SM3 哈希值
+// 输入支持 string 或 Uint8Array，默认输出十六进制（64 字符）
 const hash = sm3Digest('Hello, SM3!');
-console.log(hash); // 十六进制字符串，64位（32字节）
 
-// 计算数字的哈希
-const numHash = sm3Digest(12345);
+// 处理二进制数据：自行构造 Uint8Array
+const bytesHash = sm3Digest(new TextEncoder().encode('binary-data'));
 
-// 计算对象的哈希（自动转为JSON字符串）
-const objHash = sm3Digest({ name: '张三', age: 30 });
+// 结构化数据需自行序列化
+const objHash = sm3Digest(JSON.stringify({ name: '张三', age: 30 }));
 ```
 
 ### 使用命名空间
