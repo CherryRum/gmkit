@@ -5,9 +5,6 @@ import { viteBundler } from '@vuepress/bundler-vite';
 import { compression, defineAlgorithm } from 'vite-plugin-compression2';
 import { constants } from 'zlib';
 
-// ❗ 新插件：取代 mdEnhancePlugin
-import { markdownExtPlugin } from '@vuepress/plugin-markdown-ext';
-
 export default defineUserConfig({
   lang: 'zh-CN',
   title: 'GMKitX',
@@ -24,13 +21,11 @@ export default defineUserConfig({
           deleteOriginalAssets: false,
           algorithms: [
             defineAlgorithm('gzip', { level: 9 }),
-
             defineAlgorithm('brotliCompress', {
               params: {
                 [constants.BROTLI_PARAM_QUALITY]: 11,
               },
             }),
-
             defineAlgorithm('zstandard', { level: 19 }),
           ],
         }),
@@ -42,23 +37,6 @@ export default defineUserConfig({
   // 正确方式：使用 markdown-ext，而不是 mdEnhancePlugin
   // ===================================================================
   plugins: [
-    markdownExtPlugin({
-      // 对应旧 mdEnhance 的功能
-      attrs: true,          // 属性语法
-      mark: true,           // ==高亮==
-      figure: true,         // 图片+标题 Figure
-      footnote: true,       // 脚注
-      sub: true,            // 下标
-      sup: true,            // 上标
-      imgLazyload: true,    // 图片懒加载
-      imgSize: true,        // 图片尺寸语法
-      tasklist: true,       // 任务列表
-      tabs: true,           // 标签页
-      codetabs: true,       // 代码标签页
-      stylize: true,        // ::: tip ::: 等增强
-      component: true,      // 组件 Markdown 语法
-      chartjs: false,       // 如果用不到不要开
-    }),
   ],
 
   // ===================================================================

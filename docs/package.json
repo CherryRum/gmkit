@@ -4,6 +4,9 @@
   "private": true,
   "description": "Documentation for GMKitX",
   "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "dev": "vuepress dev .",
     "build": "vuepress build .",
