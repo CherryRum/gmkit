@@ -14,6 +14,8 @@
   },
   "devDependencies": {
     "@vuepress/bundler-vite": "^2.0.0-rc.26",
+    "@vuepress/plugin-markdown-ext": "^2.0.0-rc.118",
+    "@vuepress/plugin-markdown-tab": "^2.0.0-rc.118",
     "katex": "^0.16.25",
     "mermaid": "^11.12.1",
     "sass": "^1.94.2",

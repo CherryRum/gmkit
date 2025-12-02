@@ -1,6 +1,8 @@
 import { defineUserConfig } from 'vuepress';
 import { hopeTheme } from 'vuepress-theme-hope';
 import { viteBundler } from '@vuepress/bundler-vite';
+import { markdownExtPlugin } from '@vuepress/plugin-markdown-ext';
+import { markdownTabPlugin } from '@vuepress/plugin-markdown-tab';
 
 import { compression, defineAlgorithm } from 'vite-plugin-compression2';
 import { constants } from 'zlib';
@@ -37,6 +39,19 @@ export default defineUserConfig({
   // 正确方式：使用 markdown-ext，而不是 mdEnhancePlugin
   // ===================================================================
   plugins: [
+    markdownExtPlugin({
+      gfm: true,
+      breaks: true,
+      linkify: true,
+      footnote: true,
+      tasklist: true,
+      component: true,
+      vPre: true,
+    }),
+    markdownTabPlugin({
+      codeTabs: true,
+      tabs: true,
+    }),
   ],
 
   // ===================================================================
