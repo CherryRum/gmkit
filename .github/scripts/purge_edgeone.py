@@ -1,180 +1,210 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 EdgeOne CDN Cache Purge Script
+腾讯云 EdgeOne CDN 缓存刷新脚本
+
 Supports both domestic (China) and international EdgeOne deployments
+支持国内站和国际站的 EdgeOne 部署
+
+Based on Tencent Cloud API v3 signature implementation
+基于腾讯云 API 签名 v3 实现
+Reference: https://cloud.tencent.com/document/product/213/30654
 """
 
+import hashlib
+import hmac
 import json
 import sys
-import hmac
-import hashlib
 import time
 from datetime import datetime
-import urllib.request
-import urllib.error
 
-
-def get_string_to_sign(timestamp, credential_scope, hashed_canonical_request):
-    """Generate the string to sign"""
-    return "\n".join([
-        "TC3-HMAC-SHA256",
-        str(timestamp),
-        credential_scope,
-        hashed_canonical_request
-    ])
+if sys.version_info[0] <= 2:
+    from httplib import HTTPSConnection
+else:
+    from http.client import HTTPSConnection
 
 
 def sign(key, msg):
-    """HMAC-SHA256 signing"""
+    """
+    HMAC-SHA256 signing function
+    HMAC-SHA256 签名函数
+    """
     return hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
 
 
-def get_signature(secret_key, date, service, string_to_sign):
-    """Generate signature"""
+def purge_edgeone_cache(secret_id, secret_key, zone_id, targets, purge_type="purge_host", site_type="cn"):
+    """
+    Purge EdgeOne CDN cache
+    刷新 EdgeOne CDN 缓存
+    
+    Args:
+        secret_id: Tencent Cloud Secret ID (腾讯云密钥 ID)
+        secret_key: Tencent Cloud Secret Key (腾讯云密钥 Key)
+        zone_id: EdgeOne Zone ID (站点 ID)
+        targets: List of targets to purge (刷新目标列表)
+        purge_type: Type of purge operation (刷新类型: purge_host, purge_url, purge_prefix)
+        site_type: Site type - "cn" for domestic, "intl" for international
+                   (站点类型 - "cn" 表示国内站，"intl" 表示国际站)
+    """
+    # Configure variables based on site type
+    # 根据站点类型配置变量
+    if site_type == "intl":
+        # International site configuration (国际站配置)
+        host_intl = "teo.intl.tencentcloudapi.com"
+        host = host_intl
+        region_intl = "ap-hongkong"
+        region = region_intl
+    else:
+        # Domestic site configuration (国内站配置)
+        host_cn = "teo.tencentcloudapi.com"
+        host = host_cn
+        region_cn = "ap-guangzhou"
+        region = region_cn
+    
+    # Common API parameters (通用 API 参数)
+    service = "teo"
+    action = "CreatePurgeTask"
+    version = "2022-09-01"
+    algorithm = "TC3-HMAC-SHA256"
+    
+    # Build request payload (构建请求载荷)
+    payload = json.dumps({
+        "ZoneId": zone_id,
+        "Type": purge_type,
+        "Targets": targets
+    })
+    
+    # Get timestamp and date (获取时间戳和日期)
+    timestamp = int(time.time())
+    date = datetime.utcfromtimestamp(timestamp).strftime("%Y-%m-%d")
+    
+    # ************* Step 1: Build canonical request (步骤 1：拼接规范请求串) *************
+    http_request_method = "POST"
+    canonical_uri = "/"
+    canonical_querystring = ""
+    ct = "application/json; charset=utf-8"
+    canonical_headers = "content-type:%s\nhost:%s\nx-tc-action:%s\n" % (ct, host, action.lower())
+    signed_headers = "content-type;host;x-tc-action"
+    hashed_request_payload = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    canonical_request = (http_request_method + "\n" +
+                        canonical_uri + "\n" +
+                        canonical_querystring + "\n" +
+                        canonical_headers + "\n" +
+                        signed_headers + "\n" +
+                        hashed_request_payload)
+    
+    # ************* Step 2: Build string to sign (步骤 2：拼接待签名字符串) *************
+    credential_scope = date + "/" + service + "/" + "tc3_request"
+    hashed_canonical_request = hashlib.sha256(canonical_request.encode("utf-8")).hexdigest()
+    string_to_sign = (algorithm + "\n" +
+                     str(timestamp) + "\n" +
+                     credential_scope + "\n" +
+                     hashed_canonical_request)
+    
+    # ************* Step 3: Calculate signature (步骤 3：计算签名) *************
     secret_date = sign(("TC3" + secret_key).encode("utf-8"), date)
     secret_service = sign(secret_date, service)
     secret_signing = sign(secret_service, "tc3_request")
     signature = hmac.new(secret_signing, string_to_sign.encode("utf-8"), hashlib.sha256).hexdigest()
-    return signature
-
-
-def purge_edgeone_cache(secret_id, secret_key, zone_id, targets, purge_type="purge_host", is_international=False):
-    """
-    Purge EdgeOne CDN cache
     
-    Args:
-        secret_id: Tencent Cloud Secret ID
-        secret_key: Tencent Cloud Secret Key
-        zone_id: EdgeOne Zone ID
-        targets: List of targets to purge (domains for purge_host)
-        purge_type: Type of purge operation (purge_host, purge_url, purge_prefix)
-        is_international: True for international site, False for domestic
-    """
-    # Configure endpoint based on site type
-    if is_international:
-        endpoint = "teo.intl.tencentcloudapi.com"
-    else:
-        endpoint = "teo.tencentcloudapi.com"
+    # ************* Step 4: Build Authorization header (步骤 4：拼接 Authorization) *************
+    authorization = (algorithm + " " +
+                    "Credential=" + secret_id + "/" + credential_scope + ", " +
+                    "SignedHeaders=" + signed_headers + ", " +
+                    "Signature=" + signature)
     
-    service = "teo"
-    action = "CreatePurgeTask"
-    version = "2022-09-01"
-    region = "ap-guangzhou"
-    
-    # Request payload
-    payload = {
-        "ZoneId": zone_id,
-        "Type": purge_type,
-        "Targets": targets
-    }
-    
-    payload_json = json.dumps(payload)
-    
-    # Get timestamp
-    timestamp = int(time.time())
-    date = datetime.utcfromtimestamp(timestamp).strftime("%Y-%m-%d")
-    
-    # Step 1: Build canonical request
-    http_request_method = "POST"
-    canonical_uri = "/"
-    canonical_querystring = ""
-    canonical_headers = f"content-type:application/json; charset=utf-8\nhost:{endpoint}\nx-tc-action:{action.lower()}\n"
-    signed_headers = "content-type;host;x-tc-action"
-    hashed_request_payload = hashlib.sha256(payload_json.encode("utf-8")).hexdigest()
-    
-    canonical_request = "\n".join([
-        http_request_method,
-        canonical_uri,
-        canonical_querystring,
-        canonical_headers,
-        signed_headers,
-        hashed_request_payload
-    ])
-    
-    # Step 2: Build string to sign
-    hashed_canonical_request = hashlib.sha256(canonical_request.encode("utf-8")).hexdigest()
-    credential_scope = f"{date}/{service}/tc3_request"
-    string_to_sign = get_string_to_sign(timestamp, credential_scope, hashed_canonical_request)
-    
-    # Step 3: Calculate signature
-    signature = get_signature(secret_key, date, service, string_to_sign)
-    
-    # Step 4: Build authorization header
-    authorization = f"TC3-HMAC-SHA256 Credential={secret_id}/{credential_scope}, SignedHeaders={signed_headers}, Signature={signature}"
-    
-    # Build headers
+    # ************* Step 5: Construct and send request (步骤 5：构造并发起请求) *************
     headers = {
         "Authorization": authorization,
-        "Content-Type": "application/json; charset=utf-8",
-        "Host": endpoint,
+        "Content-Type": ct,
+        "Host": host,
         "X-TC-Action": action,
         "X-TC-Timestamp": str(timestamp),
         "X-TC-Version": version,
         "X-TC-Region": region
     }
     
-    # Make request
-    url = f"https://{endpoint}/"
-    req = urllib.request.Request(url, data=payload_json.encode("utf-8"), headers=headers, method="POST")
-    
     try:
-        with urllib.request.urlopen(req) as response:
-            response_data = response.read().decode("utf-8")
-            result = json.loads(response_data)
-            
-            if "Response" in result:
-                if "Error" in result["Response"]:
-                    error = result["Response"]["Error"]
-                    print(f"❌ API Error: [{error['Code']}] {error['Message']}", file=sys.stderr)
-                    return False
-                else:
-                    print(f"✅ Cache purge successful!")
-                    print(f"   JobId: {result['Response'].get('JobId', 'N/A')}")
-                    print(f"   RequestId: {result['Response'].get('RequestId', 'N/A')}")
-                    
-                    if result["Response"].get("FailedList"):
-                        print(f"⚠️  Failed targets: {result['Response']['FailedList']}", file=sys.stderr)
-                    
-                    return True
-            else:
-                print(f"❌ Unexpected response format: {result}", file=sys.stderr)
+        conn = HTTPSConnection(host)
+        conn.request("POST", "/", headers=headers, body=payload.encode("utf-8"))
+        response = conn.getresponse()
+        response_data = response.read().decode("utf-8")
+        result = json.loads(response_data)
+        
+        if "Response" in result:
+            if "Error" in result["Response"]:
+                error = result["Response"]["Error"]
+                print("❌ API Error: [%s] %s" % (error["Code"], error["Message"]), file=sys.stderr)
                 return False
+            else:
+                print("✅ Cache purge successful!")
+                print("   JobId: %s" % result["Response"].get("JobId", "N/A"))
+                print("   RequestId: %s" % result["Response"].get("RequestId", "N/A"))
                 
-    except urllib.error.HTTPError as e:
-        error_body = e.read().decode("utf-8")
-        print(f"❌ HTTP Error {e.code}: {error_body}", file=sys.stderr)
-        return False
-    except Exception as e:
-        print(f"❌ Error: {str(e)}", file=sys.stderr)
+                if result["Response"].get("FailedList"):
+                    print("⚠️  Failed targets: %s" % result["Response"]["FailedList"], file=sys.stderr)
+                
+                return True
+        else:
+            print("❌ Unexpected response format: %s" % result, file=sys.stderr)
+            return False
+            
+    except Exception as err:
+        print("❌ Error: %s" % str(err), file=sys.stderr)
         return False
 
 
 def main():
-    """Main entry point"""
+    """Main entry point (主入口)"""
     if len(sys.argv) < 5:
-        print("Usage: python purge_edgeone.py <secret_id> <secret_key> <zone_id> <target> [--international]")
-        print("Example (Domestic): python purge_edgeone.py <id> <key> zone-xxx gmkit.cn")
-        print("Example (International): python purge_edgeone.py <id> <key> zone-yyy gmkit.com --international")
+        print("Usage: python purge_edgeone.py <secret_id> <secret_key> <zone_id> <targets> [--site-type=cn|intl]")
+        print("")
+        print("Arguments:")
+        print("  secret_id   : Tencent Cloud Secret ID")
+        print("  secret_key  : Tencent Cloud Secret Key")
+        print("  zone_id     : EdgeOne Zone ID")
+        print("  targets     : Comma-separated list of targets (e.g., 'gmkit.cn,www.gmkit.cn')")
+        print("  --site-type : Site type - 'cn' for domestic (default), 'intl' for international")
+        print("")
+        print("Examples:")
+        print("  Domestic (CN):      python purge_edgeone.py <id> <key> zone-xxx 'gmkit.cn'")
+        print("  Domestic (CN):      python purge_edgeone.py <id> <key> zone-xxx 'gmkit.cn,www.gmkit.cn' --site-type=cn")
+        print("  International:      python purge_edgeone.py <id> <key> zone-yyy 'gmkit.com' --site-type=intl")
+        print("  International:      python purge_edgeone.py <id> <key> zone-yyy 'gmkit.com,www.gmkit.com' --site-type=intl")
         sys.exit(1)
     
     secret_id = sys.argv[1]
     secret_key = sys.argv[2]
     zone_id = sys.argv[3]
-    target = sys.argv[4]
-    is_international = "--international" in sys.argv
+    targets_str = sys.argv[4]
     
-    site_type = "International" if is_international else "Domestic"
-    print(f"🚀 Purging EdgeOne CDN cache for {site_type} site...")
-    print(f"   Zone ID: {zone_id}")
-    print(f"   Target: {target}")
+    # Parse site type from arguments (从参数解析站点类型)
+    site_type = "cn"  # Default to domestic (默认国内站)
+    for arg in sys.argv[5:]:
+        if arg.startswith("--site-type="):
+            site_type = arg.split("=")[1]
+    
+    # Parse targets - support comma-separated list (解析目标 - 支持逗号分隔列表)
+    targets = [t.strip() for t in targets_str.split(",") if t.strip()]
+    
+    if not targets:
+        print("❌ Error: No valid targets specified", file=sys.stderr)
+        sys.exit(1)
+    
+    site_name = "International (国际站)" if site_type == "intl" else "Domestic (国内站)"
+    print("🚀 Purging EdgeOne CDN cache for %s..." % site_name)
+    print("   Zone ID: %s" % zone_id)
+    print("   Targets: %s" % ", ".join(targets))
+    print("   Site Type: %s" % site_type)
     
     success = purge_edgeone_cache(
         secret_id=secret_id,
         secret_key=secret_key,
         zone_id=zone_id,
-        targets=[target],
+        targets=targets,
         purge_type="purge_host",
-        is_international=is_international
+        site_type=site_type
     )
     
     sys.exit(0 if success else 1)

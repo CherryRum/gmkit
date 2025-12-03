@@ -37,22 +37,29 @@
 ### 技术说明
 
 - 使用自定义 Python 脚本 (`.github/scripts/purge_edgeone.py`) 进行 EdgeOne 缓存刷新
-- 脚本使用腾讯云 API v3 签名算法，直接调用 HTTP API
-- 国内站使用端点：`teo.tencentcloudapi.com`
-- 国际站使用端点：`teo.intl.tencentcloudapi.com`
+- 脚本基于腾讯云官方 API v3 签名算法实现
+- 国内站配置：
+  - API 端点：`teo.tencentcloudapi.com`
+  - 区域：`ap-guangzhou`
+- 国际站配置：
+  - API 端点：`teo.intl.tencentcloudapi.com`
+  - 区域：`ap-hongkong`
 - 使用 `purge_host` 类型进行主机级别的完整缓存刷新
+- 支持逗号分隔的多个目标域名
 - 分别为国内站和国际站配置不同的 Zone ID 和域名，实现双站点缓存刷新
 - 参考文档：https://cloud.tencent.com/document/product/1552/80703
 
 ### 参数说明
 
-- `Type`: 刷新类型，使用 `purge_host` 进行主机级别刷新
-- `Targets`: 需要刷新的域名列表
-  - 国内站：`["gmkit.cn"]`
-  - 国际站：`["gmkit.com"]`
-- API 端点：
-  - 国内站：`teo.tencentcloudapi.com`
-  - 国际站：`teo.intl.tencentcloudapi.com`
+- `secret_id`: 腾讯云 API 密钥 ID
+- `secret_key`: 腾讯云 API 密钥 Key
+- `zone_id`: EdgeOne 站点 ID
+- `targets`: 刷新目标列表（支持逗号分隔多个域名）
+  - 国内站：`gmkit.cn` 或 `gmkit.cn,www.gmkit.cn`
+  - 国际站：`gmkit.com` 或 `gmkit.com,www.gmkit.com`
+- `--site-type`: 站点类型
+  - `cn`: 国内站（默认）
+  - `intl`: 国际站
 
 ### 故障排查
 
