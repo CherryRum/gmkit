@@ -6,9 +6,9 @@ import { constants } from 'zlib';
 
 export default defineUserConfig({
   lang: 'zh-CN',
-  title: 'GMKitX',
+  title: 'gmkitx',
   description: '国密算法与国际标准的全场景 TypeScript 解决方案',
-  base: '/gmkit/',
+  base: '/',
 
   bundler: viteBundler({
     viteOptions: {
