@@ -68,10 +68,10 @@ describe('面向对象 API 测试', () => {
       const sm2 = SM2.generateKeyPair();
       const plaintext = 'Hello';
 
-      const encrypted1 = sm2.encrypt(plaintext, SM2CipherMode.C1C3C2);
+      const encrypted1 = sm2.encrypt(plaintext, { mode: SM2CipherMode.C1C3C2 });
       expect(encrypted1).toBeTruthy();
 
-      const encrypted2 = sm2.encrypt(plaintext, SM2CipherMode.C1C2C3);
+      const encrypted2 = sm2.encrypt(plaintext, { mode: SM2CipherMode.C1C2C3 });
       expect(encrypted2).toBeTruthy();
     });
 
@@ -193,7 +193,7 @@ describe('面向对象 API 测试', () => {
       const plaintext = 'Hello, SM4!';
 
       const encrypted = sm4.encrypt(plaintext);
-      expect(encrypted).toMatch(/^[0-9a-f]+$/);
+      expect(encrypted.ciphertext).toMatch(/^[0-9a-f]+$/);
 
       const decrypted = sm4.decrypt(encrypted);
       expect(decrypted).toBe(plaintext);
@@ -205,7 +205,7 @@ describe('面向对象 API 测试', () => {
       const plaintext = 'Hello, SM4 CBC!';
 
       const encrypted = sm4.encrypt(plaintext);
-      expect(encrypted).toMatch(/^[0-9a-f]+$/);
+      expect(encrypted.ciphertext).toMatch(/^[0-9a-f]+$/);
 
       const decrypted = sm4.decrypt(encrypted);
       expect(decrypted).toBe(plaintext);
@@ -334,8 +334,8 @@ describe('面向对象 API 测试', () => {
       const iv = '00000000000000000000000000000000';
       const zuc = new ZUC(key, iv);
 
-      const keystream = zuc.keystream(4);
-      expect(keystream).toHaveLength(32); // 4 words * 8 hex chars
+      const keystream = zuc.keystream(16);
+      expect(keystream).toHaveLength(32); // 16 bytes * 2 hex chars
       expect(keystream).toMatch(/^[0-9a-f]+$/);
     });
 

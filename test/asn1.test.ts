@@ -153,7 +153,7 @@ describe('ASN.1 工具', () => {
     it('应该能够将签名转换为 XML', () => {
       const r = '32C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7';
       const s = 'BC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0';
-      const xml = signatureToXml(r + s, true);
+      const xml = signatureToXml(r + s, { signatureFormat: 'raw' });
       expect(xml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
       expect(xml).toContain('<SM2Signature>');
       expect(xml).toContain('</SM2Signature>');
@@ -168,7 +168,7 @@ describe('ASN.1 工具', () => {
       const s = 'BC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0';
       const der = encodeSignature(r, s);
 
-      const xml = signatureToXml(der);
+      const xml = signatureToXml(der, { signatureFormat: 'der' });
 
       expect(xml).toContain('<SM2Signature>');
       expect(xml).toContain(`<r>${r.toLowerCase()}</r>`);

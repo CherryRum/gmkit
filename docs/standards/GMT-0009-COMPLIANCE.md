@@ -148,7 +148,7 @@ SM2 密文由三部分组成：
 const decrypted = sm2Decrypt(privateKey, encrypted);
 
 // 明确指定模式（性能更优）
-const decrypted = sm2Decrypt(privateKey, encrypted, SM2CipherMode.C1C3C2);
+const decrypted = sm2Decrypt(privateKey, encrypted, { mode: SM2CipherMode.C1C3C2 });
 ```
 
 检测规则：
@@ -324,8 +324,8 @@ const isValid = verify(publicKey, data, signature, { userId: '' });
 
 ```typescript
 // 推荐：明确指定模式
-const encrypted = sm2Encrypt(publicKey, plaintext, SM2CipherMode.C1C3C2);
-const decrypted = sm2Decrypt(privateKey, encrypted, SM2CipherMode.C1C3C2);
+const encrypted = sm2Encrypt(publicKey, plaintext, { mode: SM2CipherMode.C1C3C2 });
+const decrypted = sm2Decrypt(privateKey, encrypted, { mode: SM2CipherMode.C1C3C2 });
 
 // 或使用默认值（已经是 C1C3C2）
 const encrypted = sm2Encrypt(publicKey, plaintext);
@@ -460,3 +460,5 @@ GMKitX 现有测试覆盖核心路径，包含：
 ## 许可证
 
 Apache-2.0
+
+

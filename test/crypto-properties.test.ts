@@ -189,7 +189,7 @@ describe('密码学属性测试', () => {
           iv 
         });
 
-        expect(ecbCipher).not.toBe(cbcCipher);
+        expect(ecbCipher.ciphertext).not.toBe(cbcCipher.ciphertext);
       });
 
       it('ECB模式：相同明文分组产生相同密文分组', () => {
@@ -201,8 +201,8 @@ describe('密码学属性测试', () => {
         });
 
         // 前16字节和后16字节的密文应该相同（ECB特性）
-        const firstBlock = encrypted.substring(0, 32);
-        const secondBlock = encrypted.substring(32, 64);
+        const firstBlock = encrypted.ciphertext.substring(0, 32);
+        const secondBlock = encrypted.ciphertext.substring(32, 64);
         expect(firstBlock).toBe(secondBlock);
       });
 
@@ -217,8 +217,8 @@ describe('密码学属性测试', () => {
         });
 
         // 前16字节和后16字节的密文应该不同（CBC特性）
-        const firstBlock = encrypted.substring(0, 32);
-        const secondBlock = encrypted.substring(32, 64);
+        const firstBlock = encrypted.ciphertext.substring(0, 32);
+        const secondBlock = encrypted.ciphertext.substring(32, 64);
         expect(firstBlock).not.toBe(secondBlock);
       });
     });
@@ -235,7 +235,7 @@ describe('密码学属性测试', () => {
           padding: PaddingMode.PKCS7 
         });
 
-        expect(cipher1).toBe(cipher2); // ECB是确定性的
+        expect(cipher1.ciphertext).toBe(cipher2.ciphertext); // ECB是确定性的
       });
 
       it('密文应该看起来随机（统计测试）', () => {
@@ -247,13 +247,13 @@ describe('密码学属性测试', () => {
 
         // 检查密文的字符分布
         const charCounts = new Map<string, number>();
-        for (const char of encrypted) {
+        for (const char of encrypted.ciphertext) {
           charCounts.set(char, (charCounts.get(char) || 0) + 1);
         }
 
         // 16进制字符应该相对均匀分布（不应该某个字符出现过多）
         const maxCount = Math.max(...charCounts.values());
-        const avgCount = encrypted.length / 16; // 16个可能的字符
+        const avgCount = encrypted.ciphertext.length / 16; // 16个可能的字符
         
         // 最多出现的字符不应该超过平均值的3倍
         expect(maxCount).toBeLessThan(avgCount * 3);

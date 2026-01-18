@@ -19,7 +19,7 @@ import {
   // Functional API - ZUC
   zucEncrypt,
   zucDecrypt,
-  zucKeystream,
+  zucKeystreamWords,
   eea3,
   eia3,
   // Functional API - SHA
@@ -86,14 +86,14 @@ const plaintext = 'Hello, SM4!';
 
 // ECB mode with constants
 const encryptedECB = sm4Encrypt(sm4Key, plaintext, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
-console.log('SM4 ECB Encrypted:', encryptedECB);
+console.log('SM4 ECB Encrypted:', encryptedECB.ciphertext);
 const decryptedECB = sm4Decrypt(sm4Key, encryptedECB, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
 console.log('SM4 ECB Decrypted:', decryptedECB);
 
 // CBC mode with constants
 const iv = 'fedcba98765432100123456789abcdef';
 const encryptedCBC = sm4Encrypt(sm4Key, plaintext, { mode: CipherMode.CBC, padding: PaddingMode.PKCS7, iv });
-console.log('SM4 CBC Encrypted:', encryptedCBC);
+console.log('SM4 CBC Encrypted:', encryptedCBC.ciphertext);
 const decryptedCBC = sm4Decrypt(sm4Key, encryptedCBC, { mode: CipherMode.CBC, padding: PaddingMode.PKCS7, iv });
 console.log('SM4 CBC Decrypted:', decryptedCBC);
 console.log();
@@ -102,13 +102,13 @@ console.log();
 console.log('--- SM4 Block Cipher (OOP API) ---');
 const sm4ecb = SM4.ECB(sm4Key);
 const encrypted1 = sm4ecb.encrypt('Hello, SM4 OOP!');
-console.log('SM4 ECB Encrypted:', encrypted1);
+console.log('SM4 ECB Encrypted:', encrypted1.ciphertext);
 const decrypted1 = sm4ecb.decrypt(encrypted1);
 console.log('SM4 ECB Decrypted:', decrypted1);
 
 const sm4cbc = SM4.CBC(sm4Key, iv);
 const encrypted2 = sm4cbc.encrypt('Hello, SM4 OOP!');
-console.log('SM4 CBC Encrypted:', encrypted2);
+console.log('SM4 CBC Encrypted:', encrypted2.ciphertext);
 const decrypted2 = sm4cbc.decrypt(encrypted2);
 console.log('SM4 CBC Decrypted:', decrypted2);
 console.log();
@@ -121,9 +121,9 @@ console.log('  Public Key:', keyPair.publicKey.slice(0, 40) + '...');
 console.log('  Private Key:', keyPair.privateKey.slice(0, 40) + '...');
 
 const sm2Plaintext = 'Hello, SM2!';
-const encryptedSM2 = sm2Encrypt(keyPair.publicKey, sm2Plaintext, SM2CipherMode.C1C3C2);
+const encryptedSM2 = sm2Encrypt(keyPair.publicKey, sm2Plaintext, { mode: SM2CipherMode.C1C3C2 });
 console.log('SM2 Encrypted:', encryptedSM2.slice(0, 40) + '...');
-const decryptedSM2 = sm2Decrypt(keyPair.privateKey, encryptedSM2, SM2CipherMode.C1C3C2);
+const decryptedSM2 = sm2Decrypt(keyPair.privateKey, encryptedSM2, { mode: SM2CipherMode.C1C3C2 });
 console.log('SM2 Decrypted:', decryptedSM2);
 
 const message = 'Message to sign';
@@ -166,7 +166,7 @@ const decryptedZUC = zucDecrypt(zucKey, zucIv, encryptedZUC);
 console.log('ZUC Decrypted:', decryptedZUC);
 
 // 生成密钥流
-const keystream = zucKeystream(zucKey, zucIv, 4); // 生成 4 个 32 位字
+const keystream = zucKeystreamWords(zucKey, zucIv, 4); // 生成 4 个 32 位字
 console.log('ZUC Keystream (4 words):', keystream.slice(0, 40) + '...');
 
 // EEA3 - 3GPP LTE 加密算法

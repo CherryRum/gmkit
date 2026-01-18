@@ -18,8 +18,8 @@
  */
 
 import { ZUCState, generateKeystream, process } from './core';
-import { hexToBytes, bytesToHex, bytesToBase64, stringToBytes, autoDecodeString } from '../../core/utils';
-import { OutputFormat, type OutputFormatType } from '../../types/constants';
+import { hexToBytes, bytesToHex, stringToBytes, decodeInput, encodeOutput, bytesToString, type BytesLike } from '../../core/utils';
+import { OutputFormat, InputFormat, type OutputFormatType, type InputFormatType } from '../../types/constants';
 
 /**
  * ZUC 加密选项
@@ -33,6 +33,15 @@ export interface ZUCOptions {
    * 默认: hex (Default: hex)
    */
   outputFormat?: OutputFormatType;
+}
+
+export interface ZUCDecryptOptions {
+  /**
+   * 输入格式
+   * - hex: 十六进制字符串（默认）
+   * - base64: Base64 编码字符串
+   */
+  inputFormat?: InputFormatType;
 }
 
 /**
@@ -52,20 +61,15 @@ export interface ZUCOptions {
  * const encrypted = encrypt(key, iv, 'data', { outputFormat: OutputFormat.BASE64 });
  */
 export function encrypt(
-  key: string | Uint8Array,
-  iv: string | Uint8Array,
+  key: BytesLike,
+  iv: BytesLike,
   plaintext: string | Uint8Array,
   options?: ZUCOptions
 ): string {
   const resultHex = process(key, iv, plaintext);
   const outputFormat = options?.outputFormat || OutputFormat.HEX;
-
-  if (outputFormat === OutputFormat.BASE64) {
-    const resultBytes = hexToBytes(resultHex);
-    return bytesToBase64(resultBytes);
-  }
-
-  return resultHex;
+  const resultBytes = hexToBytes(resultHex);
+  return encodeOutput(resultBytes, outputFormat);
 }
 
 /**
@@ -80,15 +84,15 @@ export function encrypt(
  * const decrypted = decrypt(key, iv, encrypted);
  */
 export function decrypt(
-  key: string | Uint8Array,
-  iv: string | Uint8Array,
-  ciphertext: string
+  key: BytesLike,
+  iv: BytesLike,
+  ciphertext: BytesLike,
+  options?: ZUCDecryptOptions
 ): string {
-  // 自动检测输入格式（hex 或 base64）
-  const ciphertextBytes = autoDecodeString(ciphertext);
+  const ciphertextBytes = decodeInput(ciphertext, options?.inputFormat || InputFormat.HEX);
   const resultHex = process(key, iv, ciphertextBytes);
   const resultBytes = hexToBytes(resultHex);
-  return new TextDecoder().decode(resultBytes);
+  return bytesToString(resultBytes);
 }
 
 /**
@@ -98,26 +102,38 @@ export function decrypt(
  * @param length - 需要生成的 32 位字数量
  * @returns 十六进制字符串形式的密钥流
  */
-export function getKeystream(
-  key: string | Uint8Array,
-  iv: string | Uint8Array,
+export function getKeystreamWords(
+  key: BytesLike,
+  iv: BytesLike,
   length: number
 ): string {
   const keystream = generateKeystream(key, iv, length);
-  // 预先分配精确长度的缓冲区
   const bytes = new Uint8Array(length * 4);
 
-  // 更高效地处理 32 位字
   for (let i = 0; i < length; i++) {
     const word = keystream[i];
     const offset = i * 4;
-    bytes[offset] = (word >>> 24) & 0xFF;
-    bytes[offset + 1] = (word >>> 16) & 0xFF;
-    bytes[offset + 2] = (word >>> 8) & 0xFF;
-    bytes[offset + 3] = word & 0xFF;
+    bytes[offset] = (word >>> 24) & 0xff;
+    bytes[offset + 1] = (word >>> 16) & 0xff;
+    bytes[offset + 2] = (word >>> 8) & 0xff;
+    bytes[offset + 3] = word & 0xff;
   }
 
   return bytesToHex(bytes);
+}
+
+/**
+ * 生成 ZUC-128 密钥流（按字节长度）
+ * @param length - 需要生成的字节长度
+ */
+export function getKeystream(
+  key: BytesLike,
+  iv: BytesLike,
+  length: number
+): string {
+  const words = Math.ceil(length / 4);
+  const hex = getKeystreamWords(key, iv, words);
+  return hex.slice(0, length * 2);
 }
 
 /**
@@ -131,7 +147,7 @@ export function getKeystream(
  * @returns EEA3 密钥流
  */
 export function eea3(
-  key: string | Uint8Array,
+  key: BytesLike,
   count: number,
   bearer: number,
   direction: number,
@@ -148,7 +164,7 @@ export function eea3(
 
   // 生成密钥流
   const numWords = Math.ceil(length / 32);
-  return getKeystream(key, iv, numWords);
+  return getKeystreamWords(key, iv, numWords);
 }
 
 /**
@@ -161,7 +177,7 @@ export function eea3(
  * @returns 32 位 MAC-I（十六进制字符串）
  */
 export function eia3(
-  key: string | Uint8Array,
+  key: BytesLike,
   count: number,
   bearer: number,
   direction: number,

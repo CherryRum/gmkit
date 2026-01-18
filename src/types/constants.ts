@@ -17,6 +17,20 @@ export const OutputFormat = {
 export type OutputFormatType = typeof OutputFormat[keyof typeof OutputFormat];
 
 /**
+ * 输入编码格式
+ * 用于指定密文/签名等二进制数据的输入编码方式
+ *
+ * - HEX: 十六进制编码（小写）
+ * - BASE64: Base64 编码
+ */
+export const InputFormat = {
+  HEX: 'hex',
+  BASE64: 'base64',
+} as const;
+
+export type InputFormatType = typeof InputFormat[keyof typeof InputFormat];
+
+/**
  * 填充模式
  * Padding modes for block cipher operations
  *

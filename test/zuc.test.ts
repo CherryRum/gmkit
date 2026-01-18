@@ -80,10 +80,10 @@ describe('ZUC 流密码测试', () => {
     it('应该生成指定长度的密钥流', () => {
       const key = '00000000000000000000000000000000';
       const iv = '00000000000000000000000000000000';
-      const length = 4; // 4 words = 16 bytes = 32 hex chars
+      const length = 16; // 16 bytes = 32 hex chars
 
       const keystream = zucKeystream(key, iv, length);
-      expect(keystream).toHaveLength(length * 8); // 4 words * 8 hex chars per word
+      expect(keystream).toHaveLength(length * 2); // hex chars per byte
       expect(keystream).toMatch(/^[0-9a-f]+$/);
     });
 
@@ -92,8 +92,8 @@ describe('ZUC 流密码测试', () => {
       const key2 = 'ffffffffffffffffffffffffffffffff';
       const iv = '00000000000000000000000000000000';
 
-      const keystream1 = zucKeystream(key1, iv, 4);
-      const keystream2 = zucKeystream(key2, iv, 4);
+      const keystream1 = zucKeystream(key1, iv, 16);
+      const keystream2 = zucKeystream(key2, iv, 16);
       expect(keystream1).not.toBe(keystream2);
     });
 
@@ -102,8 +102,8 @@ describe('ZUC 流密码测试', () => {
       const iv1 = '00000000000000000000000000000000';
       const iv2 = 'ffffffffffffffffffffffffffffffff';
 
-      const keystream1 = zucKeystream(key, iv1, 4);
-      const keystream2 = zucKeystream(key, iv2, 4);
+      const keystream1 = zucKeystream(key, iv1, 16);
+      const keystream2 = zucKeystream(key, iv2, 16);
       expect(keystream1).not.toBe(keystream2);
     });
 
@@ -111,8 +111,8 @@ describe('ZUC 流密码测试', () => {
       const key = 'abcdef0123456789abcdef0123456789';
       const iv = '123456789abcdef0123456789abcdef0';
 
-      const keystream1 = zucKeystream(key, iv, 8);
-      const keystream2 = zucKeystream(key, iv, 8);
+      const keystream1 = zucKeystream(key, iv, 32);
+      const keystream2 = zucKeystream(key, iv, 32);
       expect(keystream1).toBe(keystream2);
     });
   });

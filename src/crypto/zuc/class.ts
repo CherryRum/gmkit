@@ -4,6 +4,8 @@ import {
   getKeystream as getKeystreamFunc,
   eea3 as eea3Func,
   eia3 as eia3Func,
+  type ZUCDecryptOptions,
+  type ZUCOptions,
 } from './index';
 
 /**
@@ -52,8 +54,8 @@ export class ZUC {
    * @param plaintext - 待加密的数据（字符串或 Uint8Array）
    * @returns 十六进制字符串形式的密文
    */
-  encrypt(plaintext: string | Uint8Array): string {
-    return encryptFunc(this.key, this.iv, plaintext);
+  encrypt(plaintext: string | Uint8Array, options?: ZUCOptions): string {
+    return encryptFunc(this.key, this.iv, plaintext, options);
   }
 
   /**
@@ -61,13 +63,13 @@ export class ZUC {
    * @param ciphertext - 十六进制字符串形式的密文
    * @returns 解密后的字符串
    */
-  decrypt(ciphertext: string): string {
-    return decryptFunc(this.key, this.iv, ciphertext);
+  decrypt(ciphertext: string | Uint8Array, options?: ZUCDecryptOptions): string {
+    return decryptFunc(this.key, this.iv, ciphertext, options);
   }
 
   /**
    * 生成 ZUC 密钥流
-   * @param length - 需要生成的 32 位字数量
+   * @param length - 需要生成的字节长度
    * @returns 十六进制字符串形式的密钥流
    */
   keystream(length: number): string {

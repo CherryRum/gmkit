@@ -98,17 +98,13 @@ console.log('私钥:', keyPair.privateKey);
 const plaintext = 'Hello, SM2!';
 const ciphertext = sm2Encrypt(
   keyPair.publicKey, 
-  plaintext, 
-  SM2CipherMode.C1C3C2
-);
+  plaintext, { mode: SM2CipherMode.C1C3C2 });
 console.log('密文:', ciphertext);
 
 // 解密
 const decrypted = sm2Decrypt(
   keyPair.privateKey, 
-  ciphertext, 
-  SM2CipherMode.C1C3C2
-);
+  ciphertext, { mode: SM2CipherMode.C1C3C2 });
 console.log('明文:', decrypted);
 
 // 签名
@@ -636,3 +632,5 @@ codegen-units = 1
 - [libsm GitHub 仓库](https://github.com/citahub/libsm)
 - [Rust 密码学最佳实践](https://docs.rs/crypto/)
 - [互操作测试向量](/dev/INTEROP_VECTORS)
+
+

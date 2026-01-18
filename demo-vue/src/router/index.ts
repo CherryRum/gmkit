@@ -4,6 +4,7 @@ import AppLayout from '../components/AppLayout.vue'
 import SM2View from '../views/SM2View.vue'
 import SM3View from '../views/SM3View.vue'
 import SM4View from '../views/SM4View.vue'
+import AllApiView from '../views/AllApiView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -44,6 +45,17 @@ const router = createRouter({
           path: '',
           name: 'sm4',
           component: SM4View,
+        },
+      ],
+    },
+    {
+      path: '/api',
+      component: AppLayout,
+      children: [
+        {
+          path: '',
+          name: 'api',
+          component: AllApiView,
         },
       ],
     },

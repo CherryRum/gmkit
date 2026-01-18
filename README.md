@@ -71,7 +71,12 @@ const hash = digest('Hello, SM3!');
 const key = '0123456789abcdeffedcba9876543210'; // 128位密钥
 const iv  = 'fedcba98765432100123456789abcdef'; // 初始化向量
 
-const ciphertext = sm4Encrypt(key, '我的机密数据', {
+const sm4Result = sm4Encrypt(key, '我的机密数据', {
+  mode: CipherMode.CBC,
+  padding: PaddingMode.PKCS7,
+  iv,
+});
+const plaintext = sm4Decrypt(key, sm4Result, {
   mode: CipherMode.CBC,
   padding: PaddingMode.PKCS7,
   iv,
@@ -114,6 +119,16 @@ const sha512Hash = sha.sha512('Hello World');
 
 -----
 
+## 0.9.3 升级提示（包含不兼容变更）
+
+- `sm4Encrypt` 现在返回 `{ ciphertext, tag?, format }` 对象；`sm4Decrypt` 可直接接收该对象。
+- `zucKeystream(key, iv, length)` 的 `length` 改为 **字节数**；若需要按 32-bit word，使用 `zucKeystreamWords`。
+- `sm2Encrypt` 的模式参数改为选项对象：`sm2Encrypt(pub, data, { mode })`。
+- `sm2Sign / sm2Verify / signatureToXml` 支持 `signatureFormat: 'raw' | 'der' | 'auto'`；DER 输入请显式标注。
+- Base64 密文解密需指定 `inputFormat: InputFormat.BASE64`（SM2 / SM4 / ZUC）。
+
+-----
+
 ## API 深度指南
 
 ### SM2（椭圆曲线公钥密码）
@@ -121,14 +136,18 @@ const sha512Hash = sha.sha512('Hello World');
 - Node/浏览器同构，面向对象与函数式并行。
 
 ```ts
-import { SM2, SM2CipherMode } from 'gmkitx';
+import { SM2, SM2CipherMode, InputFormat, OutputFormat } from 'gmkitx';
 
 const sm2 = SM2.fromPrivateKey(privateKey);
 const signature = sm2.sign('核心指令');
 const verified = sm2.verify('核心指令', signature);
 
-const cipher = sm2.encrypt('数据', SM2CipherMode.C1C3C2);
+const cipher = sm2.encrypt('数据', { mode: SM2CipherMode.C1C3C2 });
 const plain = sm2.decrypt(cipher);
+
+// DER + Base64 签名示例
+const sigDer = sm2.sign('核心指令', { signatureFormat: 'der', outputFormat: OutputFormat.BASE64 });
+const ok = sm2.verify('核心指令', sigDer, { signatureFormat: 'der', inputFormat: InputFormat.BASE64 });
 ```
 
 ### SM3（消息摘要）
@@ -142,7 +161,7 @@ sm3.update('part-1');
 sm3.update('part-2');
 
 const hex = sm3.digest(); // 默认 Hex
-const base64 = sm3.digest({ format: OutputFormat.BASE64 });
+const base64 = sm3.digest({ outputFormat: OutputFormat.BASE64 });
 ```
 
 ### SM4（分组密码）
@@ -152,20 +171,21 @@ const base64 = sm3.digest({ format: OutputFormat.BASE64 });
 import { SM4, CipherMode, PaddingMode } from 'gmkitx';
 
 const key = '0123456789abcdeffedcba9876543210';
-const sm4 = new SM4(key, { mode: CipherMode.GCM, padding: PaddingMode.NONE });
+const sm4 = new SM4(key, { mode: CipherMode.GCM, padding: PaddingMode.NONE, iv: '00112233445566778899aabbccddeeff' });
 
-const { ciphertext, tag } = sm4.encrypt('敏感信息', { iv: '00112233445566778899aabbccddeeff' });
-const decrypted = sm4.decrypt({ ciphertext, tag, iv: '00112233445566778899aabbccddeeff' });
+const result = sm4.encrypt('敏感信息');
+const decrypted = sm4.decrypt(result);
 ```
 
 ### ZUC（祖冲之序列密码）
 - 覆盖 128-EEA3（机密性）与 128-EIA3（完整性）；流式密钥流可复用。
 
 ```ts
-import { zucEncrypt, zucKeystream } from 'gmkitx';
+import { zucEncrypt, zucKeystream, zucKeystreamWords } from 'gmkitx';
 
 const cipher = zucEncrypt(key, iv, 'Hello ZUC');
 const keystream = zucKeystream(key, iv, 32); // 32 bytes keystream
+const wordStream = zucKeystreamWords(key, iv, 8); // 8 words
 ```
 
 ### SHA（国际标准摘要）
@@ -176,6 +196,26 @@ import { sha } from 'gmkitx';
 
 const hash = sha.sha256('Hello World');
 ```
+
+## 编码与格式
+
+`InputFormat` / `OutputFormat` 统一规范密文与签名的编码格式。
+
+```ts
+import { InputFormat, OutputFormat, sm2Encrypt, sm2Decrypt, sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkitx';
+
+const sm2Cipher = sm2Encrypt(pubKey, 'hello', { outputFormat: OutputFormat.BASE64 });
+const sm2Plain = sm2Decrypt(privKey, sm2Cipher, { inputFormat: InputFormat.BASE64 });
+
+const sm4Result = sm4Encrypt(key, 'hello', { mode: CipherMode.ECB, padding: PaddingMode.PKCS7, outputFormat: OutputFormat.BASE64 });
+const sm4Plain = sm4Decrypt(key, sm4Result, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 }); // 自动读取 result.format
+```
+
+## 小程序/受限环境提示
+
+- 若运行环境缺少 `TextEncoder/TextDecoder`，可使用 `setTextCodec` 注入自定义 UTF-8 编解码器。
+- 若运行环境缺少安全随机数，请使用 `setCustomRNG` 提供合规的随机源。
+- 可通过 `getEnvReport()` 检查环境能力。
 
 -----
 
@@ -188,7 +228,10 @@ const hash = sha.sha256('Hello World');
 | **编码** | `hexToBytes`, `bytesToHex`       | Hex 字符串与字节数组互转   |
 | **编码** | `base64ToBytes`, `bytesToBase64` | Base64 与字节数组互转   |
 | **编码** | `stringToBytes`, `bytesToString` | UTF-8 字符串处理      |
+| **编码** | `decodeInput`, `encodeOutput`    | 输入/输出格式统一编解码     |
 | **运算** | `xor`, `rotl`                    | 异或与循环左移          |
 | **格式** | `rawToDer`, `derToRaw`           | 签名的 RAW/DER 格式转换 |
+| **随机** | `getRandomBytes`, `setRNGPolicy`, `setCustomRNG` | 随机源与策略控制 |
+| **环境** | `setTextCodec`, `getEnvReport`   | 文本编解码与环境能力报告     |
 
 -----

@@ -171,11 +171,11 @@ const privateKey = '228049e009de869baf9aba74f8f8c52e...'; // 64位十六进制�
 
 // 加密 - C1C3C2 模式（默认）
 const plaintext = 'Hello, SM2!';
-const ciphertext = sm2Encrypt(publicKey, plaintext, SM2CipherMode.C1C3C2);
+const ciphertext = sm2Encrypt(publicKey, plaintext, { mode: SM2CipherMode.C1C3C2 });
 console.log('密文:', ciphertext);
 
 // 解密
-const decrypted = sm2Decrypt(privateKey, ciphertext, SM2CipherMode.C1C3C2);
+const decrypted = sm2Decrypt(privateKey, ciphertext, { mode: SM2CipherMode.C1C3C2 });
 console.log('明文:', decrypted); // 'Hello, SM2!'
 
 // 签名
@@ -717,3 +717,5 @@ public class SM4BCInterop {
 - 所有语言对接均使用统一的测试向量 `test/vectors/interop.json`，确保跨语言互操作性。
 - 如需切换 Java 库，保持密钥/IV/模式/编码约定不变，替换代码即可。
 - 扩展 CTR/OFB/CFB/GCM 或固定随机源的 SM2 用例时，先确认计数器/AAD/随机策略一致，再写入测试向量并在备注中标明。 
+
+

@@ -85,7 +85,12 @@ const hash = digest('Hello, SM3!');
 const key = '0123456789abcdeffedcba9876543210'; // 128位密钥
 const iv  = 'fedcba98765432100123456789abcdef'; // 初始化向量
 
-const ciphertext = sm4Encrypt(key, '我的机密数据', {
+const sm4Result = sm4Encrypt(key, '我的机密数据', {
+  mode: CipherMode.CBC,
+  padding: PaddingMode.PKCS7,
+  iv,
+});
+const plaintext = sm4Decrypt(key, sm4Result, {
   mode: CipherMode.CBC,
   padding: PaddingMode.PKCS7,
   iv,
@@ -135,3 +140,5 @@ const sha512Hash = sha.sha512('Hello World');
 - [SM4 算法文档](/algorithms/SM4) - 分组密码算法
 - [语言集成指南](/dev/JAVA-INTEGRATION.zh-CN) - Java、Go、Rust、Python 对接方案
 - [性能测试](/performance/PERFORMANCE) - 查看性能基准测试结果
+
+

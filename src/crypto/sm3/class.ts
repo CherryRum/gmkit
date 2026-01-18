@@ -50,7 +50,7 @@ export class SM3 {
    * 完成哈希计算并返回摘要
    * @returns 哈希摘要
    */
-  digest(): string {
+  digest(options?: SM3Options): string {
     // 拼接所有数据块
     const totalLength = this.data.reduce((sum, chunk) => sum + chunk.length, 0);
     const combined = new Uint8Array(totalLength);
@@ -63,7 +63,8 @@ export class SM3 {
     // 计算哈希后清空数据 (Clear data after digesting)
     this.data = [];
 
-    return digestFunc(combined, { outputFormat: this.outputFormat });
+    const outputFormat = options?.outputFormat || this.outputFormat;
+    return digestFunc(combined, { outputFormat });
   }
 
   /**

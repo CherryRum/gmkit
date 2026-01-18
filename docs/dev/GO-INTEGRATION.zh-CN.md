@@ -106,17 +106,13 @@ console.log('私钥:', keyPair.privateKey);
 const plaintext = 'Hello, SM2!';
 const ciphertext = sm2Encrypt(
   keyPair.publicKey, 
-  plaintext, 
-  SM2CipherMode.C1C3C2
-);
+  plaintext, { mode: SM2CipherMode.C1C3C2 });
 console.log('密文:', ciphertext);
 
 // 解密
 const decrypted = sm2Decrypt(
   keyPair.privateKey, 
-  ciphertext, 
-  SM2CipherMode.C1C3C2
-);
+  ciphertext, { mode: SM2CipherMode.C1C3C2 });
 console.log('明文:', decrypted);
 
 // 签名
@@ -669,3 +665,5 @@ func testSM2(tc TestVector, defaults Defaults) {
 - [gmsm 使用文档（SM2/SM3/SM4）](https://github.com/emmansun/gmsm/tree/develop/docs)
 - [Go 国密算法标准](http://www.gmbz.org.cn/)
 - [互操作测试向量](/dev/INTEROP_VECTORS)
+
+

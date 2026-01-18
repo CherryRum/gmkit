@@ -1,3 +1,5 @@
+import { InputFormat, OutputFormat, type InputFormatType, type OutputFormatType } from '../types/constants';
+
 /**
  * 将十六进制字符串转换为 Uint8Array
  * @param hex - 十六进制字符串（可带或不带 0x 前缀）
@@ -47,13 +49,84 @@ export function bytesToHex(bytes: Uint8Array): string {
   return parts.join('');
 }
 
+export type BytesLike = string | Uint8Array;
+
+export type TextCodec = {
+  encode: (input: string) => Uint8Array;
+  decode: (bytes: Uint8Array) => string;
+};
+
+let customTextCodec: TextCodec | null = null;
+
+export function setTextCodec(codec: TextCodec) {
+  customTextCodec = codec;
+}
+
+function tryNodeTextEncoder(): TextEncoder | null {
+  try {
+    if (typeof require !== 'undefined') {
+      const { TextEncoder } = require('node:util');
+      if (typeof TextEncoder === 'function') {
+        return new TextEncoder();
+      }
+    }
+  } catch (_) {}
+  return null;
+}
+
+function tryNodeTextDecoder(): TextDecoder | null {
+  try {
+    if (typeof require !== 'undefined') {
+      const { TextDecoder } = require('node:util');
+      if (typeof TextDecoder === 'function') {
+        return new TextDecoder();
+      }
+    }
+  } catch (_) {}
+  return null;
+}
+
+function fallbackEncodeUtf8(str: string): Uint8Array {
+  const encoded = encodeURIComponent(str);
+  const bytes: number[] = [];
+  for (let i = 0; i < encoded.length; i++) {
+    const ch = encoded[i];
+    if (ch === '%') {
+      const hex = encoded.slice(i + 1, i + 3);
+      bytes.push(parseInt(hex, 16));
+      i += 2;
+    } else {
+      bytes.push(encoded.charCodeAt(i));
+    }
+  }
+  return new Uint8Array(bytes);
+}
+
+function fallbackDecodeUtf8(bytes: Uint8Array): string {
+  let encoded = '';
+  for (let i = 0; i < bytes.length; i++) {
+    encoded += '%' + HEX_STRINGS[bytes[i]];
+  }
+  return decodeURIComponent(encoded);
+}
+
 /**
  * 将 UTF-8 字符串转换为 Uint8Array
  * @param str - 要转换的字符串
  * @returns 字符串的 Uint8Array 表示
  */
 export function stringToBytes(str: string): Uint8Array {
-  return new TextEncoder().encode(str);
+  if (customTextCodec) {
+    return customTextCodec.encode(str);
+  }
+  if (typeof TextEncoder !== 'undefined') {
+    return new TextEncoder().encode(str);
+  }
+  const nodeEncoder = tryNodeTextEncoder();
+  if (nodeEncoder) {
+    return nodeEncoder.encode(str);
+  }
+  return fallbackEncodeUtf8(str);
 }
 
 /**
@@ -62,7 +135,17 @@ export function stringToBytes(str: string): Uint8Array {
  * @returns UTF-8 字符串
  */
 export function bytesToString(bytes: Uint8Array): string {
-  return new TextDecoder().decode(bytes);
+  if (customTextCodec) {
+    return customTextCodec.decode(bytes);
+  }
+  if (typeof TextDecoder !== 'undefined') {
+    return new TextDecoder().decode(bytes);
+  }
+  const nodeDecoder = tryNodeTextDecoder();
+  if (nodeDecoder) {
+    return nodeDecoder.decode(bytes);
+  }
+  return fallbackDecodeUtf8(bytes);
 }
 
 /**
@@ -72,6 +155,27 @@ export function bytesToString(bytes: Uint8Array): string {
  */
 export function normalizeInput(data: string | Uint8Array): Uint8Array {
   return typeof data === 'string' ? stringToBytes(data) : data;
+}
+
+/**
+ * 将 BytesLike 统一解码为 Uint8Array
+ * @param data - Hex/Base64 字符串或 Uint8Array
+ * @param inputFormat - 输入格式（默认 hex）
+ */
+export function decodeInput(data: BytesLike, inputFormat: InputFormatType = InputFormat.HEX): Uint8Array {
+  if (data instanceof Uint8Array) return data;
+  if (inputFormat === InputFormat.BASE64) return base64ToBytes(data);
+  if (inputFormat === InputFormat.HEX) return hexToBytes(data);
+  throw new Error(`Unsupported input format: ${inputFormat}`);
+}
+
+/**
+ * 将 Uint8Array 编码为字符串输出
+ * @param bytes - 要编码的数据
+ * @param outputFormat - 输出格式（默认 hex）
+ */
+export function encodeOutput(bytes: Uint8Array, outputFormat: OutputFormatType = OutputFormat.HEX): string {
+  return outputFormat === OutputFormat.BASE64 ? bytesToBase64(bytes) : bytesToHex(bytes);
 }
 
 /**
@@ -392,17 +496,48 @@ function unsafeFallbackRandom(len: number): Uint8Array {
 export function getRandomBytes(len: number = 32): Uint8Array {
   if (len <= 0) throw new Error('Invalid length for random bytes');
 
+  // Custom RNG
+  if (customRNG) return customRNG(len);
   // WebCrypto
   const webCryptoRes = tryWebCrypto(len);
   if (webCryptoRes) return webCryptoRes;
   // NodeCrypto
   const nodeCryptoRes = tryNodeCrypto(len);
   if (nodeCryptoRes) return nodeCryptoRes;
-  // Custom RNG
-  if (customRNG) return customRNG(len);
   // Unsafe fallback
   if (rngPolicy === 'strict') {
     throw new Error('[gmkit][RNG] No cryptographically secure random generator available.');
   }
   return unsafeFallbackRandom(len);
+}
+
+export type EnvReport = {
+  hasBigInt: boolean;
+  hasTextEncoder: boolean;
+  hasTextDecoder: boolean;
+  hasWebCrypto: boolean;
+  hasNodeCrypto: boolean;
+};
+
+export function getEnvReport(): EnvReport {
+  const hasBigInt = typeof BigInt !== 'undefined';
+  const hasTextEncoder = typeof TextEncoder !== 'undefined' || tryNodeTextEncoder() !== null;
+  const hasTextDecoder = typeof TextDecoder !== 'undefined' || tryNodeTextDecoder() !== null;
+  const hasWebCrypto = typeof (globalThis as any).crypto?.getRandomValues === 'function';
+  let hasNodeCrypto = false;
+  try {
+    if (typeof require !== 'undefined') {
+      const { randomBytes } = require('node:crypto');
+      hasNodeCrypto = typeof randomBytes === 'function';
+    }
+  } catch (_) {
+    hasNodeCrypto = false;
+  }
+  return {
+    hasBigInt,
+    hasTextEncoder,
+    hasTextDecoder,
+    hasWebCrypto,
+    hasNodeCrypto,
+  };
 }

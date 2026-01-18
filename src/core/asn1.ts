@@ -9,6 +9,9 @@
  * 4. 长度计算：移除 unshift 操作，改用预计算偏移量。
  */
 
+import { decodeInput, type BytesLike } from './utils';
+import { InputFormat, type InputFormatType } from '../types/constants';
+
 export const ASN1Tag = {
   INTEGER: 0x02,
   BIT_STRING: 0x03,
@@ -371,19 +374,24 @@ export function asn1ToXml(data: Uint8Array, indent: number = 0): string {
  * @param isDer - Whether the signature is DER-encoded (default: auto-detect)
  * @returns XML string representation of the signature
  */
-export function signatureToXml(signature: string | Uint8Array,isDer?:boolean): string {
+export function signatureToXml(
+  signature: BytesLike,
+  options?: {
+    signatureFormat?: 'raw' | 'der' | 'auto';
+    inputFormat?: InputFormatType;
+  }
+): string {
+  const signatureFormat = options?.signatureFormat || 'raw';
+  const inputFormat = options?.inputFormat || InputFormat.HEX;
+  const sigBytes = decodeInput(signature, inputFormat);
   let derBytes: Uint8Array;
-  if (typeof signature === 'string') {
-    // 简单启发式检测：SM2 DER 签名通常以 0x30 开头，且长度在 70-72 字节左右
-    // 原始签名是 128 字符 (64字节)
-    // 注意：这里使用 toLowerCase 确保 Hex.decode 能处理，
-    // 虽然 Hex.decode 应该处理大小写，但为了保险和统一
-    const cleanSig = signature;
-    isDer = cleanSig.startsWith('30') && cleanSig.length > 130;
-    derBytes = isDer ? Hex.decode(cleanSig) : rawToDer(cleanSig);
+
+  if (signatureFormat === 'der') {
+    derBytes = sigBytes;
+  } else if (signatureFormat === 'auto') {
+    derBytes = sigBytes[0] === 0x30 ? sigBytes : rawToDer(sigBytes);
   } else {
-    derBytes = signature;
-    isDer = signature[0] === 0x30;
+    derBytes = rawToDer(sigBytes);
   }
 
   const { r, s } = decodeSignature(derBytes);

@@ -77,27 +77,15 @@ const categories = ref<ToolCategory[]>([
   },
   {
     id: 'utils',
-    name: '🛠️ 实用工具',
-    icon: '🔧',
-    description: '密码学相关的实用工具',
+    name: '🧰 API 演示',
+    icon: '🧪',
+    description: '完整覆盖 gmkitx 全部公开 API 的演示入口',
     tools: [
       {
-        id: 'keygen',
-        name: '密钥生成器',
-        description: '生成各种密钥对和随机数',
-        route: '/utils/keygen'
-      },
-      {
-        id: 'converter',
-        name: '格式转换',
-        description: '十六进制、Base64、ASN.1 等格式互转',
-        route: '/utils/converter'
-      },
-      {
-        id: 'validator',
-        name: '签名验证',
-        description: '验证数字签名和证书',
-        route: '/utils/validator'
+        id: 'all-api',
+        name: '全部 API 演示',
+        description: '一键运行：SM2/SM3/SM4/ZUC/SHA/工具/ASN.1',
+        route: '/api'
       }
     ]
   }

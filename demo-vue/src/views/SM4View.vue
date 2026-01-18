@@ -122,19 +122,9 @@ const encryptText = () => {
     }
     
     const encrypted = sm4Encrypt(secretKey.value, plaintext.value, options)
-    
-    // 处理加密结果 Handle encryption result
-    if (typeof encrypted === 'object' && 'ciphertext' in encrypted) {
-      // GCM模式返回对象 GCM mode returns object
-      ciphertext.value = encrypted.ciphertext
-      authTag.value = encrypted.tag
-      showSuccess('加密成功！认证标签已生成。')
-    } else {
-      // 其他模式返回字符串 Other modes return string
-      ciphertext.value = encrypted
-      authTag.value = ''
-      showSuccess('加密成功！')
-    }
+    ciphertext.value = encrypted.ciphertext
+    authTag.value = encrypted.tag || ''
+    showSuccess(encrypted.tag ? '加密成功！认证标签已生成。' : '加密成功！')
   } catch (error) {
     showError('加密失败：' + (error as Error).message)
   }

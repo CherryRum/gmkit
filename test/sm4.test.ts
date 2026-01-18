@@ -9,7 +9,7 @@ describe('SM4 分组密码测试', () => {
     it('应该能够使用 ECB 模式加密和解密', () => {
       const plaintext = 'Hello, SM4!';
       const encrypted = encrypt(key, plaintext, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
-      expect(encrypted).toMatch(/^[0-9a-f]+$/);
+      expect(encrypted.ciphertext).toMatch(/^[0-9a-f]+$/);
 
       const decrypted = decrypt(key, encrypted, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
       expect(decrypted).toBe(plaintext);
@@ -18,7 +18,7 @@ describe('SM4 分组密码测试', () => {
     it('应该能够处理 Uint8Array 输入', () => {
       const plaintext = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]);
       const encrypted = encrypt(key, plaintext, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
-      expect(encrypted).toMatch(/^[0-9a-f]+$/);
+      expect(encrypted.ciphertext).toMatch(/^[0-9a-f]+$/);
 
       const decrypted = decrypt(key, encrypted, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
       expect(decrypted).toBe('Hello');
@@ -27,7 +27,7 @@ describe('SM4 分组密码测试', () => {
     it('应该能够加密恰好 16 字节而无需填充', () => {
       const plaintext = '0123456789abcdef'; // exactly 16 bytes
       const encrypted = encrypt(key, plaintext, { mode: CipherMode.ECB, padding: PaddingMode.NONE });
-      expect(encrypted).toHaveLength(32); // 16 bytes = 32 hex chars
+      expect(encrypted.ciphertext).toHaveLength(32); // 16 bytes = 32 hex chars
 
       const decrypted = decrypt(key, encrypted, { mode: CipherMode.ECB, padding: PaddingMode.NONE });
       expect(decrypted).toBe(plaintext);
@@ -36,7 +36,7 @@ describe('SM4 分组密码测试', () => {
     it('应该能够使用 ZERO 填充加密和解密', () => {
       const plaintext = 'Hello, SM4!';
       const encrypted = encrypt(key, plaintext, { mode: CipherMode.ECB, padding: PaddingMode.ZERO });
-      expect(encrypted).toMatch(/^[0-9a-f]+$/);
+      expect(encrypted.ciphertext).toMatch(/^[0-9a-f]+$/);
 
       const decrypted = decrypt(key, encrypted, { mode: CipherMode.ECB, padding: PaddingMode.ZERO });
       expect(decrypted).toBe(plaintext);
@@ -45,7 +45,7 @@ describe('SM4 分组密码测试', () => {
     it('应该能够处理以非零字节结尾的 ZERO 填充', () => {
       const plaintext = 'Test123'; // 7 bytes, will be padded to 16
       const encrypted = encrypt(key, plaintext, { mode: CipherMode.ECB, padding: PaddingMode.ZERO });
-      expect(encrypted).toHaveLength(32); // 16 bytes = 32 hex chars
+      expect(encrypted.ciphertext).toHaveLength(32); // 16 bytes = 32 hex chars
 
       const decrypted = decrypt(key, encrypted, { mode: CipherMode.ECB, padding: PaddingMode.ZERO });
       expect(decrypted).toBe(plaintext);
@@ -54,7 +54,7 @@ describe('SM4 分组密码测试', () => {
     it('应该能够处理恰好 16 字节的 ZERO 填充', () => {
       const plaintext = '0123456789abcdef'; // exactly 16 bytes
       const encrypted = encrypt(key, plaintext, { mode: CipherMode.ECB, padding: PaddingMode.ZERO });
-      expect(encrypted).toHaveLength(32); // 16 bytes = 32 hex chars
+      expect(encrypted.ciphertext).toHaveLength(32); // 16 bytes = 32 hex chars
 
       const decrypted = decrypt(key, encrypted, { mode: CipherMode.ECB, padding: PaddingMode.ZERO });
       expect(decrypted).toBe(plaintext);
@@ -67,7 +67,7 @@ describe('SM4 分组密码测试', () => {
     it('应该能够使用 CBC 模式加密和解密', () => {
       const plaintext = 'Hello, SM4 CBC!';
       const encrypted = encrypt(key, plaintext, { mode: CipherMode.CBC, padding: PaddingMode.PKCS7, iv });
-      expect(encrypted).toMatch(/^[0-9a-f]+$/);
+      expect(encrypted.ciphertext).toMatch(/^[0-9a-f]+$/);
 
       const decrypted = decrypt(key, encrypted, { mode: CipherMode.CBC, padding: PaddingMode.PKCS7, iv });
       expect(decrypted).toBe(plaintext);
@@ -76,7 +76,7 @@ describe('SM4 分组密码测试', () => {
     it('应该能够使用 CBC 模式和 ZERO 填充加密和解密', () => {
       const plaintext = 'Hello, SM4 CBC!';
       const encrypted = encrypt(key, plaintext, { mode: CipherMode.CBC, padding: PaddingMode.ZERO, iv });
-      expect(encrypted).toMatch(/^[0-9a-f]+$/);
+      expect(encrypted.ciphertext).toMatch(/^[0-9a-f]+$/);
 
       const decrypted = decrypt(key, encrypted, { mode: CipherMode.CBC, padding: PaddingMode.ZERO, iv });
       expect(decrypted).toBe(plaintext);
@@ -106,7 +106,7 @@ describe('SM4 分组密码测试', () => {
     it('应该能够正确处理多个块', () => {
       const plaintext = 'a'.repeat(100);
       const encrypted = encrypt(key, plaintext, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
-      expect(encrypted).toMatch(/^[0-9a-f]+$/);
+      expect(encrypted.ciphertext).toMatch(/^[0-9a-f]+$/);
 
       const decrypted = decrypt(key, encrypted, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
       expect(decrypted).toBe(plaintext);
@@ -119,7 +119,7 @@ describe('SM4 分组密码测试', () => {
     it('应该能够使用 CTR 模式加密和解密', () => {
       const plaintext = 'Hello, SM4 CTR mode!';
       const encrypted = encrypt(key, plaintext, { mode: CipherMode.CTR, iv });
-      expect(encrypted).toMatch(/^[0-9a-f]+$/);
+      expect(encrypted.ciphertext).toMatch(/^[0-9a-f]+$/);
 
       const decrypted = decrypt(key, encrypted, { mode: CipherMode.CTR, iv });
       expect(decrypted).toBe(plaintext);
@@ -128,7 +128,7 @@ describe('SM4 分组密码测试', () => {
     it('应该能够处理 CTR 模式中非块对齐的数据', () => {
       const plaintext = 'Hello'; // 5 bytes, not multiple of 16
       const encrypted = encrypt(key, plaintext, { mode: CipherMode.CTR, iv });
-      expect(encrypted).toHaveLength(10); // 5 bytes = 10 hex chars
+      expect(encrypted.ciphertext).toHaveLength(10); // 5 bytes = 10 hex chars
 
       const decrypted = decrypt(key, encrypted, { mode: CipherMode.CTR, iv });
       expect(decrypted).toBe(plaintext);
@@ -153,7 +153,7 @@ describe('SM4 分组密码测试', () => {
     it('应该能够使用 CFB 模式加密和解密', () => {
       const plaintext = 'Hello, SM4 CFB mode!';
       const encrypted = encrypt(key, plaintext, { mode: CipherMode.CFB, iv });
-      expect(encrypted).toMatch(/^[0-9a-f]+$/);
+      expect(encrypted.ciphertext).toMatch(/^[0-9a-f]+$/);
 
       const decrypted = decrypt(key, encrypted, { mode: CipherMode.CFB, iv });
       expect(decrypted).toBe(plaintext);
@@ -162,7 +162,7 @@ describe('SM4 分组密码测试', () => {
     it('应该能够处理 CFB 模式中非块对齐的数据', () => {
       const plaintext = 'Test!'; // 5 bytes, not multiple of 16
       const encrypted = encrypt(key, plaintext, { mode: CipherMode.CFB, iv });
-      expect(encrypted).toHaveLength(10); // 5 bytes = 10 hex chars
+      expect(encrypted.ciphertext).toHaveLength(10); // 5 bytes = 10 hex chars
 
       const decrypted = decrypt(key, encrypted, { mode: CipherMode.CFB, iv });
       expect(decrypted).toBe(plaintext);
@@ -187,7 +187,7 @@ describe('SM4 分组密码测试', () => {
     it('应该能够使用 OFB 模式加密和解密', () => {
       const plaintext = 'Hello, SM4 OFB mode!';
       const encrypted = encrypt(key, plaintext, { mode: CipherMode.OFB, iv });
-      expect(encrypted).toMatch(/^[0-9a-f]+$/);
+      expect(encrypted.ciphertext).toMatch(/^[0-9a-f]+$/);
 
       const decrypted = decrypt(key, encrypted, { mode: CipherMode.OFB, iv });
       expect(decrypted).toBe(plaintext);
@@ -196,7 +196,7 @@ describe('SM4 分组密码测试', () => {
     it('应该能够处理 OFB 模式中非块对齐的数据', () => {
       const plaintext = 'Hi!'; // 3 bytes, not multiple of 16
       const encrypted = encrypt(key, plaintext, { mode: CipherMode.OFB, iv });
-      expect(encrypted).toHaveLength(6); // 3 bytes = 6 hex chars
+      expect(encrypted.ciphertext).toHaveLength(6); // 3 bytes = 6 hex chars
 
       const decrypted = decrypt(key, encrypted, { mode: CipherMode.OFB, iv });
       expect(decrypted).toBe(plaintext);

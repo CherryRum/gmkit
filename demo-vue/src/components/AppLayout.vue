@@ -44,6 +44,13 @@ const menuItems = ref<MenuItem[]>([
     icon: '🛡️',
     description: '对称加密算法，用于数据加密',
     route: '/sm4'
+  },
+  {
+    id: 'api',
+    name: '全部 API 演示',
+    icon: '📚',
+    description: '覆盖 gmkitx 的全部公开 API',
+    route: '/api'
   }
 ])
 

@@ -95,6 +95,9 @@ export {
   type SM2KeyExchangeParams,
   type SM2KeyExchangeResult,
   type SM2EncryptOptions,
+  type SM2DecryptOptions,
+  type SM2SignatureFormat,
+  type SM2SignatureInputFormat,
 } from './crypto/sm2';
 
 export { SM2 } from './crypto/sm2/class';
@@ -114,6 +117,8 @@ export {
   encrypt as sm4Encrypt,
   decrypt as sm4Decrypt,
   type SM4Options,
+  type SM4DecryptOptions,
+  type SM4CipherResult,
   type SM4GCMResult,
 } from './crypto/sm4';
 
@@ -124,11 +129,13 @@ export {
   encrypt as zucEncrypt,
   decrypt as zucDecrypt,
   getKeystream as zucKeystream,
+  getKeystreamWords as zucKeystreamWords,
   eea3,
   eia3,
   ZUCState,
   generateKeystream as zucGenerateKeystream,
   type ZUCOptions,
+  type ZUCDecryptOptions,
 } from './crypto/zuc';
 
 export { ZUC } from './crypto/zuc/class';
@@ -156,12 +163,14 @@ export {
   PaddingMode,
   SM2CipherMode,
   OutputFormat,
+  InputFormat,
   OID,
   DEFAULT_USER_ID,
   type CipherModeType,
   type PaddingModeType,
   type SM2CipherModeType,
   type OutputFormatType,
+  type InputFormatType,
 } from './types/constants';
 
 // ============================================================================
@@ -176,8 +185,24 @@ export {
   stringToBytes,
   bytesToString,
   normalizeInput,
+  decodeInput,
+  encodeOutput,
+  autoDecodeString,
   xor,
   rotl,
+  isHexString,
+  isBase64String,
+  bytes4ToUint32BE,
+  uint32ToBytes4BE,
+  configureRNG,
+  setCustomRNG,
+  getRandomBytes,
+  setTextCodec,
+  getEnvReport,
+  type BytesLike,
+  type RNGPolicy,
+  type TextCodec,
+  type EnvReport,
 } from './core/utils';
 
 // ASN.1 工具

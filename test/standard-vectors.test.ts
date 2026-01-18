@@ -80,7 +80,7 @@ describe('SM4 标准测试向量', () => {
       });
 
       // 验证密文是有效的十六进制字符串
-      expect(encrypted).toMatch(/^[0-9a-f]+$/);
+      expect(encrypted.ciphertext).toMatch(/^[0-9a-f]+$/);
 
       // 验证可以正确解密
       const decrypted = sm4Decrypt(key, encrypted, {
@@ -105,7 +105,7 @@ describe('SM4 标准测试向量', () => {
       });
 
       // ECB 模式下相同输入应该产生相同输出
-      expect(encrypted1).toBe(encrypted2);
+      expect(encrypted1.ciphertext).toBe(encrypted2.ciphertext);
     });
 
     it('测试向量 3: 不同密钥产生不同密文', () => {
@@ -124,7 +124,7 @@ describe('SM4 标准测试向量', () => {
       });
 
       // 不同密钥应该产生不同密文
-      expect(encrypted1).not.toBe(encrypted2);
+      expect(encrypted1.ciphertext).not.toBe(encrypted2.ciphertext);
     });
   });
 
@@ -140,7 +140,7 @@ describe('SM4 标准测试向量', () => {
         iv,
       });
 
-      expect(encrypted).toMatch(/^[0-9a-f]+$/);
+      expect(encrypted.ciphertext).toMatch(/^[0-9a-f]+$/);
 
       const decrypted = sm4Decrypt(key, encrypted, {
         mode: CipherMode.CBC,
@@ -169,7 +169,7 @@ describe('SM4 标准测试向量', () => {
         iv: iv2,
       });
 
-      expect(encrypted1).not.toBe(encrypted2);
+      expect(encrypted1.ciphertext).not.toBe(encrypted2.ciphertext);
     });
   });
 
@@ -184,7 +184,7 @@ describe('SM4 标准测试向量', () => {
         iv: counter,
       });
 
-      expect(encrypted).toMatch(/^[0-9a-f]+$/);
+      expect(encrypted.ciphertext).toMatch(/^[0-9a-f]+$/);
 
       const decrypted = sm4Decrypt(key, encrypted, {
         mode: CipherMode.CTR,
@@ -376,7 +376,7 @@ describe('综合互操作性测试', () => {
       });
 
       // SM3 计算密文哈希
-      const hash = digest(encrypted);
+      const hash = digest(encrypted.ciphertext);
 
       // 验证：解密后的明文应该与原文一致
       const decrypted = sm4Decrypt(key, encrypted, {
@@ -386,7 +386,7 @@ describe('综合互操作性测试', () => {
       expect(decrypted).toBe(plaintext);
 
       // 验证：密文哈希应该可重现
-      const hash2 = digest(encrypted);
+      const hash2 = digest(encrypted.ciphertext);
       expect(hash2).toBe(hash);
     });
   });

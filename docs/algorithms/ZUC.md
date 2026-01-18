@@ -173,21 +173,22 @@ ZUC 的核心功能是生成密钥流，加密只是将密钥流与明文异或�
 ### 生成指定长度的密钥流
 
 ```typescript
-import { zucKeystream } from 'gmkitx';
+import { zucKeystream, zucKeystreamWords } from 'gmkitx';
 
 const key = '0123456789abcdeffedcba9876543210';
 const iv = 'fedcba98765432100123456789abcdef';
 
 // 生成 16 字节（128 位）的密钥流
-const words = Math.ceil(16 / 4); // length 参数是 32 位字数量
-const keystream = zucKeystream(key, iv, words);
+const keystream = zucKeystream(key, iv, 16);
 console.log('密钥流:', keystream); // 32 个十六进制字符
+
+// 如需按 32 位字生成
+const wordStream = zucKeystreamWords(key, iv, 4);
 
 // 手动异或实现加密
 function manualEncrypt(plaintext: string, key: string, iv: string): string {
   const plaintextBytes = new TextEncoder().encode(plaintext);
-  const words = Math.ceil(plaintextBytes.length / 4);
-  const keystreamBytes = hexToBytes(zucKeystream(key, iv, words)).slice(0, plaintextBytes.length);
+  const keystreamBytes = hexToBytes(zucKeystream(key, iv, plaintextBytes.length));
   
   const cipherBytes = new Uint8Array(plaintextBytes.length);
   for (let i = 0; i < plaintextBytes.length; i++) {
@@ -218,7 +219,8 @@ function manualEncrypt(plaintext: string, key: string, iv: string): string {
 
 | 函数 | 说明 | 返回值 |
 |------|------|--------|
-| `zucKeystream(key, iv, length)` | 生成指定长度的密钥流（length 为 32 位字数量） | `string` |
+| `zucKeystream(key, iv, length)` | 生成指定长度的密钥流（length 为字节数） | `string` |
+| `zucKeystreamWords(key, iv, words)` | 生成指定长度的密钥流（words 为 32 位字数量） | `string` |
 
 ### 类 API
 
@@ -227,7 +229,7 @@ function manualEncrypt(plaintext: string, key: string, iv: string): string {
 | `new ZUC(key, iv)` | 创建 ZUC 实例 | `ZUC` |
 | `encrypt(plaintext, options?)` | 加密 | `string` |
 | `decrypt(ciphertext, options?)` | 解密 | `string` |
-| `keystream(length)` | 生成密钥流（length 为 32 位字数量） | `string` |
+| `keystream(length)` | 生成密钥流（length 为字节数） | `string` |
 
 ### 选项参数
 

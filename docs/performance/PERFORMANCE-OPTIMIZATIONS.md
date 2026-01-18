@@ -131,8 +131,8 @@ GM/T 0009-2023 明确推荐 C1C3C2 模式：
 
 ```typescript
 // ✅ 推荐：显式指定 C1C3C2 模式（避免自动检测开销）
-const encrypted = sm2Encrypt(publicKey, plaintext, SM2CipherMode.C1C3C2);
-const decrypted = sm2Decrypt(privateKey, encrypted, SM2CipherMode.C1C3C2);
+const encrypted = sm2Encrypt(publicKey, plaintext, { mode: SM2CipherMode.C1C3C2 });
+const decrypted = sm2Decrypt(privateKey, encrypted, { mode: SM2CipherMode.C1C3C2 });
 
 // ⚠️ 可用但不够高效：依赖自动检测
 const decrypted = sm2Decrypt(privateKey, encrypted); // 需要尝试多种格式
@@ -346,8 +346,8 @@ self.onmessage = (e) => {
 
 3. **显式指定格式，避免自动检测**
    ```typescript
-   const encrypted = sm2Encrypt(publicKey, data, SM2CipherMode.C1C3C2);
-   const decrypted = sm2Decrypt(privateKey, encrypted, SM2CipherMode.C1C3C2);
+   const encrypted = sm2Encrypt(publicKey, data, { mode: SM2CipherMode.C1C3C2 });
+   const decrypted = sm2Decrypt(privateKey, encrypted, { mode: SM2CipherMode.C1C3C2 });
    ```
 
 4. **使用 Uint8Array 作为输入（大数据量时）**
@@ -430,3 +430,5 @@ console.log('Memory used:', {
 ## 许可证
 
 Apache-2.0
+
+

@@ -119,12 +119,12 @@ describe('SM2 国密算法测试', () => {
       const plaintext = 'Test mode auto-detection';
 
       // 测试 C1C3C2 模式
-      const encryptedC1C3C2 = encrypt(keyPair.publicKey, plaintext, SM2CipherMode.C1C3C2);
+      const encryptedC1C3C2 = encrypt(keyPair.publicKey, plaintext, { mode: SM2CipherMode.C1C3C2 });
       const decryptedC1C3C2 = decrypt(keyPair.privateKey, encryptedC1C3C2); // 不指定 mode
       expect(decryptedC1C3C2).toBe(plaintext);
 
       // 测试 C1C2C3 模式
-      const encryptedC1C2C3 = encrypt(keyPair.publicKey, plaintext, SM2CipherMode.C1C2C3);
+      const encryptedC1C2C3 = encrypt(keyPair.publicKey, plaintext, { mode: SM2CipherMode.C1C2C3 });
       const decryptedC1C2C3 = decrypt(keyPair.privateKey, encryptedC1C2C3); // 不指定 mode
       expect(decryptedC1C2C3).toBe(plaintext);
     });
@@ -165,9 +165,9 @@ describe('SM2 国密算法测试', () => {
       const keyPair = generateKeyPair();
       const plaintext = 'Hello mumu';
 
-      const encrypted = encrypt(keyPair.publicKey, plaintext, SM2CipherMode.C1C3C2);
+      const encrypted = encrypt(keyPair.publicKey, plaintext, { mode: SM2CipherMode.C1C3C2 });
       expect(encrypted).toBeTruthy();
-      const decrypted = decrypt(keyPair.privateKey, encrypted, SM2CipherMode.C1C3C2);
+      const decrypted = decrypt(keyPair.privateKey, encrypted, { mode: SM2CipherMode.C1C3C2 });
       expect(decrypted).toBe(plaintext);
     });
 
@@ -175,9 +175,9 @@ describe('SM2 国密算法测试', () => {
       const keyPair = generateKeyPair();
       const plaintext = 'Hello mumu';
 
-      const encrypted = encrypt(keyPair.publicKey, plaintext, SM2CipherMode.C1C2C3);
+      const encrypted = encrypt(keyPair.publicKey, plaintext, { mode: SM2CipherMode.C1C2C3 });
       expect(encrypted).toBeTruthy();
-      const decrypted = decrypt(keyPair.privateKey, encrypted, SM2CipherMode.C1C2C3);
+      const decrypted = decrypt(keyPair.privateKey, encrypted, { mode: SM2CipherMode.C1C2C3 });
       expect(decrypted).toBe(plaintext);
     });
 
@@ -204,7 +204,7 @@ describe('SM2 国密算法测试', () => {
       const plaintext = 'Test compressed C1 format';
 
       // 加密后手动替换 C1 为压缩格式
-      const encrypted = encrypt(keyPair.publicKey, plaintext, SM2CipherMode.C1C3C2);
+      const encrypted = encrypt(keyPair.publicKey, plaintext, { mode: SM2CipherMode.C1C3C2 });
       const encryptedBytes = new Uint8Array(encrypted.length / 2);
       for (let i = 0; i < encryptedBytes.length; i++) {
         encryptedBytes[i] = parseInt(encrypted.slice(i * 2, i * 2 + 2), 16);
@@ -240,7 +240,7 @@ describe('SM2 国密算法测试', () => {
       const plaintext = 'Test compressed C1C2C3 format';
 
       // 加密为 C1C2C3 模式
-      const encrypted = encrypt(keyPair.publicKey, plaintext, SM2CipherMode.C1C2C3);
+      const encrypted = encrypt(keyPair.publicKey, plaintext, { mode: SM2CipherMode.C1C2C3 });
       const encryptedBytes = new Uint8Array(encrypted.length / 2);
       for (let i = 0; i < encryptedBytes.length; i++) {
         encryptedBytes[i] = parseInt(encrypted.slice(i * 2, i * 2 + 2), 16);
@@ -342,10 +342,10 @@ describe('SM2 国密算法测试', () => {
       const keyPair = generateKeyPair();
       const data = 'Hello';
 
-      const signature = sign(keyPair.privateKey, data, { der: true, userId: DEFAULT_USER_ID });
+      const signature = sign(keyPair.privateKey, data, { signatureFormat: 'der', userId: DEFAULT_USER_ID });
       expect(signature).toBeTruthy();
 
-      const isValid = verify(keyPair.publicKey, data, signature, { der: true, userId: DEFAULT_USER_ID });
+      const isValid = verify(keyPair.publicKey, data, signature, { signatureFormat: 'der', userId: DEFAULT_USER_ID });
       expect(isValid).toBe(true);
     });
 

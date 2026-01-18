@@ -8,12 +8,22 @@
  */
 
 import {digest as sm3Digest} from '../sm3';
-import {normalizeInput, hexToBytes, bytesToHex, bytesToBase64, autoDecodeString} from '../../core/utils';
+import {
+  normalizeInput,
+  hexToBytes,
+  bytesToHex,
+  bytesToString,
+  decodeInput,
+  encodeOutput,
+  type BytesLike,
+} from '../../core/utils';
 import {
   SM2CipherMode,
   OutputFormat,
+  InputFormat,
   type SM2CipherModeType,
   type OutputFormatType,
+  type InputFormatType,
   DEFAULT_USER_ID
 } from '../../types/constants';
 import {sm2, SM2_CURVE_PARAMS} from './curve';
@@ -63,6 +73,28 @@ export interface SM2EncryptOptions {
 }
 
 /**
+ * SM2 解密选项
+ */
+export interface SM2DecryptOptions {
+  /**
+   * 密文模式
+   * - C1C3C2: C1 || C3 || C2（默认，推荐）
+   * - C1C2C3: C1 || C2 || C3
+   */
+  mode?: SM2CipherModeType;
+
+  /**
+   * 输入格式
+   * - hex: 十六进制字符串（默认）
+   * - base64: Base64 编码字符串
+   */
+  inputFormat?: InputFormatType;
+}
+
+export type SM2SignatureFormat = 'raw' | 'der';
+export type SM2SignatureInputFormat = SM2SignatureFormat | 'auto';
+
+/**
  * 验证字符串是否为有效的十六进制字符串（不使用正则表达式）
  */
 function isValidHexString(str: string): boolean {
@@ -89,7 +121,14 @@ function isValidHexString(str: string): boolean {
  * 自动识别并规范化私钥输入
  * 支持：hex字符串（带或不带0x前缀）
  */
-function normalizePrivateKeyInput(privateKey: string): string {
+function normalizePrivateKeyInput(privateKey: BytesLike): string {
+  if (privateKey instanceof Uint8Array) {
+    if (privateKey.length !== 32) {
+      throw new Error('Invalid private key: must be 32 bytes');
+    }
+    return bytesToHex(privateKey);
+  }
+
   let cleaned = privateKey.trim();
 
   // 移除 0x 前缀
@@ -119,8 +158,8 @@ function normalizePrivateKeyInput(privateKey: string): string {
  * 自动识别并规范化公钥输入
  * 支持：压缩格式（02/03开头）和非压缩格式（04开头）
  */
-function normalizePublicKeyInput(publicKey: string): string {
-  let cleaned = publicKey.trim();
+function normalizePublicKeyInput(publicKey: BytesLike): string {
+  let cleaned = publicKey instanceof Uint8Array ? bytesToHex(publicKey) : publicKey.trim();
 
   // 移除 0x 前缀
   if (cleaned.startsWith('0x') || cleaned.startsWith('0X')) {
@@ -216,7 +255,7 @@ function tryVerifyAndDecrypt(
   const c3VerifyHex = sm3Digest(c3VerifyInput);
   const c3Verify = hexToBytes(c3VerifyHex);
   if (constantTimeEqual(c3, c3Verify)) {
-    return new TextDecoder().decode(plainBytes);
+    return bytesToString(plainBytes);
   }
   return null;
 }
@@ -243,12 +282,12 @@ function tryVerifyAndDecrypt(
  * @returns 解密后的数据（UTF-8 字符串）
  */
 export function decrypt(
-  privateKey: string,
-  encryptedData: string,
-  mode?: SM2CipherModeType
+  privateKey: BytesLike,
+  encryptedData: BytesLike,
+  options?: SM2DecryptOptions
 ): string {
   const cleanPrivateKey = normalizePrivateKeyInput(privateKey);
-  const cipherBytes = autoDecodeString(encryptedData);
+  const cipherBytes = decodeInput(encryptedData, options?.inputFormat || InputFormat.HEX);
 
   if (cipherBytes.length === 0) throw new Error('Invalid ciphertext: empty data');
   if (cipherBytes[0] === 0x30) return decryptAsn1(cleanPrivateKey, cipherBytes);
@@ -282,8 +321,8 @@ export function decrypt(
   };
 
   // 1. 指定模式：直接尝试
-  if (mode) {
-    const {c2, c3} = getComponents(mode);
+  if (options?.mode) {
+    const {c2, c3} = getComponents(options.mode);
     const result = tryVerifyAndDecrypt(x2, y2, t, c2, c3);
     if (result !== null) return result;
     throw new Error('Decryption failed: C3 verification failed');
@@ -464,7 +503,7 @@ function decryptCore(
   }
 
   // 将字节转换为 UTF-8 字符串
-  return new TextDecoder().decode(plainBytes);
+  return bytesToString(plainBytes);
 }
 
 /**
@@ -522,14 +561,19 @@ function computeZ(userId: string, publicKey: string): Uint8Array {
  */
 export interface SignOptions {
   /**
-   * 是否使用 DER 编码格式
+   * 签名格式
    *
-   * - false（默认）: 返回 Raw 格式签名（r || s，64 字节，128 个十六进制字符）
-   * - true: 返回 DER 编码格式签名（符合 ASN.1 标准，长度可变）
-   *
-   * DER 格式更标准，适合与其他系统互操作；Raw 格式更紧凑，适合存储
+   * - raw（默认）: 返回 Raw 格式签名（r || s，64 字节）
+   * - der: 返回 DER 编码格式签名（符合 ASN.1 标准，长度可变）
    */
-  der?: boolean;
+  signatureFormat?: SM2SignatureFormat;
+
+  /**
+   * 输出格式
+   * - hex：十六进制字符串（默认）
+   * - base64：Base64 编码字符串
+   */
+  outputFormat?: OutputFormatType;
 
   /**
    * 用户 ID（用于计算 Z 值）
@@ -583,14 +627,20 @@ export interface SignOptions {
  */
 export interface VerifyOptions {
   /**
-   * 签名是否为 DER 编码格式
+   * 签名格式
    *
-   * - false（默认）: 签名为 Raw 格式（r || s）
-   * - true: 签名为 DER 编码格式
-   *
-   * 注意：函数会自动尝试识别签名格式（以 '30' 开头的视为 DER 格式）
+   * - raw（默认）: 签名为 Raw 格式（r || s）
+   * - der: 签名为 DER 编码格式
+   * - auto: 自动识别签名格式（仅在显式指定时启用）
    */
-  der?: boolean;
+  signatureFormat?: SM2SignatureInputFormat;
+
+  /**
+   * 签名输入格式
+   * - hex：十六进制字符串（默认）
+   * - base64：Base64 编码字符串
+   */
+  inputFormat?: InputFormatType;
 
   /**
    * 用户 ID（必须与签名时使用的相同）
@@ -647,7 +697,7 @@ export function generateKeyPair(compressed: boolean = false): KeyPair {
  * @param compressed - 是否返回压缩格式（默认 false，返回非压缩格式）
  * @returns 公钥（十六进制字符串，压缩格式：02/03 + x，非压缩格式：04 + x + y）
  */
-export function getPublicKeyFromPrivateKey(privateKey: string, compressed: boolean = false): string {
+export function getPublicKeyFromPrivateKey(privateKey: BytesLike, compressed: boolean = false): string {
   // 自动识别输入格式
   const cleanPrivateKey = normalizePrivateKeyInput(privateKey);
 
@@ -694,7 +744,7 @@ export function getPublicKeyFromPrivateKey(privateKey: string, compressed: boole
  * const compressed = compressPublicKey(uncompressed); // 66 个字符
  * ```
  */
-export function compressPublicKey(publicKey: string): string {
+export function compressPublicKey(publicKey: BytesLike): string {
   // 规范化输入
   const cleanPublicKey = normalizePublicKeyInput(publicKey);
 
@@ -732,7 +782,7 @@ export function compressPublicKey(publicKey: string): string {
  * const uncompressed = decompressPublicKey(compressed); // 130 个字符
  * ```
  */
-export function decompressPublicKey(publicKey: string): string {
+export function decompressPublicKey(publicKey: BytesLike): string {
   let cleaned = publicKey.trim();
 
   // 移除 0x 前缀
@@ -835,22 +885,12 @@ function kdf(z: Uint8Array, klen: number): Uint8Array {
  * });
  */
 export function encrypt(
-  publicKey: string,
+  publicKey: BytesLike,
   data: string | Uint8Array,
-  optionsOrMode?: SM2EncryptOptions | SM2CipherModeType
+  options?: SM2EncryptOptions
 ): string {
-  // 处理参数：支持旧的字符串模式参数或新的选项对象
-  let mode: SM2CipherModeType = SM2CipherMode.C1C3C2;
-  let outputFormat: OutputFormatType = OutputFormat.HEX;
-
-  if (typeof optionsOrMode === 'string') {
-    // 向后兼容：optionsOrMode 是模式字符串
-    mode = optionsOrMode;
-  } else if (optionsOrMode) {
-    // 新的选项对象
-    mode = optionsOrMode.mode || SM2CipherMode.C1C3C2;
-    outputFormat = optionsOrMode.outputFormat || OutputFormat.HEX;
-  }
+  const mode: SM2CipherModeType = options?.mode || SM2CipherMode.C1C3C2;
+  const outputFormat: OutputFormatType = options?.outputFormat || OutputFormat.HEX;
 
   // 自动识别并规范化公钥输入
   const cleanPublicKey = normalizePublicKeyInput(publicKey);
@@ -912,7 +952,7 @@ export function encrypt(
   }
 
   // 根据输出格式返回结果
-  return outputFormat === OutputFormat.BASE64 ? bytesToBase64(ciphertext) : bytesToHex(ciphertext);
+  return encodeOutput(ciphertext, outputFormat);
 }
 
 
@@ -924,14 +964,15 @@ export function encrypt(
  * @returns 签名（十六进制字符串，默认 r || s 格式，如果 der=true 则为 DER 编码）
  */
 export function sign(
-  privateKey: string,
+  privateKey: BytesLike,
   data: string | Uint8Array,
   options?: SignOptions
 ): string {
   // 自动识别并规范化私钥输入
   const cleanPrivateKey = normalizePrivateKeyInput(privateKey);
   const userId = options?.userId || DEFAULT_USER_ID;
-  const useDer = options?.der || false;
+  const signatureFormat = options?.signatureFormat || 'raw';
+  const outputFormat = options?.outputFormat || OutputFormat.HEX;
   const skipZ = options?.skipZComputation || false;
 
   // 使用 @noble/curves 进行签名
@@ -964,17 +1005,15 @@ export function sign(
   // prehash: false 因为我们已经计算了 SM3 哈希
   const signatureBytes = sm2.sign(e, privateKeyBytes, {prehash: false});
 
-  // 解析签名（compact 格式：r || s，各32字节）
-  const r = bytesToHex(signatureBytes.slice(0, 32));
-  const s = bytesToHex(signatureBytes.slice(32, 64));
-
   // 根据选项返回 DER 编码或原始格式
-  if (useDer) {
+  if (signatureFormat === 'der') {
+    const r = bytesToHex(signatureBytes.slice(0, 32));
+    const s = bytesToHex(signatureBytes.slice(32, 64));
     const derBytes = encodeSignature(r, s);
-    return bytesToHex(derBytes);
+    return encodeOutput(derBytes, outputFormat);
   }
 
-  return r + s;
+  return encodeOutput(signatureBytes, outputFormat);
 }
 
 /**
@@ -986,16 +1025,17 @@ export function sign(
  * @returns 签名是否有效
  */
 export function verify(
-  publicKey: string,
+  publicKey: BytesLike,
   data: string | Uint8Array,
-  signature: string,
+  signature: BytesLike,
   options?: VerifyOptions
 ): boolean {
   try {
     // 自动识别并规范化公钥输入
     const cleanPublicKey = normalizePublicKeyInput(publicKey);
     const userId = options?.userId || DEFAULT_USER_ID;
-    const isDer = options?.der || false;
+    const signatureFormat = options?.signatureFormat || 'raw';
+    const inputFormat = options?.inputFormat || InputFormat.HEX;
     const skipZ = options?.skipZComputation || false;
 
     let e: Uint8Array;
@@ -1021,29 +1061,29 @@ export function verify(
 
     // 解析签名
     let r: string, s: string;
+    const sigBytes = decodeInput(signature, inputFormat);
 
-    if (isDer) {
-      // 自动识别：如果以 30 开头，可能是 DER 编码
-      const sigBytes = hexToBytes(signature);
+    if (signatureFormat === 'der') {
       const decoded = decodeSignature(sigBytes);
       r = decoded.r;
       s = decoded.s;
-    } else {
-      // 尝试自动识别格式
-      if (signature.length === 128) {
-        // 原始格式 r || s
-        r = signature.slice(0, 64);
-        s = signature.slice(64, 128);
-      } else if (signature.startsWith('30')) {
-        // 可能是 DER 编码
-        const sigBytes = hexToBytes(signature);
+    } else if (signatureFormat === 'auto') {
+      if (sigBytes.length === 64) {
+        r = bytesToHex(sigBytes.slice(0, 32));
+        s = bytesToHex(sigBytes.slice(32, 64));
+      } else if (sigBytes[0] === 0x30) {
         const decoded = decodeSignature(sigBytes);
         r = decoded.r;
         s = decoded.s;
       } else {
-        // 无效的签名格式，直接返回 false, throw new Error('Invalid signature format')不太合理
         return false;
       }
+    } else {
+      if (sigBytes.length !== 64) {
+        return false;
+      }
+      r = bytesToHex(sigBytes.slice(0, 32));
+      s = bytesToHex(sigBytes.slice(32, 64));
     }
 
     // 使用 @noble/curves 验证签名
@@ -1075,12 +1115,12 @@ export interface SM2KeyExchangeParams {
   /**
    * 己方私钥（十六进制字符串）
    */
-  privateKey: string;
+  privateKey: BytesLike;
 
   /**
    * 己方公钥（十六进制字符串，可选，如果不提供会从私钥派生）
    */
-  publicKey?: string;
+  publicKey?: BytesLike;
 
   /**
    * 己方用户 ID
@@ -1093,17 +1133,17 @@ export interface SM2KeyExchangeParams {
   /**
    * 己方临时私钥（十六进制字符串，可选，如果不提供会自动生成）
    */
-  tempPrivateKey?: string;
+  tempPrivateKey?: BytesLike;
 
   /**
    * 对方公钥（十六进制字符串）
    */
-  peerPublicKey: string;
+  peerPublicKey: BytesLike;
 
   /**
    * 对方临时公钥（十六进制字符串）
    */
-  peerTempPublicKey: string;
+  peerTempPublicKey: BytesLike;
 
   /**
    * 对方用户 ID

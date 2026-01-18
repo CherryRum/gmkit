@@ -130,14 +130,14 @@ const key = '0123456789abcdeffedcba9876543210'; // 32 字符 hex (128 位)
 const iv = 'fedcba98765432100123456789abcdef';  // 32 字符 hex (128 位)
 
 // 加密
-const ciphertext = sm4Encrypt(key, '敏感数据', {
+const sm4Result = sm4Encrypt(key, '敏感数据', {
   mode: CipherMode.CBC,
   padding: PaddingMode.PKCS7,
   iv,
 });
 
 // 解密
-const plaintext = sm4Decrypt(key, ciphertext, {
+const plaintext = sm4Decrypt(key, sm4Result, {
   mode: CipherMode.CBC,
   padding: PaddingMode.PKCS7,
   iv,
@@ -200,3 +200,5 @@ console.log('签名验证:', isValid); // true
 - 不要在代码中硬编码密钥
 - IV（初始化向量）不应重复使用
 :::
+
+

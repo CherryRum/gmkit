@@ -9,9 +9,9 @@ describe('SM4 class API', () => {
     const iv = 'fedcba98765432100123456789abcdef';
     const sm4 = SM4.CBC(KEY, iv);
     const ciphertext = sm4.encrypt('Hello, CBC factory!');
-    expect(typeof ciphertext).toBe('string');
+    expect(typeof ciphertext).toBe('object');
 
-    const plaintext = sm4.decrypt(ciphertext as string);
+    const plaintext = sm4.decrypt(ciphertext);
     expect(plaintext).toBe('Hello, CBC factory!');
   });
 
@@ -21,13 +21,13 @@ describe('SM4 class API', () => {
 
     sm4.setPadding(PaddingMode.NONE);
     const ecbCiphertext = sm4.encrypt(blockAligned);
-    expect(sm4.decrypt(ecbCiphertext as string)).toBe(blockAligned);
+    expect(sm4.decrypt(ecbCiphertext)).toBe(blockAligned);
 
     const iv = '00000000000000000000000000000000';
     sm4.setMode(CipherMode.CTR);
     sm4.setIV(iv);
     const ctrCiphertext = sm4.encrypt('CTR stream data');
-    expect(sm4.decrypt(ctrCiphertext as string)).toBe('CTR stream data');
+    expect(sm4.decrypt(ctrCiphertext)).toBe('CTR stream data');
   });
 
   it('supports authenticated encryption via the GCM factory', () => {

@@ -134,12 +134,12 @@ describe('互操作性和标准测试向量', () => {
         expect(decrypted).toBe(testCase.input);
         
         // 如果提供了期望的密文，尝试验证（但不强制要求完全匹配）
-        if (testCase.expected?.cipherHex && encrypted === testCase.expected.cipherHex) {
+        if (testCase.expected?.cipherHex && encrypted.ciphertext === testCase.expected.cipherHex) {
           // 完全匹配是最理想的
-          expect(encrypted).toBe(testCase.expected.cipherHex);
+          expect(encrypted.ciphertext).toBe(testCase.expected.cipherHex);
         } else {
           // 至少应该是有效的十六进制字符串
-          expect(encrypted).toMatch(/^[0-9a-f]+$/);
+          expect(encrypted.ciphertext).toMatch(/^[0-9a-f]+$/);
         }
       });
     });
@@ -344,8 +344,8 @@ describe('互操作性和标准测试向量', () => {
         padding: PaddingMode.PKCS7 
       });
       
-      expect(encrypted).toMatch(/^[0-9a-f]+$/);
-      expect(encrypted.length % 2).toBe(0); // 应该是偶数长度
+      expect(encrypted.ciphertext).toMatch(/^[0-9a-f]+$/);
+      expect(encrypted.ciphertext.length % 2).toBe(0); // 应该是偶数长度
     });
 
     it('签名应该产生有效的十六进制字符串', () => {

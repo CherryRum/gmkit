@@ -325,7 +325,7 @@ sm4.setPadding(PaddingMode.NONE);
 
 | 函数 | 说明 | 返回值 |
 |------|------|--------|
-| `sm4Encrypt(key, plaintext, options?)` | SM4 加密 | `string \| {ciphertext, tag}` |
+| `sm4Encrypt(key, plaintext, options?)` | SM4 加密 | `SM4CipherResult` |
 | `sm4Decrypt(key, ciphertext, options?)` | SM4 解密 | `string` |
 
 ### 类 API
@@ -649,3 +649,5 @@ A: 是的（除 ECB 模式外）。因为每次加密使用不同的随机 IV，
 - [SM2 - 椭圆曲线公钥密码算法](./SM2.md)
 - [SM3 - 密码杂凑算法](./SM3.md)
 - [ZUC - 祖冲之序列密码算法](./ZUC.md)
+
+

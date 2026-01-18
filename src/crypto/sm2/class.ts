@@ -13,10 +13,12 @@ import {
   type KeyPair,
   type SignOptions as FuncSignOptions,
   type VerifyOptions as FuncVerifyOptions,
+  type SM2EncryptOptions,
+  type SM2DecryptOptions,
   type SM2CurveParams,
   type SM2KeyExchangeResult,
 } from './index';
-import { SM2CipherMode, type SM2CipherModeType } from '../../types/constants';
+import type { BytesLike } from '../../core/utils';
 
 /**
  * SM2 类，提供椭圆曲线密码学的面向对象 API
@@ -94,9 +96,9 @@ export class SM2 {
    * @param mode - 密文模式（默认：C1C3C2）
    * @returns 加密后的数据（十六进制字符串）
    */
-  encrypt(data: string | Uint8Array, mode: SM2CipherModeType = SM2CipherMode.C1C3C2): string {
+  encrypt(data: string | Uint8Array, options?: SM2EncryptOptions): string {
     const publicKey = this.getPublicKey();
-    return encryptFunc(publicKey, data, mode);
+    return encryptFunc(publicKey, data, options);
   }
 
   /**
@@ -105,9 +107,9 @@ export class SM2 {
    * @param mode - 密文模式（默认：C1C3C2）
    * @returns 解密后的数据（字符串）
    */
-  decrypt(encryptedData: string, mode: SM2CipherModeType = SM2CipherMode.C1C3C2): string {
+  decrypt(encryptedData: BytesLike, options?: SM2DecryptOptions): string {
     const privateKey = this.getPrivateKey();
-    return decryptFunc(privateKey, encryptedData, mode);
+    return decryptFunc(privateKey, encryptedData, options);
   }
 
   /**

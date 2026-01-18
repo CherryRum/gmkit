@@ -187,3 +187,5 @@ async function hashData(data: string) {
 3. **类型支持**: 所有导入方式都提供完整的 TypeScript 类型定义。
 
 4. **向后兼容**: 现有的具名函数导入方式完全兼容，不会破坏现有代码。
+
+

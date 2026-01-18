@@ -83,8 +83,8 @@ describe('模块导入方式测试', () => {
       expect(decrypted).toBe(plaintext);
 
       // 测试密钥流生成
-      const keystream = zuc.getKeystream(key, iv, 4);
-      expect(keystream).toHaveLength(32); // 4 words * 8 hex chars
+      const keystream = zuc.getKeystream(key, iv, 16);
+      expect(keystream).toHaveLength(32); // 16 bytes * 2 hex chars
     });
   });
 

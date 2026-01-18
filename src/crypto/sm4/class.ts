@@ -2,9 +2,10 @@ import {
   encrypt as encryptFunc,
   decrypt as decryptFunc,
   type SM4Options as FuncSM4Options,
-  type SM4GCMResult,
+  type SM4CipherResult,
 } from './index';
 import { CipherMode, PaddingMode, type CipherModeType, type PaddingModeType } from '../../types/constants';
+import type { BytesLike } from '../../core/utils';
 
 /**
  * SM4 class providing object-oriented API for block cipher operations
@@ -24,10 +25,10 @@ import { CipherMode, PaddingMode, type CipherModeType, type PaddingModeType } fr
  * - ZERO: 零填充 (Zero padding)
  */
 export class SM4 {
-  private key: string;
+  private key: BytesLike;
   private mode: CipherModeType;
   private padding: PaddingModeType;
-  private iv?: string;
+  private iv?: BytesLike;
 
   /**
    * 创建新的 SM4 实例
@@ -43,10 +44,10 @@ export class SM4 {
    * @param options.iv - Initialization vector (required for CBC/CTR/CFB/OFB/GCM)
    *                     初始化向量（CBC/CTR/CFB/OFB/GCM模式需要）
    */
-  constructor(key: string, options?: {
+  constructor(key: BytesLike, options?: {
     mode?: CipherModeType;
     padding?: PaddingModeType;
-    iv?: string;
+    iv?: BytesLike;
   }) {
     this.key = key;
     this.mode = options?.mode || CipherMode.ECB;
@@ -58,14 +59,14 @@ export class SM4 {
    * 设置初始化向量（CBC/CTR/CFB/OFB/GCM 模式专用）
    * @param iv - 十六进制字符串表示的 IV（常规模式 32 个字符，GCM 模式 24 个字符）
    */
-  setIV(iv: string): void {
+  setIV(iv: BytesLike): void {
     this.iv = iv;
   }
 
   /**
    * 获取初始化向量
    */
-  getIV(): string | undefined {
+  getIV(): BytesLike | undefined {
     return this.iv;
   }
 
@@ -106,7 +107,7 @@ export class SM4 {
    * @param data - 待加密的数据
    * @returns 十六进制密文；GCM 模式下返回包含密文与标签的对象
    */
-  encrypt(data: string | Uint8Array): string | SM4GCMResult {
+  encrypt(data: string | Uint8Array): SM4CipherResult {
     const options: FuncSM4Options = {
       mode: this.mode,
       padding: this.padding,
@@ -120,7 +121,7 @@ export class SM4 {
    * @param encryptedData - 十六进制密文或 GCM 模式的密文结果
    * @returns 解密得到的明文字符串
    */
-  decrypt(encryptedData: string | SM4GCMResult): string {
+  decrypt(encryptedData: BytesLike | SM4CipherResult): string {
     const options: FuncSM4Options = {
       mode: this.mode,
       padding: this.padding,
@@ -134,7 +135,7 @@ export class SM4 {
    * @param key - 十六进制密钥
    * @param padding - 填充模式（默认：PKCS7）
    */
-  static ECB(key: string, padding: PaddingModeType = PaddingMode.PKCS7): SM4 {
+  static ECB(key: BytesLike, padding: PaddingModeType = PaddingMode.PKCS7): SM4 {
     return new SM4(key, { mode: CipherMode.ECB, padding });
   }
 
@@ -144,7 +145,7 @@ export class SM4 {
    * @param iv - 十六进制初始化向量
    * @param padding - 填充模式（默认：PKCS7）
    */
-  static CBC(key: string, iv: string, padding: PaddingModeType = PaddingMode.PKCS7): SM4 {
+  static CBC(key: BytesLike, iv: BytesLike, padding: PaddingModeType = PaddingMode.PKCS7): SM4 {
     return new SM4(key, { mode: CipherMode.CBC, padding, iv });
   }
 
@@ -153,7 +154,7 @@ export class SM4 {
    * @param key - 十六进制密钥
    * @param iv - 十六进制计数器/随机数
    */
-  static CTR(key: string, iv: string): SM4 {
+  static CTR(key: BytesLike, iv: BytesLike): SM4 {
     return new SM4(key, { mode: CipherMode.CTR, padding: PaddingMode.NONE, iv });
   }
 
@@ -162,7 +163,7 @@ export class SM4 {
    * @param key - 十六进制密钥
    * @param iv - 十六进制初始化向量
    */
-  static CFB(key: string, iv: string): SM4 {
+  static CFB(key: BytesLike, iv: BytesLike): SM4 {
     return new SM4(key, { mode: CipherMode.CFB, padding: PaddingMode.NONE, iv });
   }
 
@@ -171,7 +172,7 @@ export class SM4 {
    * @param key - 十六进制密钥
    * @param iv - 十六进制初始化向量
    */
-  static OFB(key: string, iv: string): SM4 {
+  static OFB(key: BytesLike, iv: BytesLike): SM4 {
     return new SM4(key, { mode: CipherMode.OFB, padding: PaddingMode.NONE, iv });
   }
 
@@ -180,7 +181,7 @@ export class SM4 {
    * @param key - 十六进制密钥
    * @param iv - 十六进制初始化向量（24 个字符 = 12 字节）
    */
-  static GCM(key: string, iv: string): SM4 {
+  static GCM(key: BytesLike, iv: BytesLike): SM4 {
     return new SM4(key, { mode: CipherMode.GCM, padding: PaddingMode.NONE, iv });
   }
 }
