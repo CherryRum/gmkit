@@ -194,7 +194,8 @@ export default defineUserConfig({
       tabs: true,
     },
     lastUpdated: true,
-    footer: 'Apache-2.0 Licensed | Copyright © 2025-present mumu',
+    footer:
+      'Apache-2.0 Licensed | Copyright © 2025-present mumu | <a class="icp-link" href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">备案号：京ICP备2023009505号-2</a>',
     displayFooter: true,
     author: { name: 'mumu', email: 'yulin.1996@foxmail.com' },
     metaLocales: { editLink: '在 GitHub 上编辑此页' },

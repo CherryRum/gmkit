@@ -26,8 +26,6 @@ features:
     icon: rocket
     details: 纯 TypeScript、零额外依赖，适合生产环境
 
-copyright: false
-footer: Apache-2.0 Licensed | Copyright © 2025-present mumu
 ---
 
 ## 核心特性
@@ -140,5 +138,4 @@ const sha512Hash = sha.sha512('Hello World');
 - [SM4 算法文档](/algorithms/SM4) - 分组密码算法
 - [语言集成指南](/dev/JAVA-INTEGRATION.zh-CN) - Java、Go、Rust、Python 对接方案
 - [性能测试](/performance/PERFORMANCE) - 查看性能基准测试结果
-
 
