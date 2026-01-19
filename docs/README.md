@@ -26,6 +26,7 @@ features:
     icon: rocket
     details: 纯 TypeScript、零额外依赖，适合生产环境
 
+copyright: false
 ---
 
 ## 核心特性
