@@ -158,26 +158,32 @@ BC 的 `artifactId` 随版本发生过**命名与打包策略变更**，最常�
 
 ## JDK 1.8 低版本 & JCE 限制（Oracle vs OpenJDK）
 
-JCE（Java Cryptography Extension）决定了**算法与密钥长度**的上限，尤其影响 AES-256、RSA 大密钥、部分 TLS 套件等。JDK 1.8 不同 update 之间差异很大，**务必按版本处理**。
+JCE（Java Cryptography Extension）决定了**算法与密钥长度**的上限，尤其影响 AES-256、RSA 大密钥、部分 TLS 套件等。JDK 1.8 的**小版本差异很大**，请按版本处理。
 
-### 版本变更时间线（重点小版本）
+::: info 快速结论
+- **8u161+**：Unlimited cryptography **默认启用**（仍可用 `crypto.policy` 覆盖）。
+- **8u151/8u152**：Unlimited policy **已随 JDK 提供，但默认仍是 limited**，需要手动开启。
+- **< 8u151**：没有 `crypto.policy`，需手动安装 JCE policy JAR。
+:::
 
-| JDK 版本段 | 关键变化 | 默认行为 |
+::: details 版本时间线（重点小版本）
+
+| JDK 版本段 | 关键变化 | 默认行为 | 说明 |
+| --- | --- | --- | --- |
+| **8u151 / 8u152** | 引入 `crypto.policy` | 默认 **limited** | Unlimited policy JAR 随 JDK 提供，需显式启用 |
+| **8u161+** | Unlimited 默认启用 | 默认 **unlimited** | 同时保留 limited，可用 `crypto.policy` 切换 |
+| **< 8u151** | 没有 `crypto.policy` | 默认 **limited** | 需手动下载/替换 policy JAR |
+
+:::
+
+### Oracle JDK vs OpenJDK（务必验真）
+
+两者差异**更多来自发行版打包策略**而非代码实现本身：
+
+| 发行版 | 常见默认行为 | 风险提示 |
 | --- | --- | --- |
-| **8u151 / 8u152** | 引入 `crypto.policy` 属性；JCE Unlimited 策略**随 JDK 一起发布**，无需再单独下载 | **默认仍为 limited**，除非显式开启 `crypto.policy=unlimited` |
-| **8u161+** | **Unlimited cryptography 默认启用** | 默认 unlimited（可用 `crypto.policy` 覆盖） |
-| **更早版本（< 8u151）** | 没有 `crypto.policy`，需要手动下载并替换 JCE policy JAR | 默认 limited |
-
-说明与来源：  
-- 8u151/8u152 引入 `crypto.policy`，但默认仍是 limited；需显式设置或通过 `Security.setProperty` 在 JCE 初始化前生效。citeturn3view0turn4view2  
-- 8u161 起 **Unlimited 默认启用**。citeturn4view0  
-- 8u161+ 的策略目录结构、legacy policy 的回退逻辑与 `crypto.policy` 行为见 JCA 参考指南。citeturn4view3  
-- < 8u151 的版本需单独下载/安装 JCE Unlimited policy。citeturn2search6
-
-### “Oracle JDK vs OpenJDK” 的常见差异（务必验真）
-
-- **Oracle JDK（8u161 之前）**：默认 limited，AES-256 等需要开启或安装 unlimited policy。citeturn3view0turn4view2  
-- **OpenJDK 发行版**：很多发行版默认就可用 AES-256（已包含或启用 unlimited policy），但具体行为**依赖发行版打包策略**，仍建议运行时检测。citeturn1search3  
+| **Oracle JDK（8u161 之前）** | 默认 limited | AES-256 等需要开启/安装 unlimited policy |
+| **OpenJDK 发行版** | 很多发行版默认可用 AES-256 | 具体行为依赖发行版，务必运行时检测 |
 
 > 结论：**不要仅凭“Oracle/OpenJDK”判断**，以运行时检测为准。
 
@@ -189,12 +195,10 @@ JCE（Java Cryptography Extension）决定了**算法与密钥长度**的上限�
 java.lang.SecurityException: Jurisdiction policy files are not signed by trusted signers!
 ```
 
-原因是 **JAR 签名标准在 6u131 / 7u121 / 8u111 后更新**，旧 policy JAR 不符合新签名要求。citeturn3view0turn4view2  
+原因是 **JAR 签名标准在 6u131 / 7u121 / 8u111 后更新**，旧 policy JAR 不符合新签名要求。  
 **正确做法**：使用目标 JDK 自带的 policy 目录 + `crypto.policy`，避免跨版本复制。
 
-### 如何确认当前 JCE 限制
-
-运行时检查 AES 允许的最大密钥长度：
+### 如何确认当前 JCE 限制（推荐放到启动日志）
 
 ```java
 import javax.crypto.Cipher;
@@ -207,16 +211,32 @@ public class JceCheck {
 ```
 
 结果解释：
-- `128` = 仍是 limited（AES-256 不可用）
+- `128` = limited（AES-256 不可用）
 - `2147483647` = unlimited
 
-### 实操建议（生产可执行）
-
-1) **固定 JDK 小版本**（明确写在 README / 部署脚本里）。  
+::: tip 生产建议
+1) **固定 JDK 小版本**（写入 README / 部署脚本）。  
 2) **统一 JCE 策略**：  
    - 8u151/8u152：在 `java.security` 设置 `crypto.policy=unlimited`  
    - 8u161+：确保没有遗留 legacy policy JAR 干扰  
-3) **用代码检测**（上面的 `Cipher.getMaxAllowedKeyLength`）并在启动日志输出。
+3) **运行时检测**（见 `JceCheck`）并在启动日志输出。  
+:::
+
+::: details 启用 unlimited 的常见方式
+- **配置文件**：编辑 `JAVA_HOME/jre/lib/security/java.security`，设置  
+  `crypto.policy=unlimited`  
+- **代码方式**（需在 JCE 初始化前执行）：  
+  `java.security.Security.setProperty("crypto.policy", "unlimited");`
+- **注意**：8u151/8u152 默认是 limited，未显式设置则不会启用 unlimited。
+:::
+
+::: details 参考链接
+- [Oracle JDK 8u161 Release Notes（Unlimited 默认启用、`crypto.policy`）](https://www.oracle.com/java/technologies/javase/8u161-relnotes.html)
+- [Java 8 Release Changes（`crypto.policy`、旧 policy JAR 签名问题）](https://www.java.com/en/download/help/release_changes.html)
+- [Oracle JCE policy 下载页（说明 <8u161 需单独安装）](https://www.oracle.com/java/technologies/javase-jce-all-downloads.html)
+- [JCE Unlimited policy 说明（`crypto.policy` 与旧版本规则）](https://ops.java/security/articles/unlimited-strength-policy-files/)
+- [OpenJDK / Oracle 差异参考（第三方资料，需运行时验证）](https://docs.datastax.com/en/dse/5.1/securing/enable-java-cryptography-extension-unlimited.html)
+:::
 
 ### 方案四：gmkit-java
 
@@ -289,6 +309,7 @@ import cn.hutool.core.util.HexUtil;
 import cn.hutool.crypto.Mode;
 import cn.hutool.crypto.Padding;
 import cn.hutool.crypto.SmUtil;
+import cn.hutool.crypto.asymmetric.SM2;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import cn.hutool.crypto.symmetric.SymmetricCrypto;
 import org.bouncycastle.crypto.engines.SM2Engine;
@@ -304,7 +325,7 @@ public class FullInteropDemo {
     String message = "Hello GMKit";
 
     // SM2 加解密 + 签名验签（显式指定 C1C3C2）
-    var sm2 = SmUtil.sm2(HexUtil.decodeHex(sm2PriHex), HexUtil.decodeHex(sm2PubHex));
+    SM2 sm2 = SmUtil.sm2(HexUtil.decodeHex(sm2PriHex), HexUtil.decodeHex(sm2PubHex));
     sm2.setMode(SM2Engine.Mode.C1C3C2);
     String sm2Cipher = sm2.encryptHex(message);
     String sm2Plain = sm2.decryptStr(sm2Cipher);
@@ -315,7 +336,7 @@ public class FullInteropDemo {
     String sm3Hex = SmUtil.sm3().digestHex(message);
 
     // SM4 CBC + PKCS7/PKCS5
-    var sm4 = new SymmetricCrypto(
+    SymmetricCrypto sm4 = new SymmetricCrypto(
       Mode.CBC,
       Padding.PKCS5Padding, // 与 PKCS7 等价（块大小 16）
       SymmetricAlgorithm.SM4.getValue(),
@@ -370,40 +391,51 @@ console.log('验签结果:', isValid); // true
 ```java
 import cn.hutool.core.util.HexUtil;
 import cn.hutool.crypto.SmUtil;
+import cn.hutool.crypto.asymmetric.SM2;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bouncycastle.crypto.engines.SM2Engine;
 import java.nio.file.Paths;
-import java.util.Map;
-
-record Case(String id, String algo, String op, String mode,
-            String input, String publicKeyHex, String privateKeyHex,
-            Map<String, String> expected) {}
 
 public class SM2Interop {
   public static void main(String[] args) throws Exception {
-    var mapper = new ObjectMapper();
-    var root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
-    var defaults = root.get("defaults");
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
+    JsonNode defaults = root.get("defaults");
 
-    for (var node : root.get("cases")) {
-      var c = mapper.convertValue(node, Case.class);
-      if (!"SM2".equals(c.algo())) continue;
+    for (JsonNode node : root.get("cases")) {
+      if (!"SM2".equals(node.get("algo").asText())) continue;
 
-      var pri = HexUtil.decodeHex(c.privateKeyHex() != null ? c.privateKeyHex() : defaults.get("sm2PrivateKeyHex").asText());
-      var pub = HexUtil.decodeHex(c.publicKeyHex() != null ? c.publicKeyHex() : defaults.get("sm2PublicKeyHex").asText());
+      String priHex = node.has("privateKeyHex")
+        ? node.get("privateKeyHex").asText()
+        : defaults.get("sm2PrivateKeyHex").asText();
+      String pubHex = node.has("publicKeyHex")
+        ? node.get("publicKeyHex").asText()
+        : defaults.get("sm2PublicKeyHex").asText();
+
+      byte[] pri = HexUtil.decodeHex(priHex);
+      byte[] pub = HexUtil.decodeHex(pubHex);
       // Hutool 基于 Bouncy Castle，密钥使用 16 进制原始格式即可
-      var sm2 = SmUtil.sm2(pri, pub);
+      SM2 sm2 = SmUtil.sm2(pri, pub);
 
-      if ("encrypt".equals(c.op())) {
-        var mode = "C1C2C3".equals(c.mode()) ? SM2Engine.Mode.C1C2C3 : SM2Engine.Mode.C1C3C2;
+      String op = node.get("op").asText();
+      if ("encrypt".equals(op)) {
+        String modeStr = node.has("mode") ? node.get("mode").asText() : "C1C3C2";
+        SM2Engine.Mode mode = "C1C2C3".equals(modeStr) ? SM2Engine.Mode.C1C2C3 : SM2Engine.Mode.C1C3C2;
         sm2.setMode(mode);
-        var cipher = sm2.encryptHex(c.input());
-        var back = sm2.decryptStr(cipher);
-        assert back.equals(c.input()) : c.id();
-      } else if ("sign".equals(c.op())) {
+        String input = node.get("input").asText();
+        String cipher = sm2.encryptHex(input);
+        String back = sm2.decryptStr(cipher);
+        if (!back.equals(input)) {
+          throw new IllegalStateException(node.get("id").asText());
+        }
+      } else if ("sign".equals(op)) {
         // 默认 userId = 1234567812345678，与 gmkitx 一致
-        var sig = sm2.signHex(c.input());
-        assert sm2.verifyHex(c.input(), sig) : c.id();
+        String input = node.get("input").asText();
+        String sig = sm2.signHex(input);
+        if (!sm2.verifyHex(input, sig)) {
+          throw new IllegalStateException(node.get("id").asText());
+        }
       }
     }
   }
@@ -412,6 +444,7 @@ public class SM2Interop {
 
 @tab Tencent Kona
 ```java
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tencent.kona.crypto.KonaCryptoProvider;
 import com.tencent.kona.crypto.spec.SM2PrivateKeySpec;
@@ -425,9 +458,6 @@ import java.security.KeyFactory;
 import java.security.Security;
 import java.security.Signature;
 import java.security.interfaces.ECPublicKey;
-
-record Case(String id, String algo, String op, String mode,
-            String input, String publicKeyHex, String privateKeyHex) {}
 
 public class SM2KonaInterop {
   static {
@@ -444,43 +474,52 @@ public class SM2KonaInterop {
   }
 
   public static void main(String[] args) throws Exception {
-    var mapper = new ObjectMapper();
-    var root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
-    var defaults = root.get("defaults");
-    var kf = KeyFactory.getInstance("SM2", "KonaCrypto");
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
+    JsonNode defaults = root.get("defaults");
+    KeyFactory kf = KeyFactory.getInstance("SM2", "KonaCrypto");
 
-    for (var node : root.get("cases")) {
+    for (JsonNode node : root.get("cases")) {
       if (!"SM2".equals(node.get("algo").asText())) continue;
-      var c = mapper.convertValue(node, Case.class);
-      var priHex = c.privateKeyHex() != null ? c.privateKeyHex() : defaults.get("sm2PrivateKeyHex").asText();
-      var pubHex = c.publicKeyHex() != null ? c.publicKeyHex() : defaults.get("sm2PublicKeyHex").asText();
+      String priHex = node.has("privateKeyHex")
+        ? node.get("privateKeyHex").asText()
+        : defaults.get("sm2PrivateKeyHex").asText();
+      String pubHex = node.has("publicKeyHex")
+        ? node.get("publicKeyHex").asText()
+        : defaults.get("sm2PublicKeyHex").asText();
 
-      var privateKey = kf.generatePrivate(new SM2PrivateKeySpec(hexToBytes(priHex)));
-      var publicKey = (ECPublicKey) kf.generatePublic(new SM2PublicKeySpec(hexToBytes(pubHex)));
+      java.security.PrivateKey privateKey = kf.generatePrivate(new SM2PrivateKeySpec(hexToBytes(priHex)));
+      ECPublicKey publicKey = (ECPublicKey) kf.generatePublic(new SM2PublicKeySpec(hexToBytes(pubHex)));
 
-      if ("encrypt".equals(c.op())) {
-        var cipher = Cipher.getInstance("SM2", "KonaCrypto");
+      String op = node.get("op").asText();
+      String input = node.get("input").asText();
+      if ("encrypt".equals(op)) {
+        Cipher cipher = Cipher.getInstance("SM2", "KonaCrypto");
         cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-        var cipherBytes = cipher.doFinal(c.input().getBytes(StandardCharsets.UTF_8));
+        byte[] cipherBytes = cipher.doFinal(input.getBytes(StandardCharsets.UTF_8));
 
         // Kona 输出 ASN.1 DER（C1C3C2），gmkitx 可自动识别
-        var decrypt = Cipher.getInstance("SM2", "KonaCrypto");
+        Cipher decrypt = Cipher.getInstance("SM2", "KonaCrypto");
         decrypt.init(Cipher.DECRYPT_MODE, privateKey);
-        var plain = decrypt.doFinal(cipherBytes);
-        assert new String(plain, StandardCharsets.UTF_8).equals(c.input()) : c.id();
-      } else if ("sign".equals(c.op())) {
-        var signer = Signature.getInstance("SM2", "KonaCrypto");
+        byte[] plain = decrypt.doFinal(cipherBytes);
+        if (!new String(plain, StandardCharsets.UTF_8).equals(input)) {
+          throw new IllegalStateException(node.get("id").asText());
+        }
+      } else if ("sign".equals(op)) {
+        Signature signer = Signature.getInstance("SM2", "KonaCrypto");
         signer.setParameter(new SM2SignatureParameterSpec(publicKey));
         signer.initSign(privateKey);
-        var msg = c.input().getBytes(StandardCharsets.UTF_8);
+        byte[] msg = input.getBytes(StandardCharsets.UTF_8);
         signer.update(msg);
-        var sig = signer.sign();
+        byte[] sig = signer.sign();
 
-        var verifier = Signature.getInstance("SM2", "KonaCrypto");
+        Signature verifier = Signature.getInstance("SM2", "KonaCrypto");
         verifier.setParameter(new SM2SignatureParameterSpec(publicKey));
         verifier.initVerify(publicKey);
         verifier.update(msg);
-        assert verifier.verify(sig) : c.id();
+        if (!verifier.verify(sig)) {
+          throw new IllegalStateException(node.get("id").asText());
+        }
       }
     }
   }
@@ -489,6 +528,7 @@ public class SM2KonaInterop {
 
 @tab Bouncy Castle
 ```java
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bouncycastle.asn1.gm.GMNamedCurves;
 import org.bouncycastle.crypto.digests.SM3Digest;
@@ -503,9 +543,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.security.Security;
 
-record Case(String id, String algo, String op, String mode,
-            String input, String publicKeyHex, String privateKeyHex) {}
-
 public class SM2BCInterop {
   static {
     Security.addProvider(new BouncyCastleProvider());
@@ -514,47 +551,57 @@ public class SM2BCInterop {
   private static final byte[] DEFAULT_ID = "1234567812345678".getBytes(StandardCharsets.UTF_8);
 
   public static void main(String[] args) throws Exception {
-    var mapper = new ObjectMapper();
-    var root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
-    var defaults = root.get("defaults");
-    var curve = GMNamedCurves.getByName("sm2p256v1");
-    var domain = new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN());
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
+    JsonNode defaults = root.get("defaults");
+    org.bouncycastle.asn1.x9.X9ECParameters curve = GMNamedCurves.getByName("sm2p256v1");
+    ECDomainParameters domain = new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN());
 
-    for (var node : root.get("cases")) {
+    for (JsonNode node : root.get("cases")) {
       if (!"SM2".equals(node.get("algo").asText())) continue;
-      var c = mapper.convertValue(node, Case.class);
-      var priHex = c.privateKeyHex() != null ? c.privateKeyHex() : defaults.get("sm2PrivateKeyHex").asText();
-      var pubHex = c.publicKeyHex() != null ? c.publicKeyHex() : defaults.get("sm2PublicKeyHex").asText();
+      String priHex = node.has("privateKeyHex")
+        ? node.get("privateKeyHex").asText()
+        : defaults.get("sm2PrivateKeyHex").asText();
+      String pubHex = node.has("publicKeyHex")
+        ? node.get("publicKeyHex").asText()
+        : defaults.get("sm2PublicKeyHex").asText();
 
       // 构造公私钥参数（原始 16 进制格式）
-      var d = new BigInteger(1, Hex.decode(priHex));
-      var privParams = new ECPrivateKeyParameters(d, domain);
+      BigInteger d = new BigInteger(1, Hex.decode(priHex));
+      ECPrivateKeyParameters privParams = new ECPrivateKeyParameters(d, domain);
       ECPoint q = curve.getCurve().decodePoint(Hex.decode(pubHex));
-      var pubParams = new ECPublicKeyParameters(q, domain);
+      ECPublicKeyParameters pubParams = new ECPublicKeyParameters(q, domain);
 
-      if ("encrypt".equals(c.op())) {
-        var mode = "C1C2C3".equals(c.mode()) ? SM2Engine.Mode.C1C2C3 : SM2Engine.Mode.C1C3C2;
-        var engine = new SM2Engine(mode);
+      String op = node.get("op").asText();
+      String inputText = node.get("input").asText();
+      if ("encrypt".equals(op)) {
+        String modeStr = node.has("mode") ? node.get("mode").asText() : "C1C3C2";
+        SM2Engine.Mode mode = "C1C2C3".equals(modeStr) ? SM2Engine.Mode.C1C2C3 : SM2Engine.Mode.C1C3C2;
+        SM2Engine engine = new SM2Engine(mode);
         engine.init(true, new ParametersWithRandom(pubParams));
-        var input = c.input().getBytes(StandardCharsets.UTF_8);
-        var cipher = engine.processBlock(input, 0, input.length);
+        byte[] input = inputText.getBytes(StandardCharsets.UTF_8);
+        byte[] cipher = engine.processBlock(input, 0, input.length);
 
-        var decrypt = new SM2Engine(mode);
+        SM2Engine decrypt = new SM2Engine(mode);
         decrypt.init(false, privParams);
-        var plain = decrypt.processBlock(cipher, 0, cipher.length);
-        assert new String(plain, StandardCharsets.UTF_8).equals(c.input()) : c.id();
-      } else if ("sign".equals(c.op())) {
+        byte[] plain = decrypt.processBlock(cipher, 0, cipher.length);
+        if (!new String(plain, StandardCharsets.UTF_8).equals(inputText)) {
+          throw new IllegalStateException(node.get("id").asText());
+        }
+      } else if ("sign".equals(op)) {
         // SM2 签名（默认 userId = 1234567812345678）
-        var signer = new SM2Signer(new SM3Digest());
+        SM2Signer signer = new SM2Signer(new SM3Digest());
         signer.init(true, new ParametersWithID(new ParametersWithRandom(privParams), DEFAULT_ID));
-        var msg = c.input().getBytes(StandardCharsets.UTF_8);
+        byte[] msg = inputText.getBytes(StandardCharsets.UTF_8);
         signer.update(msg, 0, msg.length);
-        var sig = signer.generateSignature();
+        byte[] sig = signer.generateSignature();
 
-        var verifier = new SM2Signer(new SM3Digest());
+        SM2Signer verifier = new SM2Signer(new SM3Digest());
         verifier.init(false, new ParametersWithID(pubParams, DEFAULT_ID));
         verifier.update(msg, 0, msg.length);
-        assert verifier.verifySignature(sig) : c.id();
+        if (!verifier.verifySignature(sig)) {
+          throw new IllegalStateException(node.get("id").asText());
+        }
       }
     }
   }
@@ -591,19 +638,23 @@ console.log('增量哈希:', result);
 @tab Hutool
 ```java
 import cn.hutool.crypto.SmUtil;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Paths;
 
 public class SM3Interop {
   public static void main(String[] args) throws Exception {
-    var root = new ObjectMapper().readTree(Paths.get("test/vectors/interop.json").toFile());
-    for (var node : root.get("cases")) {
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
+    for (JsonNode node : root.get("cases")) {
       if (!"SM3".equals(node.get("algo").asText())) continue;
       // 每次重新创建 SM3 实例，避免状态串扰
-      var sm3 = SmUtil.sm3();
-      var expected = node.get("expected").get("hex").asText();
-      var out = sm3.digestHex(node.get("input").asText());
-      assert out.equals(expected) : node.get("id").asText();
+      cn.hutool.crypto.digest.SM3 sm3 = SmUtil.sm3();
+      String expected = node.get("expected").get("hex").asText();
+      String out = sm3.digestHex(node.get("input").asText());
+      if (!out.equals(expected)) {
+        throw new IllegalStateException(node.get("id").asText());
+      }
     }
   }
 }
@@ -611,6 +662,7 @@ public class SM3Interop {
 
 @tab Tencent Kona
 ```java
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tencent.kona.crypto.KonaCryptoProvider;
 import java.nio.charset.StandardCharsets;
@@ -624,7 +676,7 @@ public class SM3KonaInterop {
   }
 
   private static String toHex(byte[] input) {
-    var sb = new StringBuilder(input.length * 2);
+    StringBuilder sb = new StringBuilder(input.length * 2);
     for (byte b : input) {
       sb.append(String.format("%02x", b));
     }
@@ -632,16 +684,19 @@ public class SM3KonaInterop {
   }
 
   public static void main(String[] args) throws Exception {
-    var root = new ObjectMapper().readTree(Paths.get("test/vectors/interop.json").toFile());
-    for (var node : root.get("cases")) {
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
+    for (JsonNode node : root.get("cases")) {
       if (!"SM3".equals(node.get("algo").asText())) continue;
-      var expected = node.get("expected").get("hex").asText();
-      var input = node.get("input").asText().getBytes(StandardCharsets.UTF_8);
+      String expected = node.get("expected").get("hex").asText();
+      byte[] input = node.get("input").asText().getBytes(StandardCharsets.UTF_8);
 
       // 通过 JCA 调用 KonaCrypto 的 SM3 实现
-      var md = MessageDigest.getInstance("SM3", "KonaCrypto");
-      var out = md.digest(input);
-      assert toHex(out).equals(expected) : node.get("id").asText();
+      MessageDigest md = MessageDigest.getInstance("SM3", "KonaCrypto");
+      byte[] out = md.digest(input);
+      if (!toHex(out).equals(expected)) {
+        throw new IllegalStateException(node.get("id").asText());
+      }
     }
   }
 }
@@ -649,6 +704,7 @@ public class SM3KonaInterop {
 
 @tab Bouncy Castle
 ```java
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bouncycastle.crypto.digests.SM3Digest;
 import org.bouncycastle.util.encoders.Hex;
@@ -656,17 +712,20 @@ import java.nio.file.Paths;
 
 public class SM3BCInterop {
   public static void main(String[] args) throws Exception {
-    var root = new ObjectMapper().readTree(Paths.get("test/vectors/interop.json").toFile());
-    for (var node : root.get("cases")) {
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
+    for (JsonNode node : root.get("cases")) {
       if (!"SM3".equals(node.get("algo").asText())) continue;
-      var expected = node.get("expected").get("hex").asText();
-      var input = node.get("input").asText().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      String expected = node.get("expected").get("hex").asText();
+      byte[] input = node.get("input").asText().getBytes(java.nio.charset.StandardCharsets.UTF_8);
       // BC 直接使用 SM3Digest
-      var d = new SM3Digest();
+      SM3Digest d = new SM3Digest();
       d.update(input, 0, input.length);
       byte[] out = new byte[d.getDigestSize()];
       d.doFinal(out, 0);
-      assert Hex.toHexString(out).equals(expected) : node.get("id").asText();
+      if (!Hex.toHexString(out).equals(expected)) {
+        throw new IllegalStateException(node.get("id").asText());
+      }
     }
   }
 }
@@ -727,30 +786,35 @@ import cn.hutool.crypto.Mode;
 import cn.hutool.crypto.Padding;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import cn.hutool.crypto.symmetric.SymmetricCrypto;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Paths;
 
 public class SM4Interop {
   public static void main(String[] args) throws Exception {
-    var mapper = new ObjectMapper();
-    var root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
-    for (var node : root.get("cases")) {
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
+    for (JsonNode node : root.get("cases")) {
       if (!"SM4".equals(node.get("algo").asText())) continue;
 
-      var key = HexUtil.decodeHex(node.has("keyHex") ? node.get("keyHex").asText() : root.get("defaults").get("sm4KeyHex").asText());
-      var iv = node.has("ivHex") ? HexUtil.decodeHex(node.get("ivHex").asText()) : null;
-      var mode = Mode.valueOf(node.get("mode").asText());
+      byte[] key = HexUtil.decodeHex(node.has("keyHex") ? node.get("keyHex").asText() : root.get("defaults").get("sm4KeyHex").asText());
+      byte[] iv = node.has("ivHex") ? HexUtil.decodeHex(node.get("ivHex").asText()) : null;
+      Mode mode = Mode.valueOf(node.get("mode").asText());
       // Hutool 使用 PKCS5Padding 表示 PKCS7（块大小 16）
-      var padding = node.get("padding").asText().equals("PKCS7") ? Padding.PKCS5Padding : Padding.valueOf(node.get("padding").asText());
+      Padding padding = node.get("padding").asText().equals("PKCS7") ? Padding.PKCS5Padding : Padding.valueOf(node.get("padding").asText());
 
       // ECB 不需要 IV，CBC 需要 IV
-      var sm4 = new SymmetricCrypto(mode, padding, SymmetricAlgorithm.SM4.getValue(), key, iv);
-      var cipher = sm4.encryptHex(node.get("input").asText());
+      SymmetricCrypto sm4 = new SymmetricCrypto(mode, padding, SymmetricAlgorithm.SM4.getValue(), key, iv);
+      String cipher = sm4.encryptHex(node.get("input").asText());
       if (node.get("expected").has("cipherHex")) {
-        assert cipher.equals(node.get("expected").get("cipherHex").asText()) : node.get("id").asText();
+        if (!cipher.equals(node.get("expected").get("cipherHex").asText())) {
+          throw new IllegalStateException(node.get("id").asText());
+        }
       }
-      var plain = sm4.decryptStr(cipher);
-      assert plain.equals(node.get("input").asText()) : node.get("id").asText() + "-decrypt";
+      String plain = sm4.decryptStr(cipher);
+      if (!plain.equals(node.get("input").asText())) {
+        throw new IllegalStateException(node.get("id").asText() + "-decrypt");
+      }
     }
   }
 }
@@ -758,6 +822,7 @@ public class SM4Interop {
 
 @tab Tencent Kona
 ```java
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tencent.kona.crypto.KonaCryptoProvider;
 
@@ -783,7 +848,7 @@ public class SM4KonaInterop {
   }
 
   private static String toHex(byte[] input) {
-    var sb = new StringBuilder(input.length * 2);
+    StringBuilder sb = new StringBuilder(input.length * 2);
     for (byte b : input) {
       sb.append(String.format("%02x", b));
     }
@@ -791,38 +856,43 @@ public class SM4KonaInterop {
   }
 
   public static void main(String[] args) throws Exception {
-    var root = new ObjectMapper().readTree(Paths.get("test/vectors/interop.json").toFile());
-    for (var node : root.get("cases")) {
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
+    for (JsonNode node : root.get("cases")) {
       if (!"SM4".equals(node.get("algo").asText())) continue;
-      var mode = node.get("mode").asText();
-      var padding = node.get("padding").asText();
+      String mode = node.get("mode").asText();
+      String padding = node.get("padding").asText();
 
-      var key = hexToBytes(node.has("keyHex") ? node.get("keyHex").asText() : root.get("defaults").get("sm4KeyHex").asText());
-      var iv = node.has("ivHex") ? hexToBytes(node.get("ivHex").asText()) : null;
-      var transformation = "SM4/" + mode + "/" + (padding.equals("PKCS7") ? "PKCS7Padding" : "NoPadding");
-      var keySpec = new SecretKeySpec(key, "SM4");
+      byte[] key = hexToBytes(node.has("keyHex") ? node.get("keyHex").asText() : root.get("defaults").get("sm4KeyHex").asText());
+      byte[] iv = node.has("ivHex") ? hexToBytes(node.get("ivHex").asText()) : null;
+      String transformation = "SM4/" + mode + "/" + (padding.equals("PKCS7") ? "PKCS7Padding" : "NoPadding");
+      SecretKeySpec keySpec = new SecretKeySpec(key, "SM4");
 
       // 加密
-      var encrypt = Cipher.getInstance(transformation, "KonaCrypto");
+      Cipher encrypt = Cipher.getInstance(transformation, "KonaCrypto");
       if ("CBC".equals(mode)) {
         encrypt.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(iv));
       } else {
         encrypt.init(Cipher.ENCRYPT_MODE, keySpec);
       }
-      var cipherBytes = encrypt.doFinal(node.get("input").asText().getBytes(StandardCharsets.UTF_8));
+      byte[] cipherBytes = encrypt.doFinal(node.get("input").asText().getBytes(StandardCharsets.UTF_8));
       if (node.get("expected").has("cipherHex")) {
-        assert toHex(cipherBytes).equals(node.get("expected").get("cipherHex").asText()) : node.get("id").asText();
+        if (!toHex(cipherBytes).equals(node.get("expected").get("cipherHex").asText())) {
+          throw new IllegalStateException(node.get("id").asText());
+        }
       }
 
       // 解密
-      var decrypt = Cipher.getInstance(transformation, "KonaCrypto");
+      Cipher decrypt = Cipher.getInstance(transformation, "KonaCrypto");
       if ("CBC".equals(mode)) {
         decrypt.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(iv));
       } else {
         decrypt.init(Cipher.DECRYPT_MODE, keySpec);
       }
-      var plain = decrypt.doFinal(cipherBytes);
-      assert new String(plain, StandardCharsets.UTF_8).equals(node.get("input").asText()) : node.get("id").asText() + "-decrypt";
+      byte[] plain = decrypt.doFinal(cipherBytes);
+      if (!new String(plain, StandardCharsets.UTF_8).equals(node.get("input").asText())) {
+        throw new IllegalStateException(node.get("id").asText() + "-decrypt");
+      }
     }
   }
 }
@@ -830,6 +900,7 @@ public class SM4KonaInterop {
 
 @tab Bouncy Castle
 ```java
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bouncycastle.crypto.BufferedBlockCipher;
 import org.bouncycastle.crypto.engines.SM4Engine;
@@ -852,11 +923,12 @@ public class SM4BCInterop {
   }
 
   public static void main(String[] args) throws Exception {
-    var root = new ObjectMapper().readTree(Paths.get("test/vectors/interop.json").toFile());
-    for (var node : root.get("cases")) {
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
+    for (JsonNode node : root.get("cases")) {
       if (!"SM4".equals(node.get("algo").asText())) continue;
-      var key = Hex.decode(node.has("keyHex") ? node.get("keyHex").asText() : root.get("defaults").get("sm4KeyHex").asText());
-      var iv = node.has("ivHex") ? Hex.decode(node.get("ivHex").asText()) : null;
+      byte[] key = Hex.decode(node.has("keyHex") ? node.get("keyHex").asText() : root.get("defaults").get("sm4KeyHex").asText());
+      byte[] iv = node.has("ivHex") ? Hex.decode(node.get("ivHex").asText()) : null;
 
       // PaddedBufferedBlockCipher 默认使用 PKCS7Padding
       BufferedBlockCipher enc;
@@ -867,10 +939,12 @@ public class SM4BCInterop {
         enc = new PaddedBufferedBlockCipher(new SM4Engine());
         enc.init(true, new KeyParameter(key));
       }
-      var cipher = run(enc, node.get("input").asText().getBytes(StandardCharsets.UTF_8));
+      byte[] cipher = run(enc, node.get("input").asText().getBytes(StandardCharsets.UTF_8));
 
       if (node.get("expected").has("cipherHex")) {
-        assert Hex.toHexString(cipher).equals(node.get("expected").get("cipherHex").asText()) : node.get("id").asText();
+        if (!Hex.toHexString(cipher).equals(node.get("expected").get("cipherHex").asText())) {
+          throw new IllegalStateException(node.get("id").asText());
+        }
       }
 
       BufferedBlockCipher dec;
@@ -881,8 +955,10 @@ public class SM4BCInterop {
         dec = new PaddedBufferedBlockCipher(new SM4Engine());
         dec.init(false, new KeyParameter(key));
       }
-      var plain = run(dec, cipher);
-      assert new String(plain, StandardCharsets.UTF_8).equals(node.get("input").asText()) : node.get("id").asText() + "-decrypt";
+      byte[] plain = run(dec, cipher);
+      if (!new String(plain, StandardCharsets.UTF_8).equals(node.get("input").asText())) {
+        throw new IllegalStateException(node.get("id").asText() + "-decrypt");
+      }
     }
   }
 }
