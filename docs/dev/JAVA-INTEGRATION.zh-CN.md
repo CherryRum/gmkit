@@ -37,7 +37,7 @@ Hutool 的国密算法实现依赖 Bouncy Castle 库，必须同时引入 BC 依
 <dependency>
     <groupId>cn.hutool</groupId>
     <artifactId>hutool-crypto</artifactId>
-    <version>5.8.23</version>
+    <version>5.8.43</version>
 </dependency>
 <dependency>
     <groupId>org.bouncycastle</groupId>
@@ -48,7 +48,7 @@ Hutool 的国密算法实现依赖 Bouncy Castle 库，必须同时引入 BC 依
 
 ```gradle
 // Gradle
-implementation 'cn.hutool:hutool-crypto:5.8.23'
+implementation 'cn.hutool:hutool-crypto:5.8.43'
 implementation 'org.bouncycastle:bcprov-jdk15to18:1.70'
 ```
 
@@ -95,6 +95,128 @@ implementation 'com.tencent.kona:kona-provider:1.0.19'
 ::: tip 说明
 仅需 SM2/SM3/SM4 时引入 `kona-crypto` 即可；若需要一站式 Provider，可额外引入 `kona-provider`。
 :::
+
+### 版本说明（Hutool & BC）
+
+- Hutool 示例统一使用 `5.8.43`，避免 API 差异导致的互通偏差。
+- Bouncy Castle 建议**固定版本**以稳定互操作。本文示例以 `bcprov-jdk15to18:1.70` 为基准。
+- 为避免默认值差异，请显式指定 **SM2 密文模式**（C1C3C2/C1C2C3）与**签名格式**（DER/RAW）及编码方式。
+
+### Bouncy Castle 版本/产物说明（务必看）
+
+BC 的 `artifactId` 随版本发生过**命名与打包策略变更**，最常见的坑是“引错包 / 混用包 / 多版本冲突”。下面把“每个产物家族的适用范围与问题”写清楚（这里说的“版本”指 **jdk18on/jdk15to18/jdk15on/jdk14** 这些产物家族，而不是具体的 1.70/1.83 版本号）：
+
+#### 1) `bcprov-jdk18on`（JDK 8+ 主线）
+- **适用范围**：Java 8 及以上。
+- **特性**：**Multi-Release JAR**（同一包内为不同 JDK 提供优化实现）。
+- **常见问题**：
+  - 某些旧容器/打包器/OSGi 运行时对 Multi-Release JAR 识别不全，可能出现类加载异常或能力识别错误。
+  - 如果工程同时引入了 `bcprov-jdk15on` 或 `bcprov-jdk15to18`，容易出现**重复类**或类冲突。
+- **何时用**：JDK 8+ 且运行环境对 Multi-Release JAR 兼容良好，**优先使用**。
+
+#### 2) `bcprov-jdk15to18`（JDK 1.5–1.8 兼容）
+- **适用范围**：Java 1.5–1.8，或**无法正确处理 Multi-Release JAR**的运行环境。
+- **特性**：**非 Multi-Release** 版本，兼容性更保守。
+- **常见问题**：
+  - 与 `bcprov-jdk18on` 或 `bcprov-jdk15on` 同时存在时，**重复类冲突**最常见。
+  - 某些依赖默认拉 `-jdk18on`，如果你手动引 `-jdk15to18` 但未排除传递依赖，会出现“双包共存”。
+- **何时用**：需要兼容旧 JVM、老容器或对 Multi-Release JAR 有限制的环境。
+
+#### 3) `bcprov-jdk15on`（历史产物）
+- **适用范围**：历史包名（BC 1.70 及之前常见）。
+- **现状**：**自 1.71 起不再作为主线发布**，被 `jdk18on` 取代。
+- **常见问题**：
+  - 新版本生态（如依赖 `-jdk18on`）下容易产生**多包冲突**。
+  - 与 `-jdk15to18` 混用时，重复类/方法签名冲突是高发问题。
+- **何时用**：**不建议**在新项目中继续使用。除非历史项目被锁死且无法升级。
+
+#### 4) `bcprov-jdk14`
+- **适用范围**：仅用于非常老的 JVM（JDK 1.4）。
+- **现状**：现代工程基本不使用。
+
+### 为什么会冲突（一定要统一）
+- **BC 1.71 的打包变更**：`jdk15on` 更名为 `jdk18on`，基础版本提升到 Java 8。若环境不能处理 Multi-Release JAR，则应改用 `jdk15to18`。
+- **Multi-Release 限制**：官方说明 `jdk18on` 是 multi-release；若需要**专门面向 Java 1.8** 的版本，应使用 `jdk15to18`。
+- **重复类冲突**：`bcprov-jdk15on` / `bcprov-jdk15to18` / `bcprov-jdk18on` **是不同产物，不是版本号差异**，混用会导致重复类或类缺失。
+- **OSGi/容器问题**：Multi-Release JAR 需要容器正确识别；旧容器可能只看到主版本类或能力识别不完整。BC 1.78.1 起增加了对 OSGi 的 multi-release 元数据支持，但老版本环境仍可能有坑。
+
+### 推荐的选型与排雷清单
+**选择速查表**
+
+| 场景 | 推荐产物 |
+| --- | --- |
+| JDK 8+ 且容器/构建链支持 Multi-Release | `bcprov-jdk18on`（配套 `bcpkix-jdk18on` / `bcutil-jdk18on`） |
+| JDK 8 但运行环境对 Multi-Release 不友好 | `bcprov-jdk15to18`（配套 `bcpkix-jdk15to18` / `bcutil-jdk15to18`） |
+| JDK 7 及以下 | `bcprov-jdk15to18` 或更旧的 `bcprov-jdk14`（视 JVM 版本而定） |
+
+1) **只保留一个 BC 产物族**（建议三件套一起锁）：  
+   `bcprov` + `bcpkix` + `bcutil` **同版本**、**同系列**（jdk18on 或 jdk15to18）。
+2) **显式排除冲突依赖**：  
+   对传递依赖中的 `bcprov-jdk15on` / `bcprov-jdk18on` / `bcprov-jdk15to18` 做 `exclude`，确保只留下一个。
+3) **运行时确认**：  
+   若遇到 `ClassNotFound` / `NoSuchMethodError` / `Duplicate class`，优先检查 BC 是否“多包共存”。
+
+## JDK 1.8 低版本 & JCE 限制（Oracle vs OpenJDK）
+
+JCE（Java Cryptography Extension）决定了**算法与密钥长度**的上限，尤其影响 AES-256、RSA 大密钥、部分 TLS 套件等。JDK 1.8 不同 update 之间差异很大，**务必按版本处理**。
+
+### 版本变更时间线（重点小版本）
+
+| JDK 版本段 | 关键变化 | 默认行为 |
+| --- | --- | --- |
+| **8u151 / 8u152** | 引入 `crypto.policy` 属性；JCE Unlimited 策略**随 JDK 一起发布**，无需再单独下载 | **默认仍为 limited**，除非显式开启 `crypto.policy=unlimited` |
+| **8u161+** | **Unlimited cryptography 默认启用** | 默认 unlimited（可用 `crypto.policy` 覆盖） |
+| **更早版本（< 8u151）** | 没有 `crypto.policy`，需要手动下载并替换 JCE policy JAR | 默认 limited |
+
+说明与来源：  
+- 8u151/8u152 引入 `crypto.policy`，但默认仍是 limited；需显式设置或通过 `Security.setProperty` 在 JCE 初始化前生效。citeturn3view0turn4view2  
+- 8u161 起 **Unlimited 默认启用**。citeturn4view0  
+- 8u161+ 的策略目录结构、legacy policy 的回退逻辑与 `crypto.policy` 行为见 JCA 参考指南。citeturn4view3  
+- < 8u151 的版本需单独下载/安装 JCE Unlimited policy。citeturn2search6
+
+### “Oracle JDK vs OpenJDK” 的常见差异（务必验真）
+
+- **Oracle JDK（8u161 之前）**：默认 limited，AES-256 等需要开启或安装 unlimited policy。citeturn3view0turn4view2  
+- **OpenJDK 发行版**：很多发行版默认就可用 AES-256（已包含或启用 unlimited policy），但具体行为**依赖发行版打包策略**，仍建议运行时检测。citeturn1search3  
+
+> 结论：**不要仅凭“Oracle/OpenJDK”判断**，以运行时检测为准。
+
+### 低版本“签名/校验”坑（JCE policy JAR）
+
+如果你从旧 JDK 拷贝 `local_policy.jar`/`US_export_policy.jar` 到新版本，可能触发：
+
+```
+java.lang.SecurityException: Jurisdiction policy files are not signed by trusted signers!
+```
+
+原因是 **JAR 签名标准在 6u131 / 7u121 / 8u111 后更新**，旧 policy JAR 不符合新签名要求。citeturn3view0turn4view2  
+**正确做法**：使用目标 JDK 自带的 policy 目录 + `crypto.policy`，避免跨版本复制。
+
+### 如何确认当前 JCE 限制
+
+运行时检查 AES 允许的最大密钥长度：
+
+```java
+import javax.crypto.Cipher;
+
+public class JceCheck {
+  public static void main(String[] args) throws Exception {
+    System.out.println(Cipher.getMaxAllowedKeyLength("AES"));
+  }
+}
+```
+
+结果解释：
+- `128` = 仍是 limited（AES-256 不可用）
+- `2147483647` = unlimited
+
+### 实操建议（生产可执行）
+
+1) **固定 JDK 小版本**（明确写在 README / 部署脚本里）。  
+2) **统一 JCE 策略**：  
+   - 8u151/8u152：在 `java.security` 设置 `crypto.policy=unlimited`  
+   - 8u161+：确保没有遗留 legacy policy JAR 干扰  
+3) **用代码检测**（上面的 `Cipher.getMaxAllowedKeyLength`）并在启动日志输出。
 
 ### 方案四：gmkit-java
 
@@ -156,6 +278,62 @@ SM4 是分组密码，块大小为 16 字节。当明文长度不是 16 的倍�
 ::: tip 推荐
 ECB/CBC 模式推荐使用 PKCS7 填充，可自动处理任意长度明文。
 :::
+
+## 完整互通示例（Java 端端到端）
+
+下面示例展示 **SM2 加解密 + 签名验签、SM3 摘要、SM4 CBC** 的完整流程。  
+可直接运行（Hutool + Bouncy Castle），与 gmkitx 互通时只需确保 **密钥/IV/模式/编码** 一致即可。
+
+```java
+import cn.hutool.core.util.HexUtil;
+import cn.hutool.crypto.Mode;
+import cn.hutool.crypto.Padding;
+import cn.hutool.crypto.SmUtil;
+import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
+import cn.hutool.crypto.symmetric.SymmetricCrypto;
+import org.bouncycastle.crypto.engines.SM2Engine;
+
+public class FullInteropDemo {
+  public static void main(String[] args) {
+    // 固定测试向量（与 gmkitx interop.json defaults 一致）
+    String sm2PubHex = "045647ebf2adcaf54f8102bea9a7ca8905794a3f2f29622593269bb55d72e0a140dc81f3dce73bb609f8a056640db0e04c08e0bd8be79140702bbdb0206e95b7ac";
+    String sm2PriHex = "228049e009de869baf9aba74f8f8c52e09cde1b52cafb0df7ab154ba4593743e";
+    String sm4KeyHex = "0123456789abcdeffedcba9876543210";
+    String sm4IvHex  = "000102030405060708090a0b0c0d0e0f";
+
+    String message = "Hello GMKit";
+
+    // SM2 加解密 + 签名验签（显式指定 C1C3C2）
+    var sm2 = SmUtil.sm2(HexUtil.decodeHex(sm2PriHex), HexUtil.decodeHex(sm2PubHex));
+    sm2.setMode(SM2Engine.Mode.C1C3C2);
+    String sm2Cipher = sm2.encryptHex(message);
+    String sm2Plain = sm2.decryptStr(sm2Cipher);
+    String sm2Sig = sm2.signHex(message);
+    boolean sm2Ok = sm2.verifyHex(message, sm2Sig);
+
+    // SM3 摘要
+    String sm3Hex = SmUtil.sm3().digestHex(message);
+
+    // SM4 CBC + PKCS7/PKCS5
+    var sm4 = new SymmetricCrypto(
+      Mode.CBC,
+      Padding.PKCS5Padding, // 与 PKCS7 等价（块大小 16）
+      SymmetricAlgorithm.SM4.getValue(),
+      HexUtil.decodeHex(sm4KeyHex),
+      HexUtil.decodeHex(sm4IvHex)
+    );
+    String sm4Cipher = sm4.encryptHex(message);
+    String sm4Plain = sm4.decryptStr(sm4Cipher);
+
+    System.out.println("SM2 cipher : " + sm2Cipher);
+    System.out.println("SM2 plain  : " + sm2Plain);
+    System.out.println("SM2 verify : " + sm2Ok);
+    System.out.println("SM3 hex    : " + sm3Hex);
+    System.out.println("SM4 cipher : " + sm4Cipher);
+    System.out.println("SM4 plain  : " + sm4Plain);
+  }
+}
+```
 
 ## SM2 对接
 
@@ -717,5 +895,3 @@ public class SM4BCInterop {
 - 所有语言对接均使用统一的测试向量 `test/vectors/interop.json`，确保跨语言互操作性。
 - 如需切换 Java 库，保持密钥/IV/模式/编码约定不变，替换代码即可。
 - 扩展 CTR/OFB/CFB/GCM 或固定随机源的 SM2 用例时，先确认计数器/AAD/随机策略一致，再写入测试向量并在备注中标明。 
-
-
