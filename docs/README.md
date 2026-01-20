@@ -24,7 +24,7 @@ features:
     details: 对齐 GM/T 标准，兼容 OpenSSL 等主流实现的密文格式
   - title: 性能优化
     icon: rocket
-    details: 纯 TypeScript、零额外依赖，适合生产环境
+    details: 纯 TypeScript、轻依赖（@noble/*），适合生产环境
 
 copyright: false
 ---
@@ -128,7 +128,7 @@ const sha512Hash = sha.sha512('Hello World');
 
 ### 国际标准算法
 
-- **SHA** - SHA-1, SHA-224, SHA-256, SHA-384, SHA-512 系列哈希算法
+- **SHA** - SHA-1, SHA-256, SHA-384, SHA-512 系列哈希算法
 
 ## 开始探索
 
@@ -139,4 +139,3 @@ const sha512Hash = sha.sha512('Hello World');
 - [SM4 算法文档](/algorithms/SM4) - 分组密码算法
 - [语言集成指南](/dev/JAVA-INTEGRATION.zh-CN) - Java、Go、Rust、Python 对接方案
 - [性能测试](/performance/PERFORMANCE) - 查看性能基准测试结果
-

@@ -196,6 +196,23 @@ export function xor(a: Uint8Array, b: Uint8Array): Uint8Array {
 }
 
 /**
+ * 常量时间比较两个 Uint8Array（防止时序攻击）
+ * @param a - 第一个数组
+ * @param b - 第二个数组
+ * @returns 是否相等
+ */
+export function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a[i] ^ b[i];
+  }
+  return diff === 0;
+}
+
+/**
  * 对 32 位值进行循环左移
  * @param value - 32 位值
  * @param shift - 要移动的位数

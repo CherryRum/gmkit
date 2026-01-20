@@ -189,7 +189,7 @@ const wordStream = zucKeystreamWords(key, iv, 8); // 8 words
 ```
 
 ### SHA（国际标准摘要）
-- SHA1/224/256/384/512 系列，API 与 SM3 一致，便于混合使用。
+- SHA1/256/384/512 系列，API 与 SM3 一致，便于混合使用。
 
 ```ts
 import { sha } from 'gmkitx';

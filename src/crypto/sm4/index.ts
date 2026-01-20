@@ -24,6 +24,7 @@ import {
   xor,
   bytes4ToUint32BE,
   uint32ToBytes4BE,
+  constantTimeEqual,
   type BytesLike
 } from '../../core/utils';
 import {
@@ -232,8 +233,7 @@ function encryptBlock(input: Uint8Array, roundKeys: number[]): Uint8Array {
 /**
  * 解密单个数据块（128 位）
  */
-function decryptBlock(input: Uint8Array, roundKeys: number[]): Uint8Array {
-  const reversedKeys = roundKeys.slice().reverse();
+function decryptBlock(input: Uint8Array, reversedKeys: number[]): Uint8Array {
   return encryptBlock(input, reversedKeys);
 }
 
@@ -492,7 +492,7 @@ export function encrypt(
 
   if (mode === 'ecb') {
     for (let i = 0; i < dataBytes.length; i += 16) {
-      const block = dataBytes.slice(i, i + 16);
+      const block = dataBytes.subarray(i, i + 16);
       const encrypted = encryptBlock(block, roundKeys);
       result.set(encrypted, i);
     }
@@ -506,7 +506,7 @@ export function encrypt(
     }
 
     for (let i = 0; i < dataBytes.length; i += 16) {
-      const block = dataBytes.slice(i, i + 16);
+      const block = dataBytes.subarray(i, i + 16);
       const xored = xor(block, ivBytes);
       const encrypted = encryptBlock(xored, roundKeys);
       result.set(encrypted, i);
@@ -741,12 +741,13 @@ export function decrypt(
   }
 
   const roundKeys = expandKey(keyBytes);
+  const decryptRoundKeys = roundKeys.slice().reverse();
   const result = new Uint8Array(dataBytes.length);
 
   if (mode === 'ecb') {
     for (let i = 0; i < dataBytes.length; i += 16) {
-      const block = dataBytes.slice(i, i + 16);
-      const decrypted = decryptBlock(block, roundKeys);
+      const block = dataBytes.subarray(i, i + 16);
+      const decrypted = decryptBlock(block, decryptRoundKeys);
       result.set(decrypted, i);
     }
   } else if (mode === 'cbc') {
@@ -759,8 +760,8 @@ export function decrypt(
     }
 
     for (let i = 0; i < dataBytes.length; i += 16) {
-      const block = dataBytes.slice(i, i + 16);
-      const decrypted = decryptBlock(block, roundKeys);
+      const block = dataBytes.subarray(i, i + 16);
+      const decrypted = decryptBlock(block, decryptRoundKeys);
       const xored = xor(decrypted, ivBytes);
       result.set(xored, i);
       ivBytes = block;
@@ -884,14 +885,7 @@ export function decrypt(
     }
 
     // 以常数时间比较方式校验认证标签
-    let tagMatch = true;
-    for (let i = 0; i < authTag.length; i++) {
-      if (authTag[i] !== expectedTag[i]) {
-        tagMatch = false;
-      }
-    }
-
-    if (!tagMatch) {
+    if (!constantTimeEqual(authTag, expectedTag)) {
       throw new Error('Authentication tag verification failed');
     }
 

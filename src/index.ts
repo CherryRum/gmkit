@@ -1,7 +1,7 @@
 /**
  * GMKit - 中国国密算法库和国际标准算法库
  * 纯 TypeScript 实现的 SM2、SM3、SM4、ZUC 算法
- * 国际标准算法：SHA-256、SHA-384、SHA-512
+ * 国际标准算法：SHA-1、SHA-256、SHA-384、SHA-512
  *
  * 支持多种导入方式：
  * 1. 命名空间导入: import * as gmkit from 'gmkit'; gmkit.sm2.encrypt(...)
