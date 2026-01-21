@@ -17,18 +17,33 @@ tag:
 
 # Java 对接指南
 
+::: tip
+提示：本章要点
+
+- 依赖配置
+- JDK 1.8 低版本 & JCE 限制（Oracle vs OpenJDK）
+- 数据要点
+- 模式与填充详解
+- 完整互通示例（Java 端端到端）
+:::
+
+
 本页聚焦 Java 端与 gmkitx 的互通，提供四种集成方案：
 
-1. **Hutool + Bouncy Castle** - 推荐方案，需要引入 BC 依赖
-2. **直接使用 Bouncy Castle** - 底层实现，更灵活
-3. **Tencent Kona SM Suite** - JCA 标准提供者，纯 Java 实现
-4. **gmkit-java** - 原生 Java 实现（敬请期待）
+| 项目 | 说明 |
+|:--|:--|
+| Hutool + Bouncy Castle | 推荐方案，需要引入 BC 依赖 |
+| 直接使用 Bouncy Castle | 底层实现，更灵活 |
+| Tencent Kona SM Suite | JCA 标准提供者，纯 Java 实现 |
+| gmkit-java | 原生 Java 实现（敬请期待） |
+
 
 ## 依赖配置
 
 ### 方案一：Hutool（推荐）
 
-::: tip 注意
+::: tip
+提示：注意
 Hutool 的国密算法实现依赖 Bouncy Castle 库，必须同时引入 BC 依赖。
 :::
 
@@ -92,7 +107,8 @@ implementation 'com.tencent.kona:kona-crypto:1.0.19'
 implementation 'com.tencent.kona:kona-provider:1.0.19'
 ```
 
-::: tip 说明
+::: tip
+提示：说明
 仅需 SM2/SM3/SM4 时引入 `kona-crypto` 即可；若需要一站式 Provider，可额外引入 `kona-provider`。
 :::
 
@@ -107,38 +123,53 @@ implementation 'com.tencent.kona:kona-provider:1.0.19'
 BC 的 `artifactId` 随版本发生过**命名与打包策略变更**，最常见的坑是“引错包 / 混用包 / 多版本冲突”。下面把“每个产物家族的适用范围与问题”写清楚（这里说的“版本”指 **jdk18on/jdk15to18/jdk15on/jdk14** 这些产物家族，而不是具体的 1.70/1.83 版本号）：
 
 #### 1) `bcprov-jdk18on`（JDK 8+ 主线）
-- **适用范围**：Java 8 及以上。
-- **特性**：**Multi-Release JAR**（同一包内为不同 JDK 提供优化实现）。
+| 项目 | 说明 |
+|:--|:--|
+| 适用范围 | Java 8 及以上。 |
+| 特性 | **Multi-Release JAR**（同一包内为不同 JDK 提供优化实现）。 |
+
 - **常见问题**：
   - 某些旧容器/打包器/OSGi 运行时对 Multi-Release JAR 识别不全，可能出现类加载异常或能力识别错误。
   - 如果工程同时引入了 `bcprov-jdk15on` 或 `bcprov-jdk15to18`，容易出现**重复类**或类冲突。
 - **何时用**：JDK 8+ 且运行环境对 Multi-Release JAR 兼容良好，**优先使用**。
 
 #### 2) `bcprov-jdk15to18`（JDK 1.5–1.8 兼容）
-- **适用范围**：Java 1.5–1.8，或**无法正确处理 Multi-Release JAR**的运行环境。
-- **特性**：**非 Multi-Release** 版本，兼容性更保守。
+| 项目 | 说明 |
+|:--|:--|
+| 适用范围 | Java 1.5–1.8，或**无法正确处理 Multi-Release JAR**的运行环境。 |
+| 特性 | **非 Multi-Release** 版本，兼容性更保守。 |
+
 - **常见问题**：
   - 与 `bcprov-jdk18on` 或 `bcprov-jdk15on` 同时存在时，**重复类冲突**最常见。
   - 某些依赖默认拉 `-jdk18on`，如果你手动引 `-jdk15to18` 但未排除传递依赖，会出现“双包共存”。
 - **何时用**：需要兼容旧 JVM、老容器或对 Multi-Release JAR 有限制的环境。
 
 #### 3) `bcprov-jdk15on`（历史产物）
-- **适用范围**：历史包名（BC 1.70 及之前常见）。
-- **现状**：**自 1.71 起不再作为主线发布**，被 `jdk18on` 取代。
+| 项目 | 说明 |
+|:--|:--|
+| 适用范围 | 历史包名（BC 1.70 及之前常见）。 |
+| 现状 | **自 1.71 起不再作为主线发布**，被 `jdk18on` 取代。 |
+
 - **常见问题**：
   - 新版本生态（如依赖 `-jdk18on`）下容易产生**多包冲突**。
   - 与 `-jdk15to18` 混用时，重复类/方法签名冲突是高发问题。
 - **何时用**：**不建议**在新项目中继续使用。除非历史项目被锁死且无法升级。
 
 #### 4) `bcprov-jdk14`
-- **适用范围**：仅用于非常老的 JVM（JDK 1.4）。
-- **现状**：现代工程基本不使用。
+| 项目 | 说明 |
+|:--|:--|
+| 适用范围 | 仅用于非常老的 JVM（JDK 1.4）。 |
+| 现状 | 现代工程基本不使用。 |
+
 
 ### 为什么会冲突（一定要统一）
-- **BC 1.71 的打包变更**：`jdk15on` 更名为 `jdk18on`，基础版本提升到 Java 8。若环境不能处理 Multi-Release JAR，则应改用 `jdk15to18`。
-- **Multi-Release 限制**：官方说明 `jdk18on` 是 multi-release；若需要**专门面向 Java 1.8** 的版本，应使用 `jdk15to18`。
-- **重复类冲突**：`bcprov-jdk15on` / `bcprov-jdk15to18` / `bcprov-jdk18on` **是不同产物，不是版本号差异**，混用会导致重复类或类缺失。
-- **OSGi/容器问题**：Multi-Release JAR 需要容器正确识别；旧容器可能只看到主版本类或能力识别不完整。BC 1.78.1 起增加了对 OSGi 的 multi-release 元数据支持，但老版本环境仍可能有坑。
+| 项目 | 说明 |
+|:--|:--|
+| BC 1.71 的打包变更 | `jdk15on` 更名为 `jdk18on`，基础版本提升到 Java 8。若环境不能处理 Multi-Release JAR，则应改用 `jdk15to18`。 |
+| Multi-Release 限制 | 官方说明 `jdk18on` 是 multi-release；若需要**专门面向 Java 1.8** 的版本，应使用 `jdk15to18`。 |
+| 重复类冲突 | `bcprov-jdk15on` / `bcprov-jdk15to18` / `bcprov-jdk18on` **是不同产物，不是版本号差异**，混用会导致重复类或类缺失。 |
+| OSGi/容器问题 | Multi-Release JAR 需要容器正确识别；旧容器可能只看到主版本类或能力识别不完整。BC 1.78.1 起增加了对 OSGi 的 multi-release 元数据支持，但老版本环境仍可能有坑。 |
+
 
 ### 推荐的选型与排雷清单
 **选择速查表**
@@ -160,10 +191,15 @@ BC 的 `artifactId` 随版本发生过**命名与打包策略变更**，最常�
 
 JCE（Java Cryptography Extension）决定了**算法与密钥长度**的上限，尤其影响 AES-256、RSA 大密钥、部分 TLS 套件等。JDK 1.8 的**小版本差异很大**，请按版本处理。
 
-::: info 快速结论
-- **8u161+**：Unlimited cryptography **默认启用**（仍可用 `crypto.policy` 覆盖）。
-- **8u151/8u152**：Unlimited policy **已随 JDK 提供，但默认仍是 limited**，需要手动开启。
-- **< 8u151**：没有 `crypto.policy`，需手动安装 JCE policy JAR。
+::: info
+说明：快速结论
+
+| 项目 | 说明 |
+|:--|:--|
+| 8u161+ | Unlimited cryptography **默认启用**（仍可用 `crypto.policy` 覆盖）。 |
+| 8u151/8u152 | Unlimited policy **已随 JDK 提供，但默认仍是 limited**，需要手动开启。 |
+| < 8u151 | 没有 `crypto.policy`，需手动安装 JCE policy JAR。 |
+
 :::
 
 ::: details 版本时间线（重点小版本）
@@ -214,7 +250,8 @@ public class JceCheck {
 - `128` = limited（AES-256 不可用）
 - `2147483647` = unlimited
 
-::: tip 生产建议
+::: tip
+提示：生产建议
 1) **固定 JDK 小版本**（写入 README / 部署脚本）。  
 2) **统一 JCE 策略**：  
    - 8u151/8u152：在 `java.security` 设置 `crypto.policy=unlimited`  
@@ -240,7 +277,8 @@ public class JceCheck {
 
 ### 方案四：gmkit-java
 
-::: info 开发中
+::: info
+说明：开发中
 gmkit-java 是纯 Java 实现的国密算法库，不依赖第三方库。敬请期待！
 :::
 
@@ -269,19 +307,27 @@ gmkit-java 是纯 Java 实现的国密算法库，不依赖第三方库。敬请
 ### SM2 密文模式
 
 SM2 加密后的密文由三部分组成：
-- **C1**：椭圆曲线点（65字节，非压缩格式）
-- **C2**：密文数据（与明文等长）
-- **C3**：摘要值（32字节，SM3哈希）
+| 项目 | 说明 |
+|:--|:--|
+| C1 | 椭圆曲线点（65字节，非压缩格式） |
+| C2 | 密文数据（与明文等长） |
+| C3 | 摘要值（32字节，SM3哈希） |
+
 
 两种排列模式：
-- **C1C3C2**：gmkitx 默认模式，国密标准推荐格式
-- **C1C2C3**：部分旧版实现使用，需显式指定
+| 项目 | 说明 |
+|:--|:--|
+| C1C3C2 | gmkitx 默认模式，国密标准推荐格式 |
+| C1C2C3 | 部分旧版实现使用，需显式指定 |
 
-::: warning 重要
+
+::: warning
+注意：重要
 对接时必须确保双方使用相同的密文模式，否则无法正确解密！
 :::
 
-::: tip Kona 说明
+::: tip
+提示：Kona 说明
 Tencent Kona 的 SM2 `Cipher` 输出 ASN.1 DER（C1C3C2），gmkitx 解密时可自动识别 0x30 开头的 ASN.1 格式。
 :::
 
@@ -295,7 +341,8 @@ SM4 是分组密码，块大小为 16 字节。当明文长度不是 16 的倍�
   - 注意：解密后需手动去除尾部零
 - **NONE**：无填充，仅用于 CTR/OFB/CFB 等流模式，或明文已对齐 16 字节
 
-::: tip 推荐
+::: tip
+提示：推荐
 ECB/CBC 模式推荐使用 PKCS7 填充，可自动处理任意长度明文。
 :::
 
@@ -361,6 +408,7 @@ public class FullInteropDemo {
 ::: code-tabs#sm2
 
 @tab gmkitx
+:::
 ```typescript
 import { sm2Encrypt, sm2Decrypt, sign, verify, SM2CipherMode } from 'gmkitx';
 
@@ -614,6 +662,7 @@ public class SM2BCInterop {
 ::: code-tabs#sm3
 
 @tab gmkitx
+:::
 ```typescript
 import { digest, hmac } from 'gmkitx';
 
@@ -737,6 +786,7 @@ public class SM3BCInterop {
 ::: code-tabs#sm4
 
 @tab gmkitx
+:::
 ```typescript
 import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkitx';
 

@@ -16,6 +16,17 @@ tag:
 
 # SM4 分组密码算法
 
+::: tip
+提示：本章要点
+
+- 概述
+- 快速开始
+- 分组模式
+- 📦 填充模式
+- 📤 输出格式
+:::
+
+
 ## 概述
 
 SM4 是国密对称分组密码算法，块长与密钥长度均为 128 位。  
@@ -23,25 +34,35 @@ SM4 是国密对称分组密码算法，块长与密钥长度均为 128 位。
 
 ### 参考标准
 
-- **GM/T 0002-2012**: SM4 分组密码算法
-- **GB/T 32907-2016**: 信息安全技术 SM4 分组密码算法（等同采用 GM/T 0002-2012）
+| 项目 | 说明 |
+|:--|:--|
+| GM/T 0002-2012 | SM4 分组密码算法 |
+| GB/T 32907-2016 | 信息安全技术 SM4 分组密码算法（等同采用 GM/T 0002-2012） |
+
 
 ### 商密场景中的 SM4
 
-- **数据保护**：数据库字段、文件内容、接口报文加密的常见选择
-- **组合使用**：常与 SM2 搭配完成“密钥封装 + 数据加密”
-- **模式约定**：业务系统通常统一一种模式与填充，减少互操作成本
+| 项目 | 说明 |
+|:--|:--|
+| 数据保护 | 数据库字段、文件内容、接口报文加密的常见选择 |
+| 组合使用 | 常与 SM2 搭配完成“密钥封装 + 数据加密” |
+| 模式约定 | 业务系统通常统一一种模式与填充，减少互操作成本 |
+
 
 ### 使用要点
 
-- **模式优先级**：GCM > CBC > CTR/CFB/OFB > ECB  
-- **IV 长度**：CBC/CTR/CFB/OFB 为 16 字节，GCM 为 12 字节
-- **填充**：块模式用 PKCS7，Java 的 PKCS5Padding 等价于 PKCS7
+| 项目 | 说明 |
+|:--|:--|
+| 模式优先级 | GCM > CBC > CTR/CFB/OFB > ECB |
+| IV 长度 | CBC/CTR/CFB/OFB 为 16 字节，GCM 为 12 字节 |
+| 填充 | 块模式用 PKCS7，Java 的 PKCS5Padding 等价于 PKCS7 |
 
-### 性能提示
 
+::: tip
+提示：性能提示
 性能主要取决于平台硬件加速支持。  
 安全更强的模式（如 GCM）成本更高，这是必要开销。
+:::
 
 ## 快速开始
 
@@ -72,7 +93,7 @@ const ciphertext = sm4.encrypt(key, 'Hello, SM4!');
 const plaintext = sm4.decrypt(key, ciphertext);
 ```
 
-##  分组模式
+## 分组模式
 
 SM4 支持六种分组密码工作模式：
 
@@ -94,7 +115,9 @@ const plaintext = sm4Decrypt(key, ciphertext, {
 });
 ```
 
-⚠️ **警告**: ECB 模式不安全，相同明文块会产生相同密文块，不应用于敏感数据。
+::: warning
+注意：ECB 模式不安全，相同明文块会产生相同密文块，不应用于敏感数据。
+:::
 
 ### CBC（密码块链接模式）
 
@@ -117,7 +140,9 @@ const plaintext = sm4Decrypt(key, ciphertext, {
 });
 ```
 
-✅ **推荐**: CBC 模式安全可靠，适用于大多数场景。
+::: tip
+提示：CBC 模式安全可靠，适用于大多数场景。
+:::
 
 ### CTR（计数器模式）
 
@@ -140,7 +165,9 @@ const plaintext = sm4Decrypt(key, ciphertext, {
 });
 ```
 
-✅ **优点**: 支持并行处理，不需要填充。
+::: tip
+提示：支持并行处理，不需要填充。
+:::
 
 ### CFB（密码反馈模式）
 
@@ -150,8 +177,7 @@ const plaintext = sm4Decrypt(key, ciphertext, {
 import { sm4Encrypt, sm4Decrypt, CipherMode } from 'gmkitx';
 
 const key = '0123456789abcdeffedcba9876543210';
-const iv = 'fedcba9876543210012345678'; // 12 字节（24 hex）
-const aad = 'header-data';
+const iv = 'fedcba98765432100123456789abcdef'; // 16 字节（32 hex）
 
 const ciphertext = sm4Encrypt(key, 'Hello, SM4!', {
   mode: CipherMode.CFB,
@@ -172,7 +198,7 @@ const plaintext = sm4Decrypt(key, ciphertext, {
 import { sm4Encrypt, sm4Decrypt, CipherMode } from 'gmkitx';
 
 const key = '0123456789abcdeffedcba9876543210';
-const iv = 'fedcba98765432100123456789abcdef';
+const iv = '00112233445566778899aabb'; // 12 字节（24 hex）
 
 const ciphertext = sm4Encrypt(key, 'Hello, SM4!', {
   mode: CipherMode.OFB,
@@ -199,7 +225,7 @@ const iv = 'fedcba98765432100123456789abcdef';
 const { ciphertext, tag } = sm4Encrypt(key, 'Hello, SM4!', {
   mode: CipherMode.GCM,
   iv: iv,
-  aad
+  aad: 'header-data'
 });
 
 // 解密（需要提供认证标签）
@@ -207,13 +233,15 @@ const plaintext = sm4Decrypt(key, ciphertext, {
   mode: CipherMode.GCM,
   iv: iv,
   tag: tag,
-  aad
+  aad: 'header-data'
 });
 ```
 
-✅ **强烈推荐**: GCM 模式提供认证加密（AEAD），防止密文被篡改。
+::: tip
+提示：GCM 模式提供认证加密（AEAD），防止密文被篡改。
+:::
 
-## 📦 填充模式
+## 填充模式
 
 对于非流密码模式（ECB、CBC），需要填充明文到块大小的整数倍。
 
@@ -255,9 +283,11 @@ const ciphertext = sm4Encrypt(key, plaintext, {
 });
 ```
 
-⚠️ **注意**: CTR、CFB、OFB、GCM 模式不需要填充。
+::: warning
+注意：CTR、CFB、OFB、GCM 模式不需要填充。
+:::
 
-## 📤 输出格式
+## 输出格式
 
 SM4 支持多种输出格式：
 
@@ -290,14 +320,17 @@ const bytes = Buffer.from(hexCipher, 'hex'); // Node.js
 
 建议在协议层显式传输 `iv` / `tag` / `aad`，避免隐式约定造成互操作失败：
 
-- **结构化传输**：`{ iv, ciphertext, tag, aad }`（推荐）
-- **拼接传输**：`iv || ciphertext || tag`（需约定长度）
+| 项目 | 说明 |
+|:--|:--|
+| 结构化传输 | `{ iv, ciphertext, tag, aad }`（推荐） |
+| 拼接传输 | `iv || ciphertext || tag`（需约定长度） |
+
   - GCM 默认 `iv=12` 字节，`tag=16` 字节
   - CBC/CTR/CFB/OFB 仅需 `iv=16` 字节
 
 编码建议使用 `hex` 或 `base64`，并在接口文档中写清楚。
 
-##  面向对象 API
+## 面向对象 API
 
 ```typescript
 import { SM4, CipherMode, PaddingMode } from 'gmkitx';
@@ -319,7 +352,7 @@ sm4.setMode(CipherMode.GCM);
 sm4.setPadding(PaddingMode.NONE);
 ```
 
-##  完整 API 参考
+## 完整 API 参考
 
 ### 函数式 API
 
@@ -352,7 +385,7 @@ interface SM4Options {
 }
 ```
 
-##  使用场景
+## 使用场景
 
 ### 1. 文件加密
 
@@ -510,7 +543,7 @@ class EncryptedLogger {
 }
 ```
 
-##  高级用法
+## 高级用法
 
 ### 大文件处理建议
 
@@ -550,7 +583,7 @@ function encryptBatch(items: string[], key: string): string[] {
 }
 ```
 
-##  密钥管理
+## 密钥管理
 
 ### 密钥生成
 
@@ -581,21 +614,31 @@ const key = process.env.SM4_KEY;
 const key = await keyManagementService.getKey('sm4-key-id');
 ```
 
-##  注意事项
+## 注意事项
 
-1. **密钥长度**: SM4 密钥必须是 128 位（32 个十六进制字符）
-2. **IV 长度**: CBC/CTR/CFB/OFB 为 128 位；GCM 推荐 96 位（12 字节）
-3. **IV 唯一性**: CTR/GCM 必须保证同一密钥下 IV 不可重复
-4. **密钥保密**: 密钥必须妥善保管，泄露将导致所有加密数据不安全
-5. **模式选择**: 
+::: warning
+注意：以下内容涉及安全性、互操作或易错点，建议上线前逐条核对。
+:::
+
+| 项目 | 说明 |
+|:--|:--|
+| 密钥长度 | SM4 密钥必须是 128 位（32 个十六进制字符） |
+| IV 长度 | CBC/CTR/CFB/OFB 为 128 位；GCM 推荐 96 位（12 字节） |
+| IV 唯一性 | CTR/GCM 必须保证同一密钥下 IV 不可重复 |
+| 密钥保密 | 密钥必须妥善保管，泄露将导致所有加密数据不安全 |
+| 模式选择 |  |
+
    - 敏感数据推荐使用 GCM 模式
    - 一般数据使用 CBC 模式
    - 避免使用 ECB 模式
-6. **填充攻击**: 使用 PKCS7 填充时注意 padding oracle 攻击
-7. **Zero 填充**: 明文尾部若含 0x00 会丢失语义，需可逆长度或避免使用
-8. **认证**: GCM 解密必须校验 tag，AAD 也需一致；非 GCM 模式不提供完整性保护，需额外 MAC
+| 项目 | 说明 |
+|:--|:--|
+| 填充攻击 | 使用 PKCS7 填充时注意 padding oracle 攻击 |
+| Zero 填充 | 明文尾部若含 0x00 会丢失语义，需可逆长度或避免使用 |
+| 认证 | GCM 解密必须校验 tag，AAD 也需一致；非 GCM 模式不提供完整性保护，需额外 MAC |
 
-##  常见问题
+
+## 常见问题
 
 ### Q: SM4 和 AES 有什么区别？
 
@@ -616,16 +659,19 @@ A: GCM 模式的 tag（认证标签）用于验证密文完整性。解密时必
 ### Q: 如何选择分组模式？
 
 A: 推荐选择：
-- **敏感数据**: GCM（提供认证加密）
-- **一般数据**: CBC（最常用）
-- **流式数据**: CTR（支持并行）
-- **避免**: ECB（不安全）
+| 项目 | 说明 |
+|:--|:--|
+| 敏感数据 | GCM（提供认证加密） |
+| 一般数据 | CBC（最常用） |
+| 流式数据 | CTR（支持并行） |
+| 避免 | ECB（不安全） |
+
 
 ### Q: 每次加密结果都不同吗？
 
 A: 是的（除 ECB 模式外）。因为每次加密使用不同的随机 IV，即使明文相同，密文也不同。这是正常且必要的安全特性。
 
-##  性能基准
+## 性能基准
 
 在现代硬件上的性能参考（仅供参考）：
 
@@ -638,16 +684,14 @@ A: 是的（除 ECB 模式外）。因为每次加密使用不同的随机 IV，
 
 > 注: 实际性能取决于硬件配置和运行环境
 
-##  相关资源
+## 相关资源
 
 - [SM4 标准文档](http://www.gmbz.org.cn/main/viewfile/2018011001400692565.html)
 - [GB/T 32907-2016](http://www.gb688.cn/bzgk/gb/newGbInfo?hcno=7803DE42D3BC5E80B0C3E5D8E873D56A)
 - [分组密码工作模式](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation)
 
-##  相关算法
+## 相关算法
 
 - [SM2 - 椭圆曲线公钥密码算法](./SM2.md)
 - [SM3 - 密码杂凑算法](./SM3.md)
 - [ZUC - 祖冲之序列密码算法](./ZUC.md)
-
-

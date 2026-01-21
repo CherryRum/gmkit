@@ -6,6 +6,17 @@ order: 99
 
 # 跨语言对接（SM2 → SM3 → SM4）
 
+::: tip
+提示：本章要点
+
+- 文件与约定
+- 验证流程
+- SM2
+- SM3
+- SM4
+:::
+
+
 面向 Hutool/Java 以及后续 Go、Python 等实现的互通校验。固定输入、密钥、IV、公私钥在 `test/vectors/interop.json`，便于一次生成、多端共用。
 
 ## 文件与约定
@@ -23,6 +34,7 @@ order: 99
 
 ::: code-tabs#sm2
 @tab TypeScript (gmkitx)
+:::
 ```ts
 import {
   sm2Encrypt, sm2Decrypt, sign, verify, SM2CipherMode
@@ -317,6 +329,7 @@ fn main() {
 
 ::: code-tabs#sm3
 @tab TypeScript (gmkitx)
+:::
 ```ts
 import { digest, hmac } from 'gmkitx';
 import fs from 'node:fs';
@@ -455,6 +468,7 @@ fn main() {
 
 ::: code-tabs#sm4
 @tab TypeScript (gmkitx)
+:::
 ```ts
 import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkitx';
 import fs from 'node:fs';

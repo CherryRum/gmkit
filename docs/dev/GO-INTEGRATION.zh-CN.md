@@ -15,6 +15,17 @@ tag:
 
 # Go 语言对接指南
 
+::: tip
+提示：本章要点
+
+- 推荐库：gmsm
+- 数据约定
+- 模式与填充详解
+- SM2 对接示例
+- SM3 对接示例
+:::
+
+
 本页介绍 Go 语言与 gmkitx 的互通方案。
 
 ## 推荐库：gmsm
@@ -58,15 +69,22 @@ require (
 ### SM2 密文模式
 
 SM2 加密后的密文由三部分组成：
-- **C1**：椭圆曲线点（65字节，非压缩格式）
-- **C2**：密文数据（与明文等长）
-- **C3**：摘要值（32字节，SM3哈希）
+| 项目 | 说明 |
+|:--|:--|
+| C1 | 椭圆曲线点（65字节，非压缩格式） |
+| C2 | 密文数据（与明文等长） |
+| C3 | 摘要值（32字节，SM3哈希） |
+
 
 两种排列模式：
-- **C1C3C2**：gmkitx 默认模式，国密标准推荐格式
-- **C1C2C3**：部分旧版实现使用，需显式指定
+| 项目 | 说明 |
+|:--|:--|
+| C1C3C2 | gmkitx 默认模式，国密标准推荐格式 |
+| C1C2C3 | 部分旧版实现使用，需显式指定 |
 
-::: warning 重要
+
+::: warning
+注意：重要
 对接时必须确保双方使用相同的密文模式，否则无法正确解密！
 :::
 
@@ -78,7 +96,8 @@ SM4 是分组密码，块大小为 16 字节。当明文长度不是 16 的倍�
   - 示例：明文 11 字节，填充 5 个 0x05
 - **NoPadding**：无填充，要求明文已对齐 16 字节，或用于流模式
 
-::: tip 推荐
+::: tip
+提示：推荐
 ECB/CBC 模式推荐使用 PKCS7 填充，可自动处理任意长度明文。
 :::
 
@@ -87,6 +106,7 @@ ECB/CBC 模式推荐使用 PKCS7 填充，可自动处理任意长度明文。
 ::: code-tabs#sm2
 
 @tab gmkitx
+:::
 ```typescript
 import { 
   generateKeyPair, 
@@ -175,6 +195,7 @@ func main() {
 ::: code-tabs#sm2-sign
 
 @tab gmkitx
+:::
 ```typescript
 import { generateKeyPair, sign, verify } from 'gmkitx';
 
@@ -232,6 +253,7 @@ func main() {
 ::: code-tabs#sm3
 
 @tab gmkitx
+:::
 ```typescript
 import { digest, hmac, SM3 } from 'gmkitx';
 
@@ -282,6 +304,7 @@ func main() {
 ::: code-tabs#sm4
 
 @tab gmkitx
+:::
 ```typescript
 import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode, SM4 } from 'gmkitx';
 
@@ -640,11 +663,18 @@ func testSM2(tc TestVector, defaults Defaults) {
 
 ## 注意事项
 
-1. **密钥格式**：确保密钥和 IV 使用正确的十六进制编码
-2. **密文模式**：SM2 加密时明确指定 C1C3C2 或 C1C2C3 模式
-3. **填充方式**：SM4 加密时选择合适的填充方式（PKCS7 或 NoPadding）
-4. **字符编码**：字符串数据统一使用 UTF-8 编码
-5. **错误处理**：Go 的错误处理机制要妥善处理加解密错误
+::: warning
+注意：以下内容涉及安全性、互操作或易错点，建议上线前逐条核对。
+:::
+
+| 项目 | 说明 |
+|:--|:--|
+| 密钥格式 | 确保密钥和 IV 使用正确的十六进制编码 |
+| 密文模式 | SM2 加密时明确指定 C1C3C2 或 C1C2C3 模式 |
+| 填充方式 | SM4 加密时选择合适的填充方式（PKCS7 或 NoPadding） |
+| 字符编码 | 字符串数据统一使用 UTF-8 编码 |
+| 错误处理 | Go 的错误处理机制要妥善处理加解密错误 |
+
 
 ## 其他 Go 库
 

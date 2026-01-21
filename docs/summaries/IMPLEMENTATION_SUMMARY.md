@@ -11,25 +11,45 @@ tag:
 
 # 实现总结 / Implementation Summary
 
+::: tip
+提示：本章要点
+
+- 主要实现
+- 构建与分发
+- 测试与类型
+- 向后兼容
+- 后续建议
+:::
+
+
 # 目的
 聚焦实现与交付层面的要点，确保文档与代码一致。
 
 ## 主要实现
-- **打包**：`tsup` 输出 ESM/CJS/IIFE 与类型定义，IIFE 全局名为 `GMKit`。
-- **依赖**：运行时仅 `@noble/curves`、`@noble/hashes`；其余为开发工具链。
-- **API**：函数式导出 + 类封装；支持命名空间导出，便于 tree-shaking。
-- **解码**：默认 hex，部分算法支持 base64；解密端自动识别输入格式。
+| 项目 | 说明 |
+|:--|:--|
+| 打包 | `tsup` 输出 ESM/CJS/IIFE 与类型定义，IIFE 全局名为 `GMKit`。 |
+| 依赖 | 运行时仅 `@noble/curves`、`@noble/hashes`；其余为开发工具链。 |
+| API | 函数式导出 + 类封装；支持命名空间导出，便于 tree-shaking。 |
+| 解码 | 默认 hex，部分算法支持 base64；解密端自动识别输入格式。 |
+
 
 ## 构建与分发
-- **入口**：`src/index.ts`。
-- **产物**：`dist/index.js`、`dist/index.cjs`、`dist/index.global.js`。
+| 项目 | 说明 |
+|:--|:--|
+| 入口 | `src/index.ts`。 |
+| 产物 | `dist/index.js`、`dist/index.cjs`、`dist/index.global.js`。 |
+
 - **CDN**：
   - unpkg: `https://unpkg.com/gmkitx@latest/dist/index.global.js`
   - jsDelivr: `https://cdn.jsdelivr.net/npm/gmkitx@latest/dist/index.global.js`
 
 ## 测试与类型
-- **测试**：Vitest 覆盖核心算法路径与边界场景。
-- **类型**：`tsc --noEmit` 作为发布前校验。
+| 项目 | 说明 |
+|:--|:--|
+| 测试 | Vitest 覆盖核心算法路径与边界场景。 |
+| 类型 | `tsc --noEmit` 作为发布前校验。 |
+
 
 ## 向后兼容
 - 具名函数导出保持稳定（`sm2Encrypt`/`sm4Encrypt`/`digest` 等）。

@@ -15,6 +15,17 @@ tag:
 
 # 发布指南 / Publishing Guide
 
+::: tip
+提示：本章要点
+
+- 模块格式支持 / Module Format Support
+- 发布流程 / Publishing Process
+- 版本管理最佳实践 / Version Management Best Practices
+- 故障排除 / Troubleshooting
+- 回滚发布 / Rolling Back a Release
+:::
+
+
 本文档介绍如何发布 GMKitX 到 NPM，以及如何使用不同的模块格式。
 
 This document describes how to publish GMKitX to NPM and how to use different module formats.
@@ -90,26 +101,11 @@ IIFE global build, can be used directly in browsers with `<script>` tags.
 
 ### 前置准备 / Prerequisites
 
-1. **NPM 账号 / NPM Account**
-   - 在 [npmjs.com](https://www.npmjs.com/) 注册账号
-   - Register an account at [npmjs.com](https://www.npmjs.com/)
-
-2. **生成 NPM Token / Generate NPM Token**
-   - 登录 NPM 网站
-   - 访问 Account Settings -> Access Tokens
-   - 点击 "Generate New Token" -> "Classic Token"
-   - 选择 "Automation" 类型
-   - 复制生成的 token
-   
-   Login to NPM website, visit Account Settings -> Access Tokens, click "Generate New Token" -> "Classic Token", select "Automation" type, and copy the generated token.
-
-3. **配置 GitHub Secret / Configure GitHub Secret**
-   - 在 GitHub 仓库中，访问 Settings -> Secrets and variables -> Actions
-   - 点击 "New repository secret"
-   - Name: `NPM_TOKEN`
-   - Value: 粘贴你的 NPM token
-   
-   In your GitHub repository, go to Settings -> Secrets and variables -> Actions, click "New repository secret", set Name to `NPM_TOKEN` and paste your NPM token as Value.
+| 项目 | 说明 |
+|:--|:--|
+| NPM 账号 / NPM Account | 在 [npmjs.com](https://www.npmjs.com/) 注册账号；Register an account at [npmjs.com](https://www.npmjs.com/) |
+| 生成 NPM Token / Generate NPM Token | 登录 NPM 网站；访问 Account Settings -> Access Tokens；点击 "Generate New Token" -> "Classic Token"；选择 "Automation" 类型；复制生成的 token；Login to NPM website, visit Account Settings -> Access Tokens, click "Generate New Token" -> "Classic Token", select "Automation" type, and copy the generated token. |
+| 配置 GitHub Secret / Configure GitHub Secret | 在 GitHub 仓库中，访问 Settings -> Secrets and variables -> Actions；点击 "New repository secret"；Name: `NPM_TOKEN`；Value: 粘贴你的 NPM token；In your GitHub repository, go to Settings -> Secrets and variables -> Actions, click "New repository secret", set Name to `NPM_TOKEN` and paste your NPM token as Value. |
 
 ### 发布步骤 / Publishing Steps
 
@@ -227,9 +223,12 @@ node -e "const gmkit = require('gmkitx'); console.log(gmkit.digest('test'));"
 
 ### 语义化版本控制 / Semantic Versioning
 
-- **MAJOR** (主版本): 不兼容的 API 变更 / Incompatible API changes
-- **MINOR** (次版本): 向后兼容的新功能 / Backward-compatible new features  
-- **PATCH** (补丁版本): 向后兼容的 bug 修复 / Backward-compatible bug fixes
+| 项目 | 说明 |
+|:--|:--|
+| MAJOR (主版本) | 不兼容的 API 变更 / Incompatible API changes |
+| MINOR (次版本) | 向后兼容的新功能 / Backward-compatible new features |
+| PATCH (补丁版本) | 向后兼容的 bug 修复 / Backward-compatible bug fixes |
+
 
 ### 预发布版本 / Pre-release Versions
 
@@ -352,10 +351,15 @@ npm install /path/to/gmkitx-0.2.0.tgz
 
 The publish workflow includes complete CI checks:
 
-- ✅ 类型检查 / Type checking
-- ✅ 单元测试 / Unit tests
-- ✅ 构建验证 / Build verification
-- ✅ 版本一致性验证 / Version consistency verification
+::: tip
+提示：
+
+- 类型检查 / Type checking
+- 单元测试 / Unit tests
+- 构建验证 / Build verification
+- 版本一致性验证 / Version consistency verification
+:::
+
 
 只有所有检查通过后才会发布到 NPM。
 
