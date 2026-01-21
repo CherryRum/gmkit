@@ -36,7 +36,7 @@ tag:
 
 ### 使用包管理器安装
 
-:::code-tabs#shell
+::: code-tabs#shell
 
 @tab npm
 

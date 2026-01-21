@@ -198,7 +198,7 @@ const plaintext = sm4Decrypt(key, ciphertext, {
 import { sm4Encrypt, sm4Decrypt, CipherMode } from 'gmkitx';
 
 const key = '0123456789abcdeffedcba9876543210';
-const iv = '00112233445566778899aabb'; // 12 字节（24 hex）
+const iv = 'fedcba98765432100123456789abcdef'; // 16 字节（32 hex）
 
 const ciphertext = sm4Encrypt(key, 'Hello, SM4!', {
   mode: CipherMode.OFB,
@@ -219,7 +219,7 @@ const plaintext = sm4Decrypt(key, ciphertext, {
 import { sm4Encrypt, sm4Decrypt, CipherMode } from 'gmkitx';
 
 const key = '0123456789abcdeffedcba9876543210';
-const iv = 'fedcba98765432100123456789abcdef';
+const iv = '00112233445566778899aabb'; // 12 字节（24 hex）
 
 // 加密（返回密文和认证标签）
 const { ciphertext, tag } = sm4Encrypt(key, 'Hello, SM4!', {

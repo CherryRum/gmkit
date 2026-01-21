@@ -34,7 +34,6 @@ order: 99
 
 ::: code-tabs#sm2
 @tab TypeScript (gmkitx)
-:::
 ```ts
 import {
   sm2Encrypt, sm2Decrypt, sign, verify, SM2CipherMode
@@ -329,7 +328,6 @@ fn main() {
 
 ::: code-tabs#sm3
 @tab TypeScript (gmkitx)
-:::
 ```ts
 import { digest, hmac } from 'gmkitx';
 import fs from 'node:fs';
@@ -468,7 +466,6 @@ fn main() {
 
 ::: code-tabs#sm4
 @tab TypeScript (gmkitx)
-:::
 ```ts
 import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkitx';
 import fs from 'node:fs';

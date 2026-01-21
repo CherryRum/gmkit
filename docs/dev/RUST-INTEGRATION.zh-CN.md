@@ -98,7 +98,6 @@ ECB/CBC 模式推荐使用 PKCS7 填充，可自动处理任意长度明文。
 ::: code-tabs#sm2
 
 @tab gmkitx
-:::
 ```typescript
 import { 
   generateKeyPair, 
@@ -159,6 +158,7 @@ fn main() {
 }
 ```
 
+:::
 ### 加密/解密
 
 ```rust
@@ -214,7 +214,6 @@ fn main() {
 ::: code-tabs#sm3
 
 @tab gmkitx
-:::
 ```typescript
 import { digest, hmac, SM3 } from 'gmkitx';
 
@@ -256,7 +255,6 @@ fn main() {
 ::: code-tabs#sm4
 
 @tab gmkitx
-:::
 ```typescript
 import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode, SM4 } from 'gmkitx';
 
@@ -338,6 +336,7 @@ fn main() {
 }
 ```
 
+:::
 ### CBC 模式
 
 ```rust

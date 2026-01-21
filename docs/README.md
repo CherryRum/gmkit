@@ -37,7 +37,7 @@ copyright: false
 
 ## 快速安装
 
-:::code-tabs#shell
+::: code-tabs#shell
 
 @tab npm
 

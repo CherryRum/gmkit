@@ -408,7 +408,6 @@ public class FullInteropDemo {
 ::: code-tabs#sm2
 
 @tab gmkitx
-:::
 ```typescript
 import { sm2Encrypt, sm2Decrypt, sign, verify, SM2CipherMode } from 'gmkitx';
 
@@ -662,7 +661,6 @@ public class SM2BCInterop {
 ::: code-tabs#sm3
 
 @tab gmkitx
-:::
 ```typescript
 import { digest, hmac } from 'gmkitx';
 
@@ -786,7 +784,6 @@ public class SM3BCInterop {
 ::: code-tabs#sm4
 
 @tab gmkitx
-:::
 ```typescript
 import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkitx';
 
