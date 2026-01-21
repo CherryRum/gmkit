@@ -65,40 +65,67 @@ yarn add gmkitx
 
 适合现代前端开发，利于 Tree-shaking，代码更简洁。
 
+#### 1) SM2 非对称加密 + 签名
+
 ```typescript
 import {
-  digest,       // SM3
-  sm4Encrypt,   // SM4
-  sm4Decrypt,
-  sm2Encrypt,   // SM2
-  sm2Decrypt,
   generateKeyPair,
-  CipherMode,
-  PaddingMode
+  sm2Encrypt,
+  sm2Decrypt,
+  sign,
+  verify,
+  SM2CipherMode,
+  InputFormat,
+  OutputFormat,
 } from 'gmkitx';
 
-// 1. SM3 摘要
-const hash = digest('Hello, SM3!');
-
-// 2. SM4 对称加密 (CBC模式)
-const key = '0123456789abcdeffedcba9876543210'; // 128位密钥
-const iv  = 'fedcba98765432100123456789abcdef'; // 初始化向量
-
-const sm4Result = sm4Encrypt(key, '我的机密数据', {
-  mode: CipherMode.CBC,
-  padding: PaddingMode.PKCS7,
-  iv,
-});
-const plaintext = sm4Decrypt(key, sm4Result, {
-  mode: CipherMode.CBC,
-  padding: PaddingMode.PKCS7,
-  iv,
-});
-
-// 3. SM2 非对称加密
 const { publicKey, privateKey } = generateKeyPair();
-const encData = sm2Encrypt(publicKey, 'Hello, SM2!');
-const decData = sm2Decrypt(privateKey, encData);
+const message = '订单明文';
+
+// 加密 / 解密（显式指定密文模式，便于互操作）
+const cipherText = sm2Encrypt(publicKey, message, {
+  mode: SM2CipherMode.C1C3C2,
+  outputFormat: OutputFormat.BASE64,
+});
+const plainText = sm2Decrypt(privateKey, cipherText, {
+  mode: SM2CipherMode.C1C3C2,
+  inputFormat: InputFormat.BASE64,
+});
+
+// 签名 / 验签
+const signature = sign(privateKey, message);
+const ok = verify(publicKey, message, signature);
+```
+
+#### 2) SM3 摘要 + HMAC
+
+```typescript
+import { digest, hmac, OutputFormat } from 'gmkitx';
+
+const hexHash = digest('订单摘要'); // 默认 Hex
+const base64Hash = digest('订单摘要', { outputFormat: OutputFormat.BASE64 });
+const mac = hmac('sm3-secret', '订单摘要');
+```
+
+#### 3) SM4 对称加密（CBC 示例）
+
+```typescript
+import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode, OutputFormat } from 'gmkitx';
+
+const key = '0123456789abcdeffedcba9876543210'; // 128 位密钥（Hex）
+const iv = 'fedcba98765432100123456789abcdef';  // 128 位 IV（Hex）
+
+const sm4Payload = sm4Encrypt(key, '敏感数据', {
+  mode: CipherMode.CBC,
+  padding: PaddingMode.PKCS7,
+  iv,
+  outputFormat: OutputFormat.BASE64,
+});
+const plaintext = sm4Decrypt(key, sm4Payload, {
+  mode: CipherMode.CBC,
+  padding: PaddingMode.PKCS7,
+  iv,
+});
 ```
 
 ### 命名空间导入
@@ -106,12 +133,32 @@ const decData = sm2Decrypt(privateKey, encData);
 结构清晰，适合大型项目统一管理加密模块。
 
 ```typescript
-import { sm2, sm3, sm4, sha } from 'gmkitx';
+import { sm2, sm3, sm4, sha, CipherMode, PaddingMode, SM2CipherMode } from 'gmkitx';
 
-// 统一入口调用
-const hash = sm3.digest('Hello');
-const sig  = sm2.sign(privateKey, 'Message');
-const verified = sm2.verify(publicKey, 'Message', sig);
+const { publicKey, privateKey } = sm2.generateKeyPair();
+const key = '0123456789abcdeffedcba9876543210';
+const iv = 'fedcba98765432100123456789abcdef';
+
+// SM2
+const cipher = sm2.encrypt(publicKey, '订单数据', { mode: SM2CipherMode.C1C3C2 });
+const plain = sm2.decrypt(privateKey, cipher, { mode: SM2CipherMode.C1C3C2 });
+const signature = sm2.sign(privateKey, '订单数据');
+const verified = sm2.verify(publicKey, '订单数据', signature);
+
+// SM3
+const hash = sm3.digest('订单摘要');
+
+// SM4
+const sm4Result = sm4.encrypt(key, '敏感数据', {
+  mode: CipherMode.CBC,
+  padding: PaddingMode.PKCS7,
+  iv,
+});
+const sm4Plain = sm4.decrypt(key, sm4Result, {
+  mode: CipherMode.CBC,
+  padding: PaddingMode.PKCS7,
+  iv,
+});
 
 // SHA 国际标准
 const sha512Hash = sha.sha512('Hello World');

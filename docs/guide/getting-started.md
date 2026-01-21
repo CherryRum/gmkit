@@ -49,14 +49,19 @@ yarn add gmkitx
 
 ##  第一个例子
 
-让我们从最简单的 SM3 哈希算法开始：
+让我们先从 SM2 加解密与签名开始：
 
 ```typescript
-import { digest } from 'gmkitx';
+import { generateKeyPair, sm2Encrypt, sm2Decrypt, sign, verify, SM2CipherMode } from 'gmkitx';
 
-const hash = digest('Hello, GMKitX!');
-console.log(hash);
-// 输出 16 进制哈希值
+const { publicKey, privateKey } = generateKeyPair();
+const message = 'Hello, GMKitX!';
+
+const cipher = sm2Encrypt(publicKey, message, { mode: SM2CipherMode.C1C3C2 });
+const plain = sm2Decrypt(privateKey, cipher, { mode: SM2CipherMode.C1C3C2 });
+
+const signature = sign(privateKey, message);
+const ok = verify(publicKey, message, signature);
 ```
 
 ##  导入方式
@@ -67,11 +72,24 @@ console.log(hash);
 
 ```typescript
 // 函数级别：仅打包所需 API
-import { digest, sm4Encrypt, sm4Decrypt, generateKeyPair } from 'gmkitx';
+import { generateKeyPair, sm2Encrypt, sm2Decrypt, digest, sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkitx';
 
+const { publicKey, privateKey } = generateKeyPair();
+const cipher = sm2Encrypt(publicKey, '订单数据');
+const plain = sm2Decrypt(privateKey, cipher);
+
+const hash = digest('订单摘要');
+
+const key = '0123456789abcdeffedcba9876543210';
+const iv = 'fedcba98765432100123456789abcdef';
+const sm4Payload = sm4Encrypt(key, '敏感数据', { mode: CipherMode.CBC, padding: PaddingMode.PKCS7, iv });
+const sm4Plain = sm4Decrypt(key, sm4Payload, { mode: CipherMode.CBC, padding: PaddingMode.PKCS7, iv });
+```
+
+```typescript
 // 命名空间：结构清晰，便于批量使用
 import { sm2, sm3, sm4, zuc, sha } from 'gmkitx';
-const hash = sm3.digest('订单摘要');
+const digestHex = sm3.digest('订单摘要');
 const keypair = sm2.generateKeyPair();
 ```
 
@@ -102,24 +120,52 @@ const hash = sm3Instance.digest(); // 默认 Hex
 
 ##  常见使用场景
 
-### 场景 1：数据哈希（SM3）
+### 场景 1：非对称加密（SM2）
+
+```typescript
+import { generateKeyPair, sm2Encrypt, sm2Decrypt, SM2CipherMode, InputFormat, OutputFormat } from 'gmkitx';
+
+const { publicKey, privateKey } = generateKeyPair();
+
+const cipher = sm2Encrypt(publicKey, '业务载荷', {
+  mode: SM2CipherMode.C1C3C2,
+  outputFormat: OutputFormat.BASE64,
+});
+const plain = sm2Decrypt(privateKey, cipher, {
+  mode: SM2CipherMode.C1C3C2,
+  inputFormat: InputFormat.BASE64,
+});
+```
+
+### 场景 2：数字签名（SM2）
+
+```typescript
+import { generateKeyPair, sign, verify, InputFormat, OutputFormat } from 'gmkitx';
+
+const { publicKey, privateKey } = generateKeyPair();
+const message = '重要文件内容';
+
+const signature = sign(privateKey, message, {
+  outputFormat: OutputFormat.BASE64,
+});
+const isValid = verify(publicKey, message, signature, {
+  inputFormat: InputFormat.BASE64,
+});
+```
+
+### 场景 3：数据哈希（SM3）
 
 ```typescript
 import { digest, OutputFormat } from 'gmkitx';
 
-// 默认输出 16 进制
-const hexHash = digest('订单摘要');
-
-// 输出 Base64
-const base64Hash = digest('订单摘要', {
-  outputFormat: OutputFormat.BASE64
-});
+const hexHash = digest('订单摘要'); // 默认输出 Hex
+const base64Hash = digest('订单摘要', { outputFormat: OutputFormat.BASE64 });
 
 // 如需字节数组可自行转换（Node.js 示例）
 const bytesHash = Buffer.from(hexHash, 'hex');
 ```
 
-### 场景 2：对称加密（SM4）
+### 场景 4：对称加密（SM4）
 
 密钥与 IV 均为 32 字符十六进制字符串（128 位）；不要混用 UTF-8 文本。
 
@@ -146,40 +192,6 @@ const plaintext = sm4Decrypt(key, sm4Result, {
 console.log(plaintext); // '敏感数据'
 ```
 
-### 场景 3：非对称加密（SM2）
-
-```typescript
-import { generateKeyPair, sm2Encrypt, sm2Decrypt } from 'gmkitx';
-
-// 生成密钥对
-const { publicKey, privateKey } = generateKeyPair();
-
-// 加密
-const encrypted = sm2Encrypt(publicKey, 'Hello, SM2!');
-
-// 解密
-const decrypted = sm2Decrypt(privateKey, encrypted);
-
-console.log(decrypted); // 'Hello, SM2!'
-```
-
-### 场景 4：数字签名（SM2）
-
-```typescript
-import { generateKeyPair, sign, verify } from 'gmkitx';
-
-const { publicKey, privateKey } = generateKeyPair();
-const message = '重要文件内容';
-
-// 签名
-const signature = sign(privateKey, message);
-
-// 验签
-const isValid = verify(publicKey, message, signature);
-
-console.log('签名验证:', isValid); // true
-```
-
 ##  下一步
 
 - 查看 [SM2 完整文档](/algorithms/SM2) 了解椭圆曲线公钥密码
@@ -200,5 +212,3 @@ console.log('签名验证:', isValid); // true
 - 不要在代码中硬编码密钥
 - IV（初始化向量）不应重复使用
 :::
-
-
