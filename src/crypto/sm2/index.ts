@@ -95,6 +95,38 @@ export interface SM2DecryptOptions {
 export type SM2SignatureFormat = 'raw' | 'der';
 export type SM2SignatureInputFormat = SM2SignatureFormat | 'auto';
 
+function assertSm2CipherMode(mode?: SM2CipherModeType) {
+  if (!mode) return;
+  if (mode !== SM2CipherMode.C1C3C2 && mode !== SM2CipherMode.C1C2C3) {
+    throw new Error('Invalid SM2 cipher mode: must be C1C3C2 or C1C2C3');
+  }
+}
+
+function assertOutputFormat(format?: OutputFormatType) {
+  if (!format) return;
+  if (format !== OutputFormat.HEX && format !== OutputFormat.BASE64) {
+    throw new Error('Invalid output format: must be hex or base64');
+  }
+}
+
+function assertInputFormat(format?: InputFormatType) {
+  if (!format) return;
+  if (format !== InputFormat.HEX && format !== InputFormat.BASE64) {
+    throw new Error('Invalid input format: must be hex or base64');
+  }
+}
+
+function assertSignatureFormat(format?: SM2SignatureFormat) {
+  if (!format) return;
+  if (format !== 'raw' && format !== 'der') {
+    throw new Error('Invalid signature format: must be raw or der');
+  }
+}
+
+function isValidSignatureInputFormat(format: SM2SignatureInputFormat): boolean {
+  return format === 'raw' || format === 'der' || format === 'auto';
+}
+
 /**
  * 验证字符串是否为有效的十六进制字符串（不使用正则表达式）
  */
@@ -270,6 +302,9 @@ export function decrypt(
   encryptedData: BytesLike,
   options?: SM2DecryptOptions
 ): string {
+  assertSm2CipherMode(options?.mode);
+  assertInputFormat(options?.inputFormat);
+
   const cleanPrivateKey = normalizePrivateKeyInput(privateKey);
   const cipherBytes = decodeInput(encryptedData, options?.inputFormat || InputFormat.HEX);
 
@@ -873,6 +908,9 @@ export function encrypt(
   data: string | Uint8Array,
   options?: SM2EncryptOptions
 ): string {
+  assertSm2CipherMode(options?.mode);
+  assertOutputFormat(options?.outputFormat);
+
   const mode: SM2CipherModeType = options?.mode || SM2CipherMode.C1C3C2;
   const outputFormat: OutputFormatType = options?.outputFormat || OutputFormat.HEX;
 
@@ -952,6 +990,9 @@ export function sign(
   data: string | Uint8Array,
   options?: SignOptions
 ): string {
+  assertSignatureFormat(options?.signatureFormat);
+  assertOutputFormat(options?.outputFormat);
+
   // 自动识别并规范化私钥输入
   const cleanPrivateKey = normalizePrivateKeyInput(privateKey);
   const userId = options?.userId || DEFAULT_USER_ID;
@@ -1021,6 +1062,13 @@ export function verify(
     const signatureFormat = options?.signatureFormat || 'raw';
     const inputFormat = options?.inputFormat || InputFormat.HEX;
     const skipZ = options?.skipZComputation || false;
+
+    if (!isValidSignatureInputFormat(signatureFormat)) {
+      return false;
+    }
+    if (inputFormat !== InputFormat.HEX && inputFormat !== InputFormat.BASE64) {
+      return false;
+    }
 
     let e: Uint8Array;
 

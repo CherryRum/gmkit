@@ -153,6 +153,13 @@ export interface SM3Options {
   outputFormat?: OutputFormatType;
 }
 
+function assertOutputFormat(format?: OutputFormatType) {
+  if (!format) return;
+  if (format !== OutputFormat.HEX && format !== OutputFormat.BASE64) {
+    throw new Error('Invalid output format: must be hex or base64');
+  }
+}
+
 /**
  * 计算 SM3 哈希摘要（优化实现，减少内存分配并直接操作缓冲区）
  * @param data - 输入数据（字符串或 Uint8Array）
@@ -169,6 +176,7 @@ export interface SM3Options {
  * ```
  */
 export function digest(data: string | Uint8Array, options?: SM3Options): string {
+  assertOutputFormat(options?.outputFormat);
   const bytes = normalizeInput(data);
   const padded = pad(bytes);
 
@@ -212,6 +220,7 @@ export const sm3Digest = digest;
  * ```
  */
 export function hmac(key: string | Uint8Array, data: string | Uint8Array, options?: SM3Options): string {
+  assertOutputFormat(options?.outputFormat);
   let keyBytes = normalizeInput(key);
   const dataBytes = normalizeInput(data);
 

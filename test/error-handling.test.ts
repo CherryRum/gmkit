@@ -77,6 +77,16 @@ describe('错误处理和输入验证测试', () => {
         expect(() => sm2Decrypt(keyPair.privateKey, '04')).toThrow(); // 太短
       });
 
+      it('应该拒绝无效的密文模式', () => {
+        const keyPair = generateKeyPair();
+        const encrypted = sm2Encrypt(keyPair.publicKey, 'data');
+
+        // @ts-expect-error Testing invalid input
+        expect(() => sm2Encrypt(keyPair.publicKey, 'data', { mode: 'INVALID' })).toThrow();
+        // @ts-expect-error Testing invalid input
+        expect(() => sm2Decrypt(keyPair.privateKey, encrypted, { mode: 'INVALID' })).toThrow();
+      });
+
       it('应该处理非常长的明文', () => {
         const keyPair = generateKeyPair();
         const longText = 'A'.repeat(10000);
@@ -92,6 +102,12 @@ describe('错误处理和输入验证测试', () => {
         expect(verify(keyPair.publicKey, 'message', 'invalid')).toBe(false);
         expect(verify(keyPair.publicKey, 'message', '')).toBe(false);
         expect(verify(keyPair.publicKey, 'message', '123')).toBe(false);
+      });
+
+      it('应该拒绝无效的签名输出格式', () => {
+        const keyPair = generateKeyPair();
+        // @ts-expect-error Testing invalid input
+        expect(() => sign(keyPair.privateKey, 'message', { signatureFormat: 'invalid' })).toThrow();
       });
 
       it('应该拒绝错误的消息验证', () => {
@@ -197,12 +213,9 @@ describe('错误处理和输入验证测试', () => {
     });
 
     describe('选项验证', () => {
-      it('应该处理无效的输出格式（使用默认值）', () => {
-        // TypeScript类型检查会阻止无效值，运行时会使用默认值
+      it('应该拒绝无效的输出格式', () => {
         // @ts-expect-error Testing invalid input
-        const result = digest('test', { outputFormat: 'invalid' });
-        // 应该使用默认格式（hex）成功
-        expect(result).toMatch(/^[0-9a-f]{64}$/);
+        expect(() => digest('test', { outputFormat: 'invalid' })).toThrow();
       });
     });
   });
@@ -222,6 +235,11 @@ describe('错误处理和输入验证测试', () => {
         
         expect(() => sm4Encrypt(shortKey, 'data', { mode: CipherMode.ECB })).toThrow();
         expect(() => sm4Encrypt(longKey, 'data', { mode: CipherMode.ECB })).toThrow();
+      });
+
+      it('应该拒绝奇数长度的十六进制密钥', () => {
+        const oddKey = '0'.repeat(31);
+        expect(() => sm4Encrypt(oddKey, 'data', { mode: CipherMode.ECB })).toThrow();
       });
 
       it('应该拒绝非十六进制密钥', () => {
@@ -253,6 +271,11 @@ describe('错误处理和输入验证测试', () => {
       it('应该拒绝错误长度的 IV', () => {
         const shortIV = '0123456789abcdef';
         expect(() => sm4Encrypt(validKey, 'data', { mode: CipherMode.CBC, iv: shortIV })).toThrow();
+      });
+
+      it('应该拒绝奇数长度的 IV', () => {
+        const oddIV = '0'.repeat(31);
+        expect(() => sm4Encrypt(validKey, 'data', { mode: CipherMode.CBC, iv: oddIV })).toThrow();
       });
     });
 
@@ -365,6 +388,23 @@ describe('错误处理和输入验证测试', () => {
         }, { 
           mode: CipherMode.GCM, 
           iv: gcmIV 
+        })).toThrow();
+      });
+
+      it('GCM 模式应该拒绝非法标签长度', () => {
+        const gcmIV = 'fedcba98765432100123abcd'; // 12 bytes = 24 hex chars
+        const result = sm4Encrypt(validKey, 'data', {
+          mode: CipherMode.GCM,
+          iv: gcmIV
+        });
+
+        const shortTag = result.tag?.slice(0, 20) || '';
+        expect(() => sm4Decrypt(validKey, {
+          ciphertext: result.ciphertext,
+          tag: shortTag
+        }, {
+          mode: CipherMode.GCM,
+          iv: gcmIV
         })).toThrow();
       });
     });
