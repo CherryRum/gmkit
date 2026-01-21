@@ -25,6 +25,7 @@ import {
   bytes4ToUint32BE,
   uint32ToBytes4BE,
   constantTimeEqual,
+  isHexString,
   type BytesLike
 } from '../../core/utils';
 import {
@@ -237,6 +238,27 @@ function decryptBlock(input: Uint8Array, reversedKeys: number[]): Uint8Array {
   return encryptBlock(input, reversedKeys);
 }
 
+function normalizeHexInput(label: string, value: string | Uint8Array, expectedBytes: number): Uint8Array {
+  if (value instanceof Uint8Array) {
+    if (value.length !== expectedBytes) {
+      throw new Error(`${label} must be ${expectedBytes} bytes (${expectedBytes * 2} hex characters)`);
+    }
+    return value;
+  }
+
+  let cleaned = value.trim();
+  if (cleaned.startsWith('0x') || cleaned.startsWith('0X')) {
+    cleaned = cleaned.slice(2);
+  }
+  if (!isHexString(cleaned)) {
+    throw new Error(`${label} must be a hexadecimal string`);
+  }
+  if (cleaned.length !== expectedBytes * 2) {
+    throw new Error(`${label} must be ${expectedBytes} bytes (${expectedBytes * 2} hex characters)`);
+  }
+  return hexToBytes(cleaned);
+}
+
 /**
  * PKCS7 填充
  * PKCS#7 padding - 填充值等于填充字节数
@@ -264,14 +286,26 @@ function pkcs7Pad(data: Uint8Array, blockSize: number): Uint8Array {
  * @returns 去除填充后的数据 (Unpadded data)
  */
 function pkcs7Unpad(data: Uint8Array): Uint8Array {
-  const padding = data[data.length - 1];
-  if (padding < 1 || padding > 16) {
+  if (data.length === 0 || data.length % 16 !== 0) {
     throw new Error('Invalid padding');
   }
-  for (let i = data.length - padding; i < data.length; i++) {
-    if (data[i] !== padding) {
-      throw new Error('Invalid padding');
-    }
+
+  const padding = data[data.length - 1];
+  let invalid = 0;
+  if (padding < 1 || padding > 16) {
+    invalid = 1;
+  }
+
+  // 常量时间检查最后 16 字节
+  let diff = 0;
+  for (let i = 1; i <= 16; i++) {
+    const byte = data[data.length - i];
+    const mask = i <= padding ? 0xff : 0x00;
+    diff |= mask & (byte ^ padding);
+  }
+
+  if (invalid || diff !== 0) {
+    throw new Error('Invalid padding');
   }
   return data.slice(0, data.length - padding);
 }
@@ -458,10 +492,7 @@ export function encrypt(
   const mode = (options?.mode || CipherMode.ECB).toLowerCase();
   const padding = (options?.padding || PaddingMode.PKCS7).toLowerCase();
 
-  const keyBytes = key instanceof Uint8Array ? key : hexToBytes(key);
-  if (keyBytes.length !== 16) {
-    throw new Error('SM4 key must be 16 bytes (32 hex characters)');
-  }
+  const keyBytes = normalizeHexInput('SM4 key', key, 16);
 
   let dataBytes = normalizeInput(data);
 
@@ -500,10 +531,7 @@ export function encrypt(
     if (!options?.iv) {
       throw new Error('IV is required for CBC mode');
     }
-    let ivBytes = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
-    if (ivBytes.length !== 16) {
-      throw new Error('IV must be 16 bytes (32 hex characters)');
-    }
+    let ivBytes = normalizeHexInput('IV', options.iv, 16);
 
     for (let i = 0; i < dataBytes.length; i += 16) {
       const block = dataBytes.subarray(i, i + 16);
@@ -516,10 +544,7 @@ export function encrypt(
     if (!options?.iv) {
       throw new Error('IV (nonce/counter) is required for CTR mode');
     }
-    const counter = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
-    if (counter.length !== 16) {
-      throw new Error('IV must be 16 bytes (32 hex characters)');
-    }
+    const counter = normalizeHexInput('IV', options.iv, 16);
 
     const counterBlock = new Uint8Array(counter);
     for (let i = 0; i < dataBytes.length; i += 16) {
@@ -537,10 +562,7 @@ export function encrypt(
     if (!options?.iv) {
       throw new Error('IV is required for CFB mode');
     }
-    let shift = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
-    if (shift.length !== 16) {
-      throw new Error('IV must be 16 bytes (32 hex characters)');
-    }
+    let shift = normalizeHexInput('IV', options.iv, 16);
 
     for (let i = 0; i < dataBytes.length; i += 16) {
       const keystream = encryptBlock(shift, roundKeys);
@@ -556,10 +578,7 @@ export function encrypt(
     if (!options?.iv) {
       throw new Error('IV is required for OFB mode');
     }
-    let shift = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
-    if (shift.length !== 16) {
-      throw new Error('IV must be 16 bytes (32 hex characters)');
-    }
+    let shift = normalizeHexInput('IV', options.iv, 16);
 
     for (let i = 0; i < dataBytes.length; i += 16) {
       shift = encryptBlock(shift, roundKeys);
@@ -573,10 +592,7 @@ export function encrypt(
     if (!options?.iv) {
       throw new Error('IV is required for GCM mode');
     }
-    const ivBytes = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
-    if (ivBytes.length !== 12) {
-      throw new Error('IV must be 12 bytes (24 hex characters) for GCM mode');
-    }
+    const ivBytes = normalizeHexInput('IV', options.iv, 12);
 
     const tagLength = options.tagLength || 16; // 默认生成 128 位标签
     if (tagLength < 12 || tagLength > 16) {
@@ -702,10 +718,7 @@ export function decrypt(
   const mode = (options?.mode || CipherMode.ECB).toLowerCase();
   const padding = (options?.padding || PaddingMode.PKCS7).toLowerCase();
 
-  const keyBytes = key instanceof Uint8Array ? key : hexToBytes(key);
-  if (keyBytes.length !== 16) {
-    throw new Error('SM4 key must be 16 bytes (32 hex characters)');
-  }
+  const keyBytes = normalizeHexInput('SM4 key', key, 16);
 
   // 处理带有认证标签的 GCM 密文
   let ciphertextInput: BytesLike;
@@ -754,10 +767,7 @@ export function decrypt(
     if (!options?.iv) {
       throw new Error('IV is required for CBC mode');
     }
-    let ivBytes = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
-    if (ivBytes.length !== 16) {
-      throw new Error('IV must be 16 bytes (32 hex characters)');
-    }
+    let ivBytes = normalizeHexInput('IV', options.iv, 16);
 
     for (let i = 0; i < dataBytes.length; i += 16) {
       const block = dataBytes.subarray(i, i + 16);
@@ -771,10 +781,7 @@ export function decrypt(
     if (!options?.iv) {
       throw new Error('IV (nonce/counter) is required for CTR mode');
     }
-    const counter = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
-    if (counter.length !== 16) {
-      throw new Error('IV must be 16 bytes (32 hex characters)');
-    }
+    const counter = normalizeHexInput('IV', options.iv, 16);
 
     const counterBlock = new Uint8Array(counter);
     for (let i = 0; i < dataBytes.length; i += 16) {
@@ -792,10 +799,7 @@ export function decrypt(
     if (!options?.iv) {
       throw new Error('IV is required for CFB mode');
     }
-    let shift = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
-    if (shift.length !== 16) {
-      throw new Error('IV must be 16 bytes (32 hex characters)');
-    }
+    let shift = normalizeHexInput('IV', options.iv, 16);
 
     for (let i = 0; i < dataBytes.length; i += 16) {
       const keystream = encryptBlock(shift, roundKeys);
@@ -812,10 +816,7 @@ export function decrypt(
     if (!options?.iv) {
       throw new Error('IV is required for OFB mode');
     }
-    let shift = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
-    if (shift.length !== 16) {
-      throw new Error('IV must be 16 bytes (32 hex characters)');
-    }
+    let shift = normalizeHexInput('IV', options.iv, 16);
 
     for (let i = 0; i < dataBytes.length; i += 16) {
       shift = encryptBlock(shift, roundKeys);
@@ -832,11 +833,11 @@ export function decrypt(
     if (!authTag) {
       throw new Error('Authentication tag is required for GCM mode');
     }
-
-    const ivBytes = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
-    if (ivBytes.length !== 12) {
-      throw new Error('IV must be 12 bytes (24 hex characters) for GCM mode');
+    if (authTag.length < 12 || authTag.length > 16) {
+      throw new Error('Invalid GCM tag length');
     }
+
+    const ivBytes = normalizeHexInput('IV', options.iv, 12);
 
     // 计算 H = E(K, 0^128)
     const h = encryptBlock(new Uint8Array(16), roundKeys);
@@ -886,7 +887,7 @@ export function decrypt(
 
     // 以常数时间比较方式校验认证标签
     if (!constantTimeEqual(authTag, expectedTag)) {
-      throw new Error('Authentication tag verification failed');
+      throw new Error('Decryption failed');
     }
 
     // 使用 CTR 模式解密密文
@@ -912,7 +913,11 @@ export function decrypt(
     if (padding === 'pkcs7') {
       // 去除 PKCS#7 填充
       // 为兼容不同的 ArrayBuffer 类型进行类型断言
-      unpadded = pkcs7Unpad(result) as Uint8Array;
+      try {
+        unpadded = pkcs7Unpad(result) as Uint8Array;
+      } catch (_) {
+        throw new Error('Decryption failed');
+      }
     } else if (padding === 'zero') {
       // 去除零填充
       // 为兼容不同的 ArrayBuffer 类型进行类型断言

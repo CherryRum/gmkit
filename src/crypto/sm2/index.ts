@@ -801,7 +801,7 @@ export function compressPublicKey(publicKey: BytesLike): string {
  * const uncompressed = decompressPublicKey(compressed); // 130 个字符
  * ```
  */
-export function decompressPublicKey(publicKey: BytesLike): string {
+export function decompressPublicKey(publicKey: string): string {
   let cleaned = publicKey.trim();
 
   // 移除 0x 前缀
