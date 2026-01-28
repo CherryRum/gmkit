@@ -12,7 +12,8 @@
 
 import { hexToBytes, bytesToHex } from '../../core/utils';
 
-// F 函数使用的 S 盒
+// F 函数使用的 S 盒（S0 和 S1）
+// 这些是 ZUC 算法定义的固定置换表，用于非线性变换
 const S0: Uint8Array = new Uint8Array([
   0x3e, 0x72, 0x5b, 0x47, 0xca, 0xe0, 0x00, 0x33, 0x04, 0xd1, 0x54, 0x98, 0x09, 0xb9, 0x6d, 0xcb,
   0x7b, 0x1b, 0xf9, 0x32, 0xaf, 0x9d, 0x6a, 0xa5, 0xb8, 0x2d, 0xfc, 0x1d, 0x08, 0x53, 0x03, 0x90,
@@ -51,18 +52,32 @@ const S1: Uint8Array = new Uint8Array([
   0x64, 0xbe, 0x85, 0x9b, 0x2f, 0x59, 0x8a, 0xd7, 0xb0, 0x25, 0xac, 0xaf, 0x12, 0x03, 0xe2, 0xf2,
 ]);
 
-// ZUC-128 的线性反馈移位寄存器参数
+// ZUC-128 的线性反馈移位寄存器（LFSR）参数 D
+// 这些是密钥初始化时与密钥和 IV 结合的常量
 const D_128: Uint8Array = new Uint8Array([
   22, 25, 5, 22, 25, 5, 22, 25, 5, 22, 25, 5, 22, 25, 5, 22,
 ]);
 
 /**
- * ZUC 状态对象，维护 LFSR 与 FSM 的内部状态
+ * ZUC 状态类
+ * 
+ * 维护 LFSR（线性反馈移位寄存器）和 FSM（有限状态机）的内部状态。
+ * LFSR 包含 16 个 31 位寄存器，FSM 包含 2 个 32 位寄存器。
+ * 
+ * @example
+ * ```typescript
+ * const state = new ZUCState();
+ * state.initialize(keyBytes, ivBytes);
+ * const keyword = state.generateKeyword();
+ * ```
  */
 export class ZUCState {
-  private lfsr: Uint32Array; // 16 个 31 位寄存器
-  private r1: number; // FSM 寄存器 1
-  private r2: number; // FSM 寄存器 2
+  /** LFSR: 16 个 31 位寄存器 */
+  private lfsr: Uint32Array;
+  /** FSM 寄存器 R1 */
+  private r1: number;
+  /** FSM 寄存器 R2 */
+  private r2: number;
 
   constructor() {
     this.lfsr = new Uint32Array(16);
@@ -103,10 +118,14 @@ export class ZUCState {
 
   /**
    * 比特重组：从 LFSR 中抽取特定位构成 32 位字
-   * 优化：预分配数组重复使用
+   * 优化：预分配数组重复使用，避免每次调用都分配新内存
    */
   private x: Uint32Array = new Uint32Array(4);
 
+  /**
+   * 执行比特重组操作
+   * @returns 4 个 32 位字的数组 [X0, X1, X2, X3]
+   */
   private bitReorganization(): Uint32Array {
     this.x[0] = (((this.lfsr[15] & 0x7FFF8000) << 1) | (this.lfsr[14] & 0xFFFF)) >>> 0;
     this.x[1] = (((this.lfsr[11] & 0xFFFF) << 16) | (this.lfsr[9] >>> 15)) >>> 0;
@@ -117,7 +136,10 @@ export class ZUCState {
 
   /**
    * F 函数：使用双 S 盒的非线性变换
+   * 这是 ZUC 算法的核心函数，结合 S 盒和线性变换生成输出
    * 优化：统一使用 >>> 0 保持 32 位无符号运算
+   * @param x - 比特重组的输出
+   * @returns F 函数的输出值
    */
   private fFunction(x: Uint32Array): number {
     const w = ((x[0] ^ this.r1) + this.r2) >>> 0;
@@ -135,7 +157,10 @@ export class ZUCState {
   }
 
   /**
-   * S 盒代换
+   * S 盒代换：对 32 位字的每个字节进行 S 盒置换
+   * 交替使用 S0 和 S1 两个 S 盒
+   * @param x - 输入的 32 位字
+   * @returns 置换后的 32 位字
    */
   private s(x: number): number {
     return (
@@ -148,6 +173,9 @@ export class ZUCState {
 
   /**
    * 线性变换 L1
+   * 用于 FSM 的寄存器更新
+   * @param x - 输入值
+   * @returns 变换后的值
    */
   private l1(x: number): number {
     return (x ^ this.rotl(x, 2) ^ this.rotl(x, 10) ^ this.rotl(x, 18) ^ this.rotl(x, 24)) >>> 0;
@@ -155,6 +183,9 @@ export class ZUCState {
 
   /**
    * 线性变换 L2
+   * 用于 FSM 的寄存器更新
+   * @param x - 输入值
+   * @returns 变换后的值
    */
   private l2(x: number): number {
     return (x ^ this.rotl(x, 8) ^ this.rotl(x, 14) ^ this.rotl(x, 22) ^ this.rotl(x, 30)) >>> 0;
@@ -162,6 +193,9 @@ export class ZUCState {
 
   /**
    * 循环左移
+   * @param x - 要移位的值
+   * @param n - 移位位数
+   * @returns 移位后的值
    */
   private rotl(x: number, n: number): number {
     return ((x << n) | (x >>> (32 - n))) >>> 0;
@@ -169,6 +203,8 @@ export class ZUCState {
 
   /**
    * 初始化模式下的 LFSR（带反馈值 u）
+   * 在初始化阶段，F 函数的输出会反馈到 LFSR
+   * @param u - 反馈值（F 函数输出的右移 1 位）
    */
   private lfsrWithInitMode(u: number): void {
     const s16 = this.addMod(
@@ -189,6 +225,7 @@ export class ZUCState {
 
   /**
    * 工作模式下的 LFSR（无附加反馈）
+   * 在工作模式下，LFSR 独立运行不接受外部反馈
    */
   private lfsrWithWorkMode(): void {
     const s16 = this.addMod(
@@ -208,7 +245,11 @@ export class ZUCState {
   }
 
   /**
-   * Addition modulo 2^31 - 1
+   * 模 2^31 - 1 加法
+   * ZUC 使用的有限域运算
+   * @param a - 加数 a
+   * @param b - 加数 b
+   * @returns (a + b) mod (2^31 - 1)
    */
   private addMod(a: number, b: number): number {
     const c = (a + b) >>> 0;
@@ -216,14 +257,19 @@ export class ZUCState {
   }
 
   /**
-   * Multiplication by 2^k modulo 2^31 - 1
+   * 模 2^31 - 1 的 2^k 倍乘法
+   * @param x - 被乘数
+   * @param k - 2 的指数
+   * @returns (x * 2^k) mod (2^31 - 1)
    */
   private mulByPow2(x: number, k: number): number {
     return (((x << k) | (x >>> (31 - k))) & 0x7FFFFFFF) >>> 0;
   }
 
   /**
-   * Generate one 32-bit keystream word
+   * 生成一个 32 位密钥字
+   * 每次调用会更新内部状态并返回一个新的密钥字
+   * @returns 32 位密钥字
    */
   generateKeyword(): number {
     const x = this.bitReorganization();
@@ -260,8 +306,11 @@ export function generateKeystream(
 }
 
 /**
- * 使用 ZUC-128 加密或解密数据（流密码中加解密相同）
+ * 使用 ZUC-128 加密或解密数据
+ * 
+ * ZUC 是流密码，加密和解密操作相同（与密钥流异或）
  * 优化：利用按字处理减少内存分配
+ * 
  * @param key - 128 位密钥（16 字节或 32 个十六进制字符）
  * @param iv - 128 位初始向量（16 字节或 32 个十六进制字符）
  * @param data - 待加密或解密的数据

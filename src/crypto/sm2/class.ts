@@ -21,11 +21,31 @@ import {
 import type { BytesLike } from '../../core/utils';
 
 /**
- * SM2 类，提供椭圆曲线密码学的面向对象 API
+ * SM2 类，提供面向对象的 API
+ * 
+ * SM2 是中国国家密码管理局发布的椭圆曲线密码算法，
+ * 支持公钥加密、数字签名和密钥交换功能。
+ * 
+ * @example
+ * ```typescript
+ * // 生成密钥对
+ * const sm2 = SM2.generateKeyPair();
+ * 
+ * // 加密/解密
+ * const encrypted = sm2.encrypt('Hello, SM2!');
+ * const decrypted = sm2.decrypt(encrypted);
+ * 
+ * // 签名/验签
+ * const signature = sm2.sign('message');
+ * const isValid = sm2.verify('message', signature);
+ * ```
  */
 export class SM2 {
+  /** 公钥（十六进制字符串，04 开头的非压缩格式） */
   private publicKey?: string;
+  /** 私钥（十六进制字符串，32 字节） */
   private privateKey?: string;
+  /** 自定义椭圆曲线参数 */
   private curveParams?: SM2CurveParams;
 
   /**
@@ -72,6 +92,8 @@ export class SM2 {
 
   /**
    * 获取公钥
+   * @returns 公钥（十六进制字符串，04 开头的非压缩格式）
+   * @throws 如果公钥未设置则抛出异常
    */
   getPublicKey(): string {
     if (!this.publicKey) {
@@ -82,6 +104,8 @@ export class SM2 {
 
   /**
    * 获取私钥
+   * @returns 私钥（十六进制字符串，32 字节）
+   * @throws 如果私钥未设置则抛出异常
    */
   getPrivateKey(): string {
     if (!this.privateKey) {
@@ -92,9 +116,9 @@ export class SM2 {
 
   /**
    * 加密数据
-   * @param data - 要加密的数据
-   * @param mode - 密文模式（默认：C1C3C2）
-   * @returns 加密后的数据（十六进制字符串）
+   * @param data - 要加密的数据（字符串或 Uint8Array）
+   * @param options - 加密选项（密文模式、输出格式等）
+   * @returns 加密后的数据（默认十六进制字符串）
    */
   encrypt(data: string | Uint8Array, options?: SM2EncryptOptions): string {
     const publicKey = this.getPublicKey();
@@ -103,8 +127,8 @@ export class SM2 {
 
   /**
    * 解密数据
-   * @param encryptedData - 加密的数据（十六进制字符串）
-   * @param mode - 密文模式（默认：C1C3C2）
+   * @param encryptedData - 加密的数据（十六进制字符串或 Uint8Array）
+   * @param options - 解密选项（密文模式、输入格式等）
    * @returns 解密后的数据（字符串）
    */
   decrypt(encryptedData: BytesLike, options?: SM2DecryptOptions): string {
@@ -114,9 +138,9 @@ export class SM2 {
 
   /**
    * 签名数据
-   * @param data - 要签名的数据
-   * @param options - 签名选项
-   * @returns 签名（十六进制字符串）
+   * @param data - 要签名的数据（字符串或 Uint8Array）
+   * @param options - 签名选项（签名格式、用户 ID 等）
+   * @returns 签名（默认十六进制字符串，r || s 格式）
    */
   sign(data: string | Uint8Array, options?: Omit<FuncSignOptions, 'curveParams'>): string {
     const privateKey = this.getPrivateKey();
@@ -125,9 +149,9 @@ export class SM2 {
 
   /**
    * 验证签名
-   * @param data - 原始数据
+   * @param data - 原始数据（字符串或 Uint8Array）
    * @param signature - 签名（十六进制字符串）
-   * @param options - 验签选项
+   * @param options - 验签选项（签名格式、用户 ID 等）
    * @returns 签名是否有效
    */
   verify(data: string | Uint8Array, signature: string, options?: Omit<FuncVerifyOptions, 'curveParams'>): boolean {

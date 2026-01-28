@@ -12,21 +12,38 @@
 import { decodeInput, type BytesLike } from './utils';
 import { InputFormat, type InputFormatType } from '../types/constants';
 
+/**
+ * ASN.1 Tag 常量定义
+ * 基于 ITU-T X.690 标准
+ */
 export const ASN1Tag = {
+  /** 整数类型（有符号大整数） */
   INTEGER: 0x02,
+  /** 比特串类型 */
   BIT_STRING: 0x03,
+  /** 字节串类型 */
   OCTET_STRING: 0x04,
+  /** 空类型 */
   NULL: 0x05,
+  /** 对象标识符 */
   OBJECT_IDENTIFIER: 0x06,
+  /** 序列类型（结构体） */
   SEQUENCE: 0x30,
 } as const;
 
 /**
- * 高性能 Hex 工具，避免频繁的 parseInt 和字符串拼接
+ * 高性能 Hex 工具集
+ * 避免频繁的 parseInt 和字符串拼接，使用预计算查找表提升性能
  */
 const Hex = {
-  // 预计算字节到 Hex 的映射
+  /** 预计算的字节到十六进制的映射表 (00-ff) */
   byteToHex: Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0')),
+  
+  /**
+   * 将字节数组编码为十六进制字符串
+   * @param bytes - 要编码的字节数组
+   * @returns 小写十六进制字符串
+   */
   encode(bytes: Uint8Array): string {
     const hex: string[] = new Array(bytes.length);
     for (let i = 0; i < bytes.length; i++) {
@@ -35,6 +52,12 @@ const Hex = {
     return hex.join('');
   },
 
+  /**
+   * 将十六进制字符串解码为字节数组
+   * @param hex - 十六进制字符串
+   * @returns 字节数组
+   * @throws 如果字符串长度为奇数则抛出异常
+   */
   decode(hex: string): Uint8Array {
     if (hex.length % 2 !== 0) throw new Error('Invalid hex string length');
     const len = hex.length / 2;
@@ -47,7 +70,14 @@ const Hex = {
 };
 
 /**
- * Encode length in DER format (Optimized)
+ * 将长度编码为 DER 格式
+ * 
+ * DER 长度编码规则：
+ * - 短形式（长度 < 128）：单字节表示长度
+ * - 长形式（长度 >= 128）：首字节的高位为 1，低 7 位表示后续长度字节数
+ * 
+ * @param length - 要编码的长度值
+ * @returns DER 编码的长度字节数组
  */
 function encodeLength(length: number): Uint8Array {
   if (length < 128) {
@@ -75,7 +105,11 @@ function encodeLength(length: number): Uint8Array {
 }
 
 /**
- * Decode length from DER format
+ * 从 DER 格式解码长度
+ * @param data - 包含 DER 编码数据的字节数组
+ * @param offset - 长度字节的起始偏移量
+ * @returns 解码的长度值和读取的字节数
+ * @throws 如果偏移量超出范围或长度格式无效则抛出异常
  */
 function decodeLength(data: Uint8Array, offset: number): { length: number; bytesRead: number } {
   if (offset >= data.length) throw new Error('Offset out of bounds');
@@ -87,7 +121,7 @@ function decodeLength(data: Uint8Array, offset: number): { length: number; bytes
   }
 
   const numBytes = firstByte & 0x7f;
-  if (numBytes === 0 || numBytes > 4) { // JS bitwise limit implies strict check usually < 4 bytes for typical usage
+  if (numBytes === 0 || numBytes > 4) {
     throw new Error('Invalid or unsupported long form length');
   }
 
@@ -102,8 +136,14 @@ function decodeLength(data: Uint8Array, offset: number): { length: number; bytes
 }
 
 /**
- * Encode integer in DER format
- * 自动处理前导零去除和符号位补零（针对 SM2 正整数场景）
+ * 将整数编码为 DER 格式
+ * 
+ * DER INTEGER 编码规则：
+ * 1. 移除前导零（最小化编码）
+ * 2. 如果最高位为 1（>= 0x80），则添加 0x00 前缀表示正数
+ * 
+ * @param value - 要编码的整数（十六进制字符串或字节数组）
+ * @returns DER 编码的整数
  */
 export function encodeInteger(value: string | Uint8Array): Uint8Array {
   let bytes: Uint8Array;
@@ -152,8 +192,14 @@ export function encodeInteger(value: string | Uint8Array): Uint8Array {
 }
 
 /**
- * Decode integer from DER format
- * 返回的值会自动去掉填充的 0x00，还原为原始的大数值
+ * 从 DER 格式解码整数
+ * 
+ * 返回的值会自动去掉 DER 编码中的符号位填充（0x00 前缀）
+ * 
+ * @param data - 包含 DER 编码整数的字节数组
+ * @param offset - 整数的起始偏移量（默认 0）
+ * @returns 解码的整数值（Uint8Array）和读取的字节数
+ * @throws 如果标签不是 INTEGER 或数据超出范围则抛出异常
  */
 export function decodeInteger(data: Uint8Array, offset: number = 0): { value: Uint8Array; bytesRead: number } {
   if (data[offset] !== ASN1Tag.INTEGER) {
@@ -167,7 +213,7 @@ export function decodeInteger(data: Uint8Array, offset: number = 0): { value: Ui
   if (end > data.length) throw new Error('Integer value out of bounds');
 
   // 使用 subarray 获取视图，避免复制
-  // 修正：如果是为了获取数值，且第一个字节是 0x00 且长度>1（表示这是符号位填充），则应当去掉
+  // 如果第一个字节是 0x00 且长度 > 1（表示符号位填充），则去掉
   // 注意：如果数值本身就是 0，编码是 02 01 00，此时不应去掉
   let value = data.subarray(start, end);
   if (value.length > 1 && value[0] === 0x00) {
@@ -175,13 +221,15 @@ export function decodeInteger(data: Uint8Array, offset: number = 0): { value: Ui
   }
 
   return {
-    value: value, // 返回的是 subarray，如果需要修改则需 slice
+    value,
     bytesRead: 1 + lengthBytes + length,
   };
 }
 
 /**
- * Encode sequence in DER format
+ * 将多个元素编码为 DER SEQUENCE
+ * @param elements - 要编码的元素数组
+ * @returns DER 编码的 SEQUENCE
  */
 export function encodeSequence(...elements: Uint8Array[]): Uint8Array {
   let contentLength = 0;
@@ -203,7 +251,11 @@ export function encodeSequence(...elements: Uint8Array[]): Uint8Array {
 }
 
 /**
- * Decode sequence from DER format
+ * 从 DER 格式解码 SEQUENCE
+ * @param data - 包含 DER 编码 SEQUENCE 的字节数组
+ * @param offset - SEQUENCE 的起始偏移量（默认 0）
+ * @returns 解码的元素数组和读取的字节数
+ * @throws 如果标签不是 SEQUENCE 或数据超出范围则抛出异常
  */
 export function decodeSequence(data: Uint8Array, offset: number = 0): { elements: Uint8Array[]; bytesRead: number } {
   if (data[offset] !== ASN1Tag.SEQUENCE) {
@@ -220,9 +272,7 @@ export function decodeSequence(data: Uint8Array, offset: number = 0): { elements
   let pos = contentStart;
 
   while (pos < contentEnd) {
-    // 预读取下一个 tag 的长度，但不完全解码，通过 tag 类型和长度字段推算
-    // 这里直接递归调用逻辑其实也可以，但为了通用性，我们只解析长度
-    // 注意：这里假设内部元素也是 TLV 结构
+    // 解析下一个 TLV 元素的长度
     const { length: elemLength, bytesRead: elemLengthBytes } = decodeLength(data, pos + 1);
     const elemTotalLength = 1 + elemLengthBytes + elemLength;
 
@@ -238,17 +288,22 @@ export function decodeSequence(data: Uint8Array, offset: number = 0): { elements
 }
 
 /**
- * Encode SM2 signature (r, s)
+ * 将 SM2 签名 (r, s) 编码为 DER 格式
+ * @param r - 签名分量 r（十六进制字符串或字节数组）
+ * @param s - 签名分量 s（十六进制字符串或字节数组）
+ * @returns DER 编码的签名
  */
 export function encodeSignature(r: string | Uint8Array, s: string | Uint8Array): Uint8Array {
-  // 类型归一化在 encodeInteger 内部处理，这里直接传递
   const rEncoded = encodeInteger(r);
   const sEncoded = encodeInteger(s);
   return encodeSequence(rEncoded, sEncoded);
 }
 
 /**
- * Decode SM2 signature
+ * 解码 DER 格式的 SM2 签名
+ * @param signature - DER 编码的签名
+ * @returns 解码的签名分量 { r, s }，均为小写十六进制字符串
+ * @throws 如果签名格式无效则抛出异常
  */
 export function decodeSignature(signature: Uint8Array): { r: string; s: string } {
   const { elements } = decodeSequence(signature);
@@ -257,7 +312,6 @@ export function decodeSignature(signature: Uint8Array): { r: string; s: string }
     throw new Error('Invalid signature: expected 2 elements (r, s)');
   }
 
-  // 这里的 decodeInteger 返回的是 subarray，转 hex 时很高效
   const { value: rBytes } = decodeInteger(elements[0]);
   const { value: sBytes } = decodeInteger(elements[1]);
 
@@ -268,8 +322,10 @@ export function decodeSignature(signature: Uint8Array): { r: string; s: string }
 }
 
 /**
- * Convert raw signature (r || s) to DER format
- * Input: 64 bytes hex string (128 chars) or 64 bytes Uint8Array
+ * 将原始格式签名 (r || s) 转换为 DER 格式
+ * @param rawSignature - 原始签名（64 字节或 128 个十六进制字符）
+ * @returns DER 编码的签名
+ * @throws 如果输入长度不正确则抛出异常
  */
 export function rawToDer(rawSignature: string | Uint8Array): Uint8Array {
   let bytes: Uint8Array;
@@ -288,22 +344,27 @@ export function rawToDer(rawSignature: string | Uint8Array): Uint8Array {
 }
 
 /**
- * Convert DER signature to raw format (r || s)
+ * 将 DER 格式签名转换为原始格式 (r || s)
+ * @param derSignature - DER 编码的签名
+ * @returns 原始格式签名（128 个十六进制字符，r 和 s 各 64 个字符）
  */
 export function derToRaw(derSignature: Uint8Array): string {
   const { r, s } = decodeSignature(derSignature);
 
-  // SM2 standard: r and s must be padded to 32 bytes (64 hex chars)
+  // SM2 标准：r 和 s 必须填充到 32 字节（64 个十六进制字符）
   const rPadded = r.padStart(64, '0');
   const sPadded = s.padStart(64, '0');
 
   return rPadded + sPadded;
 }
 
-// --- Debugging / Visualization Utilities ---
+// --- 调试/可视化工具 ---
 
 /**
- * Convert ASN.1 DER to XML (Optimized for buffer building)
+ * 将 ASN.1 DER 数据转换为 XML 格式（用于调试和可视化）
+ * @param data - DER 编码的数据
+ * @param indent - 初始缩进级别（默认 0）
+ * @returns XML 格式的字符串
  */
 export function asn1ToXml(data: Uint8Array, indent: number = 0): string {
   const buffer: string[] = [];

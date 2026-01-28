@@ -3,11 +3,35 @@ import { OutputFormat, type OutputFormatType } from '../../types/constants';
 
 /**
  * SM3 哈希算法的面向对象封装
+ * 
+ * SM3 是中国国家密码管理局发布的密码杂凑算法，
+ * 输出长度为 256 位（32 字节）。
+ * 
+ * 支持两种使用方式：
+ * 1. 静态方法：一次性计算哈希
+ * 2. 实例方法：增量哈希（适合大数据量分块处理）
+ * 
+ * @example
+ * ```typescript
+ * // 静态方法
+ * const hash = SM3.digest('Hello, SM3!');
+ * 
+ * // 增量哈希
+ * const sm3 = new SM3();
+ * sm3.update('Hello, ').update('SM3!');
+ * const result = sm3.digest();
+ * ```
  */
 export class SM3 {
+  /** 缓存的数据块（用于增量哈希） */
   private data: Uint8Array[] = [];
+  /** 输出格式（hex 或 base64） */
   private outputFormat: OutputFormatType = OutputFormat.HEX;
 
+  /**
+   * 创建 SM3 实例
+   * @param outputFormat - 输出格式（默认 hex）
+   */
   constructor(outputFormat?: OutputFormatType) {
     if (outputFormat) {
       this.outputFormat = outputFormat;
@@ -48,6 +72,8 @@ export class SM3 {
 
   /**
    * 完成哈希计算并返回摘要
+   * 注意：调用此方法后会清空内部状态
+   * @param options - 哈希选项（可覆盖实例的输出格式）
    * @returns 哈希摘要
    */
   digest(options?: SM3Options): string {
@@ -60,7 +86,7 @@ export class SM3 {
       offset += chunk.length;
     }
 
-    // 计算哈希后清空数据 (Clear data after digesting)
+    // 计算哈希后清空数据
     this.data = [];
 
     const outputFormat = options?.outputFormat || this.outputFormat;

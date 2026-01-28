@@ -8,10 +8,15 @@ import { normalizeInput, bytesToHex, bytesToBase64 } from '../../core/utils';
 import { OutputFormat, type OutputFormatType } from '../../types/constants';
 
 /**
- * SHA 哈希类基类
+ * SHA 哈希算法的抽象基类
+ * 
+ * 提供增量哈希的通用实现，子类通过指定不同的哈希算法来实现
+ * SHA-256、SHA-384、SHA-512 和 SHA-1。
  */
 abstract class SHABase {
+  /** 底层哈希器实例 */
   protected hasher: any;
+  /** 输出格式（hex 或 base64） */
   protected outputFormat: OutputFormatType;
 
   protected constructor(hasher: any, outputFormat: OutputFormatType = OutputFormat.HEX) {
@@ -21,7 +26,7 @@ abstract class SHABase {
 
   /**
    * 更新哈希状态（增量哈希）
-   * @param data - 要添加的数据
+   * @param data - 要添加的数据（字符串或 Uint8Array）
    * @returns 当前实例（支持链式调用）
    */
   update(data: string | Uint8Array): this {
@@ -32,6 +37,7 @@ abstract class SHABase {
 
   /**
    * 完成哈希计算并返回结果
+   * 注意：调用此方法后哈希器状态会被重置
    * @returns 哈希摘要
    */
   digest(): string {
@@ -44,7 +50,6 @@ abstract class SHABase {
    * @returns 当前实例（支持链式调用）
    */
   reset(): this {
-    // 创建新的哈希器实例
     this.hasher = this.getHasherConstructor().create();
     return this;
   }
@@ -59,7 +64,7 @@ abstract class SHABase {
 
   /**
    * 获取输出格式
-   * @returns 当前输出格式
+   * @returns 当前输出格式（hex 或 base64）
    */
   getOutputFormat(): OutputFormatType {
     return this.outputFormat;
@@ -67,13 +72,16 @@ abstract class SHABase {
 
   /**
    * 获取哈希器构造函数（子类实现）
+   * 用于 reset() 方法中创建新的哈希器实例
    */
   protected abstract getHasherConstructor(): any;
 }
 
 /**
  * SHA-256 哈希类
- *
+ * 
+ * 输出长度：256 位（32 字节）64 个十六进制字符）
+ * 
  * @example
  * ```typescript
  * // 静态方法
@@ -86,6 +94,10 @@ abstract class SHABase {
  * ```
  */
 export class SHA256 extends SHABase {
+  /**
+   * 创建 SHA256 实例
+   * @param outputFormat - 输出格式（默认 hex）
+   */
   constructor(outputFormat?: OutputFormatType) {
     super(nobleSha256, outputFormat);
   }
@@ -109,8 +121,14 @@ export class SHA256 extends SHABase {
 
 /**
  * SHA-384 哈希类
+ * 
+ * 输出长度：384 位（48 字节）96 个十六进制字符）
  */
 export class SHA384 extends SHABase {
+  /**
+   * 创建 SHA384 实例
+   * @param outputFormat - 输出格式（默认 hex）
+   */
   constructor(outputFormat?: OutputFormatType) {
     super(nobleSha384, outputFormat);
   }
@@ -134,8 +152,14 @@ export class SHA384 extends SHABase {
 
 /**
  * SHA-512 哈希类
+ * 
+ * 输出长度：512 位（64 字节），128 个十六进制字符
  */
 export class SHA512 extends SHABase {
+  /**
+   * 创建 SHA512 实例
+   * @param outputFormat - 输出格式（默认 hex）
+   */
   constructor(outputFormat?: OutputFormatType) {
     super(nobleSha512, outputFormat);
   }
@@ -159,9 +183,16 @@ export class SHA512 extends SHABase {
 
 /**
  * SHA-1 哈希类
- * 注意：SHA-1 已被证明存在安全漏洞，不推荐用于安全敏感场景
+ * 
+ * 输出长度：160 位（20 字节）40 个十六进制字符）
+ * 
+ * ⚠️ 警告：SHA-1 已被证明存在安全漏洞，不推荐用于安全敏感场景
  */
 export class SHA1 extends SHABase {
+  /**
+   * 创建 SHA1 实例
+   * @param outputFormat - 输出格式（默认 hex）
+   */
   constructor(outputFormat?: OutputFormatType) {
     super(nobleSha1, outputFormat);
   }

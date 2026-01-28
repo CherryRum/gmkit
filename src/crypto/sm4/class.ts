@@ -8,8 +8,11 @@ import { CipherMode, PaddingMode, type CipherModeType, type PaddingModeType } fr
 import type { BytesLike } from '../../core/utils';
 
 /**
- * SM4 class providing object-oriented API for block cipher operations
- * SM4 类，提供面向对象的分组密码操作API
+ * SM4 分组密码算法类
+ * 提供面向对象的对称加密 API
+ *
+ * SM4 是中国国家密码管理局发布的分组密码算法，
+ * 分组长度为 128 位，密钥长度为 128 位。
  *
  * 支持的加密模式 (Supported cipher modes):
  * - ECB: 电码本模式 (Electronic Codebook)
@@ -23,11 +26,28 @@ import type { BytesLike } from '../../core/utils';
  * - PKCS7: PKCS#7 填充 (PKCS#7 padding)
  * - NONE: 无填充 (No padding)
  * - ZERO: 零填充 (Zero padding)
+ * 
+ * @example
+ * ```typescript
+ * // ECB 模式
+ * const sm4 = SM4.ECB(key);
+ * const encrypted = sm4.encrypt('Hello, SM4!');
+ * const decrypted = sm4.decrypt(encrypted);
+ * 
+ * // GCM 模式（认证加密）
+ * const sm4gcm = SM4.GCM(key, iv);
+ * const result = sm4gcm.encrypt('Secret data');
+ * console.log(result.ciphertext, result.tag);
+ * ```
  */
 export class SM4 {
+  /** 加密密钥（16 字节） */
   private key: BytesLike;
+  /** 加密模式 */
   private mode: CipherModeType;
+  /** 填充模式 */
   private padding: PaddingModeType;
+  /** 初始化向量 */
   private iv?: BytesLike;
 
   /**
@@ -104,8 +124,8 @@ export class SM4 {
 
   /**
    * 加密数据
-   * @param data - 待加密的数据
-   * @returns 十六进制密文；GCM 模式下返回包含密文与标签的对象
+   * @param data - 待加密的数据（字符串或 Uint8Array）
+   * @returns 加密结果（包含密文，GCM 模式还包含 tag）
    */
   encrypt(data: string | Uint8Array): SM4CipherResult {
     const options: FuncSM4Options = {
@@ -118,8 +138,8 @@ export class SM4 {
 
   /**
    * 解密数据
-   * @param encryptedData - 十六进制密文或 GCM 模式的密文结果
-   * @returns 解密得到的明文字符串
+   * @param encryptedData - 密文（十六进制字符串或 GCM 结果对象）
+   * @returns 解密后的明文字符串
    */
   decrypt(encryptedData: BytesLike | SM4CipherResult): string {
     const options: FuncSM4Options = {
