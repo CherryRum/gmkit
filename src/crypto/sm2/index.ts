@@ -95,6 +95,11 @@ export interface SM2DecryptOptions {
 export type SM2SignatureFormat = 'raw' | 'der';
 export type SM2SignatureInputFormat = SM2SignatureFormat | 'auto';
 
+/**
+ * 验证 SM2 密文模式参数的有效性
+ * @param mode - 密文模式（C1C3C2 或 C1C2C3）
+ * @throws 如果模式无效则抛出错误
+ */
 function assertSm2CipherMode(mode?: SM2CipherModeType) {
   if (!mode) return;
   if (mode !== SM2CipherMode.C1C3C2 && mode !== SM2CipherMode.C1C2C3) {
@@ -102,6 +107,11 @@ function assertSm2CipherMode(mode?: SM2CipherModeType) {
   }
 }
 
+/**
+ * 验证输出格式参数的有效性
+ * @param format - 输出格式（hex 或 base64）
+ * @throws 如果格式无效则抛出错误
+ */
 function assertOutputFormat(format?: OutputFormatType) {
   if (!format) return;
   if (format !== OutputFormat.HEX && format !== OutputFormat.BASE64) {
@@ -109,6 +119,11 @@ function assertOutputFormat(format?: OutputFormatType) {
   }
 }
 
+/**
+ * 验证输入格式参数的有效性
+ * @param format - 输入格式（hex 或 base64）
+ * @throws 如果格式无效则抛出错误
+ */
 function assertInputFormat(format?: InputFormatType) {
   if (!format) return;
   if (format !== InputFormat.HEX && format !== InputFormat.BASE64) {
@@ -116,6 +131,11 @@ function assertInputFormat(format?: InputFormatType) {
   }
 }
 
+/**
+ * 验证签名格式参数的有效性
+ * @param format - 签名格式（raw 或 der）
+ * @throws 如果格式无效则抛出错误
+ */
 function assertSignatureFormat(format?: SM2SignatureFormat) {
   if (!format) return;
   if (format !== 'raw' && format !== 'der') {
@@ -123,6 +143,11 @@ function assertSignatureFormat(format?: SM2SignatureFormat) {
   }
 }
 
+/**
+ * 检查签名输入格式是否有效
+ * @param format - 签名输入格式
+ * @returns 格式是否有效
+ */
 function isValidSignatureInputFormat(format: SM2SignatureInputFormat): boolean {
   return format === 'raw' || format === 'der' || format === 'auto';
 }
@@ -231,9 +256,14 @@ function normalizePublicKeyInput(publicKey: BytesLike): string {
 
 /**
  * 准备解密所需的中间值
- * @param privateKey
- * @param c1Point
- * @param c2Length
+ * 
+ * 执行椭圆曲线点乘运算并计算密钥派生函数（KDF）输出，
+ * 这些是解密过程中计算量最大的部分。
+ * 
+ * @param privateKey - 私钥（十六进制字符串）
+ * @param c1Point - 密文中的椭圆曲线点 C1
+ * @param c2Length - 密文 C2 的字节长度
+ * @returns 包含 x2、y2 坐标和密钥流 t 的对象
  */
 function prepareDecrypt(privateKey: string, c1Point: any, c2Length: number) {
   const privateKeyBigInt = BigInt('0x' + privateKey);
@@ -253,6 +283,19 @@ function prepareDecrypt(privateKey: string, c1Point: any, c2Length: number) {
   return {x2, y2, t};
 }
 
+/**
+ * 尝试验证并解密 SM2 密文
+ * 
+ * 使用预计算的中间值进行解密，并验证消息认证码（C3）。
+ * 验证使用常量时间比较以防止时序攻击。
+ * 
+ * @param x2 - 共享点的 x 坐标
+ * @param y2 - 共享点的 y 坐标
+ * @param t - KDF 派生的密钥流
+ * @param c2 - 加密的明文数据
+ * @param c3 - 消息认证码（SM3 哈希值）
+ * @returns 解密成功返回明文字符串，验证失败返回 null
+ */
 function tryVerifyAndDecrypt(
   x2: Uint8Array, y2: Uint8Array, t: Uint8Array,
   c2: Uint8Array, c3: Uint8Array
