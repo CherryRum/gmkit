@@ -9,16 +9,59 @@ import {
 } from './index';
 
 /**
- * ZUC class providing object-oriented API for stream cipher operations
- * ZUC 类，提供面向对象的流密码操作API
- *
- * ZUC-128 is a stream cipher algorithm used in Chinese cryptographic standards
- * and 3GPP LTE encryption (EEA3) and integrity protection (EIA3).
- *
- * ZUC-128 是中国密码标准和 3GPP LTE 加密（EEA3）和完整性保护（EIA3）中使用的流密码算法
+ * ZUC 流密码算法的面向对象封装
+ * 
+ * ZUC-128 是中国国家密码管理局发布的流密码算法，
+ * 用于 4G LTE 移动通信网络的加密和完整性保护。
+ * 
+ * 主要用途：
+ * - EEA3：LTE 网络的数据加密
+ * - EIA3：LTE 网络的数据完整性保护
+ * - 通用流密码加密
+ * 
+ * @example
+ * ```typescript
+ * // 创建 ZUC 实例
+ * const zuc = new ZUC(
+ *   '00000000000000000000000000000000', // 128 位密钥
+ *   '00000000000000000000000000000000'  // 128 位 IV
+ * );
+ * 
+ * // 加密数据
+ * const encrypted = zuc.encrypt('Hello, ZUC!');
+ * 
+ * // 解密数据
+ * const decrypted = zuc.decrypt(encrypted);
+ * 
+ * // 生成密钥流
+ * const keystream = zuc.keystream(16);
+ * ```
+ * 
+ * @example
+ * ```typescript
+ * // LTE EEA3 加密
+ * const keystream = ZUC.eea3(
+ *   key,        // 128 位密钥
+ *   0x12345678, // 32 位计数器
+ *   5,          // 5 位 bearer ID
+ *   0,          // 方向（0=上行, 1=下行）
+ *   128         // 密钥流比特数
+ * );
+ * 
+ * // LTE EIA3 完整性认证
+ * const mac = ZUC.eia3(
+ *   key,        // 128 位密钥
+ *   0x12345678, // 32 位计数器
+ *   5,          // 5 位 bearer ID
+ *   0,          // 方向
+ *   message     // 要认证的消息
+ * );
+ * ```
  */
 export class ZUC {
+  /** 加密密钥（128 位） */
   private key: string | Uint8Array;
+  /** 初始化向量（128 位） */
   private iv: string | Uint8Array;
 
   /**

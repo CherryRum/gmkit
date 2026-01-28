@@ -1,5 +1,8 @@
 /**
  * GMKit 库的常量定义
+ * 
+ * 包含所有加密算法所需的常量、枚举和配置项。
+ * 这些常量遵循中国国密标准和国际密码学标准。
  */
 
 /**
@@ -79,6 +82,15 @@ export type CipherModeType = typeof CipherMode[keyof typeof CipherMode];
 
 /**
  * SM2 密文排列模式
+ * 
+ * SM2 加密结果由三部分组成：
+ * - C1：椭圆曲线点（随机数与基点的乘积，65 字节非压缩格式）
+ * - C2：加密数据（与明文等长）
+ * - C3：SM3 哈希值（32 字节）
+ * 
+ * 两种排列方式：
+ * - C1C3C2（推荐）：符合 GM/T 0009-2012/2023 标准
+ * - C1C2C3：旧版本兼容格式
  */
 export const SM2CipherMode = {
   C1C3C2: 'C1C3C2',
