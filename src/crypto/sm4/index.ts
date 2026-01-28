@@ -39,7 +39,17 @@ import {
   type InputFormatType
 } from '../../types/constants';
 
-// SM4 S盒（置换盒）- 用于非线性变换
+/**
+ * SM4 S盒（置换盒）
+ * 
+ * S盒是 SM4 算法中的核心非线性部件，提供密码学混淆特性。
+ * 它将 8 位输入映射到 8 位输出，确保加密过程的非线性。
+ * 
+ * 特点：
+ * - 输入/输出：8 位
+ * - 全表实现：256 个项目
+ * - 具有良好的差分特性和线性特性
+ */
 const SBOX: number[] = [
   0xd6, 0x90, 0xe9, 0xfe, 0xcc, 0xe1, 0x3d, 0xb7, 0x16, 0xb6, 0x14, 0xc2, 0x28, 0xfb, 0x2c, 0x05,
   0x2b, 0x67, 0x9a, 0x76, 0x2a, 0xbe, 0x04, 0xc3, 0xaa, 0x44, 0x13, 0x26, 0x49, 0x86, 0x06, 0x99,
@@ -59,10 +69,22 @@ const SBOX: number[] = [
   0x18, 0xf0, 0x7d, 0xec, 0x3a, 0xdc, 0x4d, 0x20, 0x79, 0xee, 0x5f, 0x3e, 0xd7, 0xcb, 0x39, 0x48,
 ];
 
-// 系统参数 FK
+/**
+ * 系统参数 FK
+ * 
+ * 用于密钥扩展的初始化，与主密钥进行异或运算。
+ * 这些是固定的常量，由标准定义。
+ */
 const FK: number[] = [0xa3b1bac6, 0x56aa3350, 0x677d9197, 0xb27022dc];
 
-// 固定参数 CK - 用于密钥扩展
+/**
+ * 固定参数 CK
+ * 
+ * 用于密钥扩展过程中的各轮运算。
+ * CK[i] 的生成规则：
+ * CK[i] = (CK[i,0], CK[i,1], CK[i,2], CK[i,3])
+ * 其中 CK[i,j] = (4i + j) mod 256
+ */
 const CK: number[] = [];
 for (let i = 0; i < 32; i++) {
   CK[i] =
@@ -73,14 +95,27 @@ for (let i = 0; i < 32; i++) {
 }
 
 /**
- * 循环左移
+ * 循环左移（Rotate Left）
+ * 
+ * 将 32 位无符号整数左移指定位数，高位移出的位补到低位。
+ * 
+ * @param value - 要旋转的 32 位整数
+ * @param shift - 左移位数（0-31）
+ * @returns 左移后的结果
  */
 function rotl(value: number, shift: number): number {
   return ((value << shift) | (value >>> (32 - shift))) >>> 0;
 }
 
 /**
- * GCM 模式下的伽罗瓦域乘法（GF(2^128)）
+ * GCM 模式下的 GHASH 计算
+ * 
+ * GHASH 是 GCM 模式的核心认证组件，基于 GF(2^128) 中的多项式乘法。
+ * 它为附加认证数据（AAD）和密文提供认证。
+ * 
+ * @param h - 认证密钥 H = E(K, 0^128)
+ * @param data - 要认证的数据（已填充到 16 字节块大小）
+ * @returns 128 位的 GHASH 结果
  */
 function ghash(h: Uint8Array, data: Uint8Array): Uint8Array {
   const result = new Uint8Array(16);
@@ -102,7 +137,16 @@ function ghash(h: Uint8Array, data: Uint8Array): Uint8Array {
 }
 
 /**
- * 伽罗瓦域乘法（用于 GCM 模式）
+ * GF(2^128) 中的乘法运算
+ * 
+ * 伽罗华域 GF(2^128) 中的多项式乘法，使用不可约多项式：
+ * R(x) = x^128 + x^7 + x^2 + x + 1
+ * 
+ * 这个运算是 GCM 模式安全性的基础。
+ * 
+ * @param x - 第一个操作数（128 位）
+ * @param y - 第二个操作数（128 位）
+ * @returns 乘法结果（128 位）
  */
 function gfMul(x: Uint8Array, y: Uint8Array): Uint8Array {
   const result = new Uint8Array(16);
@@ -136,7 +180,12 @@ function gfMul(x: Uint8Array, y: Uint8Array): Uint8Array {
 }
 
 /**
- * GCM 模式的计数器递增（最右侧 32 位计数器）
+ * GCM 模式的计数器递增
+ * 
+ * 按照 NIST SP 800-38D 规范，仅递增计数器块的最右侧 32 位。
+ * 这允许在不影响前 96 位（nonce）的情况下递增计数器。
+ * 
+ * @param counter - 要递增的 128 位计数器块（就地修改）
  */
 function incrementGCMCounter(counter: Uint8Array): void {
   // 按大端方式递增最右侧的 32 位计数器
@@ -146,7 +195,13 @@ function incrementGCMCounter(counter: Uint8Array): void {
 }
 
 /**
- * 非线性变换 τ - 使用 S盒进行字节替换
+ * 非线性变换 τ（tau）
+ * 
+ * 使用 S 盒对 32 位字的每个字节进行独立替换。
+ * 这是 SM4 算法中唯一的非线性操作。
+ * 
+ * @param a - 32 位输入字
+ * @returns 32 位输出字
  */
 function tau(a: number): number {
   return (
@@ -158,35 +213,70 @@ function tau(a: number): number {
 }
 
 /**
- * 线性变换 L - 用于加密变换
+ * 线性变换 L
+ * 
+ * 用于加密变换，通过多次循环左移和异或运算提供扩散性。
+ * L(B) = B ⊕ (B <<< 2) ⊕ (B <<< 10) ⊕ (B <<< 18) ⊕ (B <<< 24)
+ * 
+ * @param b - 32 位输入
+ * @returns 32 位输出
  */
 function l(b: number): number {
   return (b ^ rotl(b, 2) ^ rotl(b, 10) ^ rotl(b, 18) ^ rotl(b, 24)) >>> 0;
 }
 
 /**
- * 线性变换 L' - 用于密钥扩展
+ * 线性变换 L'
+ * 
+ * 用于密钥扩展，与加密变换的 L 不同。
+ * L'(B) = B ⊕ (B <<< 13) ⊕ (B <<< 23)
+ * 
+ * @param b - 32 位输入
+ * @returns 32 位输出
  */
 function lPrime(b: number): number {
   return (b ^ rotl(b, 13) ^ rotl(b, 23)) >>> 0;
 }
 
 /**
- * 合成置换 T - 加密轮函数
+ * 合成置换 T
+ * 
+ * 加密轮函数的核心转换，组合非线性变换和线性变换。
+ * T(A) = L(τ(A))
+ * 
+ * @param a - 32 位输入
+ * @returns 32 位输出
  */
 function t(a: number): number {
   return l(tau(a));
 }
 
 /**
- * 合成置换 T' - 密钥扩展函数
+ * 合成置换 T'
+ * 
+ * 密钥扩展的核心转换，组合非线性变换和线性变换 L'。
+ * T'(A) = L'(τ(A))
+ * 
+ * @param a - 32 位输入
+ * @returns 32 位输出
  */
 function tPrime(a: number): number {
   return lPrime(tau(a));
 }
 
 /**
- * 密钥扩展 - 从主密钥生成轮密钥
+ * 密钥扩展算法
+ * 
+ * 从 128 位主密钥生成 32 个 32 位轮密钥。
+ * 每个轮密钥用于一轮加密操作。
+ * 
+ * 扩展过程：
+ * 1. 将主密钥 MK 分成 4 个 32 位字
+ * 2. 与系统参数 FK 异或得到初始值
+ * 3. 通过 32 轮迭代生成轮密钥
+ * 
+ * @param key - 128 位主密钥（16 字节）
+ * @returns 32 个轮密钥的数组
  */
 function expandKey(key: Uint8Array): number[] {
   const mk: number[] = [];
@@ -210,7 +300,14 @@ function expandKey(key: Uint8Array): number[] {
 }
 
 /**
- * 加密单个数据块（128 位）
+ * 加密单个数据块
+ * 
+ * 对 128 位（16 字节）的明文块执行 32 轮加密。
+ * 每轮使用一个轮密钥和 T 变换。
+ * 
+ * @param input - 128 位明文块
+ * @param roundKeys - 32 个轮密钥
+ * @returns 128 位密文块
  */
 function encryptBlock(input: Uint8Array, roundKeys: number[]): Uint8Array {
   const x: number[] = [];
@@ -232,12 +329,30 @@ function encryptBlock(input: Uint8Array, roundKeys: number[]): Uint8Array {
 }
 
 /**
- * 解密单个数据块（128 位）
+ * 解密单个数据块
+ * 
+ * SM4 是 Feistel 结构的变体，解密和加密使用相同的算法，
+ * 只是轮密钥的使用顺序相反。
+ * 
+ * @param input - 128 位密文块
+ * @param reversedKeys - 逆序的轮密钥
+ * @returns 128 位明文块
  */
 function decryptBlock(input: Uint8Array, reversedKeys: number[]): Uint8Array {
   return encryptBlock(input, reversedKeys);
 }
 
+/**
+ * 规范化十六进制输入
+ * 
+ * 将字符串或字节数组转换为标准化的字节数组，
+ * 并验证长度是否符合要求。
+ * 
+ * @param label - 参数名称（用于错误消息）
+ * @param value - 输入值（十六进制字符串或 Uint8Array）
+ * @param expectedBytes - 期望的字节长度
+ * @returns 规范化后的字节数组
+ */
 function normalizeHexInput(label: string, value: string | Uint8Array, expectedBytes: number): Uint8Array {
   if (value instanceof Uint8Array) {
     if (value.length !== expectedBytes) {

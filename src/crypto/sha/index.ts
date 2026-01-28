@@ -1,12 +1,16 @@
 /**
  * SHA 哈希算法实现
- * 基于 @noble/hashes 库提供的高性能实现
+ * 
+ * 基于 @noble/hashes 库提供的高性能实现，该库经过安全审计，
+ * 具有常量时间实现，能够防止时序攻击。
  *
  * 支持的算法：
- * - SHA-256: 256 位哈希输出
- * - SHA-384: 384 位哈希输出
- * - SHA-512: 512 位哈希输出
- * - SHA-1: 160 位哈希输出（不推荐用于安全敏感场景）
+ * - SHA-256: 256 位哈希输出，推荐用于大多数场景
+ * - SHA-384: 384 位哈希输出，基于 SHA-512 的截断版本
+ * - SHA-512: 512 位哈希输出，适合高安全性要求场景
+ * - SHA-1: 160 位哈希输出（❗已弃用，不推荐用于安全敏感场景）
+ *
+ * @see https://csrc.nist.gov/publications/detail/fips/180/4/final FIPS 180-4 标准
  */
 
 import { sha256 as nobleSha256, sha384 as nobleSha384, sha512 as nobleSha512 } from '@noble/hashes/sha2.js';
@@ -17,6 +21,8 @@ import { OutputFormat, type OutputFormatType } from '../../types/constants';
 
 /**
  * SHA 哈希选项
+ * 
+ * 配置 SHA 哈希函数的输出格式
  */
 export interface SHAOptions {
   /**
@@ -96,7 +102,12 @@ export function sha512(data: string | Uint8Array, options?: SHAOptions): string 
 
 /**
  * 计算 SHA-1 哈希摘要
- * 注意：SHA-1 已被证明存在安全漏洞，不推荐用于安全敏感场景
+ * 
+ * ⚠️ 安全警告：
+ * SHA-1 已于 2017 年被 Google 证明存在实际碰撞攻击（SHAttered）。
+ * 请勿用于密码签名、数字证书等安全敏感场景。
+ * 仅建议用于兼容旧系统或非安全敏感的校验和。
+ * 
  * @param data - 输入数据（字符串或 Uint8Array）
  * @param options - 哈希选项
  * @returns 哈希摘要（默认十六进制字符串，40 个字符）
@@ -106,6 +117,8 @@ export function sha512(data: string | Uint8Array, options?: SHAOptions): string 
  * const hash = sha1('Hello, World!');
  * console.log(hash); // 十六进制格式
  * ```
+ * 
+ * @deprecated 不推荐用于新项目，请使用 SHA-256 或更高版本
  */
 export function sha1(data: string | Uint8Array, options?: SHAOptions): string {
   const bytes = normalizeInput(data);

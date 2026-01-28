@@ -23,6 +23,8 @@ import { OutputFormat, InputFormat, type OutputFormatType, type InputFormatType 
 
 /**
  * ZUC 加密选项
+ * 
+ * 配置 ZUC 流密码加密的输出格式
  */
 export interface ZUCOptions {
   /**
@@ -35,6 +37,11 @@ export interface ZUCOptions {
   outputFormat?: OutputFormatType;
 }
 
+/**
+ * ZUC 解密选项
+ * 
+ * 配置 ZUC 流密码解密的输入格式
+ */
 export interface ZUCDecryptOptions {
   /**
    * 输入格式
@@ -240,7 +247,13 @@ export function eia3(
 }
 
 /**
- * 从密钥流中获取指定比特的辅助函数
+ * 从密钥流中获取指定位置的比特
+ * 
+ * 用于 EIA3 完整性算法中的比特级操作。
+ * 
+ * @param keystream - 密钥流（32 位字数组）
+ * @param bitPosition - 比特位置（0 索引）
+ * @returns 指定位置的比特值（true 或 false）
  */
 function getBitFromKeystream(keystream: Uint32Array, bitPosition: number): boolean {
   const wordIndex = Math.floor(bitPosition / 32);
@@ -249,6 +262,7 @@ function getBitFromKeystream(keystream: Uint32Array, bitPosition: number): boole
 }
 
 // 导出底层组件以供高级场景使用
+// 注意：直接使用底层组件需要理解 ZUC 算法的内部工作原理
 export { ZUCState, generateKeystream };
 
 // 导出面向对象封装的 ZUC 类

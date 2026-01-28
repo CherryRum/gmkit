@@ -23,18 +23,37 @@ import {
 } from '../../core/utils';
 import { OutputFormat, type OutputFormatType } from '../../types/constants';
 
-// SM3 常量 - 初始值 IV
+/**
+ * SM3 初始向量 IV
+ * 
+ * 这些是 SM3 算法规定的固定初始值，
+ * 用于压缩函数的初始状态。
+ */
 const IV: number[] = [
   0x7380166f, 0x4914b2b9, 0x172442d7, 0xda8a0600,
   0xa96f30bc, 0x163138aa, 0xe38dee4d, 0xb0fb0e4e,
 ];
 
-// 预计算 T 常量
+/**
+ * SM3 轮常量 T
+ * 
+ * T 值根据轮数分为两种：
+ * - T_0_15: 用于第 0-15 轮（0x79cc4519）
+ * - T_16_63: 用于第 16-63 轮（0x7a879d8a）
+ */
 const T_0_15 = 0x79cc4519;
 const T_16_63 = 0x7a879d8a;
 
 /**
- * 填充函数 - 将消息填充到 512 位的倍数
+ * SM3 消息填充函数
+ * 
+ * 按照 SM3 标准将消息填充到 512 位的倍数：
+ * 1. 添加一个 '1' 位（字节 0x80）
+ * 2. 添加若干 '0' 位，使总长度 ≡ 448 (mod 512)
+ * 3. 添加 64 位的原始消息长度（大端序）
+ * 
+ * @param data - 原始消息字节
+ * @returns 填充后的消息
  */
 function pad(data: Uint8Array): Uint8Array {
   const msgLen = data.length;
@@ -58,7 +77,21 @@ function pad(data: Uint8Array): Uint8Array {
 }
 
 /**
- * 压缩函数 CF（优化实现，减少临时对象与函数调用）
+ * SM3 压缩函数 CF
+ * 
+ * 这是 SM3 算法的核心操作，对每个 512 位的消息块进行 64 轮压缩。
+ * 
+ * 内部操作包括：
+ * - 消息扩展：从 16 个字扩展到 68 个字
+ * - 64 轮迭代压缩，使用 FF、GG 布尔函数和 P0 置换
+ * 
+ * 优化说明：
+ * - 内联 P0、P1 函数以减少函数调用开销
+ * - 前 16 轮和后 48 轮分开处理以避免条件判断
+ * 
+ * @param v - 当前哈希值ﾈ8 个 32 位字ﾉ
+ * @param b - 512 位消息块ﾈ64 字节ﾉ
+ * @returns 更新后的哈希值
  */
 function cf(v: number[], b: Uint8Array): number[] {
   const w: number[] = new Array(68);
@@ -153,6 +186,11 @@ export interface SM3Options {
   outputFormat?: OutputFormatType;
 }
 
+/**
+ * 验证输出格式的有效性
+ * @param format - 输出格式（hex 或 base64）
+ * @throws 如果格式无效则抛出错误
+ */
 function assertOutputFormat(format?: OutputFormatType) {
   if (!format) return;
   if (format !== OutputFormat.HEX && format !== OutputFormat.BASE64) {
@@ -200,7 +238,10 @@ export function digest(data: string | Uint8Array, options?: SM3Options): string 
   return options?.outputFormat === OutputFormat.BASE64 ? bytesToBase64(result) : bytesToHex(result);
 }
 
-// 兼容命名：与文档示例保持一致
+/**
+ * 兼容命名：与文档示例和旧版本 API 保持一致
+ * @deprecated 请使用 digest 函数
+ */
 export const sm3Digest = digest;
 
 /**
