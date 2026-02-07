@@ -16,17 +16,6 @@ tag:
 
 # SM4 分组密码算法
 
-::: tip
-提示：本章要点
-
-- 概述
-- 快速开始
-- 分组模式
-- 📦 填充模式
-- 📤 输出格式
-:::
-
-
 ## 概述
 
 SM4 是国密对称分组密码算法，块长与密钥长度均为 128 位。  
@@ -34,35 +23,25 @@ SM4 是国密对称分组密码算法，块长与密钥长度均为 128 位。
 
 ### 参考标准
 
-| 项目 | 说明 |
-|:--|:--|
-| GM/T 0002-2012 | SM4 分组密码算法 |
-| GB/T 32907-2016 | 信息安全技术 SM4 分组密码算法（等同采用 GM/T 0002-2012） |
-
+- **GM/T 0002-2012**: SM4 分组密码算法
+- **GB/T 32907-2016**: 信息安全技术 SM4 分组密码算法（等同采用 GM/T 0002-2012）
 
 ### 商密场景中的 SM4
 
-| 项目 | 说明 |
-|:--|:--|
-| 数据保护 | 数据库字段、文件内容、接口报文加密的常见选择 |
-| 组合使用 | 常与 SM2 搭配完成“密钥封装 + 数据加密” |
-| 模式约定 | 业务系统通常统一一种模式与填充，减少互操作成本 |
-
+- **数据保护**：数据库字段、文件内容、接口报文加密的常见选择
+- **组合使用**：常与 SM2 搭配完成“密钥封装 + 数据加密”
+- **模式约定**：业务系统通常统一一种模式与填充，减少互操作成本
 
 ### 使用要点
 
-| 项目 | 说明 |
-|:--|:--|
-| 模式优先级 | GCM > CBC > CTR/CFB/OFB > ECB |
-| IV 长度 | CBC/CTR/CFB/OFB 为 16 字节，GCM 为 12 字节 |
-| 填充 | 块模式用 PKCS7，Java 的 PKCS5Padding 等价于 PKCS7 |
+- **模式优先级**：GCM/CCM > CBC > CTR/CFB/OFB > ECB  
+- **IV/nonce 长度**：CBC/CTR/CFB/OFB 为 16 字节，GCM 为 12 字节，CCM 为 7-13 字节
+- **填充**：块模式用 PKCS7，Java 的 PKCS5Padding 等价于 PKCS7
 
+### 性能提示
 
-::: tip
-提示：性能提示
 性能主要取决于平台硬件加速支持。  
 安全更强的模式（如 GCM）成本更高，这是必要开销。
-:::
 
 ## 快速开始
 
@@ -93,9 +72,9 @@ const ciphertext = sm4.encrypt(key, 'Hello, SM4!');
 const plaintext = sm4.decrypt(key, ciphertext);
 ```
 
-## 分组模式
+##  分组模式
 
-SM4 支持六种分组密码工作模式：
+SM4 支持七种分组密码工作模式：
 
 ### ECB（电子密码本模式）
 
@@ -115,9 +94,7 @@ const plaintext = sm4Decrypt(key, ciphertext, {
 });
 ```
 
-::: warning
-注意：ECB 模式不安全，相同明文块会产生相同密文块，不应用于敏感数据。
-:::
+⚠️ **警告**: ECB 模式不安全，相同明文块会产生相同密文块，不应用于敏感数据。
 
 ### CBC（密码块链接模式）
 
@@ -140,9 +117,7 @@ const plaintext = sm4Decrypt(key, ciphertext, {
 });
 ```
 
-::: tip
-提示：CBC 模式安全可靠，适用于大多数场景。
-:::
+✅ **推荐**: CBC 模式安全可靠，适用于大多数场景。
 
 ### CTR（计数器模式）
 
@@ -165,9 +140,7 @@ const plaintext = sm4Decrypt(key, ciphertext, {
 });
 ```
 
-::: tip
-提示：支持并行处理，不需要填充。
-:::
+✅ **优点**: 支持并行处理，不需要填充。
 
 ### CFB（密码反馈模式）
 
@@ -219,13 +192,14 @@ const plaintext = sm4Decrypt(key, ciphertext, {
 import { sm4Encrypt, sm4Decrypt, CipherMode } from 'gmkitx';
 
 const key = '0123456789abcdeffedcba9876543210';
-const iv = '00112233445566778899aabb'; // 12 字节（24 hex）
+const iv = 'fedcba987654321001234567'; // 12 字节（24 hex）
+const aad = 'header-data';
 
 // 加密（返回密文和认证标签）
 const { ciphertext, tag } = sm4Encrypt(key, 'Hello, SM4!', {
   mode: CipherMode.GCM,
   iv: iv,
-  aad: 'header-data'
+  aad
 });
 
 // 解密（需要提供认证标签）
@@ -233,15 +207,42 @@ const plaintext = sm4Decrypt(key, ciphertext, {
   mode: CipherMode.GCM,
   iv: iv,
   tag: tag,
-  aad: 'header-data'
+  aad
 });
 ```
 
-::: tip
-提示：GCM 模式提供认证加密（AEAD），防止密文被篡改。
-:::
+✅ **强烈推荐**: GCM 模式提供认证加密（AEAD），防止密文被篡改。
 
-## 填充模式
+### CCM（计数器 + CBC-MAC）
+
+另一种 AEAD 模式，适合需要严格控制 nonce 长度和标签长度的场景。  
+与 GCM 一样提供机密性 + 完整性校验，但实现机制不同。
+
+```typescript
+import { sm4Encrypt, sm4Decrypt, CipherMode } from 'gmkitx';
+
+const key = '0123456789abcdeffedcba9876543210';
+const nonce = '00112233445566778899aabb'; // 12 字节（允许 7-13 字节）
+const aad = 'header-data';
+
+const { ciphertext, tag } = sm4Encrypt(key, 'Hello, SM4!', {
+  mode: CipherMode.CCM,
+  iv: nonce,
+  aad,
+  tagLength: 16 // 4-16 字节，且必须是偶数
+});
+
+const plaintext = sm4Decrypt(key, ciphertext, {
+  mode: CipherMode.CCM,
+  iv: nonce,
+  tag,
+  aad
+});
+```
+
+✅ **推荐**: 需要 AEAD 且对 nonce/tag 控制更细时可选 CCM；跨语言互操作请显式约定 nonce 与 tag 长度。
+
+## 📦 填充模式
 
 对于非流密码模式（ECB、CBC），需要填充明文到块大小的整数倍。
 
@@ -283,11 +284,9 @@ const ciphertext = sm4Encrypt(key, plaintext, {
 });
 ```
 
-::: warning
-注意：CTR、CFB、OFB、GCM 模式不需要填充。
-:::
+⚠️ **注意**: CTR、CFB、OFB、GCM、CCM 模式不需要填充。
 
-## 输出格式
+## 📤 输出格式
 
 SM4 支持多种输出格式：
 
@@ -296,41 +295,56 @@ SM4 支持多种输出格式：
 ```typescript
 import { sm4Encrypt, OutputFormat } from 'gmkitx';
 
-const ciphertext = sm4Encrypt(key, plaintext, {
+const result = sm4Encrypt(key, plaintext, {
   outputFormat: OutputFormat.HEX
 });
+console.log(result.ciphertext);
 ```
 
 ### Base64 输出
 
 ```typescript
-const ciphertext = sm4Encrypt(key, plaintext, {
+const result = sm4Encrypt(key, plaintext, {
   outputFormat: OutputFormat.BASE64
 });
+console.log(result.ciphertext);
 ```
 
 如需字节数组，可自行从 hex/base64 转换：
 
 ```typescript
-const hexCipher = sm4Encrypt(key, plaintext);
-const bytes = Buffer.from(hexCipher, 'hex'); // Node.js
+const hexResult = sm4Encrypt(key, plaintext, { outputFormat: OutputFormat.HEX });
+const bytes = Buffer.from(hexResult.ciphertext, 'hex'); // Node.js
 ```
 
 ## 参数与密文传输
 
 建议在协议层显式传输 `iv` / `tag` / `aad`，避免隐式约定造成互操作失败：
 
-| 项目 | 说明 |
-|:--|:--|
-| 结构化传输 | `{ iv, ciphertext, tag, aad }`（推荐） |
-| 拼接传输 | `iv || ciphertext || tag`（需约定长度） |
-
+- **结构化传输**：`{ iv, ciphertext, tag, aad }`（推荐）
+- **拼接传输**：`iv || ciphertext || tag`（需约定长度）
   - GCM 默认 `iv=12` 字节，`tag=16` 字节
+  - CCM 常见 `nonce=12` 字节（允许 7-13 字节），`tag=16` 字节（允许 4-16 且为偶数）
   - CBC/CTR/CFB/OFB 仅需 `iv=16` 字节
 
 编码建议使用 `hex` 或 `base64`，并在接口文档中写清楚。
 
-## 面向对象 API
+## Java 对接重点
+
+跨 Java / Node / Browser 对接时，建议把模式、编码和参数长度全部显式写入协议：
+
+- `SM4/CBC/PKCS5Padding`（Java）语义对应 `mode: CBC + padding: PKCS7`（gmkitx）
+- `SM4/GCM/NoPadding`（Java）对应 `mode: GCM`，双方统一：
+  - `iv` 长度 12 字节
+  - `tagLength`（Java 常用 128 bit = 16 字节）
+  - `aad`（如使用，必须一致）
+- `SM4/CCM/NoPadding`（常见于 BouncyCastle）对应 `mode: CCM`，双方统一：
+  - `nonce` 长度 7-13 字节（建议 12 字节）
+  - `tagLength`（4-16 字节，且为偶数）
+  - `aad`（如使用，必须一致）
+- 密文/标签编码建议固定 `base64` 或 `hex`，不要一端自动推断、另一端固定写死。
+
+##  面向对象 API
 
 ```typescript
 import { SM4, CipherMode, PaddingMode } from 'gmkitx';
@@ -338,21 +352,26 @@ import { SM4, CipherMode, PaddingMode } from 'gmkitx';
 // 创建 SM4 实例
 const sm4 = new SM4(key, {
   mode: CipherMode.CBC,
-  padding: PaddingMode.PKCS7
+  padding: PaddingMode.PKCS7,
+  iv
 });
 
 // 加密
-const ciphertext = sm4.encrypt(plaintext, { iv: iv });
+const ciphertext = sm4.encrypt(plaintext);
 
 // 解密
-const decrypted = sm4.decrypt(ciphertext, { iv: iv });
+const decrypted = sm4.decrypt(ciphertext);
 
 // 修改配置
 sm4.setMode(CipherMode.GCM);
 sm4.setPadding(PaddingMode.NONE);
+
+// 每次调用可临时覆盖参数（不污染实例默认配置）
+const aead = sm4.encrypt(plaintext, { aad: 'request-meta', tagLength: 16 });
+const plain2 = sm4.decrypt(aead, { aad: 'request-meta' });
 ```
 
-## 完整 API 参考
+##  完整 API 参考
 
 ### 函数式 API
 
@@ -366,8 +385,8 @@ sm4.setPadding(PaddingMode.NONE);
 | 方法 | 说明 | 返回值 |
 |------|------|--------|
 | `new SM4(key, options?)` | 创建 SM4 实例 | `SM4` |
-| `encrypt(plaintext, options?)` | 加密 | `string \| {ciphertext, tag}` |
-| `decrypt(ciphertext, options?)` | 解密 | `string` |
+| `encrypt(plaintext, options?)` | 加密（可覆盖 aad/tagLength/outputFormat 等） | `SM4CipherResult` |
+| `decrypt(ciphertext, options?)` | 解密（可覆盖 aad/tag/inputFormat 等） | `string` |
 | `setMode(mode)` | 设置分组模式 | `void` |
 | `setPadding(padding)` | 设置填充模式 | `void` |
 
@@ -377,15 +396,20 @@ sm4.setPadding(PaddingMode.NONE);
 interface SM4Options {
   mode?: CipherMode;           // 分组模式
   padding?: PaddingMode;       // 填充模式
-  iv?: string;                 // 初始化向量（CBC/CTR/CFB/OFB: 16 字节；GCM: 12 字节）
-  aad?: string | Uint8Array;   // 关联数据（GCM 可选）
-  tag?: string;                // 认证标签（GCM 解密时必需）
-  tagLength?: number;          // 标签长度（12-16 字节，仅 GCM 加密）
+  iv?: string;                 // 初始化向量/nonce（CBC/CTR/CFB/OFB: 16 字节；GCM: 12 字节；CCM: 7-13 字节）
+  aad?: string | Uint8Array;   // 关联数据（GCM/CCM 可选）
+  tagLength?: number;          // 标签长度（GCM: 12-16；CCM: 4-16 且为偶数）
   outputFormat?: OutputFormat; // 输出格式
+}
+
+interface SM4DecryptOptions extends SM4Options {
+  inputFormat?: InputFormat;   // 入参编码（hex/base64），不传时自动识别
+  tag?: string | Uint8Array;   // GCM/CCM 认证标签（对象入参可不传）
+  tagFormat?: InputFormat;     // tag 编码（hex/base64）
 }
 ```
 
-## 使用场景
+##  使用场景
 
 ### 1. 文件加密
 
@@ -526,10 +550,11 @@ class EncryptedLogger {
   
   log(message: string) {
     const iv = generateRandomIV();
-    const encrypted = this.sm4.encrypt(message, { iv });
+    this.sm4.setIV(iv);
+    const encrypted = this.sm4.encrypt(message);
     
     // 写入加密日志
-    fs.appendFileSync('encrypted.log', `${iv}:${encrypted}\n`);
+    fs.appendFileSync('encrypted.log', `${iv}:${encrypted.ciphertext}\n`);
   }
   
   readLogs(): string[] {
@@ -537,17 +562,18 @@ class EncryptedLogger {
     
     return logs.map(line => {
       const [iv, encrypted] = line.split(':');
-      return this.sm4.decrypt(encrypted, { iv });
+      this.sm4.setIV(iv);
+      return this.sm4.decrypt({ ciphertext: encrypted, format: 'hex' });
     });
   }
 }
 ```
 
-## 高级用法
+##  高级用法
 
 ### 大文件处理建议
 
-SM4 API 不是流式状态机；CTR/CFB/OFB/GCM 每次调用都会从 IV 起始重新生成密钥流。  
+SM4 API 不是流式状态机；CTR/CFB/OFB/GCM/CCM 每次调用都会从 IV/nonce 起始重新生成密钥流。  
 如需分块处理，请为每个块生成 **独立 IV** 并保存 `iv/tag`，或自行实现计数器状态管理。
 
 ### 密钥派生
@@ -573,17 +599,19 @@ const key = deriveKey(password, salt);
 ```typescript
 import { SM4, CipherMode } from 'gmkitx';
 
-function encryptBatch(items: string[], key: string): string[] {
+function encryptBatch(items: string[], key: string): Array<{ iv: string; ciphertext: string }> {
   const sm4 = new SM4(key, { mode: CipherMode.CBC });
   
   return items.map(item => {
     const iv = generateRandomIV();
-    return sm4.encrypt(item, { iv });
+    sm4.setIV(iv);
+    const encrypted = sm4.encrypt(item);
+    return { iv, ciphertext: encrypted.ciphertext };
   });
 }
 ```
 
-## 密钥管理
+##  密钥管理
 
 ### 密钥生成
 
@@ -614,31 +642,21 @@ const key = process.env.SM4_KEY;
 const key = await keyManagementService.getKey('sm4-key-id');
 ```
 
-## 注意事项
+##  注意事项
 
-::: warning
-注意：以下内容涉及安全性、互操作或易错点，建议上线前逐条核对。
-:::
-
-| 项目 | 说明 |
-|:--|:--|
-| 密钥长度 | SM4 密钥必须是 128 位（32 个十六进制字符） |
-| IV 长度 | CBC/CTR/CFB/OFB 为 128 位；GCM 推荐 96 位（12 字节） |
-| IV 唯一性 | CTR/GCM 必须保证同一密钥下 IV 不可重复 |
-| 密钥保密 | 密钥必须妥善保管，泄露将导致所有加密数据不安全 |
-| 模式选择 |  |
-
-   - 敏感数据推荐使用 GCM 模式
+1. **密钥长度**: SM4 密钥必须是 128 位（32 个十六进制字符）
+2. **IV/nonce 长度**: CBC/CTR/CFB/OFB 为 128 位；GCM 固定 96 位（12 字节）；CCM 为 56-104 位（7-13 字节）
+3. **IV/nonce 唯一性**: CTR/GCM/CCM 必须保证同一密钥下 IV/nonce 不可重复
+4. **密钥保密**: 密钥必须妥善保管，泄露将导致所有加密数据不安全
+5. **模式选择**: 
+   - 敏感数据推荐使用 GCM 或 CCM 模式
    - 一般数据使用 CBC 模式
    - 避免使用 ECB 模式
-| 项目 | 说明 |
-|:--|:--|
-| 填充攻击 | 使用 PKCS7 填充时注意 padding oracle 攻击 |
-| Zero 填充 | 明文尾部若含 0x00 会丢失语义，需可逆长度或避免使用 |
-| 认证 | GCM 解密必须校验 tag，AAD 也需一致；非 GCM 模式不提供完整性保护，需额外 MAC |
+6. **填充攻击**: 使用 PKCS7 填充时注意 padding oracle 攻击
+7. **Zero 填充**: 明文尾部若含 0x00 会丢失语义，需可逆长度或避免使用
+8. **认证**: GCM/CCM 解密必须校验 tag，AAD 也需一致；非 AEAD 模式不提供完整性保护，需额外 MAC
 
-
-## 常见问题
+##  常见问题
 
 ### Q: SM4 和 AES 有什么区别？
 
@@ -650,7 +668,7 @@ A: SM4 和 AES 都是对称分组密码，主要区别：
 
 ### Q: 为什么 ECB 模式不安全？
 
-A: ECB 模式对相同的明文块总是产生相同的密文块，无法隐藏数据模式。攻击者可以通过分析密文模式获取信息。应使用 CBC 或 GCM 模式。
+A: ECB 模式对相同的明文块总是产生相同的密文块，无法隐藏数据模式。攻击者可以通过分析密文模式获取信息。应使用 CBC、GCM 或 CCM 模式。
 
 ### Q: GCM 模式的 tag 是什么？
 
@@ -659,19 +677,16 @@ A: GCM 模式的 tag（认证标签）用于验证密文完整性。解密时必
 ### Q: 如何选择分组模式？
 
 A: 推荐选择：
-| 项目 | 说明 |
-|:--|:--|
-| 敏感数据 | GCM（提供认证加密） |
-| 一般数据 | CBC（最常用） |
-| 流式数据 | CTR（支持并行） |
-| 避免 | ECB（不安全） |
-
+- **敏感数据**: GCM/CCM（提供认证加密）
+- **一般数据**: CBC（最常用）
+- **流式数据**: CTR（支持并行）
+- **避免**: ECB（不安全）
 
 ### Q: 每次加密结果都不同吗？
 
 A: 是的（除 ECB 模式外）。因为每次加密使用不同的随机 IV，即使明文相同，密文也不同。这是正常且必要的安全特性。
 
-## 性能基准
+##  性能基准
 
 在现代硬件上的性能参考（仅供参考）：
 
@@ -684,14 +699,16 @@ A: 是的（除 ECB 模式外）。因为每次加密使用不同的随机 IV，
 
 > 注: 实际性能取决于硬件配置和运行环境
 
-## 相关资源
+##  相关资源
 
 - [SM4 标准文档](http://www.gmbz.org.cn/main/viewfile/2018011001400692565.html)
 - [GB/T 32907-2016](http://www.gb688.cn/bzgk/gb/newGbInfo?hcno=7803DE42D3BC5E80B0C3E5D8E873D56A)
 - [分组密码工作模式](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation)
 
-## 相关算法
+##  相关算法
 
 - [SM2 - 椭圆曲线公钥密码算法](./SM2.md)
 - [SM3 - 密码杂凑算法](./SM3.md)
 - [ZUC - 祖冲之序列密码算法](./ZUC.md)
+
+

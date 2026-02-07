@@ -16,17 +16,6 @@ tag:
 
 # SM2 椭圆曲线公钥密码算法
 
-::: tip
-提示：本章要点
-
-- 概述
-- 快速开始
-- 加密与解密
-- 数字签名
-- 密钥交换
-:::
-
-
 ## 概述
 
 SM2 是基于 256 位椭圆曲线的公钥密码算法，覆盖**数字签名、密钥交换、公钥加密**三大能力。  
@@ -34,20 +23,14 @@ SM2 是基于 256 位椭圆曲线的公钥密码算法，覆盖**数字签名、
 
 ### 参考标准
 
-| 项目 | 说明 |
-|:--|:--|
-| GM/T 0003-2012 | SM2 椭圆曲线公钥密码算法 |
-| GM/T 0009-2023 | SM2 密码算法使用规范（替代 GM/T 0009-2012） |
-
+- **GM/T 0003-2012**: SM2 椭圆曲线公钥密码算法
+- **GM/T 0009-2023**: SM2 密码算法使用规范（替代 GM/T 0009-2012）
 
 ### 关键要点
 
-| 项目 | 说明 |
-|:--|:--|
-| 安全强度 | 256 位椭圆曲线安全级别约等于 RSA-3072 |
-| 典型用法 | SM2 加密对称密钥，SM4 处理大数据 |
-| 身份绑定 | 签名包含用户标识（userId），需严格一致 |
-
+- **安全强度**：256 位椭圆曲线安全级别约等于 RSA-3072  
+- **典型用法**：SM2 加密对称密钥，SM4 处理大数据
+- **身份绑定**：签名包含用户标识（userId），需严格一致
 
 ### 商密场景中的 SM2
 
@@ -182,7 +165,7 @@ SM2 支持数字签名和验签功能，确保数据完整性和来源可信。
 ### 基本签名
 
 ```typescript
-import { sign, verify, InputFormat, OutputFormat } from 'gmkitx';
+import { sign, verify } from 'gmkitx';
 
 const { publicKey, privateKey } = generateKeyPair();
 const message = '重要消息';
@@ -218,9 +201,7 @@ const isValid = verify(publicKey, message, signature, {
 });
 ```
 
-::: warning
-注意：如果不指定 userId，将使用默认值 `DEFAULT_USER_ID = '1234567812345678'`。如需严格对齐 GM/T 0009-2023，请显式传入 `userId: ''`。
-:::
+> **注意**: 如果不指定 userId，将使用默认值 `DEFAULT_USER_ID = '1234567812345678'`。如需严格对齐 GM/T 0009-2023，请显式传入 `userId: ''`。
 
 ### 签名格式
 
@@ -230,13 +211,13 @@ const isValid = verify(publicKey, message, signature, {
 import { sign, verify } from 'gmkitx';
 
 // DER 格式（ASN.1 编码）
-const derSig = sign(privateKey, message, { signatureFormat: 'der', outputFormat: OutputFormat.BASE64 });
+const derSig = sign(privateKey, message, { signatureFormat: 'der' });
 
 // Raw 格式（r || s，128 位十六进制）
 const rawSig = sign(privateKey, message, { signatureFormat: 'raw' });
 
-// 如需自动识别可使用 signatureFormat: 'auto'；互操作建议显式约定格式
-const ok = verify(publicKey, message, derSig, { signatureFormat: 'der', inputFormat: InputFormat.BASE64 });
+// 验签时请显式指定签名格式；如需自动识别可用 signatureFormat: 'auto'
+const ok = verify(publicKey, message, derSig, { signatureFormat: 'der' });
 ```
 
 ## 密钥交换
@@ -377,27 +358,17 @@ const results = messages.map((msg, i) =>
 
 ## 注意事项
 
-::: warning
-注意：以下内容涉及安全性、互操作或易错点，建议上线前逐条核对。
-:::
-
-| 项目 | 说明 |
-|:--|:--|
-| 私钥安全 | 私钥必须妥善保管，泄露将导致安全风险 |
-| 密钥长度 | SM2 私钥固定为 256 位（64 位十六进制） |
-| 公钥格式 |  |
-
+1. **私钥安全**: 私钥必须妥善保管，泄露将导致安全风险
+2. **密钥长度**: SM2 私钥固定为 256 位（64 位十六进制）
+3. **公钥格式**: 
    - 非压缩格式: 04 开头，130 位十六进制（65 字节）
    - 压缩格式: 02 或 03 开头，66 位十六进制（33 字节）
-| 项目 | 说明 |
-|:--|:--|
-| 用户 ID | 签名/验签必须使用相同 userId；GM/T 0009-2023 推荐 `''`，库默认仍为 `DEFAULT_USER_ID` |
-| 密文模式 | C1C3C2 与 C1C2C3 必须一致；必要时显式指定模式 |
-| 编码格式 | 输出为 hex/base64，解密端需匹配或使用自动识别 |
-| ASN.1 密文 | 如密文以 `0x30` 开头，按 ASN.1 解析；与 Java/OpenSSL 互操作时常见 |
-| 签名输入 | 默认会计算 `SM3(Z || M)`，不要自行先哈希；如需签名哈希，请使用 `skipZComputation` |
-| 大数据 | SM2 适合加密小数据；大数据请走 SM4 + SM2 混合加密 |
-
+4. **用户 ID**: 签名/验签必须使用相同 userId；GM/T 0009-2023 推荐 `''`，库默认仍为 `DEFAULT_USER_ID`
+5. **密文模式**: C1C3C2 与 C1C2C3 必须一致；必要时显式指定模式
+6. **编码格式**: 输出为 hex/base64，解密端需匹配或使用自动识别
+7. **ASN.1 密文**: 如密文以 `0x30` 开头，按 ASN.1 解析；与 Java/OpenSSL 互操作时常见
+8. **签名输入**: 默认会计算 `SM3(Z || M)`，不要自行先哈希；如需签名哈希，请使用 `skipZComputation`
+9. **大数据**: SM2 适合加密小数据；大数据请走 SM4 + SM2 混合加密
 
 ## 常见问题
 
@@ -431,3 +402,5 @@ A: 是的，gmkitx 完全支持现代浏览器环境，不需要任何 polyfill�
 
 - [SM3 - 密码杂凑算法](./SM3.md)
 - [SM4 - 分组密码算法](./SM4.md)
+
+

@@ -296,6 +296,20 @@ describe('面向对象 API 测试', () => {
       const decrypted = sm4.decrypt(encrypted);
       expect(decrypted).toBe(plaintext);
     });
+
+    it('应该能够使用 CCM 工厂方法创建', () => {
+      const nonce = '00112233445566778899aabb';
+      const sm4 = SM4.CCM(key, nonce);
+      const plaintext = 'Hello, CCM!';
+      const aad = 'oop-ccm';
+
+      expect(sm4.getMode()).toBe(CipherMode.CCM);
+      const encrypted = sm4.encrypt(plaintext, { aad, tagLength: 16 });
+      expect(encrypted.tag).toMatch(/^[0-9a-f]+$/);
+      const decrypted = sm4.decrypt(encrypted, { aad });
+      expect(decrypted).toBe(plaintext);
+      expect(() => sm4.decrypt(encrypted, { aad: 'wrong-aad' })).toThrow('Authentication tag verification failed');
+    });
   });
 
   describe('ZUC 流密码', () => {

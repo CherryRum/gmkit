@@ -64,7 +64,7 @@ export type PaddingModeType = typeof PaddingMode[keyof typeof PaddingMode];
  *
  * 认证加密模式 (Authenticated Encryption with Associated Data modes):
  * - GCM: 伽罗瓦/计数器模式 - 提供加密和认证 (Galois/Counter Mode - provides encryption and authentication)
- * - CCM: 计数器与CBC-MAC模式 - 提供加密和认证 (Counter with CBC-MAC - provides encryption and authentication) [计划中 Planned]
+ * - CCM: 计数器与CBC-MAC模式 - 提供加密和认证 (Counter with CBC-MAC - provides encryption and authentication)
  *
  * 磁盘加密模式 (Disk encryption modes):
  * - XTS: 可调密码本模式 - 用于磁盘加密 (XEX-based tweaked-codebook mode - for disk encryption) [计划中 Planned]
@@ -76,6 +76,7 @@ export const CipherMode = {
   CFB: 'cfb',
   OFB: 'ofb',
   GCM: 'gcm',
+  CCM: 'ccm',
 } as const;
 
 export type CipherModeType = typeof CipherMode[keyof typeof CipherMode];

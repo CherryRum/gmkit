@@ -87,6 +87,7 @@ export default defineUserConfig({
           { text: 'Python 对接指南', link: '/dev/PYTHON-INTEGRATION.zh-CN' },
           { text: 'Rust 对接指南', link: '/dev/RUST-INTEGRATION.zh-CN' },
           { text: '国际算法使用', link: '/dev/INTERNATIONAL-ALGORITHMS.zh-CN' },
+          { text: '项目精简清单', link: '/dev/PROJECT-SLIMMING-CHECKLIST.zh-CN' },
         ],
       },
       {
@@ -134,6 +135,7 @@ export default defineUserConfig({
           '/dev/RUST-INTEGRATION.zh-CN',
           '/dev/INTERNATIONAL-ALGORITHMS.zh-CN',
           '/dev/PUBLISHING',
+          '/dev/PROJECT-SLIMMING-CHECKLIST.zh-CN',
         ],
       },
       ],

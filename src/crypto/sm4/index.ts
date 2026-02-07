@@ -12,44 +12,32 @@
  * - 分组长度：128 位（16 字节）
  * - 密钥长度：128 位（16 字节）
  * - 轮数：32 轮
- * - 支持多种工作模式：ECB、CBC、CTR、CFB、OFB、GCM
+ * - 支持多种工作模式：ECB、CBC、CTR、CFB、OFB、GCM、CCM
  */
 
 import {
   normalizeInput,
   hexToBytes,
   decodeInput,
+  autoDecodeString,
   encodeOutput,
   bytesToString,
   xor,
   bytes4ToUint32BE,
   uint32ToBytes4BE,
-  constantTimeEqual,
-  isHexString,
   type BytesLike
 } from '../../core/utils';
 import {
   PaddingMode,
   CipherMode,
   OutputFormat,
-  InputFormat,
   type PaddingModeType,
   type CipherModeType,
   type OutputFormatType,
   type InputFormatType
 } from '../../types/constants';
 
-/**
- * SM4 S盒（置换盒）
- * 
- * S盒是 SM4 算法中的核心非线性部件，提供密码学混淆特性。
- * 它将 8 位输入映射到 8 位输出，确保加密过程的非线性。
- * 
- * 特点：
- * - 输入/输出：8 位
- * - 全表实现：256 个项目
- * - 具有良好的差分特性和线性特性
- */
+// SM4 S盒（置换盒）- 用于非线性变换
 const SBOX: number[] = [
   0xd6, 0x90, 0xe9, 0xfe, 0xcc, 0xe1, 0x3d, 0xb7, 0x16, 0xb6, 0x14, 0xc2, 0x28, 0xfb, 0x2c, 0x05,
   0x2b, 0x67, 0x9a, 0x76, 0x2a, 0xbe, 0x04, 0xc3, 0xaa, 0x44, 0x13, 0x26, 0x49, 0x86, 0x06, 0x99,
@@ -69,22 +57,10 @@ const SBOX: number[] = [
   0x18, 0xf0, 0x7d, 0xec, 0x3a, 0xdc, 0x4d, 0x20, 0x79, 0xee, 0x5f, 0x3e, 0xd7, 0xcb, 0x39, 0x48,
 ];
 
-/**
- * 系统参数 FK
- * 
- * 用于密钥扩展的初始化，与主密钥进行异或运算。
- * 这些是固定的常量，由标准定义。
- */
+// 系统参数 FK
 const FK: number[] = [0xa3b1bac6, 0x56aa3350, 0x677d9197, 0xb27022dc];
 
-/**
- * 固定参数 CK
- * 
- * 用于密钥扩展过程中的各轮运算。
- * CK[i] 的生成规则：
- * CK[i] = (CK[i,0], CK[i,1], CK[i,2], CK[i,3])
- * 其中 CK[i,j] = (4i + j) mod 256
- */
+// 固定参数 CK - 用于密钥扩展
 const CK: number[] = [];
 for (let i = 0; i < 32; i++) {
   CK[i] =
@@ -95,27 +71,14 @@ for (let i = 0; i < 32; i++) {
 }
 
 /**
- * 循环左移（Rotate Left）
- * 
- * 将 32 位无符号整数左移指定位数，高位移出的位补到低位。
- * 
- * @param value - 要旋转的 32 位整数
- * @param shift - 左移位数（0-31）
- * @returns 左移后的结果
+ * 循环左移
  */
 function rotl(value: number, shift: number): number {
   return ((value << shift) | (value >>> (32 - shift))) >>> 0;
 }
 
 /**
- * GCM 模式下的 GHASH 计算
- * 
- * GHASH 是 GCM 模式的核心认证组件，基于 GF(2^128) 中的多项式乘法。
- * 它为附加认证数据（AAD）和密文提供认证。
- * 
- * @param h - 认证密钥 H = E(K, 0^128)
- * @param data - 要认证的数据（已填充到 16 字节块大小）
- * @returns 128 位的 GHASH 结果
+ * GCM 模式下的伽罗瓦域乘法（GF(2^128)）
  */
 function ghash(h: Uint8Array, data: Uint8Array): Uint8Array {
   const result = new Uint8Array(16);
@@ -137,16 +100,7 @@ function ghash(h: Uint8Array, data: Uint8Array): Uint8Array {
 }
 
 /**
- * GF(2^128) 中的乘法运算
- * 
- * 伽罗华域 GF(2^128) 中的多项式乘法，使用不可约多项式：
- * R(x) = x^128 + x^7 + x^2 + x + 1
- * 
- * 这个运算是 GCM 模式安全性的基础。
- * 
- * @param x - 第一个操作数（128 位）
- * @param y - 第二个操作数（128 位）
- * @returns 乘法结果（128 位）
+ * 伽罗瓦域乘法（用于 GCM 模式）
  */
 function gfMul(x: Uint8Array, y: Uint8Array): Uint8Array {
   const result = new Uint8Array(16);
@@ -180,12 +134,7 @@ function gfMul(x: Uint8Array, y: Uint8Array): Uint8Array {
 }
 
 /**
- * GCM 模式的计数器递增
- * 
- * 按照 NIST SP 800-38D 规范，仅递增计数器块的最右侧 32 位。
- * 这允许在不影响前 96 位（nonce）的情况下递增计数器。
- * 
- * @param counter - 要递增的 128 位计数器块（就地修改）
+ * GCM 模式的计数器递增（最右侧 32 位计数器）
  */
 function incrementGCMCounter(counter: Uint8Array): void {
   // 按大端方式递增最右侧的 32 位计数器
@@ -195,13 +144,152 @@ function incrementGCMCounter(counter: Uint8Array): void {
 }
 
 /**
- * 非线性变换 τ（tau）
- * 
- * 使用 S 盒对 32 位字的每个字节进行独立替换。
- * 这是 SM4 算法中唯一的非线性操作。
- * 
- * @param a - 32 位输入字
- * @returns 32 位输出字
+ * 常数时间比较，避免基于短路的时序差异
+ */
+function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a[i] ^ b[i];
+  }
+  return diff === 0;
+}
+
+/**
+ * 以大端方式写入固定字节长度的整数
+ */
+function writeBigEndianLength(value: number, out: Uint8Array, offset: number, length: number): void {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new Error('Length must be a non-negative safe integer');
+  }
+  let x = BigInt(value);
+  for (let i = length - 1; i >= 0; i--) {
+    out[offset + i] = Number(x & 0xffn);
+    x >>= 8n;
+  }
+  if (x > 0n) {
+    throw new Error('Length does not fit in requested field size');
+  }
+}
+
+/**
+ * 将任意长度数据补齐为 16 字节块边界（零填充）
+ */
+function padToBlock16(data: Uint8Array): Uint8Array {
+  if (data.length === 0) {
+    return data;
+  }
+  const padded = new Uint8Array(Math.ceil(data.length / 16) * 16);
+  padded.set(data);
+  return padded;
+}
+
+/**
+ * CCM: 编码 AAD 长度前缀并拼接 AAD
+ * 参考 NIST SP 800-38C
+ */
+function encodeCCMAad(aad: Uint8Array): Uint8Array {
+  if (aad.length === 0) {
+    return new Uint8Array(0);
+  }
+
+  let prefix: Uint8Array;
+  if (aad.length < 0xff00) {
+    prefix = new Uint8Array(2);
+    writeBigEndianLength(aad.length, prefix, 0, 2);
+  } else if (aad.length <= 0xffffffff) {
+    prefix = new Uint8Array(6);
+    prefix[0] = 0xff;
+    prefix[1] = 0xfe;
+    writeBigEndianLength(aad.length, prefix, 2, 4);
+  } else {
+    prefix = new Uint8Array(10);
+    prefix[0] = 0xff;
+    prefix[1] = 0xff;
+    writeBigEndianLength(aad.length, prefix, 2, 8);
+  }
+
+  const out = new Uint8Array(prefix.length + aad.length);
+  out.set(prefix, 0);
+  out.set(aad, prefix.length);
+  return out;
+}
+
+/**
+ * CCM: 生成计数器块 Ai
+ */
+function buildCCMCounterBlock(nonce: Uint8Array, qLength: number, counter: number): Uint8Array {
+  const block = new Uint8Array(16);
+  block[0] = qLength - 1;
+  block.set(nonce, 1);
+  writeBigEndianLength(counter, block, 16 - qLength, qLength);
+  return block;
+}
+
+/**
+ * CCM: 计算 CBC-MAC
+ */
+function computeCCMMac(
+  roundKeys: number[],
+  nonce: Uint8Array,
+  plaintext: Uint8Array,
+  aad: Uint8Array,
+  tagLength: number,
+  qLength: number
+): Uint8Array {
+  const flags =
+    (aad.length > 0 ? 0x40 : 0) |
+    (((tagLength - 2) / 2) << 3) |
+    (qLength - 1);
+
+  const b0 = new Uint8Array(16);
+  b0[0] = flags;
+  b0.set(nonce, 1);
+  writeBigEndianLength(plaintext.length, b0, 16 - qLength, qLength);
+
+  let mac = encryptBlock(b0, roundKeys);
+
+  const processBlocks = (input: Uint8Array): void => {
+    if (input.length === 0) return;
+    const padded = padToBlock16(input);
+    for (let i = 0; i < padded.length; i += 16) {
+      const mixed = new Uint8Array(16);
+      for (let j = 0; j < 16; j++) {
+        mixed[j] = mac[j] ^ padded[i + j];
+      }
+      mac = encryptBlock(mixed, roundKeys);
+    }
+  };
+
+  processBlocks(encodeCCMAad(aad));
+  processBlocks(plaintext);
+
+  return mac;
+}
+
+/**
+ * CCM: CTR 加解密（同一逻辑）
+ */
+function ccmCtrCrypt(roundKeys: number[], nonce: Uint8Array, qLength: number, input: Uint8Array): Uint8Array {
+  const out = new Uint8Array(input.length);
+  let counter = 1;
+
+  for (let i = 0; i < input.length; i += 16) {
+    const stream = encryptBlock(buildCCMCounterBlock(nonce, qLength, counter), roundKeys);
+    const blockSize = Math.min(16, input.length - i);
+    for (let j = 0; j < blockSize; j++) {
+      out[i + j] = input[i + j] ^ stream[j];
+    }
+    counter++;
+  }
+
+  return out;
+}
+
+/**
+ * 非线性变换 τ - 使用 S盒进行字节替换
  */
 function tau(a: number): number {
   return (
@@ -213,70 +301,35 @@ function tau(a: number): number {
 }
 
 /**
- * 线性变换 L
- * 
- * 用于加密变换，通过多次循环左移和异或运算提供扩散性。
- * L(B) = B ⊕ (B <<< 2) ⊕ (B <<< 10) ⊕ (B <<< 18) ⊕ (B <<< 24)
- * 
- * @param b - 32 位输入
- * @returns 32 位输出
+ * 线性变换 L - 用于加密变换
  */
 function l(b: number): number {
   return (b ^ rotl(b, 2) ^ rotl(b, 10) ^ rotl(b, 18) ^ rotl(b, 24)) >>> 0;
 }
 
 /**
- * 线性变换 L'
- * 
- * 用于密钥扩展，与加密变换的 L 不同。
- * L'(B) = B ⊕ (B <<< 13) ⊕ (B <<< 23)
- * 
- * @param b - 32 位输入
- * @returns 32 位输出
+ * 线性变换 L' - 用于密钥扩展
  */
 function lPrime(b: number): number {
   return (b ^ rotl(b, 13) ^ rotl(b, 23)) >>> 0;
 }
 
 /**
- * 合成置换 T
- * 
- * 加密轮函数的核心转换，组合非线性变换和线性变换。
- * T(A) = L(τ(A))
- * 
- * @param a - 32 位输入
- * @returns 32 位输出
+ * 合成置换 T - 加密轮函数
  */
 function t(a: number): number {
   return l(tau(a));
 }
 
 /**
- * 合成置换 T'
- * 
- * 密钥扩展的核心转换，组合非线性变换和线性变换 L'。
- * T'(A) = L'(τ(A))
- * 
- * @param a - 32 位输入
- * @returns 32 位输出
+ * 合成置换 T' - 密钥扩展函数
  */
 function tPrime(a: number): number {
   return lPrime(tau(a));
 }
 
 /**
- * 密钥扩展算法
- * 
- * 从 128 位主密钥生成 32 个 32 位轮密钥。
- * 每个轮密钥用于一轮加密操作。
- * 
- * 扩展过程：
- * 1. 将主密钥 MK 分成 4 个 32 位字
- * 2. 与系统参数 FK 异或得到初始值
- * 3. 通过 32 轮迭代生成轮密钥
- * 
- * @param key - 128 位主密钥（16 字节）
- * @returns 32 个轮密钥的数组
+ * 密钥扩展 - 从主密钥生成轮密钥
  */
 function expandKey(key: Uint8Array): number[] {
   const mk: number[] = [];
@@ -300,14 +353,7 @@ function expandKey(key: Uint8Array): number[] {
 }
 
 /**
- * 加密单个数据块
- * 
- * 对 128 位（16 字节）的明文块执行 32 轮加密。
- * 每轮使用一个轮密钥和 T 变换。
- * 
- * @param input - 128 位明文块
- * @param roundKeys - 32 个轮密钥
- * @returns 128 位密文块
+ * 加密单个数据块（128 位）
  */
 function encryptBlock(input: Uint8Array, roundKeys: number[]): Uint8Array {
   const x: number[] = [];
@@ -329,49 +375,11 @@ function encryptBlock(input: Uint8Array, roundKeys: number[]): Uint8Array {
 }
 
 /**
- * 解密单个数据块
- * 
- * SM4 是 Feistel 结构的变体，解密和加密使用相同的算法，
- * 只是轮密钥的使用顺序相反。
- * 
- * @param input - 128 位密文块
- * @param reversedKeys - 逆序的轮密钥
- * @returns 128 位明文块
+ * 解密单个数据块（128 位）
  */
-function decryptBlock(input: Uint8Array, reversedKeys: number[]): Uint8Array {
+function decryptBlock(input: Uint8Array, roundKeys: number[]): Uint8Array {
+  const reversedKeys = roundKeys.slice().reverse();
   return encryptBlock(input, reversedKeys);
-}
-
-/**
- * 规范化十六进制输入
- * 
- * 将字符串或字节数组转换为标准化的字节数组，
- * 并验证长度是否符合要求。
- * 
- * @param label - 参数名称（用于错误消息）
- * @param value - 输入值（十六进制字符串或 Uint8Array）
- * @param expectedBytes - 期望的字节长度
- * @returns 规范化后的字节数组
- */
-function normalizeHexInput(label: string, value: string | Uint8Array, expectedBytes: number): Uint8Array {
-  if (value instanceof Uint8Array) {
-    if (value.length !== expectedBytes) {
-      throw new Error(`${label} must be ${expectedBytes} bytes (${expectedBytes * 2} hex characters)`);
-    }
-    return value;
-  }
-
-  let cleaned = value.trim();
-  if (cleaned.startsWith('0x') || cleaned.startsWith('0X')) {
-    cleaned = cleaned.slice(2);
-  }
-  if (!isHexString(cleaned)) {
-    throw new Error(`${label} must be a hexadecimal string`);
-  }
-  if (cleaned.length !== expectedBytes * 2) {
-    throw new Error(`${label} must be ${expectedBytes} bytes (${expectedBytes * 2} hex characters)`);
-  }
-  return hexToBytes(cleaned);
 }
 
 /**
@@ -401,26 +409,14 @@ function pkcs7Pad(data: Uint8Array, blockSize: number): Uint8Array {
  * @returns 去除填充后的数据 (Unpadded data)
  */
 function pkcs7Unpad(data: Uint8Array): Uint8Array {
-  if (data.length === 0 || data.length % 16 !== 0) {
-    throw new Error('Invalid padding');
-  }
-
   const padding = data[data.length - 1];
-  let invalid = 0;
   if (padding < 1 || padding > 16) {
-    invalid = 1;
-  }
-
-  // 常量时间检查最后 16 字节
-  let diff = 0;
-  for (let i = 1; i <= 16; i++) {
-    const byte = data[data.length - i];
-    const mask = i <= padding ? 0xff : 0x00;
-    diff |= mask & (byte ^ padding);
-  }
-
-  if (invalid || diff !== 0) {
     throw new Error('Invalid padding');
+  }
+  for (let i = data.length - padding; i < data.length; i++) {
+    if (data[i] !== padding) {
+      throw new Error('Invalid padding');
+    }
   }
   return data.slice(0, data.length - padding);
 }
@@ -475,6 +471,7 @@ export interface SM4Options {
    * - CFB: 密文反馈模式，需要IV，无需填充 (Cipher Feedback, IV required, no padding)
    * - OFB: 输出反馈模式，需要IV，无需填充 (Output Feedback, IV required, no padding)
    * - GCM: 伽罗瓦/计数器模式，需要IV，无需填充，提供认证 (Galois/Counter Mode, IV required, no padding, provides authentication)
+   * - CCM: 计数器与 CBC-MAC 模式，需要 nonce，无需填充，提供认证 (Counter with CBC-MAC, nonce required, no padding, provides authentication)
    *
    * 默认: ECB (Default: ECB)
    */
@@ -499,17 +496,20 @@ export interface SM4Options {
    * 初始化向量
    * - CBC/CTR/CFB/OFB：16 字节（32 个十六进制字符）
    * - GCM：12 字节（24 个十六进制字符）
+   * - CCM：7-13 字节（14-26 个十六进制字符，建议 12 字节）
    * - ECB：不需要 IV
    */
   iv?: BytesLike;
 
   /**
-   * GCM 模式的附加认证数据，可使用字符串或 Uint8Array
+   * GCM/CCM 模式的附加认证数据，可使用字符串或 Uint8Array
    */
   aad?: string | Uint8Array;
 
   /**
-   * GCM 模式的认证标签长度，范围 12-16 字节，默认 16 字节
+   * 认证标签长度
+   * - GCM: 12-16 字节，默认 16
+   * - CCM: 4-16 字节（必须为偶数），默认 16
    */
   tagLength?: number;
 
@@ -544,22 +544,26 @@ export interface SM4CipherResult {
 }
 
 export type SM4GCMResult = SM4CipherResult;
+export type SM4CCMResult = SM4CipherResult;
+export type SM4AEADResult = SM4CipherResult;
 
 export interface SM4DecryptOptions extends SM4Options {
   /**
    * 输入格式（用于密文与标签为字符串时）
-   * - hex（默认）
+   * - hex
    * - base64
+   *
+   * 不传时会自动识别 hex/base64（优先按 hex 识别）
    */
   inputFormat?: InputFormatType;
 
   /**
-   * GCM 模式下的认证标签（可单独传入）
+   * GCM/CCM 模式下的认证标签（可单独传入）
    */
   tag?: BytesLike;
 
   /**
-   * 认证标签格式（默认与 inputFormat 一致）
+   * 认证标签格式（默认自动识别；传入则按指定格式解码）
    */
   tagFormat?: InputFormatType;
 }
@@ -575,6 +579,7 @@ export interface SM4DecryptOptions extends SM4Options {
  * - CFB: 密文反馈模式 (Cipher Feedback) - 流密码模式，需要IV (Stream mode, requires IV)
  * - OFB: 输出反馈模式 (Output Feedback) - 流密码模式，需要IV (Stream mode, requires IV)
  * - GCM: 伽罗瓦/计数器模式 (Galois/Counter Mode) - 认证加密，需要IV (AEAD mode, requires IV)
+ * - CCM: 计数器与 CBC-MAC 模式 (Counter with CBC-MAC) - 认证加密，需要 nonce (AEAD mode, requires nonce)
  *
  * 支持的填充模式 (Supported padding modes):
  * - PKCS7: PKCS#7 填充 (PKCS#7 padding) - 默认 (Default)
@@ -607,13 +612,16 @@ export function encrypt(
   const mode = (options?.mode || CipherMode.ECB).toLowerCase();
   const padding = (options?.padding || PaddingMode.PKCS7).toLowerCase();
 
-  const keyBytes = normalizeHexInput('SM4 key', key, 16);
+  const keyBytes = key instanceof Uint8Array ? key : hexToBytes(key);
+  if (keyBytes.length !== 16) {
+    throw new Error('SM4 key must be 16 bytes (32 hex characters)');
+  }
 
   let dataBytes = normalizeInput(data);
 
-  // Stream cipher modes (CTR, CFB, OFB, GCM) don't require padding
-  // 流密码模式（CTR、CFB、OFB、GCM）不需要填充
-  const isStreamMode = mode === 'ctr' || mode === 'cfb' || mode === 'ofb' || mode === 'gcm';
+  // Stream/AEAD modes (CTR, CFB, OFB, GCM, CCM) don't use block padding
+  // 流密码/AEAD 模式（CTR、CFB、OFB、GCM、CCM）不使用分组填充
+  const isStreamMode = mode === 'ctr' || mode === 'cfb' || mode === 'ofb' || mode === 'gcm' || mode === 'ccm';
 
   // 应用填充 (Apply padding)
   if (!isStreamMode) {
@@ -638,7 +646,7 @@ export function encrypt(
 
   if (mode === 'ecb') {
     for (let i = 0; i < dataBytes.length; i += 16) {
-      const block = dataBytes.subarray(i, i + 16);
+      const block = dataBytes.slice(i, i + 16);
       const encrypted = encryptBlock(block, roundKeys);
       result.set(encrypted, i);
     }
@@ -646,10 +654,13 @@ export function encrypt(
     if (!options?.iv) {
       throw new Error('IV is required for CBC mode');
     }
-    let ivBytes = normalizeHexInput('IV', options.iv, 16);
+    let ivBytes = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    if (ivBytes.length !== 16) {
+      throw new Error('IV must be 16 bytes (32 hex characters)');
+    }
 
     for (let i = 0; i < dataBytes.length; i += 16) {
-      const block = dataBytes.subarray(i, i + 16);
+      const block = dataBytes.slice(i, i + 16);
       const xored = xor(block, ivBytes);
       const encrypted = encryptBlock(xored, roundKeys);
       result.set(encrypted, i);
@@ -659,7 +670,10 @@ export function encrypt(
     if (!options?.iv) {
       throw new Error('IV (nonce/counter) is required for CTR mode');
     }
-    const counter = normalizeHexInput('IV', options.iv, 16);
+    const counter = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    if (counter.length !== 16) {
+      throw new Error('IV must be 16 bytes (32 hex characters)');
+    }
 
     const counterBlock = new Uint8Array(counter);
     for (let i = 0; i < dataBytes.length; i += 16) {
@@ -677,7 +691,10 @@ export function encrypt(
     if (!options?.iv) {
       throw new Error('IV is required for CFB mode');
     }
-    let shift = normalizeHexInput('IV', options.iv, 16);
+    let shift = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    if (shift.length !== 16) {
+      throw new Error('IV must be 16 bytes (32 hex characters)');
+    }
 
     for (let i = 0; i < dataBytes.length; i += 16) {
       const keystream = encryptBlock(shift, roundKeys);
@@ -693,7 +710,10 @@ export function encrypt(
     if (!options?.iv) {
       throw new Error('IV is required for OFB mode');
     }
-    let shift = normalizeHexInput('IV', options.iv, 16);
+    let shift = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    if (shift.length !== 16) {
+      throw new Error('IV must be 16 bytes (32 hex characters)');
+    }
 
     for (let i = 0; i < dataBytes.length; i += 16) {
       shift = encryptBlock(shift, roundKeys);
@@ -707,7 +727,10 @@ export function encrypt(
     if (!options?.iv) {
       throw new Error('IV is required for GCM mode');
     }
-    const ivBytes = normalizeHexInput('IV', options.iv, 12);
+    const ivBytes = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    if (ivBytes.length !== 12) {
+      throw new Error('IV must be 12 bytes (24 hex characters) for GCM mode');
+    }
 
     const tagLength = options.tagLength || 16; // 默认生成 128 位标签
     if (tagLength < 12 || tagLength > 16) {
@@ -780,6 +803,48 @@ export function encrypt(
       tag: encodeOutput(tag, outputFormat),
       format: outputFormat,
     };
+  } else if (mode === 'ccm') {
+    // CCM 模式：CTR + CBC-MAC 认证加密
+    if (!options?.iv) {
+      throw new Error('Nonce is required for CCM mode');
+    }
+
+    const nonceBytes = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    if (nonceBytes.length < 7 || nonceBytes.length > 13) {
+      throw new Error('Nonce must be 7-13 bytes (14-26 hex characters) for CCM mode');
+    }
+
+    const qLength = 15 - nonceBytes.length;
+    const maxMessageLength = (1n << BigInt(8 * qLength)) - 1n;
+    if (BigInt(dataBytes.length) > maxMessageLength) {
+      throw new Error(`Plaintext too long for CCM nonce size (max ${maxMessageLength.toString()} bytes)`);
+    }
+
+    const tagLength = options.tagLength || 16;
+    if (tagLength < 4 || tagLength > 16 || tagLength % 2 !== 0) {
+      throw new Error('CCM tag length must be an even value between 4 and 16 bytes');
+    }
+
+    let aadBytes: Uint8Array = new Uint8Array(0);
+    if (options.aad) {
+      aadBytes = typeof options.aad === 'string' ? normalizeInput(options.aad) : new Uint8Array(options.aad);
+    }
+
+    const mac = computeCCMMac(roundKeys, nonceBytes, dataBytes, aadBytes, tagLength, qLength);
+    const s0 = encryptBlock(buildCCMCounterBlock(nonceBytes, qLength, 0), roundKeys);
+    const ciphertext = ccmCtrCrypt(roundKeys, nonceBytes, qLength, dataBytes);
+
+    const tag = new Uint8Array(tagLength);
+    for (let i = 0; i < tagLength; i++) {
+      tag[i] = mac[i] ^ s0[i];
+    }
+
+    const outputFormat = options?.outputFormat || OutputFormat.HEX;
+    return {
+      ciphertext: encodeOutput(ciphertext, outputFormat),
+      tag: encodeOutput(tag, outputFormat),
+      format: outputFormat,
+    };
   } else {
     throw new Error(`Unsupported cipher mode: ${mode}`);
   }
@@ -802,6 +867,7 @@ export function encrypt(
  * - CFB: 密文反馈模式 (Cipher Feedback) - 流密码模式，需要IV (Stream mode, requires IV)
  * - OFB: 输出反馈模式 (Output Feedback) - 流密码模式，需要IV (Stream mode, requires IV)
  * - GCM: 伽罗瓦/计数器模式 (Galois/Counter Mode) - 认证加密，需要IV和tag (AEAD mode, requires IV and tag)
+ * - CCM: 计数器与 CBC-MAC 模式 (Counter with CBC-MAC) - 认证加密，需要 nonce 和 tag (AEAD mode, requires nonce and tag)
  *
  * 支持的填充模式 (Supported padding modes):
  * - PKCS7: PKCS#7 填充 (PKCS#7 padding) - 默认 (Default)
@@ -810,10 +876,10 @@ export function encrypt(
  *
  * @param key - 解密密钥（十六进制字符串，32 个字符 = 16 字节）
  *              Decryption key (hex string, 32 chars = 16 bytes)
- * @param encryptedData - 加密的数据（十六进制字符串或GCM结果对象）
- *                        Encrypted data (hex string or GCM result object)
- * @param options - 解密选项（模式、填充、IV、tag用于GCM）
- *                  Decryption options (mode, padding, IV, tag for GCM)
+ * @param encryptedData - 加密的数据（十六进制字符串或 AEAD 结果对象）
+ *                        Encrypted data (hex string or AEAD result object)
+ * @param options - 解密选项（模式、填充、IV、tag用于 GCM/CCM）
+ *                  Decryption options (mode, padding, IV, tag for GCM/CCM)
  * @returns 解密后的数据（UTF-8 字符串）
  *          Decrypted data (UTF-8 string)
  *
@@ -833,24 +899,33 @@ export function decrypt(
   const mode = (options?.mode || CipherMode.ECB).toLowerCase();
   const padding = (options?.padding || PaddingMode.PKCS7).toLowerCase();
 
-  const keyBytes = normalizeHexInput('SM4 key', key, 16);
+  const keyBytes = key instanceof Uint8Array ? key : hexToBytes(key);
+  if (keyBytes.length !== 16) {
+    throw new Error('SM4 key must be 16 bytes (32 hex characters)');
+  }
 
-  // 处理带有认证标签的 GCM 密文
+  const decodeWithOptionalFormat = (input: BytesLike, format?: InputFormatType): Uint8Array => {
+    if (input instanceof Uint8Array) return input;
+    if (format) return decodeInput(input, format);
+    return autoDecodeString(input);
+  };
+
+  // 处理带有认证标签的 AEAD 密文（GCM / CCM）
   let ciphertextInput: BytesLike;
   let authTag: Uint8Array | undefined;
 
-  if (mode === 'gcm') {
+  if (mode === 'gcm' || mode === 'ccm') {
     if (typeof encryptedData === 'object' && 'ciphertext' in encryptedData) {
       ciphertextInput = encryptedData.ciphertext;
       if (!encryptedData.tag) {
-        throw new Error('GCM mode requires authentication tag');
+        throw new Error(`${mode.toUpperCase()} mode requires authentication tag`);
       }
-      authTag = decodeInput(encryptedData.tag, encryptedData.format || InputFormat.HEX);
+      authTag = decodeWithOptionalFormat(encryptedData.tag, encryptedData.format);
     } else if ((typeof encryptedData === 'string' || encryptedData instanceof Uint8Array) && options?.tag) {
       ciphertextInput = encryptedData;
-      authTag = decodeInput(options.tag, options.tagFormat || options.inputFormat || InputFormat.HEX);
+      authTag = decodeWithOptionalFormat(options.tag, options.tagFormat || options.inputFormat);
     } else {
-      throw new Error('GCM mode requires authentication tag');
+      throw new Error(`${mode.toUpperCase()} mode requires authentication tag`);
     }
   } else {
     ciphertextInput = typeof encryptedData === 'object' && 'ciphertext' in encryptedData
@@ -859,34 +934,36 @@ export function decrypt(
   }
 
   const dataBytes = typeof encryptedData === 'object' && 'ciphertext' in encryptedData
-    ? decodeInput(ciphertextInput, encryptedData.format || InputFormat.HEX)
-    : decodeInput(ciphertextInput, options?.inputFormat || InputFormat.HEX);
+    ? decodeWithOptionalFormat(ciphertextInput, encryptedData.format)
+    : decodeWithOptionalFormat(ciphertextInput, options?.inputFormat);
   
   // 流模式下的数据长度不必是块大小的整数倍
-  const isStreamMode = mode === 'ctr' || mode === 'cfb' || mode === 'ofb' || mode === 'gcm';
+  const isStreamMode = mode === 'ctr' || mode === 'cfb' || mode === 'ofb' || mode === 'gcm' || mode === 'ccm';
   if (!isStreamMode && dataBytes.length % 16 !== 0) {
     throw new Error('Encrypted data length must be multiple of 16 bytes');
   }
 
   const roundKeys = expandKey(keyBytes);
-  const decryptRoundKeys = roundKeys.slice().reverse();
   const result = new Uint8Array(dataBytes.length);
 
   if (mode === 'ecb') {
     for (let i = 0; i < dataBytes.length; i += 16) {
-      const block = dataBytes.subarray(i, i + 16);
-      const decrypted = decryptBlock(block, decryptRoundKeys);
+      const block = dataBytes.slice(i, i + 16);
+      const decrypted = decryptBlock(block, roundKeys);
       result.set(decrypted, i);
     }
   } else if (mode === 'cbc') {
     if (!options?.iv) {
       throw new Error('IV is required for CBC mode');
     }
-    let ivBytes = normalizeHexInput('IV', options.iv, 16);
+    let ivBytes = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    if (ivBytes.length !== 16) {
+      throw new Error('IV must be 16 bytes (32 hex characters)');
+    }
 
     for (let i = 0; i < dataBytes.length; i += 16) {
-      const block = dataBytes.subarray(i, i + 16);
-      const decrypted = decryptBlock(block, decryptRoundKeys);
+      const block = dataBytes.slice(i, i + 16);
+      const decrypted = decryptBlock(block, roundKeys);
       const xored = xor(decrypted, ivBytes);
       result.set(xored, i);
       ivBytes = block;
@@ -896,7 +973,10 @@ export function decrypt(
     if (!options?.iv) {
       throw new Error('IV (nonce/counter) is required for CTR mode');
     }
-    const counter = normalizeHexInput('IV', options.iv, 16);
+    const counter = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    if (counter.length !== 16) {
+      throw new Error('IV must be 16 bytes (32 hex characters)');
+    }
 
     const counterBlock = new Uint8Array(counter);
     for (let i = 0; i < dataBytes.length; i += 16) {
@@ -914,7 +994,10 @@ export function decrypt(
     if (!options?.iv) {
       throw new Error('IV is required for CFB mode');
     }
-    let shift = normalizeHexInput('IV', options.iv, 16);
+    let shift = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    if (shift.length !== 16) {
+      throw new Error('IV must be 16 bytes (32 hex characters)');
+    }
 
     for (let i = 0; i < dataBytes.length; i += 16) {
       const keystream = encryptBlock(shift, roundKeys);
@@ -931,7 +1014,10 @@ export function decrypt(
     if (!options?.iv) {
       throw new Error('IV is required for OFB mode');
     }
-    let shift = normalizeHexInput('IV', options.iv, 16);
+    let shift = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    if (shift.length !== 16) {
+      throw new Error('IV must be 16 bytes (32 hex characters)');
+    }
 
     for (let i = 0; i < dataBytes.length; i += 16) {
       shift = encryptBlock(shift, roundKeys);
@@ -948,11 +1034,11 @@ export function decrypt(
     if (!authTag) {
       throw new Error('Authentication tag is required for GCM mode');
     }
-    if (authTag.length < 12 || authTag.length > 16) {
-      throw new Error('Invalid GCM tag length');
-    }
 
-    const ivBytes = normalizeHexInput('IV', options.iv, 12);
+    const ivBytes = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    if (ivBytes.length !== 12) {
+      throw new Error('IV must be 12 bytes (24 hex characters) for GCM mode');
+    }
 
     // 计算 H = E(K, 0^128)
     const h = encryptBlock(new Uint8Array(16), roundKeys);
@@ -1002,7 +1088,7 @@ export function decrypt(
 
     // 以常数时间比较方式校验认证标签
     if (!constantTimeEqual(authTag, expectedTag)) {
-      throw new Error('Decryption failed');
+      throw new Error('Authentication tag verification failed');
     }
 
     // 使用 CTR 模式解密密文
@@ -1017,6 +1103,50 @@ export function decrypt(
       }
       incrementGCMCounter(counterBlock);
     }
+  } else if (mode === 'ccm') {
+    // CCM 模式：CTR + CBC-MAC 认证解密
+    if (!options?.iv) {
+      throw new Error('Nonce is required for CCM mode');
+    }
+    if (!authTag) {
+      throw new Error('Authentication tag is required for CCM mode');
+    }
+
+    const nonceBytes = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    if (nonceBytes.length < 7 || nonceBytes.length > 13) {
+      throw new Error('Nonce must be 7-13 bytes (14-26 hex characters) for CCM mode');
+    }
+
+    if (authTag.length < 4 || authTag.length > 16 || authTag.length % 2 !== 0) {
+      throw new Error('CCM tag length must be an even value between 4 and 16 bytes');
+    }
+
+    const qLength = 15 - nonceBytes.length;
+    const maxMessageLength = (1n << BigInt(8 * qLength)) - 1n;
+    if (BigInt(dataBytes.length) > maxMessageLength) {
+      throw new Error(`Ciphertext too long for CCM nonce size (max ${maxMessageLength.toString()} bytes)`);
+    }
+
+    // 先 CTR 解密得到明文
+    const plaintext = ccmCtrCrypt(roundKeys, nonceBytes, qLength, dataBytes);
+    result.set(plaintext);
+
+    let aadBytes: Uint8Array = new Uint8Array(0);
+    if (options.aad) {
+      aadBytes = typeof options.aad === 'string' ? normalizeInput(options.aad) : new Uint8Array(options.aad);
+    }
+
+    // 重算并校验标签
+    const mac = computeCCMMac(roundKeys, nonceBytes, plaintext, aadBytes, authTag.length, qLength);
+    const s0 = encryptBlock(buildCCMCounterBlock(nonceBytes, qLength, 0), roundKeys);
+    const expectedTag = new Uint8Array(authTag.length);
+    for (let i = 0; i < authTag.length; i++) {
+      expectedTag[i] = mac[i] ^ s0[i];
+    }
+
+    if (!constantTimeEqual(authTag, expectedTag)) {
+      throw new Error('Authentication tag verification failed');
+    }
   } else {
     throw new Error(`Unsupported cipher mode: ${mode}`);
   }
@@ -1028,11 +1158,7 @@ export function decrypt(
     if (padding === 'pkcs7') {
       // 去除 PKCS#7 填充
       // 为兼容不同的 ArrayBuffer 类型进行类型断言
-      try {
-        unpadded = pkcs7Unpad(result) as Uint8Array;
-      } catch (_) {
-        throw new Error('Decryption failed');
-      }
+      unpadded = pkcs7Unpad(result) as Uint8Array;
     } else if (padding === 'zero') {
       // 去除零填充
       // 为兼容不同的 ArrayBuffer 类型进行类型断言

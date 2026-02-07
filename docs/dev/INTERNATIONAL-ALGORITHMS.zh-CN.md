@@ -168,8 +168,8 @@ const base64Encrypted = sm2Encrypt(keyPair.publicKey, plaintext, {
 const decrypted1 = sm2Decrypt(keyPair.privateKey, hexEncrypted);
 const decrypted2 = sm2Decrypt(keyPair.privateKey, base64Encrypted);
 
-// 向后兼容：仍支持旧的字符串模式参数
-const encrypted = sm2Encrypt(keyPair.publicKey, plaintext, 'C1C3C2');
+// 使用选项对象指定模式
+const encrypted = sm2Encrypt(keyPair.publicKey, plaintext, { mode: 'C1C3C2' });
 ```
 
 #### ZUC 流密码算法
@@ -273,7 +273,7 @@ sha.update('test');
 const base64Hash = sha.digest();
 
 // 静态方法
-const quickHash = SHA256.digest('data', { outputFormat: OutputFormat.BASE64 });
+const quickHash = SHA256.digest('data', OutputFormat.BASE64);
 
 // SHA-384, SHA-512, SHA-1 使用方式相同
 const sha384 = new SHA384();

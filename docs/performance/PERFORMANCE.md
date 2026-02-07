@@ -15,20 +15,9 @@ tag:
 
 # Performance Optimization 性能优化说明
 
-::: tip
-提示：本章要点
-
-- SM3 Hash Algorithm Optimizations SM3哈希算法优化
-- SM4 Block Cipher Optimizations SM4分组密码优化
-- Optimizations Not Feasible in JavaScript/TypeScript 在JavaScript/TypeScript中不可行的优化
-- Implemented Cipher Modes 已实现的密码模式
-- Authenticated & Advanced Cipher Modes 状态
-:::
-
-
 ## SM3 Hash Algorithm Optimizations SM3哈希算法优化
 
-### Implemented Optimizations 已实现的优化
+### ✅ Implemented Optimizations 已实现的优化
 
 #### 1. Inlined Functions 内联函数
 **Status 状态: ✅ Implemented 已实现**
@@ -146,37 +135,17 @@ function tau(a: number): number {
 ## Implemented Cipher Modes 已实现的密码模式
 
 ### Block Cipher Modes 分组密码模式
-::: tip
-提示：
-
-| 项目 | 说明 |
-|:--|:--|
-| ECB (Electronic Codebook) | 电码本模式 |
-| CBC (Cipher Block Chaining) | 分组链接模式 |
-
-:::
-
+- ✅ **ECB** (Electronic Codebook) - 电码本模式
+- ✅ **CBC** (Cipher Block Chaining) - 分组链接模式
 
 ### Stream Cipher Modes 流密码模式
-::: tip
-提示：
-
-| 项目 | 说明 |
-|:--|:--|
-| CTR (Counter) | 计数器模式 |
-| CFB (Cipher Feedback) | 密文反馈模式 |
-| OFB (Output Feedback) | 输出反馈模式 |
-
-:::
-
+- ✅ **CTR** (Counter) - 计数器模式
+- ✅ **CFB** (Cipher Feedback) - 密文反馈模式
+- ✅ **OFB** (Output Feedback) - 输出反馈模式
 
 ### Authenticated / AEAD Mode 认证模式
-::: tip
-提示：
-
-- **GCM** (Galois/Counter Mode) - 认证加密，需 12 字节 IV 和标签
-:::
-
+- ✅ **GCM** (Galois/Counter Mode) - 认证加密，需 12 字节 IV 和标签
+- ✅ **CCM** (Counter with CBC-MAC) - 认证加密，需 7-13 字节 nonce 和标签
 
 ## Authenticated & Advanced Cipher Modes 状态
 
@@ -218,11 +187,46 @@ const decrypted = sm4Decrypt(key, result, {
 });
 ```
 
-::: tip
-提示：The following cipher modes are roadmap explorations and are **not available** in the current NPM release. / 下列密码模式仍在规划中，当前 NPM 版本尚未提供。
-:::
+### 2. CCM (Counter with CBC-MAC)
+**Status 状态: ✅ Implemented 已实现**
 
-### 2. XTS (XEX-based tweaked-codebook mode with ciphertext stealing)
+**Features 功能:**
+- Authenticated Encryption with Associated Data (AEAD)
+- 带关联数据的认证加密（AEAD）
+- CBC-MAC authentication + CTR encryption
+- CBC-MAC 认证 + CTR 加密
+- Configurable nonce length (7-13 bytes)
+- 可配置 nonce 长度（7-13 字节）
+- Configurable authentication tag length (4-16 bytes, even)
+- 可配置认证标签长度（4-16 字节，且必须为偶数）
+
+**Usage 使用方法:**
+```typescript
+import { sm4Encrypt, sm4Decrypt, CipherMode } from 'gmkitx';
+
+const key = '0123456789abcdeffedcba9876543210';
+const nonce = '00112233445566778899aabb'; // 12 bytes nonce
+const aad = 'Additional authenticated data';
+
+// Encrypt
+const result = sm4Encrypt(key, 'Secret message', {
+  mode: CipherMode.CCM,
+  iv: nonce,
+  aad,
+  tagLength: 16
+});
+
+// Decrypt with authentication
+const decrypted = sm4Decrypt(key, result, {
+  mode: CipherMode.CCM,
+  iv: nonce,
+  aad
+});
+```
+
+> **Note / 提示**: The following cipher modes are roadmap explorations and are **not available** in the current NPM release. / 下列密码模式仍在规划中，当前 NPM 版本尚未提供。
+
+### 3. XTS (XEX-based tweaked-codebook mode with ciphertext stealing)
 **Status 状态: ⏳ Planned 计划中**
 
 **Reason for not implementing yet 暂未实现的原因:**
@@ -234,17 +238,6 @@ const decrypted = sm4Decrypt(key, result, {
 - 主要用于磁盘加密场景
 - Lower priority compared to more common modes
 - 相比更常见的模式优先级较低
-
-### 3. CCM (Counter with CBC-MAC)
-**Status 状态: ⏳ Planned 计划中**
-
-**Reason for not implementing yet 暂未实现的原因:**
-- CCM is an AEAD mode like GCM
-- CCM是类似GCM的AEAD模式
-- Requires both encryption and authentication
-- 需要加密和认证
-- More complex to implement correctly
-- 正确实现更复杂
 
 ### 4. HCTR (Hash-Counter-Hash)
 **Status 状态: 📋 Under Consideration 考虑中**
@@ -310,8 +303,8 @@ Actual performance will vary based on:
 
 1. Add performance benchmarking suite and publish baselines
    添加并发布性能基准测试套件
-2. Extend cipher mode coverage (XTS/CCM/HCTR/OFBNLF) with test vectors
-   补充更多密码模式支持（XTS/CCM/HCTR/OFBNLF）并完善测试向量
+2. Extend cipher mode coverage (XTS/HCTR/OFBNLF) with test vectors
+   补充更多密码模式支持（XTS/HCTR/OFBNLF）并完善测试向量
 3. Consider WebAssembly implementation for critical paths
    考虑为关键路径实现WebAssembly
 4. Optimize for specific JavaScript engines and worker/thread usage

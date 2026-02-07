@@ -44,6 +44,12 @@ describe('输出格式一致性测试 (Output Format Consistency Tests)', () => 
       expect(decrypted).toBe(plaintext);
     });
 
+    it('应该能够自动识别 base64 字符串密文', () => {
+      const encrypted = sm4Encrypt(key, plaintext, { outputFormat: OutputFormat.BASE64 });
+      const decrypted = sm4Decrypt(key, encrypted.ciphertext);
+      expect(decrypted).toBe(plaintext);
+    });
+
     it('CBC 模式应该支持 base64 输出', () => {
       const iv = 'fedcba98765432100123456789abcdef';
       const encrypted = sm4Encrypt(key, plaintext, {
@@ -56,6 +62,46 @@ describe('输出格式一致性测试 (Output Format Consistency Tests)', () => 
       const decrypted = sm4Decrypt(key, encrypted, {
         mode: CipherMode.CBC,
         iv
+      });
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('CCM 模式应该支持 base64 输出与自动识别解密', () => {
+      const nonce = '00112233445566778899aabb';
+      const aad = 'ccm-aad';
+      const encrypted = sm4Encrypt(key, plaintext, {
+        mode: CipherMode.CCM,
+        iv: nonce,
+        aad,
+        outputFormat: OutputFormat.BASE64
+      });
+
+      expect(encrypted.ciphertext).toMatch(/^[A-Za-z0-9+/]+=*$/);
+      expect(encrypted.tag).toMatch(/^[A-Za-z0-9+/]+=*$/);
+
+      const decrypted = sm4Decrypt(key, encrypted, {
+        mode: CipherMode.CCM,
+        iv: nonce,
+        aad
+      });
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('CCM 模式应支持 ciphertext/tag 字符串自动识别', () => {
+      const nonce = '00112233445566778899aabb';
+      const aad = 'ccm-aad';
+      const encrypted = sm4Encrypt(key, plaintext, {
+        mode: CipherMode.CCM,
+        iv: nonce,
+        aad,
+        outputFormat: OutputFormat.BASE64
+      });
+
+      const decrypted = sm4Decrypt(key, encrypted.ciphertext, {
+        mode: CipherMode.CCM,
+        iv: nonce,
+        aad,
+        tag: encrypted.tag
       });
       expect(decrypted).toBe(plaintext);
     });
@@ -91,6 +137,14 @@ describe('输出格式一致性测试 (Output Format Consistency Tests)', () => 
         outputFormat: OutputFormat.BASE64
       });
       const decrypted = sm2Decrypt(keyPair.privateKey, encrypted, { inputFormat: InputFormat.BASE64 });
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('应该能够自动识别 base64 格式的密文', () => {
+      const encrypted = sm2Encrypt(keyPair.publicKey, plaintext, {
+        outputFormat: OutputFormat.BASE64
+      });
+      const decrypted = sm2Decrypt(keyPair.privateKey, encrypted);
       expect(decrypted).toBe(plaintext);
     });
 
@@ -132,6 +186,14 @@ describe('输出格式一致性测试 (Output Format Consistency Tests)', () => 
         outputFormat: OutputFormat.BASE64
       });
       const decrypted = zucDecrypt(key, iv, encrypted, { inputFormat: InputFormat.BASE64 });
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('应该能够自动识别 base64 格式的密文', () => {
+      const encrypted = zucEncrypt(key, iv, plaintext, {
+        outputFormat: OutputFormat.BASE64
+      });
+      const decrypted = zucDecrypt(key, iv, encrypted);
       expect(decrypted).toBe(plaintext);
     });
   });

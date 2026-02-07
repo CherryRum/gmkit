@@ -58,19 +58,10 @@ export type TextCodec = {
 
 let customTextCodec: TextCodec | null = null;
 
-/**
- * 设置自定义文本编解码器
- * 用于在不支持 TextEncoder/TextDecoder 的环境中提供自定义实现
- * @param codec - 自定义的文本编解码器
- */
 export function setTextCodec(codec: TextCodec) {
   customTextCodec = codec;
 }
 
-/**
- * 尝试获取 Node.js 环境的 TextEncoder
- * @returns Node.js TextEncoder 实例，或 null（不可用时）
- */
 function tryNodeTextEncoder(): TextEncoder | null {
   try {
     if (typeof require !== 'undefined') {
@@ -83,10 +74,6 @@ function tryNodeTextEncoder(): TextEncoder | null {
   return null;
 }
 
-/**
- * 尝试获取 Node.js 环境的 TextDecoder
- * @returns Node.js TextDecoder 实例，或 null（不可用时）
- */
 function tryNodeTextDecoder(): TextDecoder | null {
   try {
     if (typeof require !== 'undefined') {
@@ -99,12 +86,6 @@ function tryNodeTextDecoder(): TextDecoder | null {
   return null;
 }
 
-/**
- * 回退方案：使用 encodeURIComponent 实现 UTF-8 编码
- * 用于不支持 TextEncoder 的环境
- * @param str - 要编码的字符串
- * @returns UTF-8 编码的字节数组
- */
 function fallbackEncodeUtf8(str: string): Uint8Array {
   const encoded = encodeURIComponent(str);
   const bytes: number[] = [];
@@ -121,12 +102,6 @@ function fallbackEncodeUtf8(str: string): Uint8Array {
   return new Uint8Array(bytes);
 }
 
-/**
- * 回退方案：使用 decodeURIComponent 实现 UTF-8 解码
- * 用于不支持 TextDecoder 的环境
- * @param bytes - 要解码的字节数组
- * @returns 解码后的字符串
- */
 function fallbackDecodeUtf8(bytes: Uint8Array): string {
   let encoded = '';
   for (let i = 0; i < bytes.length; i++) {
@@ -218,23 +193,6 @@ export function xor(a: Uint8Array, b: Uint8Array): Uint8Array {
     result[i] = a[i] ^ b[i];
   }
   return result;
-}
-
-/**
- * 常量时间比较两个 Uint8Array（防止时序攻击）
- * @param a - 第一个数组
- * @param b - 第二个数组
- * @returns 是否相等
- */
-export function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
-  if (a.length !== b.length) {
-    return false;
-  }
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) {
-    diff |= a[i] ^ b[i];
-  }
-  return diff === 0;
 }
 
 /**
@@ -445,52 +403,26 @@ export function autoDecodeString(str: string): Uint8Array {
 }
 
 
-/**
- * 随机数生成策略
- * - strict: 严格模式，无安全随机源时抛出异常
- * - warn: 警告模式（默认），无安全随机源时使用不安全回退并发出警告
- * - allow: 允许模式，静默使用不安全回退
- */
 export type RNGPolicy = 'strict' | 'warn' | 'allow';
 let rngPolicy: RNGPolicy = 'warn';
 let customRNG: ((len: number) => Uint8Array) | null = null;
-
-/**
- * 配置随机数生成策略
- * @param policy - 随机数生成策略
- * @example
- * ```typescript
- * // 严格模式：无安全随机源时抛出异常
- * configureRNG('strict');
- * ```
- */
+// 配置函数
 export function configureRNG(policy: RNGPolicy) {
   rngPolicy = policy;
 }
 
 /**
- * 设置自定义随机数生成器
- * 用于在特殊环境（如小程序）中提供自定义的安全随机数源
- * @param fn - 自定义的随机数生成函数
- * @example
- * ```typescript
- * // 使用自定义随机数生成器
- * setCustomRNG((len) => {
- *   // 你的安全随机数实现
- *   return new Uint8Array(len);
- * });
- * ```
+ * 向后兼容别名：setRNGPolicy -> configureRNG
  */
+export function setRNGPolicy(policy: RNGPolicy) {
+  configureRNG(policy);
+}
+
 export function setCustomRNG(fn: (len: number) => Uint8Array) {
   customRNG = fn;
 }
 
 
-/**
- * 尝试使用 Web Crypto API 生成随机数
- * @param len - 需要生成的字节长度
- * @returns 随机字节数组，或 null（不可用时）
- */
 function tryWebCrypto(len: number): Uint8Array | null {
   try {
     const cryptoObj = (globalThis as any).crypto;
@@ -518,13 +450,6 @@ function tryNodeCrypto(len: number): Uint8Array | null {
   return null;
 }
 
-/**
- * 不安全的回退随机数生成器
- * 警告：此方法不是密码学安全的，仅在无其他选择时使用
- * 使用 Weyl Sequence 和时间戳作为熵源
- * @param len - 需要生成的字节长度
- * @returns 伪随机字节数组
- */
 function unsafeFallbackRandom(len: number): Uint8Array {
   console.warn(
     '[gmkit][RNG] WARNING: using unsafe fallback RNG. This is NOT cryptographically secure!'
@@ -593,35 +518,14 @@ export function getRandomBytes(len: number = 32): Uint8Array {
   return unsafeFallbackRandom(len);
 }
 
-/**
- * 环境检测报告类型
- * 用于检测当前运行环境的能力支持情况
- */
 export type EnvReport = {
-  /** 是否支持 BigInt */
   hasBigInt: boolean;
-  /** 是否支持 TextEncoder */
   hasTextEncoder: boolean;
-  /** 是否支持 TextDecoder */
   hasTextDecoder: boolean;
-  /** 是否支持 Web Crypto API */
   hasWebCrypto: boolean;
-  /** 是否支持 Node.js crypto 模块 */
   hasNodeCrypto: boolean;
 };
 
-/**
- * 获取当前环境的能力检测报告
- * 用于诊断运行环境是否具备所需的 API 支持
- * @returns 环境检测报告
- * @example
- * ```typescript
- * const report = getEnvReport();
- * if (!report.hasWebCrypto && !report.hasNodeCrypto) {
- *   console.warn('No secure random source available');
- * }
- * ```
- */
 export function getEnvReport(): EnvReport {
   const hasBigInt = typeof BigInt !== 'undefined';
   const hasTextEncoder = typeof TextEncoder !== 'undefined' || tryNodeTextEncoder() !== null;

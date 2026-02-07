@@ -336,4 +336,61 @@ describe('SM4 分组密码测试', () => {
       expect(decrypted).toBe(plaintext);
     });
   });
+
+  describe('CCM 模式', () => {
+    const nonce = '00112233445566778899aabb'; // 12 bytes
+
+    it('应该能够使用 CCM 模式加密和解密', () => {
+      const plaintext = 'Hello, SM4 CCM mode!';
+      const aad = 'ccm-metadata';
+      const result = encrypt(key, plaintext, { mode: CipherMode.CCM, iv: nonce, aad, tagLength: 16 });
+
+      expect(typeof result).toBe('object');
+      expect((result as any).ciphertext).toMatch(/^[0-9a-f]+$/);
+      expect((result as any).tag).toMatch(/^[0-9a-f]+$/);
+
+      const decrypted = decrypt(key, result, { mode: CipherMode.CCM, iv: nonce, aad });
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('应该支持自定义 CCM 标签长度', () => {
+      const plaintext = 'short message';
+      const result = encrypt(key, plaintext, { mode: CipherMode.CCM, iv: nonce, tagLength: 8 });
+      expect((result as any).tag).toHaveLength(16); // 8 bytes = 16 hex chars
+
+      const decrypted = decrypt(key, result, { mode: CipherMode.CCM, iv: nonce });
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('使用错误的 CCM 标签应该验证失败', () => {
+      const plaintext = 'Secret CCM message';
+      const result = encrypt(key, plaintext, { mode: CipherMode.CCM, iv: nonce });
+
+      const corruptedResult = {
+        ciphertext: (result as any).ciphertext,
+        tag: '00000000000000000000000000000000'
+      };
+
+      expect(() => decrypt(key, corruptedResult, { mode: CipherMode.CCM, iv: nonce })).toThrow('Authentication tag verification failed');
+    });
+
+    it('使用错误的 CCM AAD 应该验证失败', () => {
+      const plaintext = 'Secret CCM message';
+      const aad = 'ccm-aad';
+      const result = encrypt(key, plaintext, { mode: CipherMode.CCM, iv: nonce, aad });
+
+      expect(() => decrypt(key, result, { mode: CipherMode.CCM, iv: nonce, aad: 'wrong-aad' })).toThrow('Authentication tag verification failed');
+    });
+
+    it('CCM 模式应该校验 nonce 长度', () => {
+      const plaintext = 'Hello';
+      const wrongNonce = '001122334455'; // 6 bytes
+      expect(() => encrypt(key, plaintext, { mode: CipherMode.CCM, iv: wrongNonce })).toThrow('Nonce must be 7-13 bytes');
+    });
+
+    it('CCM 模式应该校验标签长度范围与偶数约束', () => {
+      const plaintext = 'Hello';
+      expect(() => encrypt(key, plaintext, { mode: CipherMode.CCM, iv: nonce, tagLength: 5 })).toThrow('CCM tag length must be an even value between 4 and 16 bytes');
+    });
+  });
 });

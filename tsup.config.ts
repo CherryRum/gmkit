@@ -6,7 +6,7 @@ export default defineConfig({
   globalName: 'GMKit',
   outDir: 'dist',
   dts: true,
-  sourcemap: true,
+  sourcemap: process.env.BUILD_SOURCEMAP === '1',
   minify: true,
   clean: true,
   treeshake: true,

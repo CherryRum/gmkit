@@ -14,17 +14,6 @@ tag:
 
 # 性能优化建议 (Performance Optimization Guide)
 
-::: tip
-提示：本章要点
-
-- 已实现的优化
-- 使用建议
-- 性能基准测试
-- 内存使用优化
-- 并发优化
-:::
-
-
 基于 GM/T 0009-2023 标准的 GMKitX 性能优化指南。性能数据为示意值，具体以实测为准。
 
 ## 已实现的优化
@@ -200,7 +189,7 @@ const signature = sign(privateKey, 'Hello');
 const signature = sign(privateKey, data); // 默认 Raw 格式
 
 // ⚠️ 互操作需要：DER 格式（标准但较大）
-const signature = sign(privateKey, data, { der: true });
+const signature = sign(privateKey, data, { signatureFormat: 'der' });
 ```
 
 **性能影响**：
@@ -340,22 +329,54 @@ self.onmessage = (e) => {
 
 ## 最佳实践总结
 
-### 推荐做法
+### ✅ 推荐做法
 
-| 项目 | 说明 |
-|:--|:--|
-| 使用 GM/T 0009-2023 推荐的默认值 | 密文模式：C1C3C2（显式指定）；公钥格式：非压缩（默认）；用户 ID：空字符串（新项目） |
-| 批量操作时复用实例 | ```typescript；const sm2 = SM2.fromPrivateKey(privateKey);；for (const data of dataList) {；const signature = sm2.sign(data);；}；``` |
-| 显式指定格式，避免自动检测 | ```typescript；const encrypted = sm2Encrypt(publicKey, data, { mode: SM2CipherMode.C1C3C2 });；const decrypted = sm2Decrypt(privateKey, encrypted, { mode: SM2CipherMode.C1C3C2 });；``` |
-| 使用 Uint8Array 作为输入（大数据量时） | ```typescript；const data = new Uint8Array(largeBuffer);；const signature = sign(privateKey, data);；``` |
+1. **使用 GM/T 0009-2023 推荐的默认值**
+   - 密文模式：C1C3C2（显式指定）
+   - 公钥格式：非压缩（默认）
+   - 用户 ID：空字符串（新项目）
 
-### 避免做法
+2. **批量操作时复用实例**
+   ```typescript
+   const sm2 = SM2.fromPrivateKey(privateKey);
+   for (const data of dataList) {
+     const signature = sm2.sign(data);
+   }
+   ```
 
-| 项目 | 说明 |
-|:--|:--|
-| 不要在生产环境跳过 Z 值计算 | ```typescript；// ❌ 降低安全性；const signature = sign(privateKey, data, { skipZComputation: true });；``` |
-| 不要依赖自动检测（性能敏感场景） | ```typescript；// ❌ 可能需要多次尝试；const decrypted = sm2Decrypt(privateKey, encrypted);；``` |
-| 不要在循环中重复创建实例 | ```typescript；// ❌ 重复解析密钥；for (const data of dataList) {；const signature = sign(privateKey, data);；}；``` |
+3. **显式指定格式，避免自动检测**
+   ```typescript
+   const encrypted = sm2Encrypt(publicKey, data, { mode: SM2CipherMode.C1C3C2 });
+   const decrypted = sm2Decrypt(privateKey, encrypted, { mode: SM2CipherMode.C1C3C2 });
+   ```
+
+4. **使用 Uint8Array 作为输入（大数据量时）**
+   ```typescript
+   const data = new Uint8Array(largeBuffer);
+   const signature = sign(privateKey, data);
+   ```
+
+### ❌ 避免做法
+
+1. **不要在生产环境跳过 Z 值计算**
+   ```typescript
+   // ❌ 降低安全性
+   const signature = sign(privateKey, data, { skipZComputation: true });
+   ```
+
+2. **不要依赖自动检测（性能敏感场景）**
+   ```typescript
+   // ❌ 可能需要多次尝试
+   const decrypted = sm2Decrypt(privateKey, encrypted);
+   ```
+
+3. **不要在循环中重复创建实例**
+   ```typescript
+   // ❌ 重复解析密钥
+   for (const data of dataList) {
+     const signature = sign(privateKey, data);
+   }
+   ```
 
 ## 性能调优工具
 
@@ -392,21 +413,15 @@ console.log('Memory used:', {
 
 ## 参考资料
 
-| 项目 | 说明 |
-|:--|:--|
-| GM/T 0009-2023 | SM2 密码算法使用规范 |
-| 性能优化原则 | 先正确，后优化 |
-| 安全第一 | 不要为了性能牺牲安全性 |
-
+1. **GM/T 0009-2023** - SM2 密码算法使用规范
+2. **性能优化原则** - 先正确，后优化
+3. **安全第一** - 不要为了性能牺牲安全性
 
 ## 版本历史
 
-| 项目 | 说明 |
-|:--|:--|
-| v0.1.0 | 初始性能优化 |
-| v0.9.2 | 文档对齐与示例修订，补充标准使用建议 |
-
-- **当前版本** (v0.9.2): 基于 GM/T 0009-2023 的优化建议
+- **v0.1.0**: 初始性能优化
+- **v0.9.3**: 文档对齐与示例修订，补充标准使用建议
+- **当前版本** (v0.9.3): 基于 GM/T 0009-2023 的优化建议
 
 ## 贡献
 

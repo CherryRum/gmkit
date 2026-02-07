@@ -120,6 +120,8 @@ export {
   type SM4DecryptOptions,
   type SM4CipherResult,
   type SM4GCMResult,
+  type SM4CCMResult,
+  type SM4AEADResult,
 } from './crypto/sm4';
 
 export { SM4 } from './crypto/sm4/class';
@@ -195,6 +197,7 @@ export {
   bytes4ToUint32BE,
   uint32ToBytes4BE,
   configureRNG,
+  setRNGPolicy,
   setCustomRNG,
   getRandomBytes,
   setTextCodec,

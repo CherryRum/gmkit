@@ -44,11 +44,11 @@ describe('常量测试', () => {
       expect(CipherMode.CFB).toBe('cfb');
       expect(CipherMode.OFB).toBe('ofb');
       expect(CipherMode.GCM).toBe('gcm');
+      expect(CipherMode.CCM).toBe('ccm');
     });
 
-    it('不应该暴露计划中但未实现的模式', () => {
+    it('不应该暴露仍未实现的模式', () => {
       const modes = Object.values(CipherMode);
-      expect(modes).not.toContain('ccm');
       expect(modes).not.toContain('xts');
     });
   });

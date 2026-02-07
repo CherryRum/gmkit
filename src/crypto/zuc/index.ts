@@ -18,8 +18,8 @@
  */
 
 import { ZUCState, generateKeystream, process } from './core';
-import { hexToBytes, bytesToHex, stringToBytes, decodeInput, encodeOutput, bytesToString, type BytesLike } from '../../core/utils';
-import { OutputFormat, InputFormat, type OutputFormatType, type InputFormatType } from '../../types/constants';
+import { hexToBytes, bytesToHex, stringToBytes, decodeInput, autoDecodeString, encodeOutput, bytesToString, type BytesLike } from '../../core/utils';
+import { OutputFormat, type OutputFormatType, type InputFormatType } from '../../types/constants';
 
 /**
  * ZUC 加密选项
@@ -45,8 +45,10 @@ export interface ZUCOptions {
 export interface ZUCDecryptOptions {
   /**
    * 输入格式
-   * - hex: 十六进制字符串（默认）
+   * - hex: 十六进制字符串
    * - base64: Base64 编码字符串
+   *
+   * 不传时会自动识别 hex/base64（优先按 hex 识别）
    */
   inputFormat?: InputFormatType;
 }
@@ -96,7 +98,11 @@ export function decrypt(
   ciphertext: BytesLike,
   options?: ZUCDecryptOptions
 ): string {
-  const ciphertextBytes = decodeInput(ciphertext, options?.inputFormat || InputFormat.HEX);
+  const ciphertextBytes = ciphertext instanceof Uint8Array
+    ? ciphertext
+    : options?.inputFormat
+      ? decodeInput(ciphertext, options.inputFormat)
+      : autoDecodeString(ciphertext);
   const resultHex = process(key, iv, ciphertextBytes);
   const resultBytes = hexToBytes(resultHex);
   return bytesToString(resultBytes);

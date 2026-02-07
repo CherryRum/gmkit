@@ -14,14 +14,13 @@ import {
   bytesToHex,
   bytesToString,
   decodeInput,
+  autoDecodeString,
   encodeOutput,
-  constantTimeEqual,
   type BytesLike,
 } from '../../core/utils';
 import {
   SM2CipherMode,
   OutputFormat,
-  InputFormat,
   type SM2CipherModeType,
   type OutputFormatType,
   type InputFormatType,
@@ -85,72 +84,17 @@ export interface SM2DecryptOptions {
   mode?: SM2CipherModeType;
 
   /**
-   * 输入格式
-   * - hex: 十六进制字符串（默认）
+   * 输入格式（可选）
+   * - hex: 十六进制字符串
    * - base64: Base64 编码字符串
+   *
+   * 不传时会自动识别 hex/base64（优先按 hex 识别）
    */
   inputFormat?: InputFormatType;
 }
 
 export type SM2SignatureFormat = 'raw' | 'der';
 export type SM2SignatureInputFormat = SM2SignatureFormat | 'auto';
-
-/**
- * 验证 SM2 密文模式参数的有效性
- * @param mode - 密文模式（C1C3C2 或 C1C2C3）
- * @throws 如果模式无效则抛出错误
- */
-function assertSm2CipherMode(mode?: SM2CipherModeType) {
-  if (!mode) return;
-  if (mode !== SM2CipherMode.C1C3C2 && mode !== SM2CipherMode.C1C2C3) {
-    throw new Error('Invalid SM2 cipher mode: must be C1C3C2 or C1C2C3');
-  }
-}
-
-/**
- * 验证输出格式参数的有效性
- * @param format - 输出格式（hex 或 base64）
- * @throws 如果格式无效则抛出错误
- */
-function assertOutputFormat(format?: OutputFormatType) {
-  if (!format) return;
-  if (format !== OutputFormat.HEX && format !== OutputFormat.BASE64) {
-    throw new Error('Invalid output format: must be hex or base64');
-  }
-}
-
-/**
- * 验证输入格式参数的有效性
- * @param format - 输入格式（hex 或 base64）
- * @throws 如果格式无效则抛出错误
- */
-function assertInputFormat(format?: InputFormatType) {
-  if (!format) return;
-  if (format !== InputFormat.HEX && format !== InputFormat.BASE64) {
-    throw new Error('Invalid input format: must be hex or base64');
-  }
-}
-
-/**
- * 验证签名格式参数的有效性
- * @param format - 签名格式（raw 或 der）
- * @throws 如果格式无效则抛出错误
- */
-function assertSignatureFormat(format?: SM2SignatureFormat) {
-  if (!format) return;
-  if (format !== 'raw' && format !== 'der') {
-    throw new Error('Invalid signature format: must be raw or der');
-  }
-}
-
-/**
- * 检查签名输入格式是否有效
- * @param format - 签名输入格式
- * @returns 格式是否有效
- */
-function isValidSignatureInputFormat(format: SM2SignatureInputFormat): boolean {
-  return format === 'raw' || format === 'der' || format === 'auto';
-}
 
 /**
  * 验证字符串是否为有效的十六进制字符串（不使用正则表达式）
@@ -255,15 +199,27 @@ function normalizePublicKeyInput(publicKey: BytesLike): string {
 }
 
 /**
+ * 常量时间比较两个 Uint8Array（防止时序攻击）
+ */
+function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a[i] ^ b[i];
+  }
+
+  return result === 0;
+}
+
+
+/**
  * 准备解密所需的中间值
- * 
- * 执行椭圆曲线点乘运算并计算密钥派生函数（KDF）输出，
- * 这些是解密过程中计算量最大的部分。
- * 
- * @param privateKey - 私钥（十六进制字符串）
- * @param c1Point - 密文中的椭圆曲线点 C1
- * @param c2Length - 密文 C2 的字节长度
- * @returns 包含 x2、y2 坐标和密钥流 t 的对象
+ * @param privateKey
+ * @param c1Point
+ * @param c2Length
  */
 function prepareDecrypt(privateKey: string, c1Point: any, c2Length: number) {
   const privateKeyBigInt = BigInt('0x' + privateKey);
@@ -283,19 +239,6 @@ function prepareDecrypt(privateKey: string, c1Point: any, c2Length: number) {
   return {x2, y2, t};
 }
 
-/**
- * 尝试验证并解密 SM2 密文
- * 
- * 使用预计算的中间值进行解密，并验证消息认证码（C3）。
- * 验证使用常量时间比较以防止时序攻击。
- * 
- * @param x2 - 共享点的 x 坐标
- * @param y2 - 共享点的 y 坐标
- * @param t - KDF 派生的密钥流
- * @param c2 - 加密的明文数据
- * @param c3 - 消息认证码（SM3 哈希值）
- * @returns 解密成功返回明文字符串，验证失败返回 null
- */
 function tryVerifyAndDecrypt(
   x2: Uint8Array, y2: Uint8Array, t: Uint8Array,
   c2: Uint8Array, c3: Uint8Array
@@ -336,8 +279,8 @@ function tryVerifyAndDecrypt(
  *    - 0x02/0x03：C1 为压缩点格式，具体是 C1C3C2 还是 C1C2C3 取决于解密时的选项参数，默认为 C1C3C2
  *
  * @param privateKey - 私钥（十六进制字符串）
- * @param encryptedData - 加密的数据（十六进制字符串）
- * @param mode - 密文模式：'C1C3C2'（默认）或 'C1C2C3'，可选参数，会尝试自动检测
+ * @param encryptedData - 加密的数据（十六进制/Base64 字符串或 Uint8Array）
+ * @param mode - 密文模式：'C1C3C2'（默认）或 'C1C2C3'
  * @returns 解密后的数据（UTF-8 字符串）
  */
 export function decrypt(
@@ -345,11 +288,12 @@ export function decrypt(
   encryptedData: BytesLike,
   options?: SM2DecryptOptions
 ): string {
-  assertSm2CipherMode(options?.mode);
-  assertInputFormat(options?.inputFormat);
-
   const cleanPrivateKey = normalizePrivateKeyInput(privateKey);
-  const cipherBytes = decodeInput(encryptedData, options?.inputFormat || InputFormat.HEX);
+  const cipherBytes = encryptedData instanceof Uint8Array
+    ? encryptedData
+    : options?.inputFormat
+      ? decodeInput(encryptedData, options.inputFormat)
+      : autoDecodeString(encryptedData);
 
   if (cipherBytes.length === 0) throw new Error('Invalid ciphertext: empty data');
   if (cipherBytes[0] === 0x30) return decryptAsn1(cleanPrivateKey, cipherBytes);
@@ -699,8 +643,10 @@ export interface VerifyOptions {
 
   /**
    * 签名输入格式
-   * - hex：十六进制字符串（默认）
+   * - hex：十六进制字符串
    * - base64：Base64 编码字符串
+   *
+   * 不传时会自动识别 hex/base64（优先按 hex 识别）
    */
   inputFormat?: InputFormatType;
 
@@ -844,8 +790,8 @@ export function compressPublicKey(publicKey: BytesLike): string {
  * const uncompressed = decompressPublicKey(compressed); // 130 个字符
  * ```
  */
-export function decompressPublicKey(publicKey: string): string {
-  let cleaned = publicKey.trim();
+export function decompressPublicKey(publicKey: BytesLike): string {
+  let cleaned = publicKey instanceof Uint8Array ? bytesToHex(publicKey) : publicKey.trim();
 
   // 移除 0x 前缀
   if (cleaned.startsWith('0x') || cleaned.startsWith('0X')) {
@@ -932,11 +878,11 @@ function kdf(z: Uint8Array, klen: number): Uint8Array {
  * 使用 SM2 加密数据
  * @param publicKey - 公钥（十六进制字符串）
  * @param data - 要加密的数据（字符串或 Uint8Array）
- * @param optionsOrMode - 加密选项对象或密文模式（为了向后兼容）
+ * @param options - 加密选项对象
  * @returns 加密后的数据（默认十六进制字符串）
  *
  * @example
- * // 基本用法（向后兼容）
+ * // 基本用法
  * const encrypted = encrypt(publicKey, 'data');
  *
  * @example
@@ -951,9 +897,6 @@ export function encrypt(
   data: string | Uint8Array,
   options?: SM2EncryptOptions
 ): string {
-  assertSm2CipherMode(options?.mode);
-  assertOutputFormat(options?.outputFormat);
-
   const mode: SM2CipherModeType = options?.mode || SM2CipherMode.C1C3C2;
   const outputFormat: OutputFormatType = options?.outputFormat || OutputFormat.HEX;
 
@@ -1026,16 +969,13 @@ export function encrypt(
  * @param privateKey - 私钥（十六进制字符串）
  * @param data - 要签名的数据（字符串或 Uint8Array）
  * @param options - 签名选项
- * @returns 签名（十六进制字符串，默认 r || s 格式，如果 der=true 则为 DER 编码）
+ * @returns 签名（默认十六进制字符串；raw 为 r||s，der 为 ASN.1 DER）
  */
 export function sign(
   privateKey: BytesLike,
   data: string | Uint8Array,
   options?: SignOptions
 ): string {
-  assertSignatureFormat(options?.signatureFormat);
-  assertOutputFormat(options?.outputFormat);
-
   // 自动识别并规范化私钥输入
   const cleanPrivateKey = normalizePrivateKeyInput(privateKey);
   const userId = options?.userId || DEFAULT_USER_ID;
@@ -1103,15 +1043,8 @@ export function verify(
     const cleanPublicKey = normalizePublicKeyInput(publicKey);
     const userId = options?.userId || DEFAULT_USER_ID;
     const signatureFormat = options?.signatureFormat || 'raw';
-    const inputFormat = options?.inputFormat || InputFormat.HEX;
+    const inputFormat = options?.inputFormat;
     const skipZ = options?.skipZComputation || false;
-
-    if (!isValidSignatureInputFormat(signatureFormat)) {
-      return false;
-    }
-    if (inputFormat !== InputFormat.HEX && inputFormat !== InputFormat.BASE64) {
-      return false;
-    }
 
     let e: Uint8Array;
 
@@ -1136,7 +1069,11 @@ export function verify(
 
     // 解析签名
     let r: string, s: string;
-    const sigBytes = decodeInput(signature, inputFormat);
+    const sigBytes = signature instanceof Uint8Array
+      ? signature
+      : inputFormat
+        ? decodeInput(signature, inputFormat)
+        : autoDecodeString(signature);
 
     if (signatureFormat === 'der') {
       const decoded = decodeSignature(sigBytes);

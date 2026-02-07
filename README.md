@@ -171,8 +171,8 @@ const sha512Hash = sha.sha512('Hello World');
 - `sm4Encrypt` 现在返回 `{ ciphertext, tag?, format }` 对象；`sm4Decrypt` 可直接接收该对象。
 - `zucKeystream(key, iv, length)` 的 `length` 改为 **字节数**；若需要按 32-bit word，使用 `zucKeystreamWords`。
 - `sm2Encrypt` 的模式参数改为选项对象：`sm2Encrypt(pub, data, { mode })`。
-- `sm2Sign / sm2Verify / signatureToXml` 支持 `signatureFormat: 'raw' | 'der' | 'auto'`；DER 输入请显式标注。
-- Base64 密文解密需指定 `inputFormat: InputFormat.BASE64`（SM2 / SM4 / ZUC）。
+- `sign / verify / signatureToXml` 支持 `signatureFormat: 'raw' | 'der' | 'auto'`；DER 输入请显式标注。
+- Base64 密文解密支持自动识别；跨语言互操作时建议显式指定 `inputFormat: InputFormat.BASE64`（SM2 / SM4 / ZUC）。
 
 -----
 
@@ -198,7 +198,7 @@ const ok = sm2.verify('核心指令', sigDer, { signatureFormat: 'der', inputFor
 ```
 
 ### SM3（消息摘要）
-- 流式更新，Hex/Base64/Uint8Array 输出；与 SHA API 对齐。
+- 流式更新，Hex/Base64 输出；与 SHA API 对齐。
 
 ```ts
 import { SM3, OutputFormat } from 'gmkitx';
@@ -212,16 +212,20 @@ const base64 = sm3.digest({ outputFormat: OutputFormat.BASE64 });
 ```
 
 ### SM4（分组密码）
-- 支持 `ECB` | `CBC` | `CTR` | `CFB` | `OFB` | `GCM`，PKCS7/NoPadding 可选。
+- 支持 `ECB` | `CBC` | `CTR` | `CFB` | `OFB` | `GCM` | `CCM`，PKCS7/NoPadding 可选。
 
 ```ts
-import { SM4, CipherMode, PaddingMode } from 'gmkitx';
+import { SM4, sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkitx';
 
 const key = '0123456789abcdeffedcba9876543210';
-const sm4 = new SM4(key, { mode: CipherMode.GCM, padding: PaddingMode.NONE, iv: '00112233445566778899aabbccddeeff' });
+const sm4 = new SM4(key, { mode: CipherMode.GCM, padding: PaddingMode.NONE, iv: '00112233445566778899aabb' });
 
 const result = sm4.encrypt('敏感信息');
 const decrypted = sm4.decrypt(result);
+
+// CCM（AEAD）示例：7-13 字节 nonce，支持 AAD
+const ccm = sm4Encrypt(key, '敏感信息', { mode: CipherMode.CCM, iv: '00112233445566778899aabb', aad: 'meta', tagLength: 16 });
+const ccmPlain = sm4Decrypt(key, ccm, { mode: CipherMode.CCM, iv: '00112233445566778899aabb', aad: 'meta' });
 ```
 
 ### ZUC（祖冲之序列密码）
@@ -243,6 +247,21 @@ import { sha } from 'gmkitx';
 
 const hash = sha.sha256('Hello World');
 ```
+
+## 算法选择与安全边界
+
+- 没有“又快又安全又通用”的单一加密方案，算法选择必须按场景做权衡。
+- 业务数据加密优先 `SM4-GCM` 或 `SM4-CCM`；`CBC/CTR/CFB/OFB` 仅提供机密性，不提供完整性认证，需额外 MAC。
+- `SM2` 适合密钥封装、签名验签，不适合直接加密大数据（建议 `SM2 + SM4` 混合加密）。
+- `ZUC` 更偏通信协议场景（如 EEA3/EIA3），通用业务通常优先 SM4。
+- `SHA-1` 仅用于兼容旧系统，不建议用于新系统安全场景。
+
+### Java 对接提示（重点）
+
+- Java `PKCS5Padding` 在 SM4（16 字节分组）场景下语义上对应前端/Node 的 `PKCS7`。
+- Java/BouncyCastle 若使用 `SM4/CCM/NoPadding`，前端/Node 对应 `mode: CipherMode.CCM`；需显式对齐 nonce（7-13 字节）和 tag 长度。
+- SM2 签名格式要显式约定：Java 常见 DER，gmkitx 默认 raw。
+- Base64 密文解密支持自动识别；与 Java 等异构系统对接时建议显式传 `inputFormat: InputFormat.BASE64`（SM2 / SM4 / ZUC）。
 
 ## 编码与格式
 
@@ -278,7 +297,22 @@ const sm4Plain = sm4Decrypt(key, sm4Result, { mode: CipherMode.ECB, padding: Pad
 | **编码** | `decodeInput`, `encodeOutput`    | 输入/输出格式统一编解码     |
 | **运算** | `xor`, `rotl`                    | 异或与循环左移          |
 | **格式** | `rawToDer`, `derToRaw`           | 签名的 RAW/DER 格式转换 |
-| **随机** | `getRandomBytes`, `setRNGPolicy`, `setCustomRNG` | 随机源与策略控制 |
+| **随机** | `getRandomBytes`, `configureRNG`, `setCustomRNG` | 随机源与策略控制 |
 | **环境** | `setTextCodec`, `getEnvReport`   | 文本编解码与环境能力报告     |
+
+-----
+
+## 工程审计命令
+
+```bash
+# 构建（含告警策略）
+npm run build
+
+# 发布包体积审计（npm pack dry-run）
+npm run audit:pack
+
+# 文档静态资源体积审计
+npm run audit:docs:assets
+```
 
 -----
