@@ -27,7 +27,6 @@ features:
     details: 纯 TypeScript，运行时仅依赖 @noble/curves 与 @noble/hashes，适合生产环境
 
 copyright: false
-footer: Apache-2.0 Licensed | Copyright © 2025-present mumu
 ---
 
 ## 核心特性
