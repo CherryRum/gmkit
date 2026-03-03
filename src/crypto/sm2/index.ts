@@ -326,12 +326,16 @@ export function decrypt(
     }
   };
 
+  const requestedMode = options?.mode as unknown;
+
   // 1. 指定模式：直接尝试
-  if (options?.mode) {
-    const {c2, c3} = getComponents(options.mode);
+  if (requestedMode === SM2CipherMode.C1C3C2 || requestedMode === SM2CipherMode.C1C2C3) {
+    const {c2, c3} = getComponents(requestedMode);
     const result = tryVerifyAndDecrypt(x2, y2, t, c2, c3);
     if (result !== null) return result;
     throw new Error('Decryption failed: C3 verification failed');
+  } else if (typeof requestedMode === 'string' && requestedMode !== requestedMode.toLowerCase()) {
+    throw new Error(`Unsupported SM2 cipher mode: ${requestedMode}`);
   }
 
   // 2. 自动模式：先试 C1C3C2 (推荐)，失败再试 C1C2C3
@@ -897,7 +901,17 @@ export function encrypt(
   data: string | Uint8Array,
   options?: SM2EncryptOptions
 ): string {
-  const mode: SM2CipherModeType = options?.mode || SM2CipherMode.C1C3C2;
+  const requestedMode = options?.mode as unknown;
+  if (
+    typeof requestedMode === 'string' &&
+    requestedMode !== SM2CipherMode.C1C3C2 &&
+    requestedMode !== SM2CipherMode.C1C2C3 &&
+    requestedMode !== requestedMode.toLowerCase()
+  ) {
+    throw new Error(`Unsupported SM2 cipher mode: ${requestedMode}`);
+  }
+  const mode: SM2CipherModeType =
+    requestedMode === SM2CipherMode.C1C2C3 ? SM2CipherMode.C1C2C3 : SM2CipherMode.C1C3C2;
   const outputFormat: OutputFormatType = options?.outputFormat || OutputFormat.HEX;
 
   // 自动识别并规范化公钥输入
@@ -980,6 +994,9 @@ export function sign(
   const cleanPrivateKey = normalizePrivateKeyInput(privateKey);
   const userId = options?.userId || DEFAULT_USER_ID;
   const signatureFormat = options?.signatureFormat || 'raw';
+  if (signatureFormat !== 'raw' && signatureFormat !== 'der') {
+    throw new Error(`Invalid signature format: ${signatureFormat}`);
+  }
   const outputFormat = options?.outputFormat || OutputFormat.HEX;
   const skipZ = options?.skipZComputation || false;
 
