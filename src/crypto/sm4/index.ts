@@ -1043,11 +1043,11 @@ export function decrypt(
     if (!authTag) {
       throw new Error('Authentication tag is required for GCM mode');
     }
-
-    const ivBytes = strictHexToBytes(options.iv, 'IV');
     if (authTag.length < 12 || authTag.length > 16) {
       throw new Error('Authentication tag length must be between 12 and 16 bytes for GCM mode');
     }
+
+    const ivBytes = strictHexToBytes(options.iv, 'IV');
     if (ivBytes.length !== 12) {
       throw new Error('IV must be 12 bytes (24 hex characters) for GCM mode');
     }
