@@ -37,6 +37,15 @@ import {
   type InputFormatType
 } from '../../types/constants';
 
+function strictHexToBytes(input: BytesLike, fieldName: string): Uint8Array {
+  if (input instanceof Uint8Array) return input;
+  const normalized = input.startsWith('0x') || input.startsWith('0X') ? input.slice(2) : input;
+  if (normalized.length % 2 !== 0) {
+    throw new Error(`${fieldName} must be an even-length hex string`);
+  }
+  return hexToBytes(input);
+}
+
 // SM4 S盒（置换盒）- 用于非线性变换
 const SBOX: number[] = [
   0xd6, 0x90, 0xe9, 0xfe, 0xcc, 0xe1, 0x3d, 0xb7, 0x16, 0xb6, 0x14, 0xc2, 0x28, 0xfb, 0x2c, 0x05,
@@ -612,7 +621,7 @@ export function encrypt(
   const mode = (options?.mode || CipherMode.ECB).toLowerCase();
   const padding = (options?.padding || PaddingMode.PKCS7).toLowerCase();
 
-  const keyBytes = key instanceof Uint8Array ? key : hexToBytes(key);
+  const keyBytes = strictHexToBytes(key, 'SM4 key');
   if (keyBytes.length !== 16) {
     throw new Error('SM4 key must be 16 bytes (32 hex characters)');
   }
@@ -654,7 +663,7 @@ export function encrypt(
     if (!options?.iv) {
       throw new Error('IV is required for CBC mode');
     }
-    let ivBytes = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    let ivBytes = strictHexToBytes(options.iv, 'IV');
     if (ivBytes.length !== 16) {
       throw new Error('IV must be 16 bytes (32 hex characters)');
     }
@@ -670,7 +679,7 @@ export function encrypt(
     if (!options?.iv) {
       throw new Error('IV (nonce/counter) is required for CTR mode');
     }
-    const counter = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    const counter = strictHexToBytes(options.iv, 'IV');
     if (counter.length !== 16) {
       throw new Error('IV must be 16 bytes (32 hex characters)');
     }
@@ -691,7 +700,7 @@ export function encrypt(
     if (!options?.iv) {
       throw new Error('IV is required for CFB mode');
     }
-    let shift = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    let shift = strictHexToBytes(options.iv, 'IV');
     if (shift.length !== 16) {
       throw new Error('IV must be 16 bytes (32 hex characters)');
     }
@@ -710,7 +719,7 @@ export function encrypt(
     if (!options?.iv) {
       throw new Error('IV is required for OFB mode');
     }
-    let shift = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    let shift = strictHexToBytes(options.iv, 'IV');
     if (shift.length !== 16) {
       throw new Error('IV must be 16 bytes (32 hex characters)');
     }
@@ -727,7 +736,7 @@ export function encrypt(
     if (!options?.iv) {
       throw new Error('IV is required for GCM mode');
     }
-    const ivBytes = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    const ivBytes = strictHexToBytes(options.iv, 'IV');
     if (ivBytes.length !== 12) {
       throw new Error('IV must be 12 bytes (24 hex characters) for GCM mode');
     }
@@ -809,7 +818,7 @@ export function encrypt(
       throw new Error('Nonce is required for CCM mode');
     }
 
-    const nonceBytes = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    const nonceBytes = strictHexToBytes(options.iv, 'Nonce');
     if (nonceBytes.length < 7 || nonceBytes.length > 13) {
       throw new Error('Nonce must be 7-13 bytes (14-26 hex characters) for CCM mode');
     }
@@ -899,7 +908,7 @@ export function decrypt(
   const mode = (options?.mode || CipherMode.ECB).toLowerCase();
   const padding = (options?.padding || PaddingMode.PKCS7).toLowerCase();
 
-  const keyBytes = key instanceof Uint8Array ? key : hexToBytes(key);
+  const keyBytes = strictHexToBytes(key, 'SM4 key');
   if (keyBytes.length !== 16) {
     throw new Error('SM4 key must be 16 bytes (32 hex characters)');
   }
@@ -956,7 +965,7 @@ export function decrypt(
     if (!options?.iv) {
       throw new Error('IV is required for CBC mode');
     }
-    let ivBytes = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    let ivBytes = strictHexToBytes(options.iv, 'IV');
     if (ivBytes.length !== 16) {
       throw new Error('IV must be 16 bytes (32 hex characters)');
     }
@@ -973,7 +982,7 @@ export function decrypt(
     if (!options?.iv) {
       throw new Error('IV (nonce/counter) is required for CTR mode');
     }
-    const counter = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    const counter = strictHexToBytes(options.iv, 'IV');
     if (counter.length !== 16) {
       throw new Error('IV must be 16 bytes (32 hex characters)');
     }
@@ -994,7 +1003,7 @@ export function decrypt(
     if (!options?.iv) {
       throw new Error('IV is required for CFB mode');
     }
-    let shift = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    let shift = strictHexToBytes(options.iv, 'IV');
     if (shift.length !== 16) {
       throw new Error('IV must be 16 bytes (32 hex characters)');
     }
@@ -1014,7 +1023,7 @@ export function decrypt(
     if (!options?.iv) {
       throw new Error('IV is required for OFB mode');
     }
-    let shift = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    let shift = strictHexToBytes(options.iv, 'IV');
     if (shift.length !== 16) {
       throw new Error('IV must be 16 bytes (32 hex characters)');
     }
@@ -1035,7 +1044,10 @@ export function decrypt(
       throw new Error('Authentication tag is required for GCM mode');
     }
 
-    const ivBytes = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    const ivBytes = strictHexToBytes(options.iv, 'IV');
+    if (authTag.length < 12 || authTag.length > 16) {
+      throw new Error('Authentication tag length must be between 12 and 16 bytes for GCM mode');
+    }
     if (ivBytes.length !== 12) {
       throw new Error('IV must be 12 bytes (24 hex characters) for GCM mode');
     }
@@ -1112,7 +1124,7 @@ export function decrypt(
       throw new Error('Authentication tag is required for CCM mode');
     }
 
-    const nonceBytes = options.iv instanceof Uint8Array ? options.iv : hexToBytes(options.iv);
+    const nonceBytes = strictHexToBytes(options.iv, 'Nonce');
     if (nonceBytes.length < 7 || nonceBytes.length > 13) {
       throw new Error('Nonce must be 7-13 bytes (14-26 hex characters) for CCM mode');
     }
