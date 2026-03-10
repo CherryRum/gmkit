@@ -28,6 +28,13 @@ import {
 } from '../../types/constants';
 import {sm2, SM2_CURVE_PARAMS} from './curve';
 import {encodeSignature, decodeSignature} from '../../core/asn1';
+import type { WeierstrassPoint } from '@noble/curves/abstract/weierstrass.js';
+
+/**
+ * SM2 椭圆曲线上的点类型
+ * 基于 @noble/curves 的 Weierstrass 曲线点
+ */
+type SM2Point = WeierstrassPoint<bigint>;
 
 /**
  * SM2 曲线参数接口（用于自定义曲线）
@@ -217,11 +224,11 @@ function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
 
 /**
  * 准备解密所需的中间值
- * @param privateKey
- * @param c1Point
- * @param c2Length
+ * @param privateKey - 私钥（十六进制字符串，32 字节）
+ * @param c1Point - 密文中的 C1 椭圆曲线点
+ * @param c2Length - C2 密文的字节长度
  */
-function prepareDecrypt(privateKey: string, c1Point: any, c2Length: number) {
+function prepareDecrypt(privateKey: string, c1Point: SM2Point, c2Length: number) {
   const privateKeyBigInt = BigInt('0x' + privateKey);
   const s = c1Point.multiply(privateKeyBigInt);
   const sBytes = s.toBytes(false);
@@ -474,7 +481,7 @@ function decryptAsn1(privateKey: string, cipherBytes: Uint8Array): string {
  */
 function decryptCore(
   privateKey: string,
-  c1Point: any,
+  c1Point: SM2Point,
   c2: Uint8Array,
   c3: Uint8Array
 ): string {
@@ -1315,7 +1322,7 @@ export function keyExchange(params: SM2KeyExchangeParams): SM2KeyExchangeResult 
   const w = 127;
   const powerOf2W = 1n << BigInt(w);
 
-  function calculateXBar(point: any): bigint {
+  function calculateXBar(point: SM2Point): bigint {
     const pointBytes = point.toBytes(false);
     const x = pointBytes.slice(1, 33); // x 坐标（32 字节）
     const xBigInt = BigInt('0x' + bytesToHex(x));

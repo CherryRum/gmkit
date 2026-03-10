@@ -94,7 +94,8 @@ function ghash(h: Uint8Array, data: Uint8Array): Uint8Array {
 
   // 逐块处理每 16 字节的数据
   for (let i = 0; i < data.length; i += 16) {
-    const block = data.slice(i, i + 16);
+    // 使用 subarray 创建零拷贝视图，替代 slice 减少内存分配
+    const block = data.subarray(i, i + 16);
 
     // 与上一轮结果按位异或
     for (let j = 0; j < 16 && j < block.length; j++) {

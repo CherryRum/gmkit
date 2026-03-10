@@ -1,4 +1,5 @@
 import { digest as digestFunc, hmac as hmacFunc, type SM3Options } from './index';
+import { normalizeInput } from '../../core/utils';
 import { OutputFormat, type OutputFormatType } from '../../types/constants';
 
 /**
@@ -65,7 +66,7 @@ export class SM3 {
    * @returns 当前实例（便于链式调用）
    */
   update(data: string | Uint8Array): this {
-    const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
+    const bytes = normalizeInput(data);
     this.data.push(bytes);
     return this;
   }

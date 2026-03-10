@@ -6,6 +6,7 @@ import { sha256 as nobleSha256, sha384 as nobleSha384, sha512 as nobleSha512 } f
 import { sha1 as nobleSha1 } from '@noble/hashes/legacy.js';
 import { normalizeInput, bytesToHex, bytesToBase64 } from '../../core/utils';
 import { OutputFormat, type OutputFormatType } from '../../types/constants';
+import type { Hash, CHash } from '@noble/hashes/utils.js';
 
 /**
  * SHA 哈希算法的抽象基类
@@ -15,11 +16,11 @@ import { OutputFormat, type OutputFormatType } from '../../types/constants';
  */
 abstract class SHABase {
   /** 底层哈希器实例 */
-  protected hasher: any;
+  protected hasher: Hash<Hash<any>>;
   /** 输出格式（hex 或 base64） */
   protected outputFormat: OutputFormatType;
 
-  protected constructor(hasher: any, outputFormat: OutputFormatType = OutputFormat.HEX) {
+  protected constructor(hasher: CHash, outputFormat: OutputFormatType = OutputFormat.HEX) {
     this.hasher = hasher.create();
     this.outputFormat = outputFormat;
   }
@@ -74,7 +75,7 @@ abstract class SHABase {
    * 获取哈希器构造函数（子类实现）
    * 用于 reset() 方法中创建新的哈希器实例
    */
-  protected abstract getHasherConstructor(): any;
+  protected abstract getHasherConstructor(): CHash;
 }
 
 /**

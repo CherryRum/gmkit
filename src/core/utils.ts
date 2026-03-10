@@ -235,6 +235,18 @@ export function uint32ToBytes4BE(value: number): Uint8Array {
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 /**
+ * 预计算的 Base64 反向查找表（字符码 -> 6 位值）
+ * 在模块加载时一次性构建，避免每次 base64ToBytes 调用时重新创建
+ */
+const BASE64_LOOKUP: Uint8Array = (() => {
+  const lookup = new Uint8Array(128);
+  for (let i = 0; i < BASE64_CHARS.length; i++) {
+    lookup[BASE64_CHARS.charCodeAt(i)] = i;
+  }
+  return lookup;
+})();
+
+/**
  * 将 Uint8Array 转换为 Base64 字符串
  * @param bytes - 要转换的 Uint8Array
  * @returns Base64 编码的字符串
@@ -284,12 +296,6 @@ export function base64ToBytes(base64: string): Uint8Array {
   }
   base64 = cleaned;
 
-  // 创建反向查找表
-  const lookup: { [key: string]: number } = {};
-  for (let i = 0; i < BASE64_CHARS.length; i++) {
-    lookup[BASE64_CHARS[i]] = i;
-  }
-
   // 计算输出长度
   const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
   const len = base64.length;
@@ -299,11 +305,12 @@ export function base64ToBytes(base64: string): Uint8Array {
   let byteIndex = 0;
 
   // 每次处理 4 个 Base64 字符（24 位）转换为 3 个字节
+  // 使用预计算的 BASE64_LOOKUP 查找表，避免每次调用创建新对象
   for (let i = 0; i < len; i += 4) {
-    const char1 = lookup[base64[i]] || 0;
-    const char2 = lookup[base64[i + 1]] || 0;
-    const char3 = lookup[base64[i + 2]] || 0;
-    const char4 = lookup[base64[i + 3]] || 0;
+    const char1 = BASE64_LOOKUP[base64.charCodeAt(i)] || 0;
+    const char2 = BASE64_LOOKUP[base64.charCodeAt(i + 1)] || 0;
+    const char3 = BASE64_LOOKUP[base64.charCodeAt(i + 2)] || 0;
+    const char4 = BASE64_LOOKUP[base64.charCodeAt(i + 3)] || 0;
 
     const chunk = (char1 << 18) | (char2 << 12) | (char3 << 6) | char4;
 
