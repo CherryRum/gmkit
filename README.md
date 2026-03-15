@@ -166,13 +166,14 @@ const sha512Hash = sha.sha512('Hello World');
 
 -----
 
-## 0.9.3 升级提示（包含不兼容变更）
+## 0.9.4 修订提示（安全与文档对齐）
 
 - `sm4Encrypt` 现在返回 `{ ciphertext, tag?, format }` 对象；`sm4Decrypt` 可直接接收该对象。
 - `zucKeystream(key, iv, length)` 的 `length` 改为 **字节数**；若需要按 32-bit word，使用 `zucKeystreamWords`。
 - `sm2Encrypt` 的模式参数改为选项对象：`sm2Encrypt(pub, data, { mode })`。
 - `sign / verify / signatureToXml` 支持 `signatureFormat: 'raw' | 'der' | 'auto'`；DER 输入请显式标注。
 - Base64 密文解密支持自动识别；跨语言互操作时建议显式指定 `inputFormat: InputFormat.BASE64`（SM2 / SM4 / ZUC）。
+- 安全修复：SM2 现在会拒绝非法 `mode` / `signatureFormat`；SM4 现在会拒绝奇数长度的 hex key/iv，并严格校验 GCM 标签长度。
 
 -----
 
@@ -262,6 +263,7 @@ const hash = sha.sha256('Hello World');
 - Java/BouncyCastle 若使用 `SM4/CCM/NoPadding`，前端/Node 对应 `mode: CipherMode.CCM`；需显式对齐 nonce（7-13 字节）和 tag 长度。
 - SM2 签名格式要显式约定：Java 常见 DER，gmkitx 默认 raw。
 - Base64 密文解密支持自动识别；与 Java 等异构系统对接时建议显式传 `inputFormat: InputFormat.BASE64`（SM2 / SM4 / ZUC）。
+- 完整公开 API 清单与 Java 端实现映射见 [`docs/dev/API-SURFACE.zh-CN.md`](./docs/dev/API-SURFACE.zh-CN.md)。
 
 ## 编码与格式
 

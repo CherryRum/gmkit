@@ -82,6 +82,7 @@ export default defineUserConfig({
         children: [
           { text: '架构设计', link: '/dev/ARCHITECTURE.zh-CN' },
           { text: '导入方式', link: '/dev/IMPORT_GUIDE' },
+          { text: '公开 API 清单', link: '/dev/API-SURFACE.zh-CN' },
           { text: 'Java 对接指南', link: '/dev/JAVA-INTEGRATION.zh-CN' },
           { text: 'Go 对接指南', link: '/dev/GO-INTEGRATION.zh-CN' },
           { text: 'Python 对接指南', link: '/dev/PYTHON-INTEGRATION.zh-CN' },
@@ -129,6 +130,7 @@ export default defineUserConfig({
         children: [
           '/dev/ARCHITECTURE.zh-CN',
           '/dev/IMPORT_GUIDE',
+          '/dev/API-SURFACE.zh-CN',
           '/dev/JAVA-INTEGRATION.zh-CN',
           '/dev/GO-INTEGRATION.zh-CN',
           '/dev/PYTHON-INTEGRATION.zh-CN',

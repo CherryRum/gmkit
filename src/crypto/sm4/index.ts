@@ -18,16 +18,18 @@
 import {
   normalizeInput,
   hexToBytes,
-  decodeInput,
-  autoDecodeString,
+  base64ToBytes,
   encodeOutput,
   bytesToString,
   xor,
   bytes4ToUint32BE,
   uint32ToBytes4BE,
+  isHexString,
+  isBase64String,
   type BytesLike
 } from '../../core/utils';
 import {
+  InputFormat,
   PaddingMode,
   CipherMode,
   OutputFormat,
@@ -36,15 +38,6 @@ import {
   type OutputFormatType,
   type InputFormatType
 } from '../../types/constants';
-
-function strictHexToBytes(input: BytesLike, fieldName: string): Uint8Array {
-  if (input instanceof Uint8Array) return input;
-  const normalized = input.startsWith('0x') || input.startsWith('0X') ? input.slice(2) : input;
-  if (normalized.length % 2 !== 0) {
-    throw new Error(`${fieldName} must be an even-length hex string`);
-  }
-  return hexToBytes(input);
-}
 
 // SM4 S盒（置换盒）- 用于非线性变换
 const SBOX: number[] = [
@@ -577,6 +570,99 @@ export interface SM4DecryptOptions extends SM4Options {
   tagFormat?: InputFormatType;
 }
 
+function normalizeCipherMode(mode?: CipherModeType): CipherModeType {
+  if (mode === undefined) {
+    return CipherMode.ECB;
+  }
+  if (!Object.values(CipherMode).includes(mode)) {
+    throw new Error(`Unsupported cipher mode: ${String(mode)}`);
+  }
+  return mode;
+}
+
+function normalizePaddingMode(padding?: PaddingModeType): PaddingModeType {
+  if (padding === undefined) {
+    return PaddingMode.PKCS7;
+  }
+  if (!Object.values(PaddingMode).includes(padding)) {
+    throw new Error(`Unsupported padding mode: ${String(padding)}`);
+  }
+  return padding;
+}
+
+function normalizeOutputFormat(outputFormat?: OutputFormatType): OutputFormatType {
+  if (outputFormat === undefined) {
+    return OutputFormat.HEX;
+  }
+  if (!Object.values(OutputFormat).includes(outputFormat)) {
+    throw new Error(`Unsupported output format: ${String(outputFormat)}`);
+  }
+  return outputFormat;
+}
+
+function normalizeInputFormat(inputFormat?: InputFormatType, fieldName: string = 'input format'): InputFormatType | undefined {
+  if (inputFormat === undefined) {
+    return undefined;
+  }
+  if (!Object.values(InputFormat).includes(inputFormat)) {
+    throw new Error(`Unsupported ${fieldName}: ${String(inputFormat)}`);
+  }
+  return inputFormat;
+}
+
+function decodeStrictHex(input: string, label: string): Uint8Array {
+  let normalized = input.trim();
+  if (normalized.startsWith('0x') || normalized.startsWith('0X')) {
+    normalized = normalized.slice(2);
+  }
+  if (normalized.length % 2 !== 0) {
+    throw new Error(`Invalid ${label}: hexadecimal strings must have an even length`);
+  }
+  if (normalized.length > 0 && !isHexString(normalized)) {
+    throw new Error(`Invalid ${label}: must be a hexadecimal string`);
+  }
+  return hexToBytes(normalized);
+}
+
+function decodeStrictHexLike(input: BytesLike, label: string): Uint8Array {
+  return input instanceof Uint8Array ? input : decodeStrictHex(input, label);
+}
+
+function decodeCipherString(input: string, format: InputFormatType | undefined, label: string): Uint8Array {
+  const normalized = format === undefined ? undefined : normalizeInputFormat(format, label);
+  if (normalized === InputFormat.HEX) {
+    return decodeStrictHex(input, label);
+  }
+  if (normalized === InputFormat.BASE64) {
+    return base64ToBytes(input);
+  }
+
+  const trimmed = input.trim();
+  if (isHexString(trimmed)) {
+    return decodeStrictHex(trimmed, label);
+  }
+  if (isBase64String(trimmed)) {
+    return base64ToBytes(trimmed);
+  }
+  return decodeStrictHex(trimmed, label);
+}
+
+function resolveGcmTagLength(tagLength?: number): number {
+  const resolved = tagLength ?? 16;
+  if (!Number.isInteger(resolved) || resolved < 12 || resolved > 16) {
+    throw new Error('Tag length must be between 12 and 16 bytes');
+  }
+  return resolved;
+}
+
+function resolveCcmTagLength(tagLength?: number): number {
+  const resolved = tagLength ?? 16;
+  if (!Number.isInteger(resolved) || resolved < 4 || resolved > 16 || resolved % 2 !== 0) {
+    throw new Error('CCM tag length must be an even value between 4 and 16 bytes');
+  }
+  return resolved;
+}
+
 /**
  * 使用 SM4 加密数据
  * Encrypt data using SM4 block cipher
@@ -618,10 +704,11 @@ export function encrypt(
   data: string | Uint8Array,
   options?: SM4Options
 ): SM4CipherResult {
-  const mode = (options?.mode || CipherMode.ECB).toLowerCase();
-  const padding = (options?.padding || PaddingMode.PKCS7).toLowerCase();
+  const mode = normalizeCipherMode(options?.mode);
+  const padding = normalizePaddingMode(options?.padding);
+  const outputFormat = normalizeOutputFormat(options?.outputFormat);
 
-  const keyBytes = strictHexToBytes(key, 'SM4 key');
+  const keyBytes = decodeStrictHexLike(key, 'SM4 key');
   if (keyBytes.length !== 16) {
     throw new Error('SM4 key must be 16 bytes (32 hex characters)');
   }
@@ -663,7 +750,7 @@ export function encrypt(
     if (!options?.iv) {
       throw new Error('IV is required for CBC mode');
     }
-    let ivBytes = strictHexToBytes(options.iv, 'IV');
+    let ivBytes = decodeStrictHexLike(options.iv, 'IV');
     if (ivBytes.length !== 16) {
       throw new Error('IV must be 16 bytes (32 hex characters)');
     }
@@ -679,7 +766,7 @@ export function encrypt(
     if (!options?.iv) {
       throw new Error('IV (nonce/counter) is required for CTR mode');
     }
-    const counter = strictHexToBytes(options.iv, 'IV');
+    const counter = decodeStrictHexLike(options.iv, 'IV');
     if (counter.length !== 16) {
       throw new Error('IV must be 16 bytes (32 hex characters)');
     }
@@ -700,7 +787,7 @@ export function encrypt(
     if (!options?.iv) {
       throw new Error('IV is required for CFB mode');
     }
-    let shift = strictHexToBytes(options.iv, 'IV');
+    let shift = decodeStrictHexLike(options.iv, 'IV');
     if (shift.length !== 16) {
       throw new Error('IV must be 16 bytes (32 hex characters)');
     }
@@ -719,7 +806,7 @@ export function encrypt(
     if (!options?.iv) {
       throw new Error('IV is required for OFB mode');
     }
-    let shift = strictHexToBytes(options.iv, 'IV');
+    let shift = decodeStrictHexLike(options.iv, 'IV');
     if (shift.length !== 16) {
       throw new Error('IV must be 16 bytes (32 hex characters)');
     }
@@ -736,15 +823,12 @@ export function encrypt(
     if (!options?.iv) {
       throw new Error('IV is required for GCM mode');
     }
-    const ivBytes = strictHexToBytes(options.iv, 'IV');
+    const ivBytes = decodeStrictHexLike(options.iv, 'IV');
     if (ivBytes.length !== 12) {
       throw new Error('IV must be 12 bytes (24 hex characters) for GCM mode');
     }
 
-    const tagLength = options.tagLength || 16; // 默认生成 128 位标签
-    if (tagLength < 12 || tagLength > 16) {
-      throw new Error('Tag length must be between 12 and 16 bytes');
-    }
+    const tagLength = resolveGcmTagLength(options.tagLength);
 
     // 计算 H = E(K, 0^128)
     const h = encryptBlock(new Uint8Array(16), roundKeys);
@@ -789,7 +873,7 @@ export function encrypt(
     const ghashData = new Uint8Array(aadPadded.length + cPadded.length + 16);
     ghashData.set(aadPadded, 0);
     ghashData.set(cPadded, aadPadded.length);
-    
+
     // 追加比特长度（64 位大端）
     const view = new DataView(ghashData.buffer, ghashData.byteOffset, ghashData.byteLength);
     view.setUint32(ghashData.length - 16, Math.floor((aadLen * 8) / 0x100000000), false);
@@ -806,7 +890,6 @@ export function encrypt(
       tag[i] = ghashResult[i] ^ preCounterBlock[i];
     }
 
-    const outputFormat = options?.outputFormat || OutputFormat.HEX;
     return {
       ciphertext: encodeOutput(result, outputFormat),
       tag: encodeOutput(tag, outputFormat),
@@ -818,7 +901,7 @@ export function encrypt(
       throw new Error('Nonce is required for CCM mode');
     }
 
-    const nonceBytes = strictHexToBytes(options.iv, 'Nonce');
+    const nonceBytes = decodeStrictHexLike(options.iv, 'nonce');
     if (nonceBytes.length < 7 || nonceBytes.length > 13) {
       throw new Error('Nonce must be 7-13 bytes (14-26 hex characters) for CCM mode');
     }
@@ -829,10 +912,7 @@ export function encrypt(
       throw new Error(`Plaintext too long for CCM nonce size (max ${maxMessageLength.toString()} bytes)`);
     }
 
-    const tagLength = options.tagLength || 16;
-    if (tagLength < 4 || tagLength > 16 || tagLength % 2 !== 0) {
-      throw new Error('CCM tag length must be an even value between 4 and 16 bytes');
-    }
+    const tagLength = resolveCcmTagLength(options.tagLength);
 
     let aadBytes: Uint8Array = new Uint8Array(0);
     if (options.aad) {
@@ -848,7 +928,6 @@ export function encrypt(
       tag[i] = mac[i] ^ s0[i];
     }
 
-    const outputFormat = options?.outputFormat || OutputFormat.HEX;
     return {
       ciphertext: encodeOutput(ciphertext, outputFormat),
       tag: encodeOutput(tag, outputFormat),
@@ -858,7 +937,6 @@ export function encrypt(
     throw new Error(`Unsupported cipher mode: ${mode}`);
   }
 
-  const outputFormat = options?.outputFormat || OutputFormat.HEX;
   return {
     ciphertext: encodeOutput(result, outputFormat),
     format: outputFormat,
@@ -905,18 +983,19 @@ export function decrypt(
   encryptedData: BytesLike | SM4CipherResult,
   options?: SM4DecryptOptions
 ): string {
-  const mode = (options?.mode || CipherMode.ECB).toLowerCase();
-  const padding = (options?.padding || PaddingMode.PKCS7).toLowerCase();
+  const mode = normalizeCipherMode(options?.mode);
+  const padding = normalizePaddingMode(options?.padding);
+  const inputFormat = normalizeInputFormat(options?.inputFormat, 'input format');
+  const tagFormat = normalizeInputFormat(options?.tagFormat, 'tag format');
 
-  const keyBytes = strictHexToBytes(key, 'SM4 key');
+  const keyBytes = decodeStrictHexLike(key, 'SM4 key');
   if (keyBytes.length !== 16) {
     throw new Error('SM4 key must be 16 bytes (32 hex characters)');
   }
 
   const decodeWithOptionalFormat = (input: BytesLike, format?: InputFormatType): Uint8Array => {
     if (input instanceof Uint8Array) return input;
-    if (format) return decodeInput(input, format);
-    return autoDecodeString(input);
+    return decodeCipherString(input, format, 'ciphertext');
   };
 
   // 处理带有认证标签的 AEAD 密文（GCM / CCM）
@@ -929,10 +1008,12 @@ export function decrypt(
       if (!encryptedData.tag) {
         throw new Error(`${mode.toUpperCase()} mode requires authentication tag`);
       }
-      authTag = decodeWithOptionalFormat(encryptedData.tag, encryptedData.format);
+      authTag = decodeCipherString(encryptedData.tag, encryptedData.format, 'authentication tag');
     } else if ((typeof encryptedData === 'string' || encryptedData instanceof Uint8Array) && options?.tag) {
       ciphertextInput = encryptedData;
-      authTag = decodeWithOptionalFormat(options.tag, options.tagFormat || options.inputFormat);
+      authTag = options.tag instanceof Uint8Array
+        ? options.tag
+        : decodeCipherString(options.tag, tagFormat || inputFormat, 'authentication tag');
     } else {
       throw new Error(`${mode.toUpperCase()} mode requires authentication tag`);
     }
@@ -944,8 +1025,8 @@ export function decrypt(
 
   const dataBytes = typeof encryptedData === 'object' && 'ciphertext' in encryptedData
     ? decodeWithOptionalFormat(ciphertextInput, encryptedData.format)
-    : decodeWithOptionalFormat(ciphertextInput, options?.inputFormat);
-  
+    : decodeWithOptionalFormat(ciphertextInput, inputFormat);
+
   // 流模式下的数据长度不必是块大小的整数倍
   const isStreamMode = mode === 'ctr' || mode === 'cfb' || mode === 'ofb' || mode === 'gcm' || mode === 'ccm';
   if (!isStreamMode && dataBytes.length % 16 !== 0) {
@@ -965,7 +1046,7 @@ export function decrypt(
     if (!options?.iv) {
       throw new Error('IV is required for CBC mode');
     }
-    let ivBytes = strictHexToBytes(options.iv, 'IV');
+    let ivBytes = decodeStrictHexLike(options.iv, 'IV');
     if (ivBytes.length !== 16) {
       throw new Error('IV must be 16 bytes (32 hex characters)');
     }
@@ -982,7 +1063,7 @@ export function decrypt(
     if (!options?.iv) {
       throw new Error('IV (nonce/counter) is required for CTR mode');
     }
-    const counter = strictHexToBytes(options.iv, 'IV');
+    const counter = decodeStrictHexLike(options.iv, 'IV');
     if (counter.length !== 16) {
       throw new Error('IV must be 16 bytes (32 hex characters)');
     }
@@ -1003,7 +1084,7 @@ export function decrypt(
     if (!options?.iv) {
       throw new Error('IV is required for CFB mode');
     }
-    let shift = strictHexToBytes(options.iv, 'IV');
+    let shift = decodeStrictHexLike(options.iv, 'IV');
     if (shift.length !== 16) {
       throw new Error('IV must be 16 bytes (32 hex characters)');
     }
@@ -1023,7 +1104,7 @@ export function decrypt(
     if (!options?.iv) {
       throw new Error('IV is required for OFB mode');
     }
-    let shift = strictHexToBytes(options.iv, 'IV');
+    let shift = decodeStrictHexLike(options.iv, 'IV');
     if (shift.length !== 16) {
       throw new Error('IV must be 16 bytes (32 hex characters)');
     }
@@ -1043,13 +1124,16 @@ export function decrypt(
     if (!authTag) {
       throw new Error('Authentication tag is required for GCM mode');
     }
-    if (authTag.length < 12 || authTag.length > 16) {
-      throw new Error('Authentication tag length must be between 12 and 16 bytes for GCM mode');
-    }
 
-    const ivBytes = strictHexToBytes(options.iv, 'IV');
+    const ivBytes = decodeStrictHexLike(options.iv, 'IV');
     if (ivBytes.length !== 12) {
       throw new Error('IV must be 12 bytes (24 hex characters) for GCM mode');
+    }
+    const expectedTagLength = options?.tagLength === undefined
+      ? resolveGcmTagLength(authTag.length)
+      : resolveGcmTagLength(options.tagLength);
+    if (authTag.length !== expectedTagLength) {
+      throw new Error(`Authentication tag length must be ${expectedTagLength} bytes for GCM mode`);
     }
 
     // 计算 H = E(K, 0^128)
@@ -1081,7 +1165,7 @@ export function decrypt(
     const ghashData = new Uint8Array(aadPadded.length + cPadded.length + 16);
     ghashData.set(aadPadded, 0);
     ghashData.set(cPadded, aadPadded.length);
-    
+
     // 追加比特长度（64 位大端）
     const view = new DataView(ghashData.buffer, ghashData.byteOffset, ghashData.byteLength);
     view.setUint32(ghashData.length - 16, Math.floor((aadLen * 8) / 0x100000000), false);
@@ -1124,13 +1208,16 @@ export function decrypt(
       throw new Error('Authentication tag is required for CCM mode');
     }
 
-    const nonceBytes = strictHexToBytes(options.iv, 'Nonce');
+    const nonceBytes = decodeStrictHexLike(options.iv, 'nonce');
     if (nonceBytes.length < 7 || nonceBytes.length > 13) {
       throw new Error('Nonce must be 7-13 bytes (14-26 hex characters) for CCM mode');
     }
 
-    if (authTag.length < 4 || authTag.length > 16 || authTag.length % 2 !== 0) {
-      throw new Error('CCM tag length must be an even value between 4 and 16 bytes');
+    const expectedTagLength = options?.tagLength === undefined
+      ? resolveCcmTagLength(authTag.length)
+      : resolveCcmTagLength(options.tagLength);
+    if (authTag.length !== expectedTagLength) {
+      throw new Error(`Authentication tag length must be ${expectedTagLength} bytes for CCM mode`);
     }
 
     const qLength = 15 - nonceBytes.length;
@@ -1167,11 +1254,11 @@ export function decrypt(
     // 流密码模式不使用填充
   let unpadded: Uint8Array = result;
   if (!isStreamMode) {
-    if (padding === 'pkcs7') {
+     if (padding === PaddingMode.PKCS7) {
       // 去除 PKCS#7 填充
       // 为兼容不同的 ArrayBuffer 类型进行类型断言
       unpadded = pkcs7Unpad(result) as Uint8Array;
-    } else if (padding === 'zero') {
+    } else if (padding === PaddingMode.ZERO) {
       // 去除零填充
       // 为兼容不同的 ArrayBuffer 类型进行类型断言
       unpadded = zeroUnpad(result) as Uint8Array;

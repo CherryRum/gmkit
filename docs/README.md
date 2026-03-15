@@ -137,6 +137,7 @@ const sha512Hash = sha.sha512('Hello World');
 - [SM2 算法文档](/algorithms/SM2) - 椭圆曲线公钥密码
 - [SM3 算法文档](/algorithms/SM3) - 密码杂凑算法
 - [SM4 算法文档](/algorithms/SM4) - 分组密码算法
+- [公开 API 清单](/dev/API-SURFACE.zh-CN) - 当前全部导出、命名空间与 Java 端映射
 - [语言集成指南](/dev/JAVA-INTEGRATION.zh-CN) - Java、Go、Rust、Python 对接方案
 - [项目精简清单](/dev/PROJECT-SLIMMING-CHECKLIST.zh-CN) - 文档资产、构建告警、发布包体审计
 - [性能测试](/performance/PERFORMANCE) - 查看性能基准测试结果

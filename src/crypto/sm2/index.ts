@@ -119,6 +119,46 @@ function isValidHexString(str: string): boolean {
   return true;
 }
 
+function normalizeSM2CipherMode(mode?: SM2CipherModeType): SM2CipherModeType {
+  if (mode === undefined) {
+    return SM2CipherMode.C1C3C2;
+  }
+  if (mode !== SM2CipherMode.C1C3C2 && mode !== SM2CipherMode.C1C2C3) {
+    throw new Error(`Unsupported SM2 cipher mode: ${String(mode)}`);
+  }
+  return mode;
+}
+
+function normalizeSM2OutputFormat(outputFormat?: OutputFormatType): OutputFormatType {
+  if (outputFormat === undefined) {
+    return OutputFormat.HEX;
+  }
+  if (outputFormat !== OutputFormat.HEX && outputFormat !== OutputFormat.BASE64) {
+    throw new Error(`Unsupported output format: ${String(outputFormat)}`);
+  }
+  return outputFormat;
+}
+
+function normalizeSM2SignatureFormat(signatureFormat?: SM2SignatureFormat): SM2SignatureFormat {
+  if (signatureFormat === undefined) {
+    return 'raw';
+  }
+  if (signatureFormat !== 'raw' && signatureFormat !== 'der') {
+    throw new Error(`Unsupported SM2 signature format: ${String(signatureFormat)}`);
+  }
+  return signatureFormat;
+}
+
+function normalizeSM2SignatureInputFormat(signatureFormat?: SM2SignatureInputFormat): SM2SignatureInputFormat {
+  if (signatureFormat === undefined) {
+    return 'raw';
+  }
+  if (signatureFormat !== 'raw' && signatureFormat !== 'der' && signatureFormat !== 'auto') {
+    throw new Error(`Unsupported SM2 signature format: ${String(signatureFormat)}`);
+  }
+  return signatureFormat;
+}
+
 /**
  * 自动识别并规范化私钥输入
  * 支持：hex字符串（带或不带0x前缀）
@@ -289,6 +329,7 @@ export function decrypt(
   options?: SM2DecryptOptions
 ): string {
   const cleanPrivateKey = normalizePrivateKeyInput(privateKey);
+  const requestedMode = options?.mode === undefined ? undefined : normalizeSM2CipherMode(options.mode);
   const cipherBytes = encryptedData instanceof Uint8Array
     ? encryptedData
     : options?.inputFormat
@@ -326,16 +367,12 @@ export function decrypt(
     }
   };
 
-  const requestedMode = options?.mode as unknown;
-
   // 1. 指定模式：直接尝试
-  if (requestedMode === SM2CipherMode.C1C3C2 || requestedMode === SM2CipherMode.C1C2C3) {
+  if (requestedMode) {
     const {c2, c3} = getComponents(requestedMode);
     const result = tryVerifyAndDecrypt(x2, y2, t, c2, c3);
     if (result !== null) return result;
     throw new Error('Decryption failed: C3 verification failed');
-  } else if (typeof requestedMode === 'string' && requestedMode !== requestedMode.toLowerCase()) {
-    throw new Error(`Unsupported SM2 cipher mode: ${requestedMode}`);
   }
 
   // 2. 自动模式：先试 C1C3C2 (推荐)，失败再试 C1C2C3
@@ -901,18 +938,8 @@ export function encrypt(
   data: string | Uint8Array,
   options?: SM2EncryptOptions
 ): string {
-  const requestedMode = options?.mode as unknown;
-  if (
-    typeof requestedMode === 'string' &&
-    requestedMode !== SM2CipherMode.C1C3C2 &&
-    requestedMode !== SM2CipherMode.C1C2C3 &&
-    requestedMode !== requestedMode.toLowerCase()
-  ) {
-    throw new Error(`Unsupported SM2 cipher mode: ${requestedMode}`);
-  }
-  const mode: SM2CipherModeType =
-    requestedMode === SM2CipherMode.C1C2C3 ? SM2CipherMode.C1C2C3 : SM2CipherMode.C1C3C2;
-  const outputFormat: OutputFormatType = options?.outputFormat || OutputFormat.HEX;
+  const mode = normalizeSM2CipherMode(options?.mode);
+  const outputFormat = normalizeSM2OutputFormat(options?.outputFormat);
 
   // 自动识别并规范化公钥输入
   const cleanPublicKey = normalizePublicKeyInput(publicKey);
@@ -993,11 +1020,8 @@ export function sign(
   // 自动识别并规范化私钥输入
   const cleanPrivateKey = normalizePrivateKeyInput(privateKey);
   const userId = options?.userId || DEFAULT_USER_ID;
-  const signatureFormat = options?.signatureFormat || 'raw';
-  if (signatureFormat !== 'raw' && signatureFormat !== 'der') {
-    throw new Error(`Invalid signature format: ${signatureFormat}`);
-  }
-  const outputFormat = options?.outputFormat || OutputFormat.HEX;
+  const signatureFormat = normalizeSM2SignatureFormat(options?.signatureFormat);
+  const outputFormat = normalizeSM2OutputFormat(options?.outputFormat);
   const skipZ = options?.skipZComputation || false;
 
   // 使用 @noble/curves 进行签名
@@ -1059,7 +1083,7 @@ export function verify(
     // 自动识别并规范化公钥输入
     const cleanPublicKey = normalizePublicKeyInput(publicKey);
     const userId = options?.userId || DEFAULT_USER_ID;
-    const signatureFormat = options?.signatureFormat || 'raw';
+    const signatureFormat = normalizeSM2SignatureInputFormat(options?.signatureFormat);
     const inputFormat = options?.inputFormat;
     const skipZ = options?.skipZComputation || false;
 

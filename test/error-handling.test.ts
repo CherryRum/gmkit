@@ -154,13 +154,10 @@ describe('错误处理和输入验证测试', () => {
     });
 
     describe('密文模式验证', () => {
-      it('应该处理无效的密文模式（使用默认值）', () => {
+      it('应该拒绝无效的密文模式', () => {
         const keyPair = generateKeyPair();
-        // TypeScript类型检查会阻止无效值，运行时会使用默认值
         // @ts-expect-error Testing invalid input
-        const encrypted = sm2Encrypt(keyPair.publicKey, 'data', { mode: 'invalid' });
-        // 应该使用默认模式成功加密
-        expect(encrypted).toBeTruthy();
+        expect(() => sm2Encrypt(keyPair.publicKey, 'data', { mode: 'invalid' })).toThrow();
       });
 
       it('应该正确处理不同密文模式的互不兼容', () => {

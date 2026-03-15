@@ -37,6 +37,14 @@ tag:
 | Tencent Kona SM Suite | JCA 标准提供者，纯 Java 实现 |
 | gmkit-java | 原生 Java 实现（敬请期待） |
 
+## 先看公开 API 面
+
+在开始写 Java 端之前，建议先冻结 gmkitx 当前对外暴露的接口，再做对应实现，避免“文档理解版 API”和真实导出面偏离。
+
+- 公开 API 全量清单：[/dev/API-SURFACE.zh-CN](/dev/API-SURFACE.zh-CN)
+- 建议优先对齐：`SM2`、`SM3`、`SM4` 的函数式 API，再补类 API 与工具函数
+- 安全边界必须同步：`userId`、`signatureFormat`、`mode`、`padding`、`inputFormat/outputFormat`、`iv/nonce`、`tagLength`
+
 
 ## 依赖配置
 
