@@ -56,17 +56,17 @@ yarn add gmkitx
 
 ```ts
 import {
-  generateKeyPair,
+  sm2GenerateKeyPair,
   sm2Encrypt,
   sm2Decrypt,
-  sign,
-  verify,
+  sm2Sign,
+  sm2Verify,
   SM2CipherMode,
   InputFormat,
   OutputFormat,
 } from 'gmkitx';
 
-const { publicKey, privateKey } = generateKeyPair();
+const { publicKey, privateKey } = sm2GenerateKeyPair();
 const message = '订单明文';
 
 // 加密 / 解密（显式指定密文模式，便于互操作）
@@ -80,18 +80,18 @@ const plainText = sm2Decrypt(privateKey, cipherText, {
 });
 
 // 签名 / 验签
-const signature = sign(privateKey, message);
-const ok = verify(publicKey, message, signature);
+const signature = sm2Sign(privateKey, message);
+const ok = sm2Verify(publicKey, message, signature);
 ```
 
 #### 2) SM3 摘要 + HMAC
 
 ```ts
-import { digest, hmac, OutputFormat } from 'gmkitx';
+import { sm3Digest, sm3Hmac, OutputFormat } from 'gmkitx';
 
-const hexHash = digest('订单摘要'); // 默认 Hex
-const base64Hash = digest('订单摘要', { outputFormat: OutputFormat.BASE64 });
-const mac = hmac('sm3-secret', '订单摘要');
+const hexHash = sm3Digest('订单摘要'); // 默认 Hex
+const base64Hash = sm3Digest('订单摘要', { outputFormat: OutputFormat.BASE64 });
+const mac = sm3Hmac('sm3-secret', '订单摘要');
 ```
 
 #### 3) SM4 对称加密（CBC 示例）
@@ -158,11 +158,14 @@ const sha512Hash = sha.sha512('Hello World');
 ```html
 <script src="https://unpkg.com/gmkitx@latest/dist/index.global.js"></script>
 <script>
-  const { digest, sm4Encrypt } = GMKit;
+  const { sm3Digest, sm4Encrypt } = GMKit;
   
-  console.log('SM3 Hash:', digest('Browser Test'));
+  console.log('SM3 Hash:', sm3Digest('Browser Test'));
 </script>
 ```
+
+> 顶层函数式 API 现推荐使用带算法前缀的名称，例如 `sm2Sign`、`sm3Digest`、`sm2GenerateKeyPair`。
+> 旧的 `sign`、`digest`、`generateKeyPair` 等裸名仍继续导出，但仅作为兼容入口保留。
 
 -----
 
@@ -171,7 +174,7 @@ const sha512Hash = sha.sha512('Hello World');
 - `sm4Encrypt` 现在返回 `{ ciphertext, tag?, format }` 对象；`sm4Decrypt` 可直接接收该对象。
 - `zucKeystream(key, iv, length)` 的 `length` 改为 **字节数**；若需要按 32-bit word，使用 `zucKeystreamWords`。
 - `sm2Encrypt` 的模式参数改为选项对象：`sm2Encrypt(pub, data, { mode })`。
-- `sign / verify / signatureToXml` 支持 `signatureFormat: 'raw' | 'der' | 'auto'`；DER 输入请显式标注。
+- `sm2Sign / sm2Verify / signatureToXml` 支持 `signatureFormat: 'raw' | 'der' | 'auto'`；DER 输入请显式标注。
 - Base64 密文解密支持自动识别；跨语言互操作时建议显式指定 `inputFormat: InputFormat.BASE64`（SM2 / SM4 / ZUC）。
 - 安全修复：SM2 现在会拒绝非法 `mode` / `signatureFormat`；SM4 现在会拒绝奇数长度的 hex key/iv，并严格校验 GCM 标签长度。
 

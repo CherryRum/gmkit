@@ -48,42 +48,42 @@ SM2 的加密/签名属于非对称运算，性能开销明显高于对称加密
 ### 密钥对生成
 
 ```typescript
-import { generateKeyPair } from 'gmkitx';
+import { sm2GenerateKeyPair } from 'gmkitx';
 
 // 生成非压缩格式密钥对（默认）
-const { publicKey, privateKey } = generateKeyPair();
+const { publicKey, privateKey } = sm2GenerateKeyPair();
 console.log('公钥:', publicKey);   // 130位十六进制字符串，04开头
 console.log('私钥:', privateKey);  // 64位十六进制字符串
 
 // 生成压缩格式密钥对
-const compressed = generateKeyPair(true);
+const compressed = sm2GenerateKeyPair(true);
 console.log('压缩公钥:', compressed.publicKey);  // 66位十六进制字符串，02或03开头
 ```
 
 ### 从私钥导出公钥
 
 ```typescript
-import { getPublicKeyFromPrivateKey } from 'gmkitx';
+import { sm2GetPublicKeyFromPrivateKey } from 'gmkitx';
 
 const privateKey = '228049e009de869baf9aba74f8f8c52e09cde1b52cafb0df7ab154ba4593743e';
 
 // 导出非压缩公钥
-const publicKey = getPublicKeyFromPrivateKey(privateKey);
+const publicKey = sm2GetPublicKeyFromPrivateKey(privateKey);
 
 // 导出压缩公钥
-const compressedPubKey = getPublicKeyFromPrivateKey(privateKey, true);
+const compressedPubKey = sm2GetPublicKeyFromPrivateKey(privateKey, true);
 ```
 
 ### 公钥压缩与解压
 
 ```typescript
-import { compressPublicKey, decompressPublicKey } from 'gmkitx';
+import { sm2CompressPublicKey, sm2DecompressPublicKey } from 'gmkitx';
 
 // 压缩公钥（130位 -> 66位）
-const compressed = compressPublicKey(publicKey);
+const compressed = sm2CompressPublicKey(publicKey);
 
 // 解压公钥（66位 -> 130位）
-const uncompressed = decompressPublicKey(compressed);
+const uncompressed = sm2DecompressPublicKey(compressed);
 ```
 
 ## 加密与解密
@@ -95,9 +95,9 @@ SM2 支持非对称加密，使用公钥加密、私钥解密。
 ### 基本用法
 
 ```typescript
-import { sm2Encrypt, sm2Decrypt } from 'gmkitx';
+import { sm2GenerateKeyPair, sm2Encrypt, sm2Decrypt } from 'gmkitx';
 
-const { publicKey, privateKey } = generateKeyPair();
+const { publicKey, privateKey } = sm2GenerateKeyPair();
 
 // 加密
 const plaintext = 'Hello, SM2!';
@@ -107,6 +107,9 @@ const ciphertext = sm2Encrypt(publicKey, plaintext);
 const decrypted = sm2Decrypt(privateKey, ciphertext);
 console.log(decrypted === plaintext); // true
 ```
+
+> 顶层函数式 API 推荐使用 `sm2GenerateKeyPair`、`sm2Sign`、`sm2Verify`、`sm2KeyExchange` 等带前缀名称。
+> 旧的 `generateKeyPair`、`sign`、`verify`、`keyExchange` 仍可用，但仅作为兼容入口保留。
 
 ### 密文模式
 
@@ -165,16 +168,16 @@ SM2 支持数字签名和验签功能，确保数据完整性和来源可信。
 ### 基本签名
 
 ```typescript
-import { sign, verify } from 'gmkitx';
+import { sm2GenerateKeyPair, sm2Sign, sm2Verify } from 'gmkitx';
 
-const { publicKey, privateKey } = generateKeyPair();
+const { publicKey, privateKey } = sm2GenerateKeyPair();
 const message = '重要消息';
 
 // 签名
-const signature = sign(privateKey, message);
+const signature = sm2Sign(privateKey, message);
 
 // 验签
-const isValid = verify(publicKey, message, signature);
+const isValid = sm2Verify(publicKey, message, signature);
 console.log('签名有效:', isValid);
 ```
 
@@ -186,17 +189,17 @@ SM2 签名支持用户标识符（User ID）。GM/T 0009-2023 推荐使用空字
 签名内部会先计算用户绑定的 Z 值（基于 userId 与公钥参数），避免身份与签名脱钩。
 
 ```typescript
-import { sign, verify, DEFAULT_USER_ID } from 'gmkitx';
+import { sm2Sign, sm2Verify, DEFAULT_USER_ID } from 'gmkitx';
 
 const userId = '1234567812345678'; // 自定义用户 ID
 
 // 使用自定义 userId 签名
-const signature = sign(privateKey, message, {
+const signature = sm2Sign(privateKey, message, {
   userId
 });
 
 // 验签时也必须提供相同的 userId
-const isValid = verify(publicKey, message, signature, {
+const isValid = sm2Verify(publicKey, message, signature, {
   userId
 });
 ```
@@ -208,16 +211,16 @@ const isValid = verify(publicKey, message, signature, {
 支持 DER 与 Raw 两种签名格式（默认 Raw）：
 
 ```typescript
-import { sign, verify } from 'gmkitx';
+import { sm2Sign, sm2Verify } from 'gmkitx';
 
 // DER 格式（ASN.1 编码）
-const derSig = sign(privateKey, message, { signatureFormat: 'der' });
+const derSig = sm2Sign(privateKey, message, { signatureFormat: 'der' });
 
 // Raw 格式（r || s，128 位十六进制）
-const rawSig = sign(privateKey, message, { signatureFormat: 'raw' });
+const rawSig = sm2Sign(privateKey, message, { signatureFormat: 'raw' });
 
 // 验签时请显式指定签名格式；如需自动识别可用 signatureFormat: 'auto'
-const ok = verify(publicKey, message, derSig, { signatureFormat: 'der' });
+const ok = sm2Verify(publicKey, message, derSig, { signatureFormat: 'der' });
 ```
 
 ## 密钥交换
@@ -226,22 +229,22 @@ SM2 密钥交换遵循 GM/T 0003.3/GM/T 0009 协议，包含长期密钥 + 临�
 它**不是**简单 ECDH，需要交换临时公钥并按协议顺序执行。
 
 ```typescript
-import { generateKeyPair, keyExchange } from 'gmkitx';
+import { sm2GenerateKeyPair, sm2KeyExchange } from 'gmkitx';
 
 // A/B 长期密钥对
-const alice = generateKeyPair();
-const bob = generateKeyPair();
+const alice = sm2GenerateKeyPair();
+const bob = sm2GenerateKeyPair();
 
 // A/B 临时密钥对
-const aliceTemp = generateKeyPair();
-const bobTemp = generateKeyPair();
+const aliceTemp = sm2GenerateKeyPair();
+const bobTemp = sm2GenerateKeyPair();
 
 // A 先把临时公钥发给 B
 const aliceTempPub = aliceTemp.publicKey;
 const bobTempPub = bobTemp.publicKey;
 
 // B 计算共享密钥，并返回自己的临时公钥
-const resultB = keyExchange({
+const resultB = sm2KeyExchange({
   privateKey: bob.privateKey,
   publicKey: bob.publicKey,
   tempPrivateKey: bobTemp.privateKey,
@@ -251,7 +254,7 @@ const resultB = keyExchange({
 });
 
 // A 收到 B 的临时公钥后，完成协商
-const resultA = keyExchange({
+const resultA = sm2KeyExchange({
   privateKey: alice.privateKey,
   publicKey: alice.publicKey,
   tempPrivateKey: aliceTemp.privateKey,
@@ -295,10 +298,10 @@ const publicKey = sm2.getPublicKey();
 
 | 函数 | 说明 | 返回值 |
 |------|------|--------|
-| `generateKeyPair(compressed?: boolean)` | 生成 SM2 密钥对 | `KeyPair` |
-| `getPublicKeyFromPrivateKey(privateKey, compressed?)` | 从私钥导出公钥 | `string` |
-| `compressPublicKey(publicKey)` | 压缩公钥 | `string` |
-| `decompressPublicKey(publicKey)` | 解压公钥 | `string` |
+| `sm2GenerateKeyPair(compressed?: boolean)` | 生成 SM2 密钥对 | `KeyPair` |
+| `sm2GetPublicKeyFromPrivateKey(privateKey, compressed?)` | 从私钥导出公钥 | `string` |
+| `sm2CompressPublicKey(publicKey)` | 压缩公钥 | `string` |
+| `sm2DecompressPublicKey(publicKey)` | 解压公钥 | `string` |
 
 ### 加密解密
 
@@ -311,14 +314,14 @@ const publicKey = sm2.getPublicKey();
 
 | 函数 | 说明 | 返回值 |
 |------|------|--------|
-| `sign(privateKey, message, options?)` | SM2 签名 | `string` |
-| `verify(publicKey, message, signature, options?)` | SM2 验签 | `boolean` |
+| `sm2Sign(privateKey, message, options?)` | SM2 签名 | `string` |
+| `sm2Verify(publicKey, message, signature, options?)` | SM2 验签 | `boolean` |
 
 ### 密钥交换
 
 | 函数 | 说明 | 返回值 |
 |------|------|--------|
-| `keyExchange(params)` | SM2 密钥交换 | `SM2KeyExchangeResult` |
+| `sm2KeyExchange(params)` | SM2 密钥交换 | `SM2KeyExchangeResult` |
 
 ## 高级用法
 
@@ -345,14 +348,14 @@ const customParams = {
 
 ```typescript
 // 批量生成密钥对
-const keyPairs = Array.from({ length: 10 }, () => generateKeyPair());
+const keyPairs = Array.from({ length: 10 }, () => sm2GenerateKeyPair());
 
 // 批量签名
-const signatures = messages.map(msg => sign(privateKey, msg));
+const signatures = messages.map(msg => sm2Sign(privateKey, msg));
 
 // 批量验签
 const results = messages.map((msg, i) => 
-  verify(publicKey, msg, signatures[i])
+  sm2Verify(publicKey, msg, signatures[i])
 );
 ```
 

@@ -5,17 +5,17 @@
 
 import {
   // Functional API - SM3
-  digest,
-  hmac,
+  sm3Digest,
+  sm3Hmac,
   // Functional API - SM4
   sm4Encrypt,
   sm4Decrypt,
   // Functional API - SM2
-  generateKeyPair,
+  sm2GenerateKeyPair,
   sm2Encrypt,
   sm2Decrypt,
-  sign,
-  verify,
+  sm2Sign,
+  sm2Verify,
   // Functional API - ZUC
   zucEncrypt,
   zucDecrypt,
@@ -58,13 +58,13 @@ console.log();
 
 // SM3 Functional API Examples
 console.log('--- SM3 Hash (Functional API) ---');
-const hash1 = digest('abc');
+const hash1 = sm3Digest('abc');
 console.log('SM3("abc"):', hash1);
 
-const hash2 = digest('Hello, World!');
+const hash2 = sm3Digest('Hello, World!');
 console.log('SM3("Hello, World!"):', hash2);
 
-const mac = hmac('key', 'message');
+const mac = sm3Hmac('key', 'message');
 console.log('HMAC-SM3("key", "message"):', mac);
 console.log();
 
@@ -115,7 +115,7 @@ console.log();
 
 // SM2 Functional API Examples
 console.log('--- SM2 Elliptic Curve (Functional API) ---');
-const keyPair = generateKeyPair();
+const keyPair = sm2GenerateKeyPair();
 console.log('Generated key pair:');
 console.log('  Public Key:', keyPair.publicKey.slice(0, 40) + '...');
 console.log('  Private Key:', keyPair.privateKey.slice(0, 40) + '...');
@@ -127,9 +127,9 @@ const decryptedSM2 = sm2Decrypt(keyPair.privateKey, encryptedSM2, { mode: SM2Cip
 console.log('SM2 Decrypted:', decryptedSM2);
 
 const message = 'Message to sign';
-const signature = sign(keyPair.privateKey, message, { userId: DEFAULT_USER_ID });
+const signature = sm2Sign(keyPair.privateKey, message, { userId: DEFAULT_USER_ID });
 console.log('SM2 Signature:', signature.slice(0, 40) + '...');
-const isValid = verify(keyPair.publicKey, message, signature, { userId: DEFAULT_USER_ID });
+const isValid = sm2Verify(keyPair.publicKey, message, signature, { userId: DEFAULT_USER_ID });
 console.log('Signature Valid:', isValid);
 console.log();
 
@@ -225,7 +225,7 @@ console.log();
 // Output Format Examples
 console.log('--- Output Format Examples ---');
 // SM3 with Base64 output
-const base64Hash = digest('test', { outputFormat: OutputFormat.BASE64 });
+const base64Hash = sm3Digest('test', { outputFormat: OutputFormat.BASE64 });
 console.log('SM3 (Base64):', base64Hash);
 
 // SHA-256 with Base64 output

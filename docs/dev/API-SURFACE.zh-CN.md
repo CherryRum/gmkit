@@ -41,7 +41,8 @@ tag:
 
 | 分类 | 导出 |
 |:--|:--|
-| 函数 | `generateKeyPair`, `getPublicKeyFromPrivateKey`, `compressPublicKey`, `decompressPublicKey`, `sm2Encrypt`, `sm2Decrypt`, `sign`, `verify`, `keyExchange` |
+| 函数 | `sm2GenerateKeyPair`, `sm2GetPublicKeyFromPrivateKey`, `sm2CompressPublicKey`, `sm2DecompressPublicKey`, `sm2Encrypt`, `sm2Decrypt`, `sm2Sign`, `sm2Verify`, `sm2KeyExchange` |
+| 兼容旧名 | `generateKeyPair`, `getPublicKeyFromPrivateKey`, `compressPublicKey`, `decompressPublicKey`, `sign`, `verify`, `keyExchange` |
 | 类 | `SM2` |
 | 类型 | `KeyPair`, `SignOptions`, `VerifyOptions`, `SM2CurveParams`, `SM2KeyExchangeParams`, `SM2KeyExchangeResult`, `SM2EncryptOptions`, `SM2DecryptOptions`, `SM2SignatureFormat`, `SM2SignatureInputFormat` |
 
@@ -49,7 +50,8 @@ tag:
 
 | 分类 | 导出 |
 |:--|:--|
-| 函数 | `digest`, `sm3Digest`, `hmac` |
+| 函数 | `sm3Digest`, `sm3Hmac` |
+| 兼容旧名 | `digest`, `hmac` |
 | 类 | `SM3` |
 | 类型 | `SM3Options` |
 
@@ -106,13 +108,14 @@ tag:
 默认导出保留 UMD / CDN 使用场景，包含：
 
 - `sm2`, `sm3`, `sm4`, `zuc`, `sha`
-- `generateKeyPair`, `getPublicKeyFromPrivateKey`
-- `sm2Encrypt`, `sm2Decrypt`, `sign`, `verify`
-- `digest`, `hmac`
+- `sm2GenerateKeyPair`, `sm2GetPublicKeyFromPrivateKey`, `sm2CompressPublicKey`, `sm2DecompressPublicKey`
+- `sm2Encrypt`, `sm2Decrypt`, `sm2Sign`, `sm2Verify`, `sm2KeyExchange`
+- `sm3Digest`, `sm3Hmac`
 - `sm4Encrypt`, `sm4Decrypt`
-- `zucEncrypt`, `zucDecrypt`
+- `zucEncrypt`, `zucDecrypt`, `zucKeystream`, `zucKeystreamWords`, `zucGenerateKeystream`, `eea3`, `eia3`
 - `sha256`, `sha384`, `sha512`, `sha1`
 - `hmacSha256`, `hmacSha384`, `hmacSha512`
+- 以及兼容旧名：`generateKeyPair`, `getPublicKeyFromPrivateKey`, `compressPublicKey`, `decompressPublicKey`, `sign`, `verify`, `keyExchange`, `digest`, `hmac`
 
 ## Java 端建议优先实现顺序
 
@@ -121,17 +124,17 @@ tag:
 | gmkitx API | Java 端建议 |
 |:--|:--|
 | `sm2Encrypt` / `sm2Decrypt` | 先用 Bouncy Castle 或 Kona 对齐 `C1C3C2`、公钥格式、编码格式 |
-| `sign` / `verify` | 先固定 `userId` 与 `signatureFormat`，推荐先支持 DER + raw 两种 |
-| `digest` / `hmac` | 用 `SM3` 和 `HmacSM3` 对齐结果格式 |
+| `sm2Sign` / `sm2Verify` | 先固定 `userId` 与 `signatureFormat`，推荐先支持 DER + raw 两种 |
+| `sm3Digest` / `sm3Hmac` | 用 `SM3` 和 `HmacSM3` 对齐结果格式 |
 | `sm4Encrypt` / `sm4Decrypt` | 优先实现 `CBC + PKCS7` 与 `GCM`，再扩展 `CCM/CTR/CFB/OFB` |
 
 ### 第二阶段：补全工程能力
 
 | gmkitx API | Java 端建议 |
 |:--|:--|
-| `generateKeyPair`, `getPublicKeyFromPrivateKey` | 统一原始 hex 表示，避免 PEM/DER 与裸密钥混淆 |
+| `sm2GenerateKeyPair`, `sm2GetPublicKeyFromPrivateKey` | 统一原始 hex 表示，避免 PEM/DER 与裸密钥混淆 |
 | `compressPublicKey`, `decompressPublicKey` | 互操作常见，建议补齐 |
-| `keyExchange` | 单独做协议测试，不能与普通 ECDH 混淆 |
+| `sm2KeyExchange` | 单独做协议测试，不能与普通 ECDH 混淆 |
 | `SM2` / `SM3` / `SM4` 类 | 在函数式 API 稳定后再封装 OOP 版本 |
 | `ASN.1` / utils | 作为互操作工具层补齐，不建议先写业务封装再回补 |
 

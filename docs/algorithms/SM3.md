@@ -90,6 +90,9 @@ import { sm3 } from 'gmkitx';
 const hash = sm3.digest('Hello, SM3!');
 ```
 
+> 顶层函数式 API 推荐使用 `sm3Digest`、`sm3Hmac` 等带前缀名称。
+> 旧的 `digest`、`hmac` 仍继续导出，但仅作为兼容入口保留。
+
 ## 输出格式
 
 SM3 支持多种输出格式：
@@ -206,9 +209,10 @@ const newHash = sm3.digest();
 
 | 函数 | 说明 | 返回值 |
 |------|------|--------|
-| `digest(data, options?)` | 计算 SM3 哈希值（主函数） | `string` |
-| `sm3Digest(data, options?)` | 计算 SM3 哈希值（别名） | `string` |
-| `hmac(key, data, options?)` | 计算 HMAC-SM3 | `string` |
+| `sm3Digest(data, options?)` | 计算 SM3 哈希值（推荐） | `string` |
+| `sm3Hmac(key, data, options?)` | 计算 HMAC-SM3（推荐） | `string` |
+| `digest(data, options?)` | 兼容旧名，功能同 `sm3Digest` | `string` |
+| `hmac(key, data, options?)` | 兼容旧名，功能同 `sm3Hmac` | `string` |
 
 ### 类 API
 
@@ -280,11 +284,11 @@ if (inputHash === storedHash) {
 ### 3. 数字签名的消息摘要
 
 ```typescript
-import { sign } from 'gmkitx';
+import { sm2Sign } from 'gmkitx';
 
 // 注意：SM2 签名默认会计算 SM3(Z || M)，一般无需手动预哈希
 const message = '合同内容...';
-const signature = sign(privateKey, message);
+const signature = sm2Sign(privateKey, message);
 ```
 
 ### 4. 区块链哈希
@@ -345,10 +349,10 @@ function isDuplicate(content: string): boolean {
 GMKitX 已内置 HMAC-SM3：
 
 ```typescript
-import { hmac, OutputFormat } from 'gmkitx';
+import { sm3Hmac, OutputFormat } from 'gmkitx';
 
-const mac = hmac('secret-key', 'message');
-const mac64 = hmac('secret-key', 'message', { outputFormat: OutputFormat.BASE64 });
+const mac = sm3Hmac('secret-key', 'message');
+const mac64 = sm3Hmac('secret-key', 'message', { outputFormat: OutputFormat.BASE64 });
 ```
 
 ### 计算文件指纹

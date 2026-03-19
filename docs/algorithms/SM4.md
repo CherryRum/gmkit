@@ -513,7 +513,7 @@ function decryptRequest(encrypted: string, apiKey: string): any {
 ### 4. 会话密钥加密
 
 ```typescript
-import { sm4Encrypt, sm2Encrypt, generateKeyPair } from 'gmkitx';
+import { sm4Encrypt, sm2Encrypt } from 'gmkitx';
 
 // 混合加密：用 SM2 加密 SM4 密钥，用 SM4 加密数据
 function hybridEncrypt(data: string, recipientPublicKey: string) {

@@ -91,6 +91,11 @@ describe('模块导入方式测试', () => {
   describe('具名函数导入（向后兼容）', () => {
     it('应该能够导入具名函数', async () => {
       const {
+        sm2GenerateKeyPair,
+        sm2Sign,
+        sm2Verify,
+        sm3Digest,
+        sm3Hmac,
         sm2Encrypt,
         sm2Decrypt,
         generateKeyPair,
@@ -103,15 +108,23 @@ describe('模块导入方式测试', () => {
         PaddingMode,
       } = await import('../src/index');
 
+      const preferredKeyPair = sm2GenerateKeyPair();
+      expect(preferredKeyPair.publicKey).toBeTruthy();
+
       // SM2
       const keyPair = generateKeyPair();
       const sm2Cipher = sm2Encrypt(keyPair.publicKey, 'test');
       const sm2Plain = sm2Decrypt(keyPair.privateKey, sm2Cipher);
       expect(sm2Plain).toBe('test');
 
+      const signature = sm2Sign(keyPair.privateKey, 'test');
+      expect(sm2Verify(keyPair.publicKey, 'test', signature)).toBe(true);
+
       // SM3
       const hash = digest('abc');
       expect(hash).toBe('66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0');
+      expect(sm3Digest('abc')).toBe(hash);
+      expect(sm3Hmac('key', 'data')).toHaveLength(64);
 
       // SM4
       const key = '0123456789abcdeffedcba9876543210';
@@ -144,6 +157,21 @@ describe('模块导入方式测试', () => {
 
       const hash = gmkit.sm3.digest('test');
       expect(hash).toHaveLength(64);
+    });
+
+    it('默认导出应该同时包含推荐前缀名和兼容旧名', async () => {
+      const mod = await import('../src/index');
+      const gmkit = mod.default;
+
+      expect(gmkit.sm2GenerateKeyPair).toBe(mod.sm2GenerateKeyPair);
+      expect(gmkit.sm2Sign).toBe(mod.sm2Sign);
+      expect(gmkit.sm3Digest).toBe(mod.sm3Digest);
+      expect(gmkit.sm3Hmac).toBe(mod.sm3Hmac);
+
+      expect(gmkit.generateKeyPair).toBe(mod.generateKeyPair);
+      expect(gmkit.sign).toBe(mod.sign);
+      expect(gmkit.digest).toBe(mod.digest);
+      expect(gmkit.hmac).toBe(mod.hmac);
     });
   });
 });

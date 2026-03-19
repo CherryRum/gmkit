@@ -4,9 +4,9 @@
  * 国际标准算法：SHA-1、SHA-256、SHA-384、SHA-512
  *
  * 支持多种导入方式：
- * 1. 命名空间导入: import * as gmkit from 'gmkit'; gmkit.sm2.encrypt(...)
- * 2. 算法模块导入: import { sm2, sm3, sm4, zuc, sha } from 'gmkit';
- * 3. 具名函数导入: import { sm2Encrypt, digest, sm4Encrypt, sha256 } from 'gmkit';
+ * 1. 命名空间导入: import * as gmkit from 'gmkitx'; gmkit.sm2.encrypt(...)
+ * 2. 算法模块导入: import { sm2, sm3, sm4, zuc, sha } from 'gmkitx';
+ * 3. 具名函数导入: import { sm2Encrypt, sm3Digest, sm4Encrypt, sha256 } from 'gmkitx';
  */
 
 // ============================================================================
@@ -72,87 +72,124 @@ export const sha = {
   SHA1: SHA1Class,
 };
 
-
 // ============================================================================
-// 具名函数导出（向后兼容）
+// 具名函数导出
 // ============================================================================
 
-// SM2 椭圆曲线密码算法
-export {
-  generateKeyPair,
-  getPublicKeyFromPrivateKey,
-  compressPublicKey,
-  decompressPublicKey,
-  encrypt as sm2Encrypt,
-  decrypt as sm2Decrypt,
-  sign,
-  verify,
-  keyExchange,
-  type KeyPair,
-  type SignOptions,
-  type VerifyOptions,
-  type SM2CurveParams,
-  type SM2KeyExchangeParams,
-  type SM2KeyExchangeResult,
-  type SM2EncryptOptions,
-  type SM2DecryptOptions,
-  type SM2SignatureFormat,
-  type SM2SignatureInputFormat,
+// 优先使用带算法前缀的顶层函数，便于直接识别归属算法。
+export const sm2GenerateKeyPair = sm2Functions.generateKeyPair;
+export const sm2GetPublicKeyFromPrivateKey = sm2Functions.getPublicKeyFromPrivateKey;
+export const sm2CompressPublicKey = sm2Functions.compressPublicKey;
+export const sm2DecompressPublicKey = sm2Functions.decompressPublicKey;
+export const sm2Encrypt = sm2Functions.encrypt;
+export const sm2Decrypt = sm2Functions.decrypt;
+export const sm2Sign = sm2Functions.sign;
+export const sm2Verify = sm2Functions.verify;
+export const sm2KeyExchange = sm2Functions.keyExchange;
+
+export const sm3Digest = sm3Functions.sm3Digest;
+export const sm3Hmac = sm3Functions.hmac;
+
+export const sm4Encrypt = sm4Functions.encrypt;
+export const sm4Decrypt = sm4Functions.decrypt;
+
+export const zucEncrypt = zucFunctions.encrypt;
+export const zucDecrypt = zucFunctions.decrypt;
+export const zucKeystream = zucFunctions.getKeystream;
+export const zucKeystreamWords = zucFunctions.getKeystreamWords;
+export const eea3 = zucFunctions.eea3;
+export const eia3 = zucFunctions.eia3;
+export const zucGenerateKeystream = zucFunctions.generateKeystream;
+
+export const sha256 = shaFunctions.sha256;
+export const sha384 = shaFunctions.sha384;
+export const sha512 = shaFunctions.sha512;
+export const sha1 = shaFunctions.sha1;
+export const hmacSha256 = shaFunctions.hmacSha256;
+export const hmacSha384 = shaFunctions.hmacSha384;
+export const hmacSha512 = shaFunctions.hmacSha512;
+
+/**
+ * @deprecated Use `sm2GenerateKeyPair` instead.
+ */
+export const generateKeyPair = sm2GenerateKeyPair;
+
+/**
+ * @deprecated Use `sm2GetPublicKeyFromPrivateKey` instead.
+ */
+export const getPublicKeyFromPrivateKey = sm2GetPublicKeyFromPrivateKey;
+
+/**
+ * @deprecated Use `sm2CompressPublicKey` instead.
+ */
+export const compressPublicKey = sm2CompressPublicKey;
+
+/**
+ * @deprecated Use `sm2DecompressPublicKey` instead.
+ */
+export const decompressPublicKey = sm2DecompressPublicKey;
+
+/**
+ * @deprecated Use `sm2Sign` instead.
+ */
+export const sign = sm2Sign;
+
+/**
+ * @deprecated Use `sm2Verify` instead.
+ */
+export const verify = sm2Verify;
+
+/**
+ * @deprecated Use `sm2KeyExchange` instead.
+ */
+export const keyExchange = sm2KeyExchange;
+
+/**
+ * @deprecated Use `sm3Digest` instead.
+ */
+export const digest = sm3Digest;
+
+/**
+ * @deprecated Use `sm3Hmac` instead.
+ */
+export const hmac = sm3Hmac;
+
+export type {
+  KeyPair,
+  SignOptions,
+  VerifyOptions,
+  SM2CurveParams,
+  SM2KeyExchangeParams,
+  SM2KeyExchangeResult,
+  SM2EncryptOptions,
+  SM2DecryptOptions,
+  SM2SignatureFormat,
+  SM2SignatureInputFormat,
 } from './crypto/sm2';
 
 export { SM2 } from './crypto/sm2/class';
 
-// SM3 哈希算法
-export {
-  digest,
-  sm3Digest,
-  hmac,
-  type SM3Options,
-} from './crypto/sm3';
+export type { SM3Options } from './crypto/sm3';
 
 export { SM3 } from './crypto/sm3/class';
 
-// SM4 分组密码算法
-export {
-  encrypt as sm4Encrypt,
-  decrypt as sm4Decrypt,
-  type SM4Options,
-  type SM4DecryptOptions,
-  type SM4CipherResult,
-  type SM4GCMResult,
-  type SM4CCMResult,
-  type SM4AEADResult,
+export type {
+  SM4Options,
+  SM4DecryptOptions,
+  SM4CipherResult,
+  SM4GCMResult,
+  SM4CCMResult,
+  SM4AEADResult,
 } from './crypto/sm4';
 
 export { SM4 } from './crypto/sm4/class';
 
-// ZUC 流密码算法
-export {
-  encrypt as zucEncrypt,
-  decrypt as zucDecrypt,
-  getKeystream as zucKeystream,
-  getKeystreamWords as zucKeystreamWords,
-  eea3,
-  eia3,
-  ZUCState,
-  generateKeystream as zucGenerateKeystream,
-  type ZUCOptions,
-  type ZUCDecryptOptions,
-} from './crypto/zuc';
+export { ZUCState } from './crypto/zuc';
+export type { ZUCOptions, ZUCDecryptOptions } from './crypto/zuc';
 
 export { ZUC } from './crypto/zuc/class';
 
-// SHA 哈希算法（国际标准）
-export {
-  sha256,
-  sha384,
-  sha512,
-  sha1,
-  hmacSha256,
-  hmacSha384,
-  hmacSha512,
-  type SHAOptions,
-} from './crypto/sha';
+export type { SHAOptions } from './crypto/sha';
 
 export { SHA256, SHA384, SHA512, SHA1 } from './crypto/sha/class';
 
@@ -228,25 +265,42 @@ export default {
   sm4,
   zuc,
   sha,
-  // 向后兼容的函数导出
-  generateKeyPair: sm2Functions.generateKeyPair,
-  getPublicKeyFromPrivateKey: sm2Functions.getPublicKeyFromPrivateKey,
-  sm2Encrypt: sm2Functions.encrypt,
-  sm2Decrypt: sm2Functions.decrypt,
-  sign: sm2Functions.sign,
-  verify: sm2Functions.verify,
-  digest: sm3Functions.digest,
-  hmac: sm3Functions.hmac,
-  sm4Encrypt: sm4Functions.encrypt,
-  sm4Decrypt: sm4Functions.decrypt,
-  zucEncrypt: zucFunctions.encrypt,
-  zucDecrypt: zucFunctions.decrypt,
-  // SHA 国际标准算法
-  sha256: shaFunctions.sha256,
-  sha384: shaFunctions.sha384,
-  sha512: shaFunctions.sha512,
-  sha1: shaFunctions.sha1,
-  hmacSha256: shaFunctions.hmacSha256,
-  hmacSha384: shaFunctions.hmacSha384,
-  hmacSha512: shaFunctions.hmacSha512,
+  // 推荐使用的顶层函数导出
+  sm2GenerateKeyPair,
+  sm2GetPublicKeyFromPrivateKey,
+  sm2CompressPublicKey,
+  sm2DecompressPublicKey,
+  sm2Encrypt,
+  sm2Decrypt,
+  sm2Sign,
+  sm2Verify,
+  sm2KeyExchange,
+  sm3Digest,
+  sm3Hmac,
+  sm4Encrypt,
+  sm4Decrypt,
+  zucEncrypt,
+  zucDecrypt,
+  zucKeystream,
+  zucKeystreamWords,
+  zucGenerateKeystream,
+  eea3,
+  eia3,
+  sha256,
+  sha384,
+  sha512,
+  sha1,
+  hmacSha256,
+  hmacSha384,
+  hmacSha512,
+  // 向后兼容的旧导出
+  generateKeyPair,
+  getPublicKeyFromPrivateKey,
+  compressPublicKey,
+  decompressPublicKey,
+  sign,
+  verify,
+  keyExchange,
+  digest,
+  hmac,
 };

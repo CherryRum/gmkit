@@ -299,20 +299,20 @@ ZUC 的 `encrypt/decrypt` 每次调用都会从 IV 起始，**不适合**直接�
 ZUC 加密本身不提供认证，通用场景建议配合 HMAC-SM3：
 
 ```typescript
-import { zucEncrypt, zucDecrypt, hmac } from 'gmkitx';
+import { zucEncrypt, zucDecrypt, sm3Hmac } from 'gmkitx';
 
 // 同时提供加密和完整性保护
 class SecureMessage {
   static send(key: string, message: string) {
     const iv = generateRandomIV();
     const ciphertext = zucEncrypt(key, iv, message);
-    const mac = hmac(key, ciphertext); // HMAC-SM3
+    const mac = sm3Hmac(key, ciphertext); // HMAC-SM3
     return { ciphertext, mac, iv };
   }
   
   static receive(key: string, packet: any): string | null {
     const { ciphertext, mac, iv } = packet;
-    const calculated = hmac(key, ciphertext);
+    const calculated = sm3Hmac(key, ciphertext);
     if (calculated !== mac) {
       console.error('MAC 验证失败，消息可能被篡改');
       return null;
