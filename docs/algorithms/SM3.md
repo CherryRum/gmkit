@@ -166,7 +166,7 @@ stream.on('end', () => {
 ### Node.js 文件哈希示例
 
 ```typescript
-import { SM3 } from 'gmkitx';
+import { SM3, sm3Digest } from 'gmkitx';
 import { readFileSync } from 'fs';
 
 function hashFile(filePath: string): string {
@@ -227,7 +227,7 @@ const newHash = sm3.digest();
 ### 选项参数
 
 ```typescript
-interface DigestOptions {
+interface SM3Options {
   outputFormat?: 'hex' | 'base64';  // 输出格式
 }
 ```

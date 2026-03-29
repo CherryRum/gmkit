@@ -20,7 +20,7 @@ tag:
 提示：本章要点
 
 - 1. 算法模块导入（推荐）
-- 2. 具名函数导入（向后兼容）
+- 2. 具名函数导入
 - 3. 命名空间导入
 - 4. CommonJS 导入
 - 5. UMD（浏览器直接引入）
@@ -57,17 +57,17 @@ const zucCipher = zuc.encrypt(zucKey, zucIv, 'Hello');
 const zucPlain = zuc.decrypt(zucKey, zucIv, zucCipher);
 ```
 
-## 2. 具名函数导入（向后兼容）
+## 2. 具名函数导入
 
 这种方式导入特定的函数，适合只需要使用少量功能的场景。
 
 ```typescript
 import { 
-  generateKeyPair, 
+  sm2GenerateKeyPair, 
   sm2Encrypt, 
   sm2Decrypt,
-  digest,
-  hmac,
+  sm3Digest,
+  sm3Hmac,
   sm4Encrypt,
   sm4Decrypt,
   zucEncrypt,
@@ -77,9 +77,9 @@ import {
 } from 'gmkitx';
 
 // 直接使用函数
-const keyPair = generateKeyPair();
+const keyPair = sm2GenerateKeyPair();
 const encrypted = sm2Encrypt(keyPair.publicKey, 'Hello');
-const hash = digest('Hello');
+const hash = sm3Digest('Hello');
 const cipher = sm4Encrypt(key, 'Hello', { 
   mode: CipherMode.ECB, 
   padding: PaddingMode.PKCS7 
@@ -100,7 +100,7 @@ const cipher = gmkitx.sm4.encrypt(key, 'Hello', { mode: 'ecb' });
 const zucCipher = gmkitx.zuc.encrypt(zucKey, zucIv, 'Hello');
 
 // 也可以访问具名导出
-const hash2 = gmkitx.digest('Hello');
+const hash2 = gmkitx.sm3Digest('Hello');
 const encrypted = gmkitx.sm2Encrypt(keyPair.publicKey, 'Hello');
 ```
 
@@ -116,8 +116,8 @@ const keyPair = sm2.generateKeyPair();
 const hash = sm3.digest('Hello');
 
 // 或者导入具名函数
-const { digest, sm4Encrypt } = require('gmkitx');
-const hash2 = digest('Hello');
+const { sm3Digest, sm4Encrypt } = require('gmkitx');
+const hash2 = sm3Digest('Hello');
 ```
 
 ## 5. UMD（浏览器直接引入）
@@ -132,7 +132,7 @@ const hash2 = digest('Hello');
   const hash = GMKit.sm3.digest('Hello, World!');
   
   // 方式 2: 使用具名函数
-  const hash2 = GMKit.digest('Hello');
+  const hash2 = GMKit.sm3Digest('Hello');
   const encrypted = GMKit.sm2Encrypt(keyPair.publicKey, 'Hello');
 </script>
 ```
@@ -151,8 +151,8 @@ async function useSM2() {
 
 // 按需加载特定功能
 async function hashData(data: string) {
-  const { digest } = await import('gmkitx');
-  return digest(data);
+  const { sm3Digest } = await import('gmkitx');
+  return sm3Digest(data);
 }
 ```
 

@@ -63,16 +63,16 @@ yarn add gmkitx
 让我们先从 SM2 加解密与签名开始：
 
 ```typescript
-import { generateKeyPair, sm2Encrypt, sm2Decrypt, sign, verify, SM2CipherMode } from 'gmkitx';
+import { sm2GenerateKeyPair, sm2Encrypt, sm2Decrypt, sm2Sign, sm2Verify, SM2CipherMode } from 'gmkitx';
 
-const { publicKey, privateKey } = generateKeyPair();
+const { publicKey, privateKey } = sm2GenerateKeyPair();
 const message = 'Hello, GMKitX!';
 
 const cipher = sm2Encrypt(publicKey, message, { mode: SM2CipherMode.C1C3C2 });
 const plain = sm2Decrypt(privateKey, cipher, { mode: SM2CipherMode.C1C3C2 });
 
-const signature = sign(privateKey, message);
-const ok = verify(publicKey, message, signature);
+const signature = sm2Sign(privateKey, message);
+const ok = sm2Verify(publicKey, message, signature);
 ```
 
 ## 导入方式
@@ -83,13 +83,13 @@ const ok = verify(publicKey, message, signature);
 
 ```typescript
 // 函数级别：仅打包所需 API
-import { generateKeyPair, sm2Encrypt, sm2Decrypt, digest, sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkitx';
+import { sm2GenerateKeyPair, sm2Encrypt, sm2Decrypt, sm3Digest, sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkitx';
 
-const { publicKey, privateKey } = generateKeyPair();
+const { publicKey, privateKey } = sm2GenerateKeyPair();
 const cipher = sm2Encrypt(publicKey, '订单数据');
 const plain = sm2Decrypt(privateKey, cipher);
 
-const hash = digest('订单摘要');
+const hash = sm3Digest('订单摘要');
 
 const key = '0123456789abcdeffedcba9876543210';
 const iv = 'fedcba98765432100123456789abcdef';
@@ -124,8 +124,8 @@ const hash = sm3Instance.digest(); // 默认 Hex
 ```html
 <script src="https://unpkg.com/gmkitx@latest/dist/index.global.js"></script>
 <script>
-  const { digest, sm4Encrypt } = GMKit;
-  console.log('SM3 Hash:', digest('Browser Test'));
+  const { sm3Digest, sm4Encrypt } = GMKit;
+  console.log('SM3 Hash:', sm3Digest('Browser Test'));
 </script>
 ```
 
@@ -134,9 +134,9 @@ const hash = sm3Instance.digest(); // 默认 Hex
 ### 场景 1：非对称加密（SM2）
 
 ```typescript
-import { generateKeyPair, sm2Encrypt, sm2Decrypt, SM2CipherMode, InputFormat, OutputFormat } from 'gmkitx';
+import { sm2GenerateKeyPair, sm2Encrypt, sm2Decrypt, SM2CipherMode, InputFormat, OutputFormat } from 'gmkitx';
 
-const { publicKey, privateKey } = generateKeyPair();
+const { publicKey, privateKey } = sm2GenerateKeyPair();
 
 const cipher = sm2Encrypt(publicKey, '业务载荷', {
   mode: SM2CipherMode.C1C3C2,
@@ -151,15 +151,15 @@ const plain = sm2Decrypt(privateKey, cipher, {
 ### 场景 2：数字签名（SM2）
 
 ```typescript
-import { generateKeyPair, sign, verify, InputFormat, OutputFormat } from 'gmkitx';
+import { sm2GenerateKeyPair, sm2Sign, sm2Verify, InputFormat, OutputFormat } from 'gmkitx';
 
-const { publicKey, privateKey } = generateKeyPair();
+const { publicKey, privateKey } = sm2GenerateKeyPair();
 const message = '重要文件内容';
 
-const signature = sign(privateKey, message, {
+const signature = sm2Sign(privateKey, message, {
   outputFormat: OutputFormat.BASE64,
 });
-const isValid = verify(publicKey, message, signature, {
+const isValid = sm2Verify(publicKey, message, signature, {
   inputFormat: InputFormat.BASE64,
 });
 ```
@@ -167,10 +167,10 @@ const isValid = verify(publicKey, message, signature, {
 ### 场景 3：数据哈希（SM3）
 
 ```typescript
-import { digest, OutputFormat } from 'gmkitx';
+import { sm3Digest, OutputFormat } from 'gmkitx';
 
-const hexHash = digest('订单摘要'); // 默认输出 Hex
-const base64Hash = digest('订单摘要', { outputFormat: OutputFormat.BASE64 });
+const hexHash = sm3Digest('订单摘要'); // 默认输出 Hex
+const base64Hash = sm3Digest('订单摘要', { outputFormat: OutputFormat.BASE64 });
 
 // 如需字节数组可自行转换（Node.js 示例）
 const bytesHash = Buffer.from(hexHash, 'hex');
