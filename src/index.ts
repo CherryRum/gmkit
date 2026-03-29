@@ -87,7 +87,7 @@ export const sm2Sign = sm2Functions.sign;
 export const sm2Verify = sm2Functions.verify;
 export const sm2KeyExchange = sm2Functions.keyExchange;
 
-export const sm3Digest = sm3Functions.sm3Digest;
+export const sm3Digest = sm3Functions.digest;
 export const sm3Hmac = sm3Functions.hmac;
 
 export const sm4Encrypt = sm4Functions.encrypt;
