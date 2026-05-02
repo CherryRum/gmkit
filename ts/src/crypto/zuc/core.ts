@@ -52,10 +52,10 @@ const S1: Uint8Array = new Uint8Array([
   0x64, 0xbe, 0x85, 0x9b, 0x2f, 0x59, 0x8a, 0xd7, 0xb0, 0x25, 0xac, 0xaf, 0x12, 0x03, 0xe2, 0xf2,
 ]);
 
-// ZUC-128 的线性反馈移位寄存器（LFSR）参数 D
-// 这些是密钥初始化时与密钥和 IV 结合的常量
-const D_128: Uint8Array = new Uint8Array([
-  22, 25, 5, 22, 25, 5, 22, 25, 5, 22, 25, 5, 22, 25, 5, 22,
+// ZUC-128 LFSR 初始化常量 D（GM/T 0001-2012 / 3GPP TS 35.222 标准值，每个 15 位）
+const D_128: Uint16Array = new Uint16Array([
+  0x44D7, 0x26BC, 0x626B, 0x135E, 0x5789, 0x35E2, 0x7135, 0x09AF,
+  0x4D78, 0x2F13, 0x6BC4, 0x1AF1, 0x5E26, 0x3C4D, 0x789A, 0x47AC,
 ]);
 
 /**
@@ -110,10 +110,15 @@ export class ZUCState {
 
     // 执行 32 轮初始化过程（不产生输出）
     for (let i = 0; i < 32; i++) {
-      const w = this.bitReorganization();
-      const f = this.fFunction(w);
-      this.lfsrWithInitMode(f >>> 1);
+      this.bitReorganization();
+      const w = this.fFunction();
+      this.lfsrWithInitMode(w >>> 1);
     }
+
+    // 工作阶段前的丢弃轮（GM/T 0001 / 3GPP TS 35.222 标准要求）
+    this.bitReorganization();
+    this.fFunction();
+    this.lfsrWithWorkMode();
   }
 
   /**
@@ -123,37 +128,27 @@ export class ZUCState {
   private x: Uint32Array = new Uint32Array(4);
 
   /**
-   * 执行比特重组操作
-   * @returns 4 个 32 位字的数组 [X0, X1, X2, X3]
+   * 执行比特重组操作，将结果保存在 {@link ZUCState#x} 中。
    */
-  private bitReorganization(): Uint32Array {
+  private bitReorganization(): void {
     this.x[0] = (((this.lfsr[15] & 0x7FFF8000) << 1) | (this.lfsr[14] & 0xFFFF)) >>> 0;
     this.x[1] = (((this.lfsr[11] & 0xFFFF) << 16) | (this.lfsr[9] >>> 15)) >>> 0;
     this.x[2] = (((this.lfsr[7] & 0xFFFF) << 16) | (this.lfsr[5] >>> 15)) >>> 0;
     this.x[3] = (((this.lfsr[2] & 0xFFFF) << 16) | (this.lfsr[0] >>> 15)) >>> 0;
-    return this.x;
   }
 
   /**
-   * F 函数：使用双 S 盒的非线性变换
-   * 这是 ZUC 算法的核心函数，结合 S 盒和线性变换生成输出
-   * 优化：统一使用 >>> 0 保持 32 位无符号运算
-   * @param x - 比特重组的输出
-   * @returns F 函数的输出值
+   * F 函数：使用双 S 盒的非线性变换，并按 GM/T 0001-2012 / 3GPP TS 35.222
+   * 第 5.3 节更新 R1/R2。返回内部 W = (X0 ^ R1) + R2；调用方按需 XOR X3
+   * 得到密钥流字。
    */
-  private fFunction(x: Uint32Array): number {
-    const w = ((x[0] ^ this.r1) + this.r2) >>> 0;
-    const w1 = (this.r1 + x[1]) >>> 0;
-    const w2 = (this.r2 ^ x[2]) >>> 0;
-
-    const u = this.l1(((w1 << 16) | (w2 >>> 16)) >>> 0);
-    const v = this.l2(((w2 << 16) | (w1 >>> 16)) >>> 0);
-
-    // 更新 FSM 寄存器
-    this.r1 = this.s(this.l1(((v << 16) | (u >>> 16)) >>> 0));
-    this.r2 = this.s(this.l2(((u << 16) | (v >>> 16)) >>> 0));
-
-    return (w ^ x[3]) >>> 0;
+  private fFunction(): number {
+    const w = ((this.x[0] ^ this.r1) + this.r2) >>> 0;
+    const w1 = (this.r1 + this.x[1]) >>> 0;
+    const w2 = (this.r2 ^ this.x[2]) >>> 0;
+    this.r1 = this.s(this.l1((((w1 & 0xFFFF) << 16) | (w2 >>> 16)) >>> 0));
+    this.r2 = this.s(this.l2((((w2 & 0xFFFF) << 16) | (w1 >>> 16)) >>> 0));
+    return w;
   }
 
   /**
@@ -202,25 +197,33 @@ export class ZUCState {
   }
 
   /**
+   * 计算 LFSR 反馈值 v：
+   * v = (2^15·s_15 + 2^17·s_13 + 2^21·s_10 + 2^20·s_4 + 2^8·s_0 + s_0) mod (2^31 - 1)
+   */
+  private lfsrFeedback(): number {
+    let v = this.mulByPow2(this.lfsr[15], 15);
+    v = this.addMod(v, this.mulByPow2(this.lfsr[13], 17));
+    v = this.addMod(v, this.mulByPow2(this.lfsr[10], 21));
+    v = this.addMod(v, this.mulByPow2(this.lfsr[4], 20));
+    v = this.addMod(v, this.mulByPow2(this.lfsr[0], 8));
+    v = this.addMod(v, this.lfsr[0]);
+    return v;
+  }
+
+  /**
    * 初始化模式下的 LFSR（带反馈值 u）
    * 在初始化阶段，F 函数的输出会反馈到 LFSR
    * @param u - 反馈值（F 函数输出的右移 1 位）
    */
   private lfsrWithInitMode(u: number): void {
-    const s16 = this.addMod(
-      this.addMod(
-        this.addMod(this.mulByPow2(this.lfsr[0], 8), this.lfsr[4]),
-        this.mulByPow2(this.lfsr[10], 8)
-      ),
-      this.lfsr[13]
-    );
-
-    // 左移 LFSR
+    let s16 = this.addMod(this.lfsrFeedback(), u);
+    if (s16 === 0) {
+      s16 = 0x7FFFFFFF;
+    }
     for (let i = 0; i < 15; i++) {
       this.lfsr[i] = this.lfsr[i + 1];
     }
-
-    this.lfsr[15] = this.addMod(s16, u) & 0x7FFFFFFF;
+    this.lfsr[15] = s16;
   }
 
   /**
@@ -228,20 +231,14 @@ export class ZUCState {
    * 在工作模式下，LFSR 独立运行不接受外部反馈
    */
   private lfsrWithWorkMode(): void {
-    const s16 = this.addMod(
-      this.addMod(
-        this.addMod(this.mulByPow2(this.lfsr[0], 8), this.lfsr[4]),
-        this.mulByPow2(this.lfsr[10], 8)
-      ),
-      this.lfsr[13]
-    );
-
-    // 左移 LFSR
+    let s16 = this.lfsrFeedback();
+    if (s16 === 0) {
+      s16 = 0x7FFFFFFF;
+    }
     for (let i = 0; i < 15; i++) {
       this.lfsr[i] = this.lfsr[i + 1];
     }
-
-    this.lfsr[15] = s16 & 0x7FFFFFFF;
+    this.lfsr[15] = s16;
   }
 
   /**
@@ -272,10 +269,11 @@ export class ZUCState {
    * @returns 32 位密钥字
    */
   generateKeyword(): number {
-    const x = this.bitReorganization();
-    const z = this.fFunction(x);
+    this.bitReorganization();
+    const w = this.fFunction();
+    const z = (w ^ this.x[3]) >>> 0;
     this.lfsrWithWorkMode();
-    return z >>> 0;
+    return z;
   }
 }
 
