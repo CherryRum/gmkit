@@ -327,6 +327,25 @@ function t(a: number): number {
   return l(tau(a));
 }
 
+// T 表：将 SBOX + L 变换合成预计算表，让加密轮函数减少为 4 次表查 + 3 次 XOR。
+// T_i[b] = L( SBOX[b] << (24 - 8*i) )，由 L 的线性性可知 T(a) = T0 ^ T1 ^ T2 ^ T3。
+const T0 = new Uint32Array(256);
+const T1 = new Uint32Array(256);
+const T2 = new Uint32Array(256);
+const T3 = new Uint32Array(256);
+(function buildTTables() {
+  for (let i = 0; i < 256; i++) {
+    const s = SBOX[i];
+    T0[i] = l((s << 24) >>> 0);
+    T1[i] = l((s << 16) >>> 0);
+    T2[i] = l((s << 8) >>> 0);
+    T3[i] = l(s >>> 0);
+  }
+})();
+
+// 加密块的轮中间状态缓冲（JS 单线程，模块级复用避免每次分配）
+const BLOCK_BUF = new Uint32Array(36);
+
 /**
  * 合成置换 T' - 密钥扩展函数
  */
@@ -360,23 +379,31 @@ function expandKey(key: Uint8Array): number[] {
 
 /**
  * 加密单个数据块（128 位）
+ *
+ * 使用预计算的 T 表（T0/T1/T2/T3）将每轮的 SBOX + L 变换合成 4 次表查 + 3 次 XOR；
+ * 中间状态使用模块级 {@link BLOCK_BUF} 避免每块分配。
  */
 function encryptBlock(input: Uint8Array, roundKeys: number[]): Uint8Array {
-  const x: number[] = [];
-  for (let i = 0; i < 4; i++) {
-    x[i] = bytes4ToUint32BE(input, i * 4);
-  }
+  const x = BLOCK_BUF;
+  x[0] = bytes4ToUint32BE(input, 0);
+  x[1] = bytes4ToUint32BE(input, 4);
+  x[2] = bytes4ToUint32BE(input, 8);
+  x[3] = bytes4ToUint32BE(input, 12);
 
   for (let i = 0; i < 32; i++) {
-    x[i + 4] = (x[i] ^ t(x[i + 1] ^ x[i + 2] ^ x[i + 3] ^ roundKeys[i])) >>> 0;
+    const a = (x[i + 1] ^ x[i + 2] ^ x[i + 3] ^ roundKeys[i]) >>> 0;
+    x[i + 4] = (x[i]
+      ^ T0[(a >>> 24) & 0xff]
+      ^ T1[(a >>> 16) & 0xff]
+      ^ T2[(a >>> 8) & 0xff]
+      ^ T3[a & 0xff]) >>> 0;
   }
 
   const output = new Uint8Array(16);
-  for (let i = 0; i < 4; i++) {
-    const bytes = uint32ToBytes4BE(x[35 - i]);
-    output.set(bytes, i * 4);
-  }
-
+  output.set(uint32ToBytes4BE(x[35]), 0);
+  output.set(uint32ToBytes4BE(x[34]), 4);
+  output.set(uint32ToBytes4BE(x[33]), 8);
+  output.set(uint32ToBytes4BE(x[32]), 12);
   return output;
 }
 
