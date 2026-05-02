@@ -30,6 +30,7 @@
     "build": "node scripts/build-with-warning-policy.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
+    "bench": "vitest bench --run",
     "type-check": "tsc --noEmit",
     "audit:pack": "node scripts/audit-pack-size.mjs",
     "audit:docs:assets": "node scripts/audit-doc-assets.mjs",
