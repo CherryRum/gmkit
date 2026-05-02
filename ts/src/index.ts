@@ -1,12 +1,18 @@
 /**
- * GMKit - 中国国密算法库和国际标准算法库
- * 纯 TypeScript 实现的 SM2、SM3、SM4、ZUC 算法
- * 国际标准算法：SHA-1、SHA-256、SHA-384、SHA-512
+ * gmkitx 顶层入口。
  *
- * 支持多种导入方式：
- * 1. 命名空间导入: import * as gmkit from 'gmkitx'; gmkit.sm2.encrypt(...)
- * 2. 算法模块导入: import { sm2, sm3, sm4, zuc, sha } from 'gmkitx';
- * 3. 具名函数导入: import { sm2Encrypt, sm3Digest, sm4Encrypt, sha256 } from 'gmkitx';
+ * 算法范围：
+ * - 国密：SM2、SM3、SM4、ZUC（含 EEA3 / EIA3）
+ * - 国际：SHA-1、SHA-256、SHA-384、SHA-512（含 HMAC）
+ *
+ * 三种使用方式（任选其一，能力对等）：
+ *   import * as gmkit from 'gmkitx';                 // 命名空间
+ *   import { sm2, sm3, sm4, zuc, sha } from 'gmkitx'; // 算法模块
+ *   import { sm2Encrypt, sm3Digest, sha256 } from 'gmkitx'; // 具名函数（推荐）
+ *
+ * 所有以无前缀方式导出的旧名（generateKeyPair / sign / digest 等）均标记为
+ * @deprecated，将在 1.0 之前的某个 minor 版本一次性移除，新代码请使用带算法
+ * 前缀的具名函数。
  */
 
 // ============================================================================
@@ -25,8 +31,8 @@ import { ZUC as ZUCClass } from './crypto/zuc/class';
 import { SHA256 as SHA256Class, SHA384 as SHA384Class, SHA512 as SHA512Class, SHA1 as SHA1Class } from './crypto/sha/class';
 
 /**
- * SM2 椭圆曲线密码算法模块
- * 包含所有 SM2 相关的函数和类
+ * SM2 椭圆曲线公钥密码算法模块。
+ * 聚合所有具名函数与对象式入口 {@link SM2Class}。
  */
 export const sm2 = {
   ...sm2Functions,
@@ -34,8 +40,8 @@ export const sm2 = {
 };
 
 /**
- * SM3 哈希算法模块
- * 包含所有 SM3 相关的函数和类
+ * SM3 密码杂凑算法模块。
+ * 聚合所有具名函数与对象式入口 {@link SM3Class}。
  */
 export const sm3 = {
   ...sm3Functions,
@@ -43,8 +49,8 @@ export const sm3 = {
 };
 
 /**
- * SM4 分组密码算法模块
- * 包含所有 SM4 相关的函数和类
+ * SM4 分组密码算法模块。
+ * 聚合所有具名函数与对象式入口 {@link SM4Class}。
  */
 export const sm4 = {
   ...sm4Functions,
@@ -52,8 +58,8 @@ export const sm4 = {
 };
 
 /**
- * ZUC 流密码算法模块
- * 包含所有 ZUC 相关的函数和类
+ * ZUC 流密码算法模块（含 EEA3 加密 / EIA3 完整性算法）。
+ * 聚合所有具名函数与对象式入口 {@link ZUCClass}。
  */
 export const zuc = {
   ...zucFunctions,
@@ -61,8 +67,8 @@ export const zuc = {
 };
 
 /**
- * SHA 哈希算法模块（国际标准）
- * 包含所有 SHA 相关的函数和类
+ * SHA 系列哈希算法模块（FIPS 180-4 国际标准）。
+ * 聚合 SHA-1 / SHA-256 / SHA-384 / SHA-512 的具名函数与对象式入口。
  */
 export const sha = {
   ...shaFunctions,
@@ -110,6 +116,15 @@ export const hmacSha384 = shaFunctions.hmacSha384;
 export const hmacSha512 = shaFunctions.hmacSha512;
 
 /** @deprecated [removal: 1.0] Use `sm2GenerateKeyPair` instead. */
+// ============================================================================
+// 弃用别名（无算法前缀的旧名）
+// ----------------------------------------------------------------------------
+// 这些名字仅为兼容 0.9 之前直接使用 generateKeyPair / sign / digest 等无前缀
+// 名的代码，将于 1.0 之前的某个 minor 版本一次性移除。新代码请改用上方带算
+// 法前缀的具名函数。
+// ============================================================================
+
+/** @deprecated 请改用 {@link sm2GenerateKeyPair}。 */
 export const generateKeyPair = sm2GenerateKeyPair;
 
 /** @deprecated [removal: 1.0] Use `sm2GetPublicKeyFromPrivateKey` instead. */
@@ -135,6 +150,10 @@ export const digest = sm3Digest;
 
 /** @deprecated [removal: 1.0] Use `sm3Hmac` instead. */
 export const hmac = sm3Hmac;
+
+// ============================================================================
+// 类型与对象式入口（每个算法重新导出对应 class）
+// ============================================================================
 
 export type {
   KeyPair,
