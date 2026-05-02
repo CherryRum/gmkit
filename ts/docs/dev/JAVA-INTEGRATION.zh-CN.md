@@ -28,14 +28,14 @@ tag:
 :::
 
 
-本页聚焦 Java 端与 gmkitx 的互通，提供四种集成方案：
+本页聚焦在第三方栈下与 gmkitx 互通的四种方案。如果你**就想跟 gmkitx 共享同一份 ABI**、不必再做映射，请直接看专门页：[gmkit-java（同源 Java 实现）](/dev/JAVA-LIBRARY.zh-CN)。
 
 | 项目 | 说明 |
 |:--|:--|
-| Hutool + Bouncy Castle | 推荐方案，需要引入 BC 依赖 |
-| 直接使用 Bouncy Castle | 底层实现，更灵活 |
-| Tencent Kona SM Suite | JCA 标准提供者，纯 Java 实现 |
-| gmkit-java | 原生 Java 实现（敬请期待） |
+| **gmkit-java**（推荐） | 与 gmkitx 同源、同 ABI，命名 / 默认值 / 字节级输出对齐，详见 [gmkit-java 专页](/dev/JAVA-LIBRARY.zh-CN) |
+| Hutool + Bouncy Castle | 已有 Hutool 项目里最低成本的方案，需要引入 BC 依赖 |
+| 直接使用 Bouncy Castle | 底层实现，更灵活，需要自己拼装算子 |
+| Tencent Kona SM Suite | JCA 标准 Provider，纯 Java 实现，需要装 Provider |
 
 ## 先看公开 API 面
 
