@@ -16,6 +16,9 @@ features:
   - title: 同构运行
     icon: laptop-code
     details: 同构 API，Node.js (>= 18) 与现代浏览器一致可用
+  - title: 双端实现
+    icon: code
+    details: 同源 Java 实现 cn.gmkit:gmkit，与前端共享一份 ABI 与默认值
   - title: 双重范式
     icon: code
     details: 函数式 / OOP 双轨 API，友好按需加载与 Tree-shaking
@@ -34,6 +37,9 @@ copyright: false
 `gmkitx` 是一套纯 **TypeScript** 实现的密码学工具集。它实现了 **SM2 / SM3 / SM4 / ZUC** 等国密算法，同时集成了 **SHA** 系列国际算法。当前 TypeScript 包不支持 SM9，也不包装 C、WASM 或 native runtime。
 
 设计目标是提供一套**同构**（Isomorphic）的代码库，让开发者在**服务端**和**现代浏览器**前端，都能使用完全一致的 API 进行加密、解密、签名与哈希运算。
+
+如果项目同时有 Java 后端，可以直接引入同源实现 [`cn.gmkit:gmkit`](/dev/JAVA-LIBRARY.zh-CN)，
+两边共享同一套方法名、参数顺序与默认值，密文 / 签名 / MAC 字节级互通。
 
 ## 快速安装
 
@@ -146,6 +152,7 @@ const sha512Hash = sha.sha512('Hello World');
 - [SM3 算法文档](/algorithms/SM3) - 密码杂凑算法
 - [SM4 算法文档](/algorithms/SM4) - 分组密码算法
 - [公开 API 清单](/dev/API-SURFACE.zh-CN) - 当前全部导出、命名空间与 Java 端映射
+- [gmkit-java 同源实现](/dev/JAVA-LIBRARY.zh-CN) - JVM 端 cn.gmkit:gmkit 的接入与示例
 - [语言集成指南](/dev/JAVA-INTEGRATION.zh-CN) - Java、Go、Rust、Python 对接方案
 - [项目精简清单](/dev/PROJECT-SLIMMING-CHECKLIST.zh-CN) - 文档资产、构建告警、发布包体审计
 - [性能测试](/performance/PERFORMANCE) - 查看性能基准测试结果

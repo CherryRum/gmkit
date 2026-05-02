@@ -27,6 +27,11 @@ tag:
 
 欢迎使用 **GMKitX**！本指南将帮助您快速上手国密算法与国际标准的 TypeScript 实现。
 
+::: info Java 后端同学
+项目的 JVM 端有同源实现 [`cn.gmkit:gmkit`](/dev/JAVA-LIBRARY.zh-CN)，
+方法名、参数顺序、密文格式与本库保持一致，前后端可以共用一套约定。
+:::
+
 ## 安装
 
 ### 环境要求
