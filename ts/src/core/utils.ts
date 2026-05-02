@@ -1,30 +1,56 @@
 import { InputFormat, OutputFormat, type InputFormatType, type OutputFormatType } from '../types/constants';
 
 /**
+ * 预计算的 hex 字符 → 半字节查找表（非 hex 字符标记为 -1）。
+ *
+ * 用于 hexToBytes 的热路径，替代 parseInt 调用与切片字符串。
+ */
+const HEX_NIBBLES: Int8Array = (() => {
+  const table = new Int8Array(256).fill(-1);
+  for (let i = 0; i < 10; i++) table[48 + i] = i;          // '0'-'9'
+  for (let i = 0; i < 6; i++) table[97 + i] = 10 + i;      // 'a'-'f'
+  for (let i = 0; i < 6; i++) table[65 + i] = 10 + i;      // 'A'-'F'
+  return table;
+})();
+
+/**
  * 将十六进制字符串转换为 Uint8Array
  * @param hex - 十六进制字符串（可带或不带 0x 前缀）
  * @returns 十六进制字符串的 Uint8Array 表示
  */
 export function hexToBytes(hex: string): Uint8Array {
-  // 如果存在 0x 前缀则移除
-  if (hex.startsWith('0x') || hex.startsWith('0X')) {
-    hex = hex.slice(2);
-  }
-
-  // 确保长度为偶数
-  if (hex.length % 2 !== 0) {
-    hex = '0' + hex;
-  }
-
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < bytes.length; i++) {
-    const byte = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-    if (isNaN(byte)) {
-      throw new Error(`Invalid hex string: ${hex}`);
+  let start = 0;
+  let len = hex.length;
+  if (len >= 2 && hex.charCodeAt(0) === 48 /* '0' */) {
+    const c1 = hex.charCodeAt(1);
+    if (c1 === 120 /* 'x' */ || c1 === 88 /* 'X' */) {
+      start = 2;
+      len -= 2;
     }
-    bytes[i] = byte;
   }
 
+  let oddPad = 0;
+  if ((len & 1) !== 0) {
+    oddPad = 1;
+    len += 1;
+  }
+
+  const bytes = new Uint8Array(len >>> 1);
+  let bi = 0;
+  let i = start;
+  if (oddPad) {
+    const lo = HEX_NIBBLES[hex.charCodeAt(i)];
+    if (lo < 0) throw new Error(`Invalid hex string: ${hex}`);
+    bytes[bi++] = lo;
+    i += 1;
+  }
+  for (; bi < bytes.length; bi++) {
+    const hi = HEX_NIBBLES[hex.charCodeAt(i)];
+    const lo = HEX_NIBBLES[hex.charCodeAt(i + 1)];
+    if (hi < 0 || lo < 0) throw new Error(`Invalid hex string: ${hex}`);
+    bytes[bi] = (hi << 4) | lo;
+    i += 2;
+  }
   return bytes;
 }
 
@@ -64,6 +90,8 @@ let customTextCodec: TextCodec | null = null;
 
 export function setTextCodec(codec: TextCodec) {
   customTextCodec = codec;
+  cachedTextEncoder = null;
+  cachedTextDecoder = null;
 }
 
 function tryNodeTextEncoder(): TextEncoder | null {
@@ -114,6 +142,39 @@ function fallbackDecodeUtf8(bytes: Uint8Array): string {
   return decodeURIComponent(encoded);
 }
 
+// TextEncoder/TextDecoder 在所有现代 JS runtime 中都是无状态可复用的，
+// 缓存到模块级以避免每次 stringToBytes/bytesToString 都触发分配。
+let cachedTextEncoder: TextEncoder | null = null;
+let cachedTextDecoder: TextDecoder | null = null;
+
+function resolveTextEncoder(): TextEncoder | null {
+  if (cachedTextEncoder) return cachedTextEncoder;
+  if (typeof TextEncoder !== 'undefined') {
+    cachedTextEncoder = new TextEncoder();
+    return cachedTextEncoder;
+  }
+  const nodeEncoder = tryNodeTextEncoder();
+  if (nodeEncoder) {
+    cachedTextEncoder = nodeEncoder;
+    return cachedTextEncoder;
+  }
+  return null;
+}
+
+function resolveTextDecoder(): TextDecoder | null {
+  if (cachedTextDecoder) return cachedTextDecoder;
+  if (typeof TextDecoder !== 'undefined') {
+    cachedTextDecoder = new TextDecoder();
+    return cachedTextDecoder;
+  }
+  const nodeDecoder = tryNodeTextDecoder();
+  if (nodeDecoder) {
+    cachedTextDecoder = nodeDecoder;
+    return cachedTextDecoder;
+  }
+  return null;
+}
+
 /**
  * 将 UTF-8 字符串转换为 Uint8Array
  * @param str - 要转换的字符串
@@ -123,12 +184,9 @@ export function stringToBytes(str: string): Uint8Array {
   if (customTextCodec) {
     return customTextCodec.encode(str);
   }
-  if (typeof TextEncoder !== 'undefined') {
-    return new TextEncoder().encode(str);
-  }
-  const nodeEncoder = tryNodeTextEncoder();
-  if (nodeEncoder) {
-    return nodeEncoder.encode(str);
+  const encoder = resolveTextEncoder();
+  if (encoder) {
+    return encoder.encode(str);
   }
   return fallbackEncodeUtf8(str);
 }
@@ -142,12 +200,9 @@ export function bytesToString(bytes: Uint8Array): string {
   if (customTextCodec) {
     return customTextCodec.decode(bytes);
   }
-  if (typeof TextDecoder !== 'undefined') {
-    return new TextDecoder().decode(bytes);
-  }
-  const nodeDecoder = tryNodeTextDecoder();
-  if (nodeDecoder) {
-    return nodeDecoder.decode(bytes);
+  const decoder = resolveTextDecoder();
+  if (decoder) {
+    return decoder.decode(bytes);
   }
   return fallbackDecodeUtf8(bytes);
 }
