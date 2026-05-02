@@ -2,11 +2,11 @@
  * ASN.1 DER encoding/decoding utilities for SM2 (Optimized)
  * Based on ITU-T X.690 standard
  *
- * 优化记录：
- * 1. 引入 Hex 工具集：使用预计算查找表代替 parseInt/toString，大幅提升转换性能。
- * 2. 内存优化：在解码时优先使用 subarray 创建视图而非 slice 复制内存。
- * 3. 严格合规：完善了 INTEGER 的最小化编码规则（自动去除多余前导零，自动处理 MSB 补零）。
- * 4. 长度计算：移除 unshift 操作，改用预计算偏移量。
+ * 实现要点：
+ * 1. Hex 转换走预计算查找表，避免 parseInt / toString(16) 的热路径开销。
+ * 2. 解码优先使用 Uint8Array.subarray 创建视图，避免冗余的内存复制。
+ * 3. INTEGER 编码遵守最小化规则：自动去除多余前导零，自动按 MSB 补零。
+ * 4. 长度前缀采用预计算偏移量写入，避免 unshift 触发数组搬移。
  */
 
 import { decodeInput, type BytesLike } from './utils';
@@ -33,7 +33,8 @@ export const ASN1Tag = {
 
 /**
  * 高性能 Hex 工具集
- * 避免频繁的 parseInt 和字符串拼接，使用预计算查找表提升性能
+ * 使用预计算字节查找表替代 parseInt / 字符串拼接，消除热路径上的
+ * 临时字符串分配
  */
 const Hex = {
   /** 预计算的字节到十六进制的映射表 (00-ff) */

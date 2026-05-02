@@ -36,7 +36,11 @@ const HEX_STRINGS = Array.from({ length: 256 }, (_, i) =>
 );
 
 /**
- * 将 Uint8Array 转换为小写十六进制字符串 (高性能版)
+ * 将 Uint8Array 转换为小写十六进制字符串。
+ *
+ * 实现细节：使用模块级预计算的 `00`-`ff` 字符串表替代每字节的
+ * `toString(16) + padStart`，避免热路径上的临时字符串与函数调用。
+ *
  * @param bytes - 要转换的 Uint8Array
  * @returns 小写十六进制字符串
  */
