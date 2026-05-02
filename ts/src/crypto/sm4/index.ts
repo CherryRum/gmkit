@@ -320,12 +320,8 @@ function lPrime(b: number): number {
   return (b ^ rotl(b, 13) ^ rotl(b, 23)) >>> 0;
 }
 
-/**
- * 合成置换 T - 加密轮函数
- */
-function t(a: number): number {
-  return l(tau(a));
-}
+// 注：原 t(a) = L(τ(a)) 函数已由上面的 T 表替代，密钥扩展用的 T'(a) = L'(τ(a))
+// 见下面的 tPrime；此处不再保留独立的 t()。
 
 // T 表：将 SBOX + L 变换合成预计算表，让加密轮函数减少为 4 次表查 + 3 次 XOR。
 // T_i[b] = L( SBOX[b] << (24 - 8*i) )，由 L 的线性性可知 T(a) = T0 ^ T1 ^ T2 ^ T3。

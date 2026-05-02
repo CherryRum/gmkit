@@ -17,8 +17,8 @@
  * - 应用：EEA3（加密）和 EIA3（完整性）算法
  */
 
-import { ZUCState, generateKeystream, process } from './core';
-import { hexToBytes, bytesToHex, stringToBytes, decodeInput, autoDecodeString, encodeOutput, bytesToString, type BytesLike } from '../../core/utils';
+import { ZUCState, generateKeystream, processBytes } from './core';
+import { bytesToHex, stringToBytes, decodeInput, autoDecodeString, encodeOutput, bytesToString, type BytesLike } from '../../core/utils';
 import { OutputFormat, type OutputFormatType, type InputFormatType } from '../../types/constants';
 
 /**
@@ -75,9 +75,8 @@ export function encrypt(
   plaintext: string | Uint8Array,
   options?: ZUCOptions
 ): string {
-  const resultHex = process(key, iv, plaintext);
+  const resultBytes = processBytes(key, iv, plaintext);
   const outputFormat = options?.outputFormat || OutputFormat.HEX;
-  const resultBytes = hexToBytes(resultHex);
   return encodeOutput(resultBytes, outputFormat);
 }
 
@@ -103,8 +102,7 @@ export function decrypt(
     : options?.inputFormat
       ? decodeInput(ciphertext, options.inputFormat)
       : autoDecodeString(ciphertext);
-  const resultHex = process(key, iv, ciphertextBytes);
-  const resultBytes = hexToBytes(resultHex);
+  const resultBytes = processBytes(key, iv, ciphertextBytes);
   return bytesToString(resultBytes);
 }
 

@@ -304,6 +304,49 @@ export function generateKeystream(
 }
 
 /**
+ * 使用 ZUC-128 加密或解密数据，返回字节数组（性能 fast path）。
+ *
+ * 与 {@link process} 等价但跳过中间的 hex 编码 / 解码，供
+ * {@link encrypt} / {@link decrypt} 等高层 API 内部使用。
+ */
+export function processBytes(
+  key: string | Uint8Array,
+  iv: string | Uint8Array,
+  data: string | Uint8Array,
+): Uint8Array {
+  const keyBytes = typeof key === 'string' ? hexToBytes(key) : key;
+  const ivBytes = typeof iv === 'string' ? hexToBytes(iv) : iv;
+  const dataBytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
+
+  const state = new ZUCState();
+  state.initialize(keyBytes, ivBytes);
+
+  const output = new Uint8Array(dataBytes.length);
+  const numFullWords = Math.floor(dataBytes.length / 4);
+  const remainder = dataBytes.length % 4;
+
+  for (let i = 0; i < numFullWords; i++) {
+    const keyword = state.generateKeyword();
+    const offset = i * 4;
+    output[offset] = dataBytes[offset] ^ ((keyword >>> 24) & 0xFF);
+    output[offset + 1] = dataBytes[offset + 1] ^ ((keyword >>> 16) & 0xFF);
+    output[offset + 2] = dataBytes[offset + 2] ^ ((keyword >>> 8) & 0xFF);
+    output[offset + 3] = dataBytes[offset + 3] ^ (keyword & 0xFF);
+  }
+
+  if (remainder > 0) {
+    const keyword = state.generateKeyword();
+    const offset = numFullWords * 4;
+    for (let i = 0; i < remainder; i++) {
+      const keyByte = (keyword >>> (24 - i * 8)) & 0xFF;
+      output[offset + i] = dataBytes[offset + i] ^ keyByte;
+    }
+  }
+
+  return output;
+}
+
+/**
  * 使用 ZUC-128 加密或解密数据
  * 
  * ZUC 是流密码，加密和解密操作相同（与密钥流异或）
@@ -319,41 +362,5 @@ export function process(
   iv: string | Uint8Array,
   data: string | Uint8Array
 ): string {
-  const keyBytes = typeof key === 'string' ? hexToBytes(key) : key;
-  const ivBytes = typeof iv === 'string' ? hexToBytes(iv) : iv;
-  const dataBytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
-
-  const state = new ZUCState();
-  state.initialize(keyBytes, ivBytes);
-
-  // 生成密钥流并与数据异或
-  // 优化：按 4 字节批量处理
-  const output = new Uint8Array(dataBytes.length);
-  const numFullWords = Math.floor(dataBytes.length / 4);
-  const remainder = dataBytes.length % 4;
-
-  // 处理完整的 32 位字
-  for (let i = 0; i < numFullWords; i++) {
-    const keyword = state.generateKeyword();
-    const offset = i * 4;
-
-    // XOR 4 bytes at once
-    output[offset] = dataBytes[offset] ^ ((keyword >>> 24) & 0xFF);
-    output[offset + 1] = dataBytes[offset + 1] ^ ((keyword >>> 16) & 0xFF);
-    output[offset + 2] = dataBytes[offset + 2] ^ ((keyword >>> 8) & 0xFF);
-    output[offset + 3] = dataBytes[offset + 3] ^ (keyword & 0xFF);
-  }
-
-  // 处理剩余字节
-  if (remainder > 0) {
-    const keyword = state.generateKeyword();
-    const offset = numFullWords * 4;
-
-    for (let i = 0; i < remainder; i++) {
-      const keyByte = (keyword >>> (24 - i * 8)) & 0xFF;
-      output[offset + i] = dataBytes[offset + i] ^ keyByte;
-    }
-  }
-
-  return bytesToHex(output);
+  return bytesToHex(processBytes(key, iv, data));
 }
