@@ -111,6 +111,45 @@ const ciphertext = zuc.encrypt(key, iv, 'Hello, ZUC!');
 const plaintext = zuc.decrypt(key, iv, ciphertext);
 ```
 
+### Java 端等价写法
+
+[`cn.gmkit:gmkit`](/dev/JAVA-LIBRARY.zh-CN) 的 ZUC 与 TS 端均通过
+GM/T 0001-2012、3GPP TS 35.221 全套向量，keystream 与 EIA3 MAC 字节级
+一致。
+
+::: tabs#zuc-lang
+
+@tab TypeScript
+
+```typescript
+import { zucEncrypt, eea3, eia3 } from 'gmkitx';
+
+const cipher    = zucEncrypt(key16, iv16, plaintext);
+const keystream = eea3(ck, count, bearer, direction, bitLength); // hex
+const mac       = eia3(ik, count, bearer, direction, message);   // hex
+```
+
+@tab Java（静态聚合）
+
+```java
+import cn.gmkit.zuc.ZUCUtil;
+
+byte[] cipher    = ZUCUtil.process(key16, iv16, plaintext);
+int[]  keystream = ZUCUtil.eea3(ck, count, bearer, direction, bitLength);
+int    mac       = ZUCUtil.eia3(ik, count, bearer, direction, message);
+```
+
+@tab Java（实例式）
+
+```java
+import cn.gmkit.zuc.ZUC;
+
+ZUC zuc = new ZUC();
+byte[] cipher = zuc.process(key16, iv16, plaintext);
+```
+
+:::
+
 ## ZUC-128 流加密
 
 ZUC 是同步流密码，通过生成密钥流与明文异或实现加密（加解密为同一操作）。

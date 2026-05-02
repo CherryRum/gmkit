@@ -93,6 +93,42 @@ const hash = sm3.digest('Hello, SM3!');
 > 顶层函数式 API 推荐使用 `sm3Digest`、`sm3Hmac` 等带前缀名称。
 > 旧的 `digest`、`hmac` 仍继续导出，但仅作为兼容入口保留。
 
+### Java 端等价写法
+
+[`cn.gmkit:gmkit`](/dev/JAVA-LIBRARY.zh-CN) 的 SM3 入口与 TS 端字节级一致。
+
+::: tabs#sm3-lang
+
+@tab TypeScript
+
+```typescript
+import { sm3Digest, sm3Hmac } from 'gmkitx';
+
+const hash = sm3Digest('Hello, SM3!');
+const mac  = sm3Hmac(new TextEncoder().encode('secret-key'), 'msg');
+```
+
+@tab Java（静态聚合）
+
+```java
+import cn.gmkit.sm3.SM3Util;
+
+String hash = SM3Util.digestHex("Hello, SM3!");
+String mac  = SM3Util.hmacHex("secret-key".getBytes(), "msg".getBytes());
+```
+
+@tab Java（实例式）
+
+```java
+import cn.gmkit.sm3.SM3;
+
+SM3 sm3 = new SM3();
+String hash = sm3.digestHex("Hello, SM3!");
+String mac  = sm3.hmacHex("secret-key".getBytes(), "msg".getBytes());
+```
+
+:::
+
 ## 输出格式
 
 SM3 支持多种输出格式：

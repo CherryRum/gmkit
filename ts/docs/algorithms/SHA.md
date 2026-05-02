@@ -92,6 +92,43 @@ const mac = sha.hmacSha256('key', 'data');
 
 > 输入支持 `string | Uint8Array`；字符串按 UTF-8 处理。
 
+### Java 端等价写法
+
+[`cn.gmkit:gmkit`](/dev/JAVA-LIBRARY.zh-CN) 在 JVM 端封装 JDK 自带的
+`MessageDigest` / `Mac`，输出与 TS 端字节级一致。
+
+::: tabs#sha-lang
+
+@tab TypeScript
+
+```typescript
+import { sha } from 'gmkitx';
+
+const hex = sha.sha256('hello');
+const mac = sha.hmacSha256('key', 'msg');
+```
+
+@tab Java（静态聚合）
+
+```java
+import cn.gmkit.sha.SHAUtil;
+
+String hex = SHAUtil.sha256Hex("hello");
+byte[] mac = SHAUtil.sha256Hmac("key".getBytes(), "msg".getBytes());
+```
+
+@tab Java（实例式）
+
+```java
+import cn.gmkit.sha.SHA256;
+
+SHA256 sha = new SHA256();
+String hex = sha.digestHex("hello");
+byte[] mac = sha.hmac("key".getBytes(), "msg".getBytes());
+```
+
+:::
+
 ## 支持的算法
 
 ### SHA-256（推荐）

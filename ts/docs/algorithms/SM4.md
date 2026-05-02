@@ -84,6 +84,52 @@ const ciphertext = sm4.encrypt(key, 'Hello, SM4!');
 const plaintext = sm4.decrypt(key, ciphertext);
 ```
 
+### Java 端等价写法
+
+[`cn.gmkit:gmkit`](/dev/JAVA-LIBRARY.zh-CN) 的 SM4 默认行为（ECB / PKCS7 /
+hex 输出）与 TS 端一致，密文可以双向互通。
+
+::: tabs#sm4-lang
+
+@tab TypeScript
+
+```typescript
+import { sm4Encrypt, sm4Decrypt } from 'gmkitx';
+
+const key = '0123456789abcdeffedcba9876543210';
+const cipher = sm4Encrypt(key, 'Hello, SM4!');
+const plain  = sm4Decrypt(key, cipher);
+```
+
+@tab Java（静态聚合）
+
+```java
+import cn.gmkit.sm4.SM4Util;
+import cn.gmkit.core.HexCodec;
+
+byte[] key = HexCodec.decodeStrict("0123456789abcdeffedcba9876543210", "SM4 key");
+byte[] cipher = SM4Util.encrypt(key, "Hello, SM4!".getBytes());
+byte[] plain  = SM4Util.decrypt(key, cipher);
+```
+
+@tab Java（实例式 + CBC/PKCS7）
+
+```java
+import cn.gmkit.sm4.SM4;
+import cn.gmkit.sm4.SM4Options;
+import cn.gmkit.core.SM4CipherMode;
+import cn.gmkit.core.SM4Padding;
+
+SM4Options cbc = SM4Options.builder()
+    .mode(SM4CipherMode.CBC).padding(SM4Padding.PKCS7).iv(iv).build();
+
+SM4 sm4 = new SM4();
+byte[] cipher = sm4.encrypt(key, "Hello, SM4!".getBytes(), cbc).getCiphertext();
+byte[] plain  = sm4.decrypt(key, cipher, cbc);
+```
+
+:::
+
 ##  分组模式
 
 SM4 支持七种分组密码工作模式：

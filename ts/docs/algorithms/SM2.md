@@ -86,6 +86,49 @@ const compressed = sm2CompressPublicKey(publicKey);
 const uncompressed = sm2DecompressPublicKey(compressed);
 ```
 
+## Java 端等价写法
+
+如果项目里同时使用 [`cn.gmkit:gmkit`](/dev/JAVA-LIBRARY.zh-CN)，相同的密钥
+对、密文和签名可以在两端互通。最常用的两件事写法对照如下：
+
+::: tabs#sm2-lang
+
+@tab TypeScript
+
+```typescript
+import { sm2GenerateKeyPair, sm2Encrypt, sm2Sign } from 'gmkitx';
+
+const { publicKey, privateKey } = sm2GenerateKeyPair();
+const cipher = sm2Encrypt(publicKey, '机密数据');
+const sig    = sm2Sign(privateKey, '重要消息');
+```
+
+@tab Java（静态聚合）
+
+```java
+import cn.gmkit.sm2.SM2Util;
+import cn.gmkit.sm2.SM2KeyPair;
+import cn.gmkit.sm2.SM2SignOptions;
+import cn.gmkit.core.SM2CipherMode;
+
+SM2KeyPair kp = SM2Util.generateKeyPair();
+String cipher = SM2Util.encryptHex(kp.getPublicKeyHex(), "机密数据", SM2CipherMode.C1C3C2);
+String sig    = SM2Util.signHex(kp.getPrivateKeyHex(), "重要消息", SM2SignOptions.builder().build());
+```
+
+@tab Java（实例式）
+
+```java
+import cn.gmkit.sm2.SM2;
+
+SM2 sm2 = new SM2();
+SM2KeyPair kp = sm2.generateKeyPair();
+String cipher = sm2.encryptHex(kp.getPublicKeyHex(), "机密数据", SM2CipherMode.C1C3C2);
+String sig    = sm2.signHex(kp.getPrivateKeyHex(), "重要消息", SM2SignOptions.builder().build());
+```
+
+:::
+
 ## 加密与解密
 
 SM2 支持非对称加密，使用公钥加密、私钥解密。
