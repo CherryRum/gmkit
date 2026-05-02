@@ -76,41 +76,36 @@ function pad(data: Uint8Array): Uint8Array {
   return padded;
 }
 
+// 模块级复用：JavaScript 单线程下 cf 不会并发执行，
+// 把 w / wPrime 提升为常驻 Uint32Array 可以省去每个 512 位块的两次堆分配。
+const W_BUF = new Uint32Array(68);
+const W_PRIME_BUF = new Uint32Array(64);
+
 /**
- * SM3 压缩函数 CF
- * 
- * 这是 SM3 算法的核心操作，对每个 512 位的消息块进行 64 轮压缩。
- * 
- * 内部操作包括：
- * - 消息扩展：从 16 个字扩展到 68 个字
- * - 64 轮迭代压缩，使用 FF、GG 布尔函数和 P0 置换
- * 
- * 优化说明：
- * - 内联 P0、P1 函数以减少函数调用开销
- * - 前 16 轮和后 48 轮分开处理以避免条件判断
- * 
- * @param v - 当前哈希值ﾈ8 个 32 位字ﾉ
- * @param b - 512 位消息块ﾈ64 字节ﾉ
- * @returns 更新后的哈希值
+ * SM3 压缩函数 CF。
+ *
+ * 处理一个 512 位（64 字节）消息块，更新链接变量。前 16 轮与后 48 轮分别使用
+ * 不同的布尔函数与常量 T，按 GM/T 0004-2012 第 5.3.4 节实现。
+ *
+ * @param v 当前链接变量（8 个 32 位字）
+ * @param b 512 位消息块
+ * @returns 更新后的链接变量
  */
 function cf(v: number[], b: Uint8Array): number[] {
-  const w: number[] = new Array(68);
-  const wPrime: number[] = new Array(64);
+  const w = W_BUF;
+  const wPrime = W_PRIME_BUF;
 
-  // 消息扩展 - 优化：使用 DataView 一次性读取
   const view = new DataView(b.buffer, b.byteOffset, b.byteLength);
   for (let i = 0; i < 16; i++) {
-    w[i] = view.getUint32(i * 4, false); // false 表示大端序
+    w[i] = view.getUint32(i * 4, false);
   }
 
-  // 消息扩展 - 优化：内联 p1 函数减少函数调用开销
   for (let i = 16; i < 68; i++) {
     const temp = w[i - 16] ^ w[i - 9] ^ rotl(w[i - 3], 15);
-    // 内联 p1: x ^ rotl(x, 15) ^ rotl(x, 23)
+    // 内联 P1：x ^ rotl(x, 15) ^ rotl(x, 23)
     w[i] = (temp ^ rotl(temp, 15) ^ rotl(temp, 23) ^ rotl(w[i - 13], 7) ^ w[i - 6]) >>> 0;
   }
 
-  // 计算 W' - 优化：减少中间变量
   for (let i = 0; i < 64; i++) {
     wPrime[i] = (w[i] ^ w[i + 4]) >>> 0;
   }
