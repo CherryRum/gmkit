@@ -123,7 +123,7 @@ public final class SM9Signature implements AutoCloseable {
     }
 
     private long ctx() {
-        if (closed) {
+        if (closed || ctx == 0L) {
             throw new SM9Exception(SM9Messages.handleClosed("SM9Signature"));
         }
         return ctx;

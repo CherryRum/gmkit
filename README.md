@@ -21,6 +21,11 @@ GMKit 是一个基于 BouncyCastle 的国密算法工具库，提供 SM2、SM3�
 | SM2 | 椭圆曲线公钥密码算法 | `cn.gmkit.sm2.SM2` |
 | SM3 | 密码杂凑算法     | `cn.gmkit.sm3.SM3` |
 | SM4 | 分组密码算法     | `cn.gmkit.sm4.SM4` |
+| SM9 | 标识密码算法（签名/验签、IBE 加解密） | `cn.gmkit.sm9.SM9`（独立模块 `gmkit-sm9-native`，JNI 桥接 GmSSL） |
+
+> SM2/SM3/SM4 为纯 Java（BouncyCastle）实现；SM9 通过 JNI 桥接 GmSSL native 实现，
+> 需引入独立的 `gmkit-sm9-native` 模块并提供对应平台的 native 库，详见
+> [SM9 标识密码（JNI）](#sm9-标识密码jni)。
 
 ## Maven 引入
 
@@ -28,9 +33,10 @@ GMKit 是一个基于 BouncyCastle 的国密算法工具库，提供 SM2、SM3�
 <dependency>
     <groupId>cn.gmkit</groupId>
     <artifactId>gmkit</artifactId>
-    <version>0.9.4-SNAPSHOT</version>
+    <version>0.10.0-SNAPSHOT</version>
 </dependency>
 ```
+
 
 ## 快速开始
 
@@ -134,6 +140,91 @@ String plain = hybrid.decryptToUtf8(keyPair.privateKey(), payload);
 默认情况下该封装会使用 `SM4-GCM + 随机 nonce + 16 字节 tag`，并把 `encryptedKey / ciphertext / iv / aad / tag / mode / padding`
 统一放入 `SM2Sm4HybridPayload`，更适合后端服务间传输或落库。
 
+## SM9 标识密码（JNI）
+
+SM9 以独立模块 `gmkit-sm9-native` 提供，通过 JNI 桥接 [GmSSL](https://github.com/guanzhi/GmSSL) v3.1.1
+的 native 实现。与 GmSSL 一致，**仅支持签名/验签与基于身份的加密（IBE）加解密，不支持密钥交换**；
+单次加密明文上限为 **255 字节**，更大数据请采用混合加密（如用 SM4 加密数据、用 SM9 封装 SM4 密钥）。
+
+### Maven 引入
+
+```xml
+<dependency>
+    <groupId>cn.gmkit</groupId>
+    <artifactId>gmkit-sm9-native</artifactId>
+    <version>0.10.0-SNAPSHOT</version>
+</dependency>
+```
+
+### 签名 / 验签
+
+```java
+import cn.gmkit.sm9.SM9;
+import cn.gmkit.sm9.SM9SignKey;
+import cn.gmkit.sm9.SM9SignMasterKey;
+
+import java.nio.charset.StandardCharsets;
+
+byte[] data = "Hello GMKit SM9!".getBytes(StandardCharsets.UTF_8);
+try (SM9SignMasterKey master = SM9.generateSignMasterKey();
+     SM9SignKey signKey = master.extractKey("alice@example.com")) {
+    byte[] signature = SM9.sign(signKey, data);
+    boolean ok = SM9.verify(master, "alice@example.com", data, signature);
+}
+```
+
+### 加密 / 解密（IBE）
+
+```java
+import cn.gmkit.sm9.SM9;
+import cn.gmkit.sm9.SM9EncKey;
+import cn.gmkit.sm9.SM9EncMasterKey;
+
+try (SM9EncMasterKey master = SM9.generateEncMasterKey();
+     SM9EncKey encKey = master.extractKey("bob@example.com")) {
+    byte[] ciphertext = SM9.encrypt(master, "bob@example.com", plaintext);
+    byte[] decrypted = SM9.decrypt(encKey, ciphertext);
+}
+```
+
+> 所有密钥与签名/验签上下文都实现了 `AutoCloseable`，持有 native 资源，建议使用
+> try-with-resources 及时释放。大数据可使用 `SM9Signature` 的流式 `update` 接口。
+
+### 平台支持矩阵
+
+| 平台标识 | 操作系统 / 架构 | 桥接库 | 依赖库 |
+|---------|----------------|--------|--------|
+| `linux-x86_64`   | Linux x86_64   | `libgmkitsm9.so`    | `libgmssl.so.3`   |
+| `linux-aarch64`  | Linux ARM64    | `libgmkitsm9.so`    | `libgmssl.so.3`   |
+| `darwin-x86_64`  | macOS Intel    | `libgmkitsm9.dylib` | `libgmssl.3.dylib`|
+| `darwin-aarch64` | macOS Apple 芯片 | `libgmkitsm9.dylib` | `libgmssl.3.dylib`|
+| `windows-x86_64` | Windows x86_64 | `gmkitsm9.dll`      | `gmssl.dll`       |
+
+native 库由 `cn.gmkit.sm9.SM9NativeLoader` 按 `os.name` / `os.arch` 自动选择并加载，
+加载顺序为：`-Dgmkit.sm9.native.path` 指定路径 → `java.library.path`（系统已安装）→
+JAR 内置 `native/{平台}/` 资源。当前平台无可用 native 库时，`SM9.isAvailable()` 返回 `false`。
+
+### SM9 本地编译
+
+GmSSL 没有发布到 Maven Central，native 库需自行编译。先安装 GmSSL v3.1.1：
+
+```bash
+git clone --depth 1 --branch v3.1.1 https://github.com/guanzhi/GmSSL.git
+cmake -S GmSSL -B GmSSL/build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON
+cmake --build GmSSL/build -j
+sudo cmake --install GmSSL/build
+```
+
+再编译 JNI 桥接库（产物位于 `gmkit-sm9-native/target/native-build/`）：
+
+```bash
+mvn -pl gmkit-sm9-native -Pnative-build -Dgmssl.root=/usr/local process-classes
+```
+
+将桥接库与 `gmssl` 依赖库复制到对应平台目录
+`gmkit-sm9-native/src/main/resources/native/{平台}/` 后，即可被打包与加载。
+各平台的 native 库也可由 GitHub Actions 工作流 `build-native.yml` 自动构建。
+
 ## 迁移说明
 
 - `SM2`、`SM3`、`SM4` 为对象式主入口，适合通过 `new` 绑定上下文或复用实例。
@@ -161,7 +252,9 @@ byte[] decoded = ByteEncodings.decode(base64, InputFormat.BASE64, "payload");
 
 ```text
 gmkit-java/
-├── gmkit/               # 单一运行时模块
+├── gmkit/               # 单一运行时模块（SM2/SM3/SM4，纯 Java）
+├── gmkit-sm9-native/    # SM9 模块（JNI 桥接 GmSSL）
+│   └── src/main/c/      # JNI C 源码与 CMakeLists.txt
 ├── gmkit-benchmarks/    # JMH 性能基线模块
 │   └── src/
 ├── docs/
@@ -182,7 +275,7 @@ mvn -pl gmkit-benchmarks -am -DskipTests package
 JMH 基准已拆到独立模块 `gmkit-benchmarks`，用于固定 SM2、SM3、SM4 的吞吐与延迟指标。
 
 ```bash
-java -jar gmkit-benchmarks/target/gmkit-benchmarks-0.9.4-SNAPSHOT.jar ".*SM3.*" -bm thrpt -tu s -wi 3 -i 5 -f 1
+java -jar gmkit-benchmarks/target/gmkit-benchmarks-0.10.0-SNAPSHOT.jar ".*SM3.*" -bm thrpt -tu s -wi 3 -i 5 -f 1
 ```
 
 完整说明见 [docs/performance.md](docs/performance.md)。
@@ -190,6 +283,9 @@ java -jar gmkit-benchmarks/target/gmkit-benchmarks-0.9.4-SNAPSHOT.jar ".*SM3.*" 
 ## GitHub Actions
 
 仓库已提供 CI、Release Verify、GitHub Packages 发布和 Maven Central 发布工作流，使用方法见 [docs/github-actions.md](docs/github-actions.md)。
+
+此外，`build-native.yml` 用于在各平台从 GmSSL v3.1.1 源码编译 SM9 native 库；CI 中的 `sm9-native`
+作业会在 Linux / macOS 上编译 GmSSL 后运行 SM9 模块的全部功能测试。
 
 ## 许可证
 

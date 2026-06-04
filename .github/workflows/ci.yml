@@ -58,3 +58,56 @@ jobs:
 
       - name: Run verify
         run: mvn -B -ntp -DskipTests verify
+
+  sm9-native:
+    name: SM9 Native (${{ matrix.os }}, JDK ${{ matrix.java }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-14 ]
+        java: [ "8", "17", "21" ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+          cache-dependency-path: |
+            pom.xml
+            gmkit-sm9-native/pom.xml
+
+      - name: Build and install GmSSL v3.1.1
+        run: |
+          git clone --depth 1 --branch v3.1.1 https://github.com/guanzhi/GmSSL.git gmssl-src
+          cmake -S gmssl-src -B gmssl-src/build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON
+          cmake --build gmssl-src/build --config Release -j 3
+          sudo cmake --install gmssl-src/build
+
+      - name: Build SM9 JNI bridge
+        run: mvn -B -ntp -pl gmkit-sm9-native -Pnative-build -Dgmssl.root=/usr/local process-classes
+
+      - name: Stage native libraries (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          dst=gmkit-sm9-native/src/main/resources/native/linux-x86_64
+          find gmkit-sm9-native/target/native-build -name 'libgmkitsm9.so' -exec cp {} "$dst/" \;
+          cp /usr/local/lib/libgmssl.so.3 "$dst/"
+          ls -l "$dst"
+
+      - name: Stage native libraries (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          dst=gmkit-sm9-native/src/main/resources/native/darwin-aarch64
+          find gmkit-sm9-native/target/native-build -name 'libgmkitsm9.dylib' -exec cp {} "$dst/" \;
+          cp /usr/local/lib/libgmssl.3.dylib "$dst/"
+          ls -l "$dst"
+
+      - name: Run SM9 tests
+        run: mvn -B -ntp -pl gmkit-sm9-native test
+

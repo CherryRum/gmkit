@@ -139,7 +139,7 @@ public final class SM9EncMasterKey implements AutoCloseable {
     }
 
     long handle() {
-        if (closed) {
+        if (closed || handle == 0L) {
             throw new SM9Exception(SM9Messages.handleClosed("SM9EncMasterKey"));
         }
         return handle;
