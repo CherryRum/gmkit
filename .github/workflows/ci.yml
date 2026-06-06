@@ -68,6 +68,15 @@ jobs:
       matrix:
         os: [ ubuntu-latest, macos-14 ]
         java: [ "8", "17", "21" ]
+        distribution: [ temurin ]
+        exclude:
+          - os: macos-14
+            java: "8"
+            distribution: temurin
+        include:
+          - os: macos-14
+            java: "8"
+            distribution: zulu
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -75,7 +84,7 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
-          distribution: temurin
+          distribution: ${{ matrix.distribution }}
           java-version: ${{ matrix.java }}
           cache: maven
           cache-dependency-path: |
