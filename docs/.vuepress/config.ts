@@ -18,7 +18,7 @@ const contributorInfo = [
 export default defineUserConfig({
   lang: 'zh-CN',
   title: 'gmkitx',
-  description: '国密算法与国际标准的全场景 TypeScript 解决方案',
+  description: '纯 TypeScript 国密算法工具集',
   base: '/',
 
   bundler: viteBundler({

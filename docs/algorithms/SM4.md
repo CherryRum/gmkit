@@ -38,6 +38,18 @@ SM4 是国密对称分组密码算法，块长与密钥长度均为 128 位。
 - **IV/nonce 长度**：CBC/CTR/CFB/OFB 为 16 字节，GCM 为 12 字节，CCM 为 7-13 字节
 - **填充**：块模式用 PKCS7，Java 的 PKCS5Padding 等价于 PKCS7
 
+### 参数矩阵
+
+| mode | IV / nonce | padding | tag / AAD |
+|:--|:--|:--|:--|
+| `ECB` | 不使用 | `PKCS7` / `ZERO` / `NONE` | 无 |
+| `CBC` | 16 字节 IV | `PKCS7` / `ZERO` / `NONE` | 无 |
+| `CTR` / `CFB` / `OFB` | 16 字节 IV | 不使用分组填充，建议 `NONE` | 无 |
+| `GCM` | 12 字节 IV | `NONE` | tag 12-16 字节，默认 16；AAD 可选但解密端必须一致 |
+| `CCM` | 7-13 字节 nonce，建议 12 | `NONE` | tag 4-16 字节偶数，默认 16；AAD 可选但解密端必须一致 |
+
+`sm4Encrypt` 返回 `{ ciphertext, tag?, format }`；GCM/CCM 解密时需传入相同的 `iv`、`aad` 与 `tag`，或直接传入加密结果对象。
+
 ### 性能提示
 
 性能主要取决于平台硬件加速支持。  
@@ -710,5 +722,4 @@ A: 是的（除 ECB 模式外）。因为每次加密使用不同的随机 IV，
 - [SM2 - 椭圆曲线公钥密码算法](./SM2.md)
 - [SM3 - 密码杂凑算法](./SM3.md)
 - [ZUC - 祖冲之序列密码算法](./ZUC.md)
-
 

@@ -5,13 +5,20 @@ import { digest as sm3Digest, hmac as sm3Hmac } from '../src/crypto/sm3';
 import { sha256, sha384, sha512 } from '../src/crypto/sha';
 import { encrypt as sm4Encrypt, decrypt as sm4Decrypt } from '../src/crypto/sm4';
 import {
+  encrypt as zucEncrypt,
+  decrypt as zucDecrypt,
+  getKeystream as zucKeystream,
+  eea3,
+  eia3,
+} from '../src/crypto/zuc';
+import {
   generateKeyPair,
   encrypt as sm2Encrypt,
   decrypt as sm2Decrypt,
   sign as sm2Sign,
   verify as sm2Verify,
 } from '../src/crypto/sm2';
-import { CipherMode, PaddingMode, SM2CipherMode } from '../src/types/constants';
+import { CipherMode, InputFormat, OutputFormat, PaddingMode, SM2CipherMode } from '../src/types/constants';
 
 /**
  * 互操作性和标准符合性测试
@@ -128,19 +135,61 @@ describe('互操作性和标准测试向量', () => {
 
         const encrypted = sm4Encrypt(key, testCase.input, options);
         
-        // 注意：由于不同实现可能在填充等细节上有差异，我们主要验证能够正确解密
-        // 而不是要求密文完全相同
         const decrypted = sm4Decrypt(key, encrypted, options);
         expect(decrypted).toBe(testCase.input);
         
-        // 如果提供了期望的密文，尝试验证（但不强制要求完全匹配）
-        if (testCase.expected?.cipherHex && encrypted.ciphertext === testCase.expected.cipherHex) {
-          // 完全匹配是最理想的
+        if (testCase.expected?.cipherHex) {
           expect(encrypted.ciphertext).toBe(testCase.expected.cipherHex);
         } else {
-          // 至少应该是有效的十六进制字符串
           expect(encrypted.ciphertext).toMatch(/^[0-9a-f]+$/);
         }
+      });
+    });
+  });
+
+  describe('ZUC 项目固定向量', () => {
+    it('应该符合互操作向量 - ZUC', () => {
+      const zucCases = interopVectors.cases?.filter((c: any) => c.algo === 'ZUC') || [];
+
+      zucCases.forEach((testCase: any) => {
+        const key = testCase.keyHex || interopVectors.defaults?.zucKeyHex;
+        const iv = testCase.ivHex || interopVectors.defaults?.zucIvHex;
+
+        if (testCase.op === 'keystream') {
+          expect(zucKeystream(key, iv, testCase.lengthBytes)).toBe(testCase.expected.hex);
+          return;
+        }
+
+        if (testCase.op === 'encrypt') {
+          const encrypted = zucEncrypt(key, iv, testCase.input);
+          expect(encrypted).toBe(testCase.expected.cipherHex);
+          expect(zucDecrypt(key, iv, encrypted)).toBe(testCase.input);
+
+          if (testCase.expected.cipherBase64) {
+            const base64Encrypted = zucEncrypt(key, iv, testCase.input, {
+              outputFormat: OutputFormat.BASE64,
+            });
+            expect(base64Encrypted).toBe(testCase.expected.cipherBase64);
+            expect(zucDecrypt(key, iv, base64Encrypted, {
+              inputFormat: InputFormat.BASE64,
+            })).toBe(testCase.input);
+          }
+          return;
+        }
+
+        if (testCase.op === 'eea3') {
+          expect(eea3(key, testCase.count, testCase.bearer, testCase.direction, testCase.bitLength))
+            .toBe(testCase.expected.hex);
+          return;
+        }
+
+        if (testCase.op === 'eia3') {
+          expect(eia3(key, testCase.count, testCase.bearer, testCase.direction, testCase.input))
+            .toBe(testCase.expected.macHex);
+          return;
+        }
+
+        throw new Error(`Unsupported ZUC vector op: ${testCase.op}`);
       });
     });
   });

@@ -13,7 +13,7 @@ actions:
     type: secondary
 
 features:
-  - title: 全栈覆盖
+  - title: 同构运行
     icon: laptop-code
     details: 同构 API，Node.js (>= 18) 与现代浏览器一致可用
   - title: 双重范式
@@ -21,17 +21,17 @@ features:
     details: 函数式 / OOP 双轨 API，友好按需加载与 Tree-shaking
   - title: 标准对齐
     icon: check
-    details: 对齐 GM/T 标准，兼容 OpenSSL 等主流实现的密文格式
-  - title: 性能优化
+    details: 明确列出 SM2、SM4、ZUC 的格式参数与互操作边界
+  - title: 运行时依赖
     icon: rocket
-    details: 纯 TypeScript，运行时仅依赖 @noble/curves 与 @noble/hashes，适合生产环境
+    details: 纯 TypeScript，运行时依赖 @noble/curves 与 @noble/hashes
 
 copyright: false
 ---
 
 ## 核心特性
 
-`gmkitx` 是一套纯 **TypeScript** 实现的密码学工具集。它实现了 **SM2 / SM3 / SM4 / ZUC** 等国密标准，同时集成了 **SHA** 系列国际算法。
+`gmkitx` 是一套纯 **TypeScript** 实现的密码学工具集。它实现了 **SM2 / SM3 / SM4 / ZUC** 等国密算法，同时集成了 **SHA** 系列国际算法。当前 TypeScript 包不支持 SM9，也不包装 C、WASM 或 native runtime。
 
 设计目标是提供一套**同构**（Isomorphic）的代码库，让开发者在**服务端**和**现代浏览器**前端，都能使用完全一致的 API 进行加密、解密、签名与哈希运算。
 
@@ -124,7 +124,15 @@ const sha512Hash = sha.sha512('Hello World');
 - **SM2** - 椭圆曲线公钥密码算法（加密、解密、签名、验签）
 - **SM3** - 密码杂凑算法（哈希）
 - **SM4** - 分组密码算法（对称加密，支持多种模式）
-- **ZUC** - 祖冲之序列密码算法（流加密）
+- **ZUC** - 祖冲之序列密码算法（ZUC-128 流加密、EEA3/EIA3 兼容接口）
+
+| 算法 | 当前支持 | 主要边界 |
+|:--|:--|:--|
+| SM2 | `C1C3C2` / `C1C2C3`，raw/DER 签名，压缩/非压缩公钥输入 | 加密输出 C1 为非压缩点；随机密文不固定完整向量 |
+| SM3 | 摘要、HMAC、流式更新 | 仅提供摘要/MAC 组件 |
+| SM4 | ECB/CBC/CTR/CFB/OFB/GCM/CCM | GCM/CCM 必须保存并校验 tag；IV/nonce 长度需显式对齐 |
+| ZUC | ZUC-128 密钥流、加解密、EEA3/EIA3 兼容接口 | 不支持 ZUC-256；加密不自带完整性保护 |
+| SM9 | 不支持 | Java 侧 `gmkit-sm9` 通过 JNI/GmSSL 提供，TS 侧无实现 |
 
 ### 国际标准算法
 
@@ -141,5 +149,4 @@ const sha512Hash = sha.sha512('Hello World');
 - [语言集成指南](/dev/JAVA-INTEGRATION.zh-CN) - Java、Go、Rust、Python 对接方案
 - [项目精简清单](/dev/PROJECT-SLIMMING-CHECKLIST.zh-CN) - 文档资产、构建告警、发布包体审计
 - [性能测试](/performance/PERFORMANCE) - 查看性能基准测试结果
-
 

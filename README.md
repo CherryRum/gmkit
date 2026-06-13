@@ -2,7 +2,7 @@
 
 
 # GMKitX
-**国密算法与国际标准的全场景 TypeScript 解决方案**
+**纯 TypeScript 国密算法工具集**
 
 [![NPM Version](https://img.shields.io/npm/v/gmkitx?style=flat-square&color=3b82f6&label=npm)](https://www.npmjs.com/package/gmkitx)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green?style=flat-square)](./LICENSE)
@@ -13,7 +13,7 @@
 
 ---
 
-`gmkitx` 是一套纯 **TypeScript** 实现的密码学工具集，覆盖 **SM2 / SM3 / SM4 / ZUC** 等国密标准，并提供 **SHA** 系列国际摘要算法。
+`gmkitx` 是一套纯 **TypeScript** 实现的密码学工具集，覆盖 **SM2 / SM3 / SM4 / ZUC** 等国密算法，并提供 **SHA** 系列国际摘要算法。当前包不包含 SM9，也不会在 TypeScript 侧包装 C、WASM 或 native runtime。
 目标是提供一套**同构**（Isomorphic）的代码库，让开发者在 **Node.js** 与**现代浏览器**中使用一致的 API 进行加密、解密、签名与哈希运算。
 </div>
 
@@ -26,6 +26,21 @@
 * **互操作友好**：支持常见密文格式与编码（Hex/Base64、C1C3C2/C1C2C3、ASN.1 DER）。
 * **按需加载**：Tree-shaking 友好，可按算法模块引入。
 * **类型完整**：内建 `.d.ts` 类型定义，编码即文档。
+
+---
+
+## 支持矩阵与边界
+
+| 算法 | TypeScript 当前范围 | 主要格式/参数 | 不支持或注意 |
+|:--|:--|:--|:--|
+| SM2 | 密钥生成、加解密、签名/验签、密钥交换 | `C1C3C2` 默认，可选 `C1C2C3`；签名支持 `raw` / `der` / `auto`；输入输出支持 hex/base64 | SM2 加密有随机性，测试不固定完整密文；大数据建议 SM2 + SM4 混合加密 |
+| SM3 | 摘要、HMAC、流式更新 | hex/base64 输出 | 无认证加密语义，仅用于摘要/MAC 组合 |
+| SM4 | `ECB` / `CBC` / `CTR` / `CFB` / `OFB` / `GCM` / `CCM` | `PKCS7` / `ZERO` / `NONE`；AEAD 返回 `ciphertext` + `tag` | `ECB` 不建议保护敏感数据；AEAD 必须保存并校验 tag |
+| ZUC | ZUC-128 密钥流、加解密、EEA3/EIA3 兼容接口 | key/iv 均为 16 字节；密钥流长度按字节，`zucKeystreamWords` 按 32-bit word | 不支持 ZUC-256；ZUC 加密不自带完整性保护 |
+| SHA | SHA-1/224/256/384/512 摘要 | hex/base64 输出 | SHA-1 仅用于兼容旧系统 |
+| SM9 | 不支持 | 无 | TypeScript 侧没有 SM9；如需 SM9，请使用 `gmkit-java` 的 `gmkit-sm9` JNI/GmSSL 模块 |
+
+测试中的 ZUC、SM3、SM4 固定值是本项目与 `gmkit-java` 对齐使用的项目向量；没有标注为外部标准向量的值，不应被当作标准测试向量来源。
 
 ---
 
@@ -185,6 +200,9 @@ const sha512Hash = sha.sha512('Hello World');
 ### SM2（椭圆曲线公钥密码）
 - 加/解密、签名/验签、密钥对生成；默认 `C1C3C2`，可切换 `C1C2C3`。
 - Node/浏览器同构，面向对象与函数式并行。
+- 公钥输入支持非压缩格式 `04 || x || y`（65 字节 / 130 hex）与压缩格式 `02/03 || x`（33 字节 / 66 hex）；加密输出中的 C1 当前为非压缩点。
+- 解密支持 raw `C1C3C2` / `C1C2C3`，也支持 ASN.1 DER 密文；未显式传 `mode` 时会先按 `C1C3C2` 尝试，再按 `C1C2C3` 尝试。
+- 签名默认输出 raw `r || s`（64 字节 / 128 hex），可指定 DER；验签可指定 `raw` / `der` / `auto`。签名和验签必须使用相同 `userId`，默认 `1234567812345678`。
 
 ```ts
 import { SM2, SM2CipherMode, InputFormat, OutputFormat } from 'gmkitx';
@@ -218,6 +236,16 @@ const base64 = sm3.digest({ outputFormat: OutputFormat.BASE64 });
 ### SM4（分组密码）
 - 支持 `ECB` | `CBC` | `CTR` | `CFB` | `OFB` | `GCM` | `CCM`，PKCS7/NoPadding 可选。
 
+| mode | iv / nonce | padding | tag |
+|:--|:--|:--|:--|
+| `ECB` | 不使用 | `PKCS7` / `ZERO` / `NONE` | 无 |
+| `CBC` | 16 字节 IV | `PKCS7` / `ZERO` / `NONE` | 无 |
+| `CTR` / `CFB` / `OFB` | 16 字节 IV | 不使用分组填充，建议 `NONE` | 无 |
+| `GCM` | 12 字节 IV | `NONE` | 12-16 字节，默认 16；`aad` 必须与解密端一致 |
+| `CCM` | 7-13 字节 nonce，建议 12 | `NONE` | 4-16 字节偶数，默认 16；`aad` 必须与解密端一致 |
+
+`sm4Encrypt` 返回 `{ ciphertext, tag?, format }`；GCM/CCM 解密时需传入同一个 `iv`、`aad` 和 `tag`，或直接把加密结果对象传给 `sm4Decrypt`。
+
 ```ts
 import { SM4, sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkitx';
 
@@ -234,6 +262,8 @@ const ccmPlain = sm4Decrypt(key, ccm, { mode: CipherMode.CCM, iv: '0011223344556
 
 ### ZUC（祖冲之序列密码）
 - 覆盖 128-EEA3（机密性）与 128-EIA3（完整性）；流式密钥流可复用。
+- 当前仅实现 ZUC-128，key 与 iv 都必须是 16 字节；`zucEncrypt` / `zucDecrypt` 每次都从 IV 起始生成密钥流。
+- `zucDecrypt` 将结果按 UTF-8 解码为字符串；二进制数据请使用 `zucKeystream` 后自行 XOR，或使用字节工具处理。
 
 ```ts
 import { zucEncrypt, zucKeystream, zucKeystreamWords } from 'gmkitx';
@@ -259,6 +289,7 @@ const hash = sha.sha256('Hello World');
 - `SM2` 适合密钥封装、签名验签，不适合直接加密大数据（建议 `SM2 + SM4` 混合加密）。
 - `ZUC` 更偏通信协议场景（如 EEA3/EIA3），通用业务通常优先 SM4。
 - `SHA-1` 仅用于兼容旧系统，不建议用于新系统安全场景。
+- `SM9` 当前不属于 TypeScript 包能力范围；本包不提供 C/WASM/native 包装。
 
 ### Java 对接提示（重点）
 
@@ -312,6 +343,15 @@ const sm4Plain = sm4Decrypt(key, sm4Result, { mode: CipherMode.ECB, padding: Pad
 ```bash
 # 构建（含告警策略）
 npm run build
+
+# 类型检查
+npm run type-check
+
+# 单元测试
+npm test
+
+# 可运行示例：构建后用 Node 调用 dist
+node -e "import('./dist/index.js').then(({ sm3Digest }) => console.log(sm3Digest('你好，国密')))"
 
 # 发布包体积审计（npm pack dry-run）
 npm run audit:pack
