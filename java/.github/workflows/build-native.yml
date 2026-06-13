@@ -1,0 +1,137 @@
+name: Build SM9 Native
+
+# 在各平台从 GmSSL v3.1.1 源码编译 SM9 JNI 桥接库（gmkitsm9）及其依赖（gmssl），
+# 并将产物上传为构建工件，供发布流程下载后打入 JAR。
+#
+# 触发方式：手动触发，或推送 v* 标签时触发。
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+env:
+  GMSSL_REF: v3.1.1
+
+jobs:
+  build-native:
+    name: Build (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x86_64
+            bridge: libgmkitsm9.so
+            gmssl: libgmssl.so.3
+          - os: ubuntu-24.04-arm
+            platform: linux-aarch64
+            bridge: libgmkitsm9.so
+            gmssl: libgmssl.so.3
+          - os: macos-13
+            platform: darwin-x86_64
+            bridge: libgmkitsm9.dylib
+            gmssl: libgmssl.3.dylib
+          - os: macos-14
+            platform: darwin-aarch64
+            bridge: libgmkitsm9.dylib
+            gmssl: libgmssl.3.dylib
+          - os: windows-latest
+            platform: windows-x86_64
+            bridge: gmkitsm9.dll
+            gmssl: gmssl.dll
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # ---------------- 构建并安装 GmSSL v3.1.1 ----------------
+      - name: Build GmSSL (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          git clone --depth 1 --branch "${GMSSL_REF}" https://github.com/guanzhi/GmSSL.git gmssl-src
+          cmake -S gmssl-src -B gmssl-src/build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON
+          cmake --build gmssl-src/build --config Release -j 3
+          sudo cmake --install gmssl-src/build
+
+      - name: Setup MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Build GmSSL (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          git clone --depth 1 --branch %GMSSL_REF% https://github.com/guanzhi/GmSSL.git gmssl-src
+          cmake -S gmssl-src -B gmssl-src/build -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release
+          cmake --build gmssl-src/build --config Release
+          cmake --install gmssl-src/build
+
+      # ---------------- 编译 SM9 JNI 桥接库 ----------------
+      - name: Build bridge (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          mvn -B -ntp -pl gmkit-sm9 -Pnative-build -Dgmssl.root=/usr/local process-classes
+
+      - name: Build bridge (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          mvn -B -ntp -pl gmkit-sm9 -Pnative-build -Dgmssl.root="C:/Program Files/GmSSL" process-classes
+
+      # ---------------- 收集产物 ----------------
+      - name: Collect artifacts (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p out/${{ matrix.platform }}
+          find gmkit-sm9/target/native-build -name '${{ matrix.bridge }}' -exec cp {} out/${{ matrix.platform }}/ \;
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            cp /usr/local/lib/${{ matrix.gmssl }} out/${{ matrix.platform }}/ || cp "$(brew --prefix)"/lib/${{ matrix.gmssl }} out/${{ matrix.platform }}/
+          else
+            cp /usr/local/lib/${{ matrix.gmssl }} out/${{ matrix.platform }}/
+          fi
+          ls -l out/${{ matrix.platform }}
+
+      - name: Collect artifacts (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "out/${{ matrix.platform }}" | Out-Null
+          Get-ChildItem -Recurse -Path gmkit-sm9/target/native-build -Filter '${{ matrix.bridge }}' |
+            Select-Object -First 1 | ForEach-Object { Copy-Item $_.FullName "out/${{ matrix.platform }}/" }
+          Copy-Item "C:/Program Files/GmSSL/bin/${{ matrix.gmssl }}" "out/${{ matrix.platform }}/"
+          Get-ChildItem "out/${{ matrix.platform }}"
+
+      - name: Stage platform module
+        shell: bash
+        run: |
+          module="gmkit-sm9-native-${{ matrix.platform }}"
+          dst="$module/src/main/resources/native/${{ matrix.platform }}"
+          mkdir -p "$dst"
+          cp out/${{ matrix.platform }}/${{ matrix.bridge }} "$dst/"
+          cp out/${{ matrix.platform }}/${{ matrix.gmssl }} "$dst/"
+          ls -l "$dst"
+
+      - name: Package platform native module
+        run: >
+          mvn -B -ntp -Pnative-modules,release
+          -pl gmkit-sm9-native-${{ matrix.platform }}
+          -Dgpg.skip=true package
+
+      - name: Upload native artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sm9-native-${{ matrix.platform }}
+          path: out/${{ matrix.platform }}/
+          if-no-files-found: error

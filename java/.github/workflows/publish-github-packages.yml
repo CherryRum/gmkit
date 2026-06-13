@@ -1,0 +1,61 @@
+name: Publish GitHub Packages
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: publish-github-packages-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: Deploy package
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: |
+            pom.xml
+            gmkit/pom.xml
+          server-id: github
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
+
+      - name: Resolve project version
+        id: version
+        shell: bash
+        run: echo "version=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version)" >> "$GITHUB_OUTPUT"
+
+      - name: Decide whether to publish
+        id: guard
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ steps.version.outputs.version }}" != *-SNAPSHOT ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "当前版本不是 -SNAPSHOT，已跳过 main 分支上的自动 GitHub Packages 发布。" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to GitHub Packages
+        if: steps.guard.outputs.skip != 'true'
+        run: >
+          mvn -B -ntp -DskipTests deploy
+          -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/gmkits/gmkit-java
