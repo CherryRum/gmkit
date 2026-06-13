@@ -4,8 +4,11 @@ import cn.gmkit.core.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.charset.StandardCharsets;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -176,5 +179,68 @@ class SM2StandardVectorsTest {
                 SM2VerifyOptions.builder()
                     .signatureFormat(SM2SignatureInputFormat.DER)
                     .build()));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("unicodeMessages")
+    void unicodeMessagesShouldEncryptDecryptAndSignInBothCipherLayouts(String name, String message) {
+        SM2KeyPair keyPair = sm2.generateKeyPair(true);
+        byte[] plaintext = Texts.utf8(message);
+
+        for (SM2CipherMode mode : SM2CipherMode.values()) {
+            byte[] ciphertext = sm2.encrypt(keyPair.publicKey(), plaintext, mode);
+
+            assertArrayEquals(plaintext, sm2.decrypt(keyPair.privateKey(), ciphertext, mode), name + " " + mode);
+        }
+
+        byte[] rawSignature = sm2.sign(
+            keyPair.privateKey(),
+            plaintext,
+            SM2SignOptions.builder()
+                .signatureFormat(SM2SignatureFormat.RAW)
+                .build());
+        byte[] derSignature = sm2.sign(
+            keyPair.privateKey(),
+            plaintext,
+            SM2SignOptions.builder()
+                .signatureFormat(SM2SignatureFormat.DER)
+                .build());
+
+        assertTrue(
+            sm2.verify(
+                keyPair.publicKey(),
+                plaintext,
+                rawSignature,
+                SM2VerifyOptions.builder()
+                    .signatureFormat(SM2SignatureInputFormat.RAW)
+                    .build()),
+            name);
+        assertTrue(
+            sm2.verify(
+                keyPair.publicKey(),
+                plaintext,
+                derSignature,
+                SM2VerifyOptions.builder()
+                    .signatureFormat(SM2SignatureInputFormat.DER)
+                    .build()),
+            name);
+    }
+
+    private static Stream<Arguments> unicodeMessages() {
+        return Stream.of(
+            Arguments.of("Chinese punctuation", "你好，GMKit！这是中文测试。"),
+            Arguments.of("Emoji", "国密测试 😊🚀🔥"),
+            Arguments.of("Mixed Unicode", "中文 + emoji 😊 + English + 123"),
+            Arguments.of("Newlines and tabs", "第一行\nsecond line\t第三行"),
+            Arguments.of("Leading and trailing spaces", "  前后空格\tspaces  "),
+            Arguments.of("Long text", longMessage()));
+    }
+
+    private static String longMessage() {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < 80; i++) {
+            builder.append("国密长文本😊");
+        }
+        return builder.toString();
     }
 }

@@ -82,20 +82,20 @@ jobs:
       - name: Build bridge (Unix)
         if: runner.os != 'Windows'
         run: |
-          mvn -B -ntp -pl gmkit-sm9-native -Pnative-build -Dgmssl.root=/usr/local process-classes
+          mvn -B -ntp -pl gmkit-sm9 -Pnative-build -Dgmssl.root=/usr/local process-classes
 
       - name: Build bridge (Windows)
         if: runner.os == 'Windows'
         shell: cmd
         run: |
-          mvn -B -ntp -pl gmkit-sm9-native -Pnative-build -Dgmssl.root="C:/Program Files/GmSSL" process-classes
+          mvn -B -ntp -pl gmkit-sm9 -Pnative-build -Dgmssl.root="C:/Program Files/GmSSL" process-classes
 
       # ---------------- 收集产物 ----------------
       - name: Collect artifacts (Unix)
         if: runner.os != 'Windows'
         run: |
           mkdir -p out/${{ matrix.platform }}
-          find gmkit-sm9-native/target/native-build -name '${{ matrix.bridge }}' -exec cp {} out/${{ matrix.platform }}/ \;
+          find gmkit-sm9/target/native-build -name '${{ matrix.bridge }}' -exec cp {} out/${{ matrix.platform }}/ \;
           if [ "${{ runner.os }}" = "macOS" ]; then
             cp /usr/local/lib/${{ matrix.gmssl }} out/${{ matrix.platform }}/ || cp "$(brew --prefix)"/lib/${{ matrix.gmssl }} out/${{ matrix.platform }}/
           else
@@ -108,10 +108,26 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path "out/${{ matrix.platform }}" | Out-Null
-          Get-ChildItem -Recurse -Path gmkit-sm9-native/target/native-build -Filter '${{ matrix.bridge }}' |
+          Get-ChildItem -Recurse -Path gmkit-sm9/target/native-build -Filter '${{ matrix.bridge }}' |
             Select-Object -First 1 | ForEach-Object { Copy-Item $_.FullName "out/${{ matrix.platform }}/" }
           Copy-Item "C:/Program Files/GmSSL/bin/${{ matrix.gmssl }}" "out/${{ matrix.platform }}/"
           Get-ChildItem "out/${{ matrix.platform }}"
+
+      - name: Stage platform module
+        shell: bash
+        run: |
+          module="gmkit-sm9-native-${{ matrix.platform }}"
+          dst="$module/src/main/resources/native/${{ matrix.platform }}"
+          mkdir -p "$dst"
+          cp out/${{ matrix.platform }}/${{ matrix.bridge }} "$dst/"
+          cp out/${{ matrix.platform }}/${{ matrix.gmssl }} "$dst/"
+          ls -l "$dst"
+
+      - name: Package platform native module
+        run: >
+          mvn -B -ntp -Pnative-modules,release
+          -pl gmkit-sm9-native-${{ matrix.platform }}
+          -Dgpg.skip=true package
 
       - name: Upload native artifacts
         uses: actions/upload-artifact@v4

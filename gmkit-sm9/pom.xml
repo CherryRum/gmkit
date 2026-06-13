@@ -10,35 +10,15 @@
         <version>0.10.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>gmkit</artifactId>
-    <name>GMKit</name>
-    <description>GMKit 主运行时国密算法工具库，支持 SM2、SM3、SM4、ZUC</description>
+    <artifactId>gmkit-sm9</artifactId>
+    <name>GMKit SM9</name>
+    <description>GMKit SM9 Java API，通过 JNI 桥接 GmSSL，native 二进制由独立平台模块提供</description>
 
     <dependencies>
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk15to18</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk15to18</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcutil-jdk15to18</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
-            <scope>provided</scope>
-            <optional>true</optional>
         </dependency>
     </dependencies>
 
@@ -51,15 +31,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>${lombok.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -73,6 +44,58 @@
     </build>
 
     <profiles>
+        <!--
+          native-build 用于在已安装 GmSSL v3.1.1 的机器上编译 JNI 桥接库。
+          默认构建不会触发 C 编译，因此在未安装 GmSSL 的环境（含普通 CI）也能正常
+          编译 Java 与运行测试（无 native 库时测试会被 Assumptions 优雅跳过）。
+
+          使用方式：
+            mvn -pl gmkit-sm9 -Pnative-build -Dgmssl.root=/usr/local process-classes
+        -->
+        <profile>
+            <id>native-build</id>
+            <properties>
+                <gmssl.root>/usr/local</gmssl.root>
+                <cmake.build.type>Release</cmake.build.type>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>cmake-configure</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <mkdir dir="${project.build.directory}/native-build"/>
+                                        <exec executable="cmake" dir="${project.build.directory}/native-build"
+                                              failonerror="true">
+                                            <arg value="-DCMAKE_BUILD_TYPE=${cmake.build.type}"/>
+                                            <arg value="-DGMSSL_ROOT=${gmssl.root}"/>
+                                            <arg value="${project.basedir}/src/main/c"/>
+                                        </exec>
+                                        <exec executable="cmake" dir="${project.build.directory}/native-build"
+                                              failonerror="true">
+                                            <arg value="--build"/>
+                                            <arg value="."/>
+                                            <arg value="--config"/>
+                                            <arg value="${cmake.build.type}"/>
+                                        </exec>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <profile>
             <id>release</id>
             <build>

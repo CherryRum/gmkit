@@ -31,6 +31,7 @@ jobs:
           cache-dependency-path: |
             pom.xml
             gmkit/pom.xml
+            gmkit-sm9/pom.xml
 
       - name: Verify release build
         run: mvn -B -ntp -Prelease -Dgpg.skip=true -DskipTests verify

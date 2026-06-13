@@ -13,11 +13,116 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  GMSSL_REF: v3.1.1
+
 jobs:
+  build-native:
+    name: Build SM9 Native (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x86_64
+            bridge: libgmkitsm9.so
+            gmssl: libgmssl.so.3
+          - os: ubuntu-24.04-arm
+            platform: linux-aarch64
+            bridge: libgmkitsm9.so
+            gmssl: libgmssl.so.3
+          - os: macos-13
+            platform: darwin-x86_64
+            bridge: libgmkitsm9.dylib
+            gmssl: libgmssl.3.dylib
+          - os: macos-14
+            platform: darwin-aarch64
+            bridge: libgmkitsm9.dylib
+            gmssl: libgmssl.3.dylib
+          - os: windows-latest
+            platform: windows-x86_64
+            bridge: gmkitsm9.dll
+            gmssl: gmssl.dll
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: |
+            pom.xml
+            gmkit-sm9/pom.xml
+
+      - name: Build GmSSL (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          git clone --depth 1 --branch "${GMSSL_REF}" https://github.com/guanzhi/GmSSL.git gmssl-src
+          cmake -S gmssl-src -B gmssl-src/build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON
+          cmake --build gmssl-src/build --config Release -j 3
+          sudo cmake --install gmssl-src/build
+
+      - name: Setup MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Build GmSSL (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          git clone --depth 1 --branch %GMSSL_REF% https://github.com/guanzhi/GmSSL.git gmssl-src
+          cmake -S gmssl-src -B gmssl-src/build -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release
+          cmake --build gmssl-src/build --config Release
+          cmake --install gmssl-src/build
+
+      - name: Build bridge (Unix)
+        if: runner.os != 'Windows'
+        run: mvn -B -ntp -pl gmkit-sm9 -Pnative-build -Dgmssl.root=/usr/local process-classes
+
+      - name: Build bridge (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: mvn -B -ntp -pl gmkit-sm9 -Pnative-build -Dgmssl.root="C:/Program Files/GmSSL" process-classes
+
+      - name: Collect artifacts (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p out/${{ matrix.platform }}
+          find gmkit-sm9/target/native-build -name '${{ matrix.bridge }}' -exec cp {} out/${{ matrix.platform }}/ \;
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            cp /usr/local/lib/${{ matrix.gmssl }} out/${{ matrix.platform }}/ || cp "$(brew --prefix)"/lib/${{ matrix.gmssl }} out/${{ matrix.platform }}/
+          else
+            cp /usr/local/lib/${{ matrix.gmssl }} out/${{ matrix.platform }}/
+          fi
+          ls -l out/${{ matrix.platform }}
+
+      - name: Collect artifacts (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "out/${{ matrix.platform }}" | Out-Null
+          Get-ChildItem -Recurse -Path gmkit-sm9/target/native-build -Filter '${{ matrix.bridge }}' |
+            Select-Object -First 1 | ForEach-Object { Copy-Item $_.FullName "out/${{ matrix.platform }}/" }
+          Copy-Item "C:/Program Files/GmSSL/bin/${{ matrix.gmssl }}" "out/${{ matrix.platform }}/"
+          Get-ChildItem "out/${{ matrix.platform }}"
+
+      - name: Upload native artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sm9-native-${{ matrix.platform }}
+          path: out/${{ matrix.platform }}/
+          if-no-files-found: error
+
   publish:
     name: Deploy to Maven Central
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    needs: build-native
     env:
       CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
       CENTRAL_TOKEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
@@ -50,11 +155,36 @@ jobs:
           cache-dependency-path: |
             pom.xml
             gmkit/pom.xml
+            gmkit-sm9/pom.xml
           server-id: central
           server-username: CENTRAL_TOKEN_USERNAME
           server-password: CENTRAL_TOKEN_PASSWORD
           gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
           gpg-passphrase: GPG_PASSPHRASE
+
+      - name: Download native artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: sm9-native-*
+          path: native-artifacts
+
+      - name: Stage native artifacts into modules
+        shell: bash
+        run: |
+          shopt -s nullglob
+          artifacts=(native-artifacts/sm9-native-*)
+          if (( ${#artifacts[@]} == 0 )); then
+            echo "没有找到 SM9 native 构建工件。" >&2
+            exit 1
+          fi
+          for artifact in "${artifacts[@]}"; do
+            platform="${artifact##*/sm9-native-}"
+            module="gmkit-sm9-native-${platform}"
+            dst="${module}/src/main/resources/native/${platform}"
+            mkdir -p "$dst"
+            cp "$artifact"/* "$dst/"
+            ls -l "$dst"
+          done
 
       - name: Resolve project version
         id: version
@@ -70,4 +200,4 @@ jobs:
           fi
 
       - name: Deploy to Maven Central
-        run: mvn -B -ntp -Prelease -DskipTests deploy
+        run: mvn -B -ntp -Prelease,native-modules -DskipTests deploy

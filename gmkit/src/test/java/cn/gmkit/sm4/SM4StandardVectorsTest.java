@@ -139,6 +139,29 @@ class SM4StandardVectorsTest {
                     .build()));
     }
 
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("unicodePlaintexts")
+    void unicodePlaintextsShouldRoundTripAcrossBlockAndAeadModes(String name, String plaintext) {
+        SM4Options cbc = SM4Options.builder()
+            .mode(SM4CipherMode.CBC)
+            .padding(SM4Padding.PKCS7)
+            .iv(IV)
+            .build();
+        SM4Options gcm = SM4Options.builder()
+            .mode(SM4CipherMode.GCM)
+            .padding(SM4Padding.NONE)
+            .iv(NONCE_12)
+            .aad(Texts.utf8("aad-" + name))
+            .tagLength(16)
+            .build();
+
+        SM4CipherResult cbcEncrypted = sm4.encrypt(KEY, plaintext, cbc);
+        SM4CipherResult gcmEncrypted = sm4.encrypt(KEY, plaintext, gcm);
+
+        assertEquals(plaintext, sm4.decryptToUtf8(KEY, cbcEncrypted, cbc), name);
+        assertEquals(plaintext, sm4.decryptToUtf8(KEY, gcmEncrypted, gcm), name);
+    }
+
     private static Stream<Arguments> roundTripCases() {
         return Stream.of(
             Arguments.of(
@@ -216,5 +239,23 @@ class SM4StandardVectorsTest {
                     .aad(Texts.utf8("aad"))
                     .tagLength(12)
                     .build()));
+    }
+
+    private static Stream<Arguments> unicodePlaintexts() {
+        return Stream.of(
+            Arguments.of("Chinese punctuation", "你好，GMKit！这是中文测试。"),
+            Arguments.of("Emoji", "国密测试 😊🚀🔥"),
+            Arguments.of("Mixed Unicode", "中文 + emoji 😊 + English + 123"),
+            Arguments.of("Newlines and tabs", "第一行\nsecond line\t第三行"),
+            Arguments.of("Leading and trailing spaces", "  前后空格\tspaces  "),
+            Arguments.of("Long text", longPlaintext()));
+    }
+
+    private static String longPlaintext() {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < 80; i++) {
+            builder.append("国密长文本😊");
+        }
+        return builder.toString();
     }
 }

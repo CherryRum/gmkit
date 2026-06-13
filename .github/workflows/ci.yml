@@ -33,6 +33,7 @@ jobs:
           cache-dependency-path: |
             pom.xml
             gmkit/pom.xml
+            gmkit-sm9/pom.xml
 
       - name: Run tests
         run: mvn -B -ntp clean test
@@ -55,6 +56,7 @@ jobs:
           cache-dependency-path: |
             pom.xml
             gmkit/pom.xml
+            gmkit-sm9/pom.xml
 
       - name: Run verify
         run: mvn -B -ntp -DskipTests verify
@@ -89,7 +91,7 @@ jobs:
           cache: maven
           cache-dependency-path: |
             pom.xml
-            gmkit-sm9-native/pom.xml
+            gmkit-sm9/pom.xml
 
       - name: Build and install GmSSL v3.1.1
         run: |
@@ -99,24 +101,25 @@ jobs:
           sudo cmake --install gmssl-src/build
 
       - name: Build SM9 JNI bridge
-        run: mvn -B -ntp -pl gmkit-sm9-native -Pnative-build -Dgmssl.root=/usr/local process-classes
+        run: mvn -B -ntp -pl gmkit-sm9 -Pnative-build -Dgmssl.root=/usr/local process-classes
 
       - name: Stage native libraries (Linux)
         if: runner.os == 'Linux'
         run: |
-          dst=gmkit-sm9-native/src/main/resources/native/linux-x86_64
-          find gmkit-sm9-native/target/native-build -name 'libgmkitsm9.so' -exec cp {} "$dst/" \;
+          dst=gmkit-sm9/src/test/resources/native/linux-x86_64
+          mkdir -p "$dst"
+          find gmkit-sm9/target/native-build -name 'libgmkitsm9.so' -exec cp {} "$dst/" \;
           cp /usr/local/lib/libgmssl.so.3 "$dst/"
           ls -l "$dst"
 
       - name: Stage native libraries (macOS)
         if: runner.os == 'macOS'
         run: |
-          dst=gmkit-sm9-native/src/main/resources/native/darwin-aarch64
-          find gmkit-sm9-native/target/native-build -name 'libgmkitsm9.dylib' -exec cp {} "$dst/" \;
+          dst=gmkit-sm9/src/test/resources/native/darwin-aarch64
+          mkdir -p "$dst"
+          find gmkit-sm9/target/native-build -name 'libgmkitsm9.dylib' -exec cp {} "$dst/" \;
           cp /usr/local/lib/libgmssl.3.dylib "$dst/"
           ls -l "$dst"
 
       - name: Run SM9 tests
-        run: mvn -B -ntp -pl gmkit-sm9-native test
-
+        run: mvn -B -ntp -pl gmkit-sm9 -Dgmkit.sm9.requireNative=true test

@@ -7,6 +7,7 @@ import cn.gmkit.sm3.SM3;
 import cn.gmkit.sm4.SM4;
 import cn.gmkit.sm4.SM4CipherResult;
 import cn.gmkit.sm4.SM4Options;
+import cn.gmkit.zuc.ZUC;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -89,5 +90,20 @@ class SMIntegrationTest {
         assertEquals("hybrid-gcm", hybrid.decryptToUtf8(keyPair.privateKey(), payload));
         assertNotNull(payload.ciphertextBase64());
         assertNotNull(payload.encryptedKeyBase64());
+    }
+
+    @Test
+    void sharedAlgorithmsShouldProtectUnicodePayloadsWithAlignedKeys() {
+        SM3 sm3 = new SM3();
+        byte[] zucKey = HexCodec.decodeStrict("00112233445566778899aabbccddeeff", "ZUC key");
+        byte[] zucIv = HexCodec.decodeStrict("ffeeddccbbaa99887766554433221100", "ZUC IV");
+        byte[] payload = Texts.utf8("SM2/SM3/SM4/ZUC 联合链路 😊\n第二行");
+
+        byte[] ciphertext = ZUC.encrypt(zucKey, zucIv, payload);
+        String digest = sm3.digestHex(ciphertext);
+
+        assertArrayEquals(payload, ZUC.decrypt(zucKey, zucIv, ciphertext));
+        assertEquals(digest, sm3.digestHex(ciphertext));
+        assertNotEquals(digest, sm3.digestHex(payload));
     }
 }
