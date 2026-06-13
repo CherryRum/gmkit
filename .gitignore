@@ -87,7 +87,7 @@ out
 # Nuxt.js build / generate output
 .nuxt
 dist
-demo-vue/dist
+ts/demo-vue/dist
 
 # Gatsby files
 # Comment in the public line in if your project uses Gatsby and not Next.js
@@ -96,12 +96,12 @@ demo-vue/dist
 
 # vuepress build output
 .vuepress/dist
-docs/.vuepress/dist
+ts/docs/.vuepress/dist
 
 # vuepress v2.x temp and cache directory
 .temp
-docs/.vuepress/.temp
-docs/.vuepress/.cache
+ts/docs/.vuepress/.temp
+ts/docs/.vuepress/.cache
 
 # Sveltekit cache directory
 .svelte-kit/
@@ -146,3 +146,4 @@ docs/.vuepress/.cache
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 /demo/
+ts/demo/

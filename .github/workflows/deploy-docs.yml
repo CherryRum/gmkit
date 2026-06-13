@@ -4,12 +4,14 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'docs/**'
+      - 'ts/docs/**'
+      - 'ts/src/**'
       - '.github/workflows/deploy-docs.yml'
-
+      - '.github/scripts/purge_edgeone.py'
   pull_request:
     paths:
-      - 'docs/**'
+      - 'ts/docs/**'
+      - 'ts/src/**'
 
 jobs:
   build-deploy:
@@ -18,58 +20,45 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # keep full history so VuePress git plugin shows per-file contributors/last-updated
+          fetch-depth: 0 # keep history so VuePress git plugin shows per-file contributors/last-updated
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: ts/docs/package-lock.json
 
-      # 这里改成在 docs 目录里执行 npm ci
       - name: Install Dependencies (docs package)
-        working-directory: ./docs
+        working-directory: ./ts/docs
         run: npm i
 
-      # 同样在 docs 目录里执行构建命令
       - name: Build VuePress
-        working-directory: ./docs
+        working-directory: ./ts/docs
         run: npm run build
-
-      # ------------------------------------------------------------
-      # 使用 rsync --delete：最佳实践（不会中间断造成空站）
-      # ------------------------------------------------------------
 
       - name: Deploy to HK (Main Origin)
         if: github.event_name == 'push'
-        uses:  burnett01/rsync-deployments@7.1.0
+        uses: burnett01/rsync-deployments@7.1.0
         with:
           switches: -az --delete
-          path: docs/.vuepress/dist/
+          path: ts/docs/.vuepress/dist/
           remote_path: /home/gmkit-site/www/
           remote_user: ${{ secrets.USER }}
           remote_host: ${{ secrets.HK_HOST }}
-          remote_key:  ${{ secrets.SSH_KEY }}
+          remote_key: ${{ secrets.SSH_KEY }}
 
       - name: Deploy to CN (Mirror Origin)
         if: github.event_name == 'push'
-        uses:  burnett01/rsync-deployments@7.1.0
+        uses: burnett01/rsync-deployments@7.1.0
         with:
           switches: -az --delete
-          path: docs/.vuepress/dist/
+          path: ts/docs/.vuepress/dist/
           remote_path: /home/gmkit-site/www/
           remote_user: ${{ secrets.USER }}
           remote_host: ${{ secrets.CN_HOST }}
-          remote_key:  ${{ secrets.SSH_KEY }}
+          remote_key: ${{ secrets.SSH_KEY }}
 
-      # ------------------------------------------------------------
-      # EdgeOne CDN 缓存刷新 (支持国内站和国际站)
-      # 使用自定义 Python 脚本支持不同的 API 端点
-      # 国内站: teo.tencentcloudapi.com
-      # 国际站: teo.intl.tencentcloudapi.com
-      # 支持多个域名刷新（逗号分隔）
-      # 速率限制：通过 GitHub API 检查上次成功运行时间
-      # ------------------------------------------------------------
       - name: Purge EdgeOne CDN Cache (Domestic - CN)
         if: github.event_name == 'push'
         env:
