@@ -43,6 +43,19 @@
     </dependencies>
 
     <build>
+        <testResources>
+            <!-- Preserve the default Maven test-resources directory -->
+            <testResource>
+                <directory>src/test/resources</directory>
+            </testResource>
+            <!-- Shared cross-language vectors at monorepo root /vectors/.
+                 Exposed on the test classpath under /vectors/.
+                 Consumed by cn.gmkit.InteropComplianceTest etc. -->
+            <testResource>
+                <directory>${project.basedir}/../../vectors</directory>
+                <targetPath>vectors</targetPath>
+            </testResource>
+        </testResources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
