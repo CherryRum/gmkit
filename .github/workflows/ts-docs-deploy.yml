@@ -1,4 +1,4 @@
-name: Deploy VuePress Site
+name: TS Deploy VuePress Site
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
     paths:
       - 'ts/docs/**'
       - 'ts/src/**'
-      - '.github/workflows/deploy-docs.yml'
+      - '.github/workflows/ts-docs-deploy.yml'
       - '.github/scripts/purge_edgeone.py'
   pull_request:
     paths:

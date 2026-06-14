@@ -1,4 +1,4 @@
-name: Publish to NPM
+name: TS Publish to NPM
 
 # 当推送 ts-v* 标签时触发；ts- 前缀避免与 Java 端 release 标签冲突
 # Triggered on ts-v* tags; ts- prefix prevents collision with Java release tags
