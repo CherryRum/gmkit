@@ -112,7 +112,7 @@
       "keyHex": "0123456789abcdeffedcba9876543210",
       "input": "Hello GMKit",
       "expected": {
-        "cipherHex": "22509c5e0a9d67593201b6a1936f256b"
+        "cipherHex": "aeb1def8fec181b3d0ab347d7d04e2bb"
       }
     },
     {
@@ -124,7 +124,7 @@
       "keyHex": "0123456789abcdeffedcba9876543210",
       "input": "坏事到我为止，好事从此开始",
       "expected": {
-        "cipherHex": "1db7bb23544b81c66ebbd6984fe777ea94de9057a30f5bc204c3cf8a86643eb9f5710219f032eb0a5c468dfdd72e47c7"
+        "cipherHex": "1ac3db7282c7a0c34feec8d2e5f120f1a90ac320650f93658f0b282e8ec2ef77778abc9a43c676731007aa791de7c296"
       }
     },
     {
@@ -136,7 +136,7 @@
       "keyHex": "0123456789abcdeffedcba9876543210",
       "input": "可爱的小熊 🧸",
       "expected": {
-        "cipherHex": "71212b9d424cc172c8bb6ca311d674da460ba2dfea6c19ddc37fba34ee6a14e6"
+        "cipherHex": "035adea04123fb14c67a61f056bc6c997998ad78e14e3460da8e35f73dc2c407"
       }
     },
     {
@@ -149,7 +149,7 @@
       "ivHex": "000102030405060708090a0b0c0d0e0f",
       "input": "Hello GMKit",
       "expected": {
-        "cipherHex": "8129b79c2296831f4c5dc1bb7f2a3a3f"
+        "cipherHex": "2389287c90cabd1ab3bf6b89159d6779"
       }
     },
     {
@@ -162,7 +162,7 @@
       "ivHex": "000102030405060708090a0b0c0d0e0f",
       "input": "坏事到我为止，好事从此开始",
       "expected": {
-        "cipherHex": "86cbfe28f96d39972003030e12eb26c824602ce710dcc4b8ce417b538628adeeccd29247f23576ece03342308ccab869"
+        "cipherHex": "00f08407706413eae4e93329bb02cd2d7b4dd1ebccfc75d4d5861176b9d44958efaf31326d590eb0901e1a7a7feddd83"
       }
     },
     {
@@ -175,7 +175,7 @@
       "ivHex": "000102030405060708090a0b0c0d0e0f",
       "input": "可爱的小熊 🧸",
       "expected": {
-        "cipherHex": "3e56aa55ce46aeb20e3caa08b891c777d13ea9dcbd3125c4c1abfe0ad836afc0"
+        "cipherHex": "ffd57580bfbb72304e0ffd6b777fb008b00640a24493e457c9278822b5c8d51c"
       }
     },
     {

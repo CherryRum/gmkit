@@ -63,13 +63,17 @@ const SBOX: number[] = [
 const FK: number[] = [0xa3b1bac6, 0x56aa3350, 0x677d9197, 0xb27022dc];
 
 // 固定参数 CK - 用于密钥扩展
+// ck_{i,j} = (4i+j) * 7 (mod 256), per GB/T 32907-2016 §7.3.2.
+// Previous implementation omitted the *7 multiplier, producing wrong
+// round keys and therefore wrong SM4 ciphertext (audit-iter8-D).
 const CK: number[] = [];
 for (let i = 0; i < 32; i++) {
   CK[i] =
-    ((4 * i + 0) << 24) |
-    ((4 * i + 1) << 16) |
-    ((4 * i + 2) << 8) |
-    (4 * i + 3);
+    ((((4 * i + 0) * 7) & 0xff) << 24) |
+    ((((4 * i + 1) * 7) & 0xff) << 16) |
+    ((((4 * i + 2) * 7) & 0xff) << 8) |
+    (((4 * i + 3) * 7) & 0xff);
+  CK[i] = CK[i] >>> 0;
 }
 
 /**

@@ -17,23 +17,24 @@
   `cn.gmkit.InteropComplianceTest` (Maven test-resources mount + zero-dep
   classpath loader `cn.gmkit.test.Vectors`).
 
+### Fixed
+
+- **TS SM4 CK table — GB/T 32907-2016 conformance fix** (audit-iter8-D).
+  The `CK[i]` constant generation in `ts/src/crypto/sm4/index.ts` omitted
+  the standard's required `×7 mod 256` multiplier, producing wrong round
+  keys for every SM4 block encryption. Bug surfaced when the InteropCompliance
+  suite was extended to verify Java↔TS bit-for-bit equality, and root-caused
+  by verifying BouncyCastle SM4 passes GB/T 32907-2016 §A.1 standard vector
+  while TS did not. Fix: `CK[i]` bytes now `((4i+j)*7) & 0xff`.
+  TS now produces `681edf34d206965e86b3e94f536e4246` for the official
+  standard input. All 6 affected vectors in `vectors/interop.json` regenerated
+  from the corrected implementation (3 sm4-ecb-*, 3 sm4-cbc-*); both stacks
+  now produce byte-identical output. `cn.gmkit.InteropComplianceTest`
+  re-enabled — 16/16 dynamic tests pass (10 SM3 + 3 SM4 ECB + 3 SM4 CBC).
+
 ### Known divergence (TODO — audit Section D, confirmed)
 
-- **SM4 ECB/PKCS7 Java produces WRONG ciphertext** (audit-iter8-D).
-  Cases `sm4-ecb-hello`, `sm4-ecb-zh`, `sm4-ecb-emoji` in
-  `vectors/interop.json`. Reproduction via JDK 25 + commit `b5c3bd0`:
-  | input | TS cipherHex (matches vector) | Java cipherHex |
-  | --- | --- | --- |
-  | "Hello GMKit" | `22509c5e0a9d67593201b6a1936f256b` ✅ | `aeb1def8fec181b3d0ab347d7d04e2bb` ❌ |
-  Inputs, key (`0123...3210`), mode (ECB), padding (PKCS7) all identical
-  and verified at runtime on both sides. Bug therefore lives inside the
-  Java SM4 block cipher core (`cn.gmkit.sm4.SM4` and/or its BouncyCastle
-  wiring), NOT in API surface, options resolution, or padding.
-  `cn.gmkit.InteropComplianceTest#sm4EcbPkcs7VectorsMatchTypeScript`
-  currently returns an empty test factory pending fix. Suspects to
-  investigate first: S-box table, key expansion (FK/CK constants),
-  T-table endianness, round-function shift directions. SM3 vectors
-  match perfectly (10/10), so byte/hex/codec infrastructure is sound.
+- *(none — SM4 finding above resolved by GB/T 32907-2016 CK fix.)*
 
 ### Added
 

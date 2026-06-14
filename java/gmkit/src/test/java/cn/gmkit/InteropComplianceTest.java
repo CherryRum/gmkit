@@ -1,6 +1,10 @@
 package cn.gmkit;
 
+import cn.gmkit.core.HexCodec;
+import cn.gmkit.core.SM4CipherMode;
 import cn.gmkit.sm3.SM3Util;
+import cn.gmkit.sm4.SM4Options;
+import cn.gmkit.sm4.SM4Util;
 import cn.gmkit.test.Vectors;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
@@ -37,13 +41,34 @@ class InteropComplianceTest {
     }
 
     @TestFactory
-    Collection<DynamicTest> sm4EcbPkcs7VectorsMatchTypeScript() throws Exception {
-        // TODO(audit-iter8-D): Java vs TS SM4 ECB/PKCS7 ciphertext diverges
-        // for sm4-ecb-{hello,zh,emoji}. Root-cause pending — likely a default
-        // mode / padding / key-encoding semantic difference; the helper +
-        // wiring below are correct. Re-enable enforcement when audit Section
-        // D fixes the cause. See CHANGELOG and vectors/README.md.
-        return java.util.Collections.emptyList();
+    Collection<DynamicTest> sm4EncryptVectorsMatchTypeScript() throws Exception {
+        return iterate("SM4", "encrypt", v -> {
+            String id = (String) v.get("id");
+            String mode = (String) v.get("mode");
+            String padding = (String) v.get("padding");
+            String keyHex = (String) v.get("keyHex");
+            String ivHex = (String) v.get("ivHex");
+            String input = (String) v.get("input");
+            String expectedHex = expectedHex(v, "cipherHex");
+            if (id == null || mode == null || padding == null
+                    || keyHex == null || input == null || expectedHex == null) {
+                return null;
+            }
+            if (!"PKCS7".equals(padding)) return null; // future iters add NONE/ZERO
+            SM4CipherMode m;
+            if ("ECB".equals(mode)) m = SM4CipherMode.ECB;
+            else if ("CBC".equals(mode)) m = SM4CipherMode.CBC;
+            else return null; // CTR/CFB/OFB/GCM/CCM待后续小迭代
+            return dynamicTest(id, () -> {
+                byte[] key = HexCodec.decodeStrict(keyHex, "sm4.keyHex");
+                byte[] data = input.getBytes(StandardCharsets.UTF_8);
+                SM4Options.Builder ob = SM4Options.builder().mode(m);
+                if (ivHex != null) ob.iv(HexCodec.decodeStrict(ivHex, "sm4.ivHex"));
+                byte[] cipher = SM4Util.encrypt(key, data, ob.build()).ciphertext();
+                assertEquals(expectedHex.toLowerCase(), HexCodec.encode(cipher),
+                        "SM4 " + mode + "/" + padding + " cipher mismatch: " + id);
+            });
+        });
     }
 
     @SuppressWarnings("unchecked")
