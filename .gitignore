@@ -147,3 +147,48 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 /demo/
 ts/demo/
+
+# ---------------------------------------------------------------------------
+# Java (Maven) — applies to java/** in monorepo
+# ---------------------------------------------------------------------------
+
+# Compiled class file
+*.class
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Java package files (avoid clobbering legitimate test fixtures under src)
+*.jar
+*.war
+*.nar
+*.ear
+*.rar
+!**/src/main/**/*.jar
+!**/src/test/**/*.jar
+
+# JVM crash logs
+hs_err_pid*
+replay_pid*
+
+# Maven
+target/
+.mvn/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+
+# OS
+.DS_Store
+Thumbs.db

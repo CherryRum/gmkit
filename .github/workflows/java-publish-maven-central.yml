@@ -1,4 +1,4 @@
-name: Publish Maven Central
+name: Java Publish Maven Central
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
       - published
 
 concurrency:
-  group: publish-maven-central-${{ github.ref }}
+  group: java-publish-maven-central-${{ github.ref }}
   cancel-in-progress: false
 
 permissions:
@@ -15,6 +15,10 @@ permissions:
 
 env:
   GMSSL_REF: v3.1.1
+
+defaults:
+  run:
+    working-directory: java
 
 jobs:
   build-native:
@@ -25,30 +29,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            platform: linux-x86_64
-            bridge: libgmkitsm9.so
-            gmssl: libgmssl.so.3
-          - os: ubuntu-24.04-arm
-            platform: linux-aarch64
-            bridge: libgmkitsm9.so
-            gmssl: libgmssl.so.3
-          - os: macos-13
-            platform: darwin-x86_64
-            bridge: libgmkitsm9.dylib
-            gmssl: libgmssl.3.dylib
-          - os: macos-14
-            platform: darwin-aarch64
-            bridge: libgmkitsm9.dylib
-            gmssl: libgmssl.3.dylib
-          - os: windows-latest
-            platform: windows-x86_64
-            bridge: gmkitsm9.dll
-            gmssl: gmssl.dll
+          - { os: ubuntu-latest,     platform: linux-x86_64,    bridge: libgmkitsm9.so,    gmssl: libgmssl.so.3 }
+          - { os: ubuntu-24.04-arm,  platform: linux-aarch64,   bridge: libgmkitsm9.so,    gmssl: libgmssl.so.3 }
+          - { os: macos-13,          platform: darwin-x86_64,   bridge: libgmkitsm9.dylib, gmssl: libgmssl.3.dylib }
+          - { os: macos-14,          platform: darwin-aarch64,  bridge: libgmkitsm9.dylib, gmssl: libgmssl.3.dylib }
+          - { os: windows-latest,    platform: windows-x86_64,  bridge: gmkitsm9.dll,      gmssl: gmssl.dll }
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
+      - uses: actions/checkout@v6
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
@@ -56,8 +43,8 @@ jobs:
           java-version: "17"
           cache: maven
           cache-dependency-path: |
-            pom.xml
-            gmkit-sm9/pom.xml
+            java/pom.xml
+            java/gmkit-sm9/pom.xml
 
       - name: Build GmSSL (Unix)
         if: runner.os != 'Windows'
@@ -74,6 +61,7 @@ jobs:
       - name: Build GmSSL (Windows)
         if: runner.os == 'Windows'
         shell: cmd
+        working-directory: java
         run: |
           git clone --depth 1 --branch %GMSSL_REF% https://github.com/guanzhi/GmSSL.git gmssl-src
           cmake -S gmssl-src -B gmssl-src/build -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release
@@ -87,6 +75,7 @@ jobs:
       - name: Build bridge (Windows)
         if: runner.os == 'Windows'
         shell: cmd
+        working-directory: java
         run: mvn -B -ntp -pl gmkit-sm9 -Pnative-build -Dgmssl.root="C:/Program Files/GmSSL" process-classes
 
       - name: Collect artifacts (Unix)
@@ -104,6 +93,7 @@ jobs:
       - name: Collect artifacts (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
+        working-directory: java
         run: |
           New-Item -ItemType Directory -Force -Path "out/${{ matrix.platform }}" | Out-Null
           Get-ChildItem -Recurse -Path gmkit-sm9/target/native-build -Filter '${{ matrix.bridge }}' |
@@ -115,7 +105,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sm9-native-${{ matrix.platform }}
-          path: out/${{ matrix.platform }}/
+          path: java/out/${{ matrix.platform }}/
           if-no-files-found: error
 
   publish:
@@ -129,9 +119,7 @@ jobs:
       MAVEN_GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
       GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
+      - uses: actions/checkout@v6
       - name: Validate required secrets
         shell: bash
         run: |
@@ -140,12 +128,10 @@ jobs:
           [[ -z "$CENTRAL_TOKEN_PASSWORD" ]] && missing+=("CENTRAL_TOKEN_PASSWORD")
           [[ -z "$MAVEN_GPG_PRIVATE_KEY" ]] && missing+=("MAVEN_GPG_PRIVATE_KEY")
           [[ -z "$GPG_PASSPHRASE" ]] && missing+=("MAVEN_GPG_PASSPHRASE")
-
           if (( ${#missing[@]} > 0 )); then
             echo "缺少 GitHub Secrets: ${missing[*]}" >&2
             exit 1
           fi
-
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
@@ -153,9 +139,9 @@ jobs:
           java-version: "17"
           cache: maven
           cache-dependency-path: |
-            pom.xml
-            gmkit/pom.xml
-            gmkit-sm9/pom.xml
+            java/pom.xml
+            java/gmkit/pom.xml
+            java/gmkit-sm9/pom.xml
           server-id: central
           server-username: CENTRAL_TOKEN_USERNAME
           server-password: CENTRAL_TOKEN_PASSWORD
@@ -166,7 +152,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: sm9-native-*
-          path: native-artifacts
+          path: java/native-artifacts
 
       - name: Stage native artifacts into modules
         shell: bash

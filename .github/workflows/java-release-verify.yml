@@ -1,17 +1,21 @@
-name: Release Verify
+name: Java Release Verify
 
 on:
   workflow_dispatch:
   push:
     tags:
-      - "v*"
+      - "java-v*"
 
 concurrency:
-  group: release-verify-${{ github.ref }}
+  group: java-release-verify-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
+
+defaults:
+  run:
+    working-directory: java
 
 jobs:
   verify:
@@ -19,9 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
+      - uses: actions/checkout@v6
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
@@ -29,9 +31,9 @@ jobs:
           java-version: "17"
           cache: maven
           cache-dependency-path: |
-            pom.xml
-            gmkit/pom.xml
-            gmkit-sm9/pom.xml
+            java/pom.xml
+            java/gmkit/pom.xml
+            java/gmkit-sm9/pom.xml
 
       - name: Verify release build
         run: mvn -B -ntp -Prelease -Dgpg.skip=true -DskipTests verify

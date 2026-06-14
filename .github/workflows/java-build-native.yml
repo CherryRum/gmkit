@@ -1,21 +1,25 @@
-name: Build SM9 Native
+name: Java Build SM9 Native
 
 # 在各平台从 GmSSL v3.1.1 源码编译 SM9 JNI 桥接库（gmkitsm9）及其依赖（gmssl），
 # 并将产物上传为构建工件，供发布流程下载后打入 JAR。
 #
-# 触发方式：手动触发，或推送 v* 标签时触发。
+# 触发方式：手动触发，或推送 java-v* 标签时触发（java- 前缀避免与 ts release 标签冲突）。
 
 on:
   workflow_dispatch:
   push:
     tags:
-      - "v*"
+      - "java-v*"
 
 permissions:
   contents: read
 
 env:
   GMSSL_REF: v3.1.1
+
+defaults:
+  run:
+    working-directory: java
 
 jobs:
   build-native:
@@ -56,7 +60,6 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      # ---------------- 构建并安装 GmSSL v3.1.1 ----------------
       - name: Build GmSSL (Unix)
         if: runner.os != 'Windows'
         run: |
@@ -72,25 +75,23 @@ jobs:
       - name: Build GmSSL (Windows)
         if: runner.os == 'Windows'
         shell: cmd
+        working-directory: java
         run: |
           git clone --depth 1 --branch %GMSSL_REF% https://github.com/guanzhi/GmSSL.git gmssl-src
           cmake -S gmssl-src -B gmssl-src/build -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release
           cmake --build gmssl-src/build --config Release
           cmake --install gmssl-src/build
 
-      # ---------------- 编译 SM9 JNI 桥接库 ----------------
       - name: Build bridge (Unix)
         if: runner.os != 'Windows'
-        run: |
-          mvn -B -ntp -pl gmkit-sm9 -Pnative-build -Dgmssl.root=/usr/local process-classes
+        run: mvn -B -ntp -pl gmkit-sm9 -Pnative-build -Dgmssl.root=/usr/local process-classes
 
       - name: Build bridge (Windows)
         if: runner.os == 'Windows'
         shell: cmd
-        run: |
-          mvn -B -ntp -pl gmkit-sm9 -Pnative-build -Dgmssl.root="C:/Program Files/GmSSL" process-classes
+        working-directory: java
+        run: mvn -B -ntp -pl gmkit-sm9 -Pnative-build -Dgmssl.root="C:/Program Files/GmSSL" process-classes
 
-      # ---------------- 收集产物 ----------------
       - name: Collect artifacts (Unix)
         if: runner.os != 'Windows'
         run: |
@@ -106,6 +107,7 @@ jobs:
       - name: Collect artifacts (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
+        working-directory: java
         run: |
           New-Item -ItemType Directory -Force -Path "out/${{ matrix.platform }}" | Out-Null
           Get-ChildItem -Recurse -Path gmkit-sm9/target/native-build -Filter '${{ matrix.bridge }}' |
@@ -133,5 +135,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sm9-native-${{ matrix.platform }}
-          path: out/${{ matrix.platform }}/
+          path: java/out/${{ matrix.platform }}/
           if-no-files-found: error

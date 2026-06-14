@@ -1,18 +1,25 @@
-name: Publish GitHub Packages
+name: Java Publish GitHub Packages
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
+    paths:
+      - 'java/**'
+      - '.github/workflows/java-publish-github-packages.yml'
 
 concurrency:
-  group: publish-github-packages-${{ github.ref }}
+  group: java-publish-github-packages-${{ github.ref }}
   cancel-in-progress: false
 
 permissions:
   contents: read
   packages: write
+
+defaults:
+  run:
+    working-directory: java
 
 jobs:
   publish:
@@ -22,9 +29,7 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
+      - uses: actions/checkout@v6
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
@@ -32,8 +37,8 @@ jobs:
           java-version: "17"
           cache: maven
           cache-dependency-path: |
-            pom.xml
-            gmkit/pom.xml
+            java/pom.xml
+            java/gmkit/pom.xml
           server-id: github
           server-username: GITHUB_ACTOR
           server-password: GITHUB_TOKEN

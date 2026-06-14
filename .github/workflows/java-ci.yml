@@ -1,15 +1,27 @@
-name: CI
+name: Java CI
 
 on:
   pull_request:
+    paths:
+      - 'java/**'
+      - 'vectors/**'
+      - '.github/workflows/java-ci.yml'
   push:
+    paths:
+      - 'java/**'
+      - 'vectors/**'
+      - '.github/workflows/java-ci.yml'
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: java-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
+
+defaults:
+  run:
+    working-directory: java
 
 jobs:
   test:
@@ -31,9 +43,9 @@ jobs:
           java-version: ${{ matrix.java }}
           cache: maven
           cache-dependency-path: |
-            pom.xml
-            gmkit/pom.xml
-            gmkit-sm9/pom.xml
+            java/pom.xml
+            java/gmkit/pom.xml
+            java/gmkit-sm9/pom.xml
 
       - name: Run tests
         run: mvn -B -ntp clean test
@@ -54,9 +66,9 @@ jobs:
           java-version: "17"
           cache: maven
           cache-dependency-path: |
-            pom.xml
-            gmkit/pom.xml
-            gmkit-sm9/pom.xml
+            java/pom.xml
+            java/gmkit/pom.xml
+            java/gmkit-sm9/pom.xml
 
       - name: Run verify
         run: mvn -B -ntp -DskipTests verify
@@ -90,8 +102,8 @@ jobs:
           java-version: ${{ matrix.java }}
           cache: maven
           cache-dependency-path: |
-            pom.xml
-            gmkit-sm9/pom.xml
+            java/pom.xml
+            java/gmkit-sm9/pom.xml
 
       - name: Build and install GmSSL v3.1.1
         run: |
