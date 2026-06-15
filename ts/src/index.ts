@@ -109,49 +109,31 @@ export const hmacSha256 = shaFunctions.hmacSha256;
 export const hmacSha384 = shaFunctions.hmacSha384;
 export const hmacSha512 = shaFunctions.hmacSha512;
 
-/**
- * @deprecated Use `sm2GenerateKeyPair` instead.
- */
+/** @deprecated [removal: 1.0] Use `sm2GenerateKeyPair` instead. */
 export const generateKeyPair = sm2GenerateKeyPair;
 
-/**
- * @deprecated Use `sm2GetPublicKeyFromPrivateKey` instead.
- */
+/** @deprecated [removal: 1.0] Use `sm2GetPublicKeyFromPrivateKey` instead. */
 export const getPublicKeyFromPrivateKey = sm2GetPublicKeyFromPrivateKey;
 
-/**
- * @deprecated Use `sm2CompressPublicKey` instead.
- */
+/** @deprecated [removal: 1.0] Use `sm2CompressPublicKey` instead. */
 export const compressPublicKey = sm2CompressPublicKey;
 
-/**
- * @deprecated Use `sm2DecompressPublicKey` instead.
- */
+/** @deprecated [removal: 1.0] Use `sm2DecompressPublicKey` instead. */
 export const decompressPublicKey = sm2DecompressPublicKey;
 
-/**
- * @deprecated Use `sm2Sign` instead.
- */
+/** @deprecated [removal: 1.0] Use `sm2Sign` instead. */
 export const sign = sm2Sign;
 
-/**
- * @deprecated Use `sm2Verify` instead.
- */
+/** @deprecated [removal: 1.0] Use `sm2Verify` instead. */
 export const verify = sm2Verify;
 
-/**
- * @deprecated Use `sm2KeyExchange` instead.
- */
+/** @deprecated [removal: 1.0] Use `sm2KeyExchange` instead. */
 export const keyExchange = sm2KeyExchange;
 
-/**
- * @deprecated Use `sm3Digest` instead.
- */
+/** @deprecated [removal: 1.0] Use `sm3Digest` instead. */
 export const digest = sm3Digest;
 
-/**
- * @deprecated Use `sm3Hmac` instead.
- */
+/** @deprecated [removal: 1.0] Use `sm3Hmac` instead. */
 export const hmac = sm3Hmac;
 
 export type {
