@@ -73,6 +73,32 @@ jobs:
       - name: Run verify
         run: mvn -B -ntp -DskipTests verify
 
+  coverage:
+    name: Coverage (JaCoCo, JDK 17)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: test
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: |
+            java/pom.xml
+            java/gmkit/pom.xml
+      - name: Run coverage with thresholds
+        run: mvn -B -ntp -Pcoverage -pl gmkit verify
+      - name: Upload JaCoCo HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jacoco-report
+          path: java/gmkit/target/site/jacoco/
+          if-no-files-found: warn
+
   sm9-native:
     name: SM9 Native (${{ matrix.os }}, JDK ${{ matrix.java }})
     runs-on: ${{ matrix.os }}
