@@ -39,7 +39,10 @@
     "prepublishOnly": "npm run verify",
     "docs:dev": "cd docs && npm run dev",
     "docs:build": "cd docs && npm run build",
-    "docs:clean": "cd docs && npm run clean"
+    "docs:clean": "cd docs && npm run clean",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix"
   },
   "keywords": [
     "sm2",
@@ -75,6 +78,10 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "@vitest/coverage-v8": "^1.6.1",
+    "eslint": "^8.57.1",
     "tsup": "^8.5.1",
     "typescript": "^5.0.0",
     "vite": "7.1.11",

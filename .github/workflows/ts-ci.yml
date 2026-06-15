@@ -43,7 +43,7 @@ jobs:
         run: npm run build
 
   lint:
-    name: Lint
+    name: Lint + Coverage
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -57,3 +57,7 @@ jobs:
         run: npm ci
       - name: Type check
         run: npm run type-check
+      - name: ESLint
+        run: npm run lint
+      - name: Coverage (enforces thresholds in vitest.config.ts)
+        run: npm run test:coverage
