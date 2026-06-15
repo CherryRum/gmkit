@@ -211,13 +211,26 @@ export function decodeInteger(data: Uint8Array, offset: number = 0): { value: Ui
   const end = start + length;
 
   if (end > data.length) throw new Error('Integer value out of bounds');
+  if (length === 0) throw new Error('ASN.1 INTEGER must be at least one byte');
 
-  // 使用 subarray 获取视图，避免复制
-  // 如果第一个字节是 0x00 且长度 > 1（表示符号位填充），则去掉
-  // 注意：如果数值本身就是 0，编码是 02 01 00，此时不应去掉
+  // 严格 DER 校验（audit-iter8-C #1）：
+  // - 第一字节 MSB 置位代表负整数，SM2 r/s 必须为正 — 拒绝。
+  // - 长度 > 1 且首字节 0x00，仅当下一字节 MSB 置位时才合法（用于保持正号）；
+  //   否则即为非规范化前导 0，构成签名可塑性风险，拒绝。
   let value = data.subarray(start, end);
-  if (value.length > 1 && value[0] === 0x00) {
-    value = value.subarray(1);
+  if (value.length === 1) {
+    if (value[0] >= 0x80) {
+      throw new Error('ASN.1 INTEGER is negative (MSB set); SM2 r/s must be positive');
+    }
+  } else {
+    if (value[0] === 0x00) {
+      if ((value[1] & 0x80) === 0) {
+        throw new Error('Non-canonical ASN.1 INTEGER: leading zero not required (signature malleability)');
+      }
+      value = value.subarray(1);
+    } else if (value[0] >= 0x80) {
+      throw new Error('ASN.1 INTEGER is negative (MSB set); SM2 r/s must be positive');
+    }
   }
 
   return {
