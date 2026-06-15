@@ -236,6 +236,8 @@ export {
   configureRNG,
   setRNGPolicy,
   setCustomRNG,
+  clearCustomRNG,
+  hasCustomRNG,
   getRandomBytes,
   setTextCodec,
   getEnvReport,

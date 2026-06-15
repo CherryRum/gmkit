@@ -422,6 +422,23 @@ export function setCustomRNG(fn: (len: number) => Uint8Array) {
   customRNG = fn;
 }
 
+/**
+ * 清除已注入的自定义 RNG，恢复使用系统 RNG（WebCrypto / Node crypto）。
+ *
+ * <p>测试 fixture 与跨用例隔离的标准 teardown 接口。生产代码不应调用。
+ */
+export function clearCustomRNG(): void {
+  customRNG = null;
+}
+
+/**
+ * 是否已注入自定义 RNG。生产启动代码可断言 {@code !hasCustomRNG()}
+ * 以防 deterministic 测试 RNG 误入产物。
+ */
+export function hasCustomRNG(): boolean {
+  return customRNG !== null;
+}
+
 
 function tryWebCrypto(len: number): Uint8Array | null {
   try {
