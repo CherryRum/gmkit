@@ -89,14 +89,28 @@ public final class Bytes {
     }
 
     /**
-     * 常量时间比较两个字节数组是否相等，防止时间攻击
+     * 常量时间比较两个字节数组是否相等，防止时间攻击。
+     *
+     * <p>语义：
+     * <ul>
+     *   <li>任意一侧为 {@code null} 返回 {@code false}（短路 — null 永远不应是合法 MAC tag）。</li>
+     *   <li>长度不同返回 {@code false}（长度不是机密 — 通常由消息格式公开）。</li>
+     *   <li>两侧均为空数组返回 {@code true}（零字节 == 零字节）。</li>
+     *   <li>长度相同时，恒定时间扫描全部字节，不因首字节匹配就早返回。</li>
+     * </ul>
+     *
+     * <p>audit-iter8-A 修复：原实现把空数组判定为不相等（依赖 {@code Checks.hasBytes}
+     * 把长度为 0 视为"无字节"），违反 MAC 比较的基本契约。
      *
      * @param left  第一个字节数组
      * @param right 第二个字节数组
-     * @return 如果两个数组内容相同返回true，否则返回false
+     * @return 如果两个数组内容相同返回 {@code true}，否则返回 {@code false}
      */
     public static boolean constantTimeEquals(byte[] left, byte[] right) {
-        if (!Checks.hasBytes(left) || !Checks.hasBytes(right) || left.length != right.length) {
+        if (left == null || right == null) {
+            return false;
+        }
+        if (left.length != right.length) {
             return false;
         }
         int diff = 0;
