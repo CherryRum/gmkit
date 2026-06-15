@@ -548,3 +548,31 @@ export function getEnvReport(): EnvReport {
     hasNodeCrypto,
   };
 }
+
+/**
+ * 常量时间字节数组比较（防时序攻击）。
+ *
+ * <p>用途：MAC / AEAD tag / HMAC / SM2 C3 哈希等需要恒定时间比较的场景。
+ * 普通 `===` 或循环早返回会随首个不匹配位置变化执行时间，导致旁路。
+ *
+ * <p>语义（与 Java {@code cn.gmkit.core.Bytes.constantTimeEquals} 对齐）：
+ * <ul>
+ *   <li>任一侧为 null/undefined 返回 false。</li>
+ *   <li>长度不同返回 false（长度通常由消息格式公开，非机密）。</li>
+ *   <li>两侧均为空数组返回 true。</li>
+ *   <li>长度相同时全字节扫描，不因首字节匹配就早返回。</li>
+ * </ul>
+ *
+ * @param a 第一个字节数组
+ * @param b 第二个字节数组
+ * @returns 内容相同返回 true
+ */
+export function constantTimeEqual(a: Uint8Array | null | undefined, b: Uint8Array | null | undefined): boolean {
+  if (a == null || b == null) return false;
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a[i] ^ b[i];
+  }
+  return diff === 0;
+}

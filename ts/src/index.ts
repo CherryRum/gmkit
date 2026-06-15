@@ -239,6 +239,7 @@ export {
   getRandomBytes,
   setTextCodec,
   getEnvReport,
+  constantTimeEqual,
   type BytesLike,
   type RNGPolicy,
   type TextCodec,
