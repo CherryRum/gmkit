@@ -46,6 +46,9 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
       - run: npm ci
+      - name: Work around npm optional dependency bug on Node 18
+        if: matrix.node == '18.x'
+        run: npm install --no-save @rollup/rollup-linux-x64-gnu@$(node -p "require('./node_modules/rollup/package.json').version")
       - run: npm run type-check -w packages/ts
       - run: npm test -w packages/ts
       - run: npm run build -w packages/ts
