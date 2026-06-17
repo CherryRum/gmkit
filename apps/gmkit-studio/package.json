@@ -2,14 +2,26 @@
   "name": "gmkit-studio",
   "version": "0.1.0",
   "private": true,
-  "description": "GMKit Studio V4 static product prototype",
+  "description": "GMKit Studio Vue3 product prototype",
   "type": "module",
   "scripts": {
-    "build": "node scripts/validate.mjs",
-    "dev": "node scripts/serve.mjs",
-    "preview": "node scripts/serve.mjs"
+    "dev": "vite --host 127.0.0.1",
+    "build": "npm run type-check && vite build",
+    "type-check": "vue-tsc --noEmit -p tsconfig.app.json",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "gmkitx": "file:../../packages/ts",
+    "vue": "^3.5.22",
+    "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "typescript": "~5.9.0",
+    "vite": "7.1.11",
+    "vue-tsc": "^3.1.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.12.0"
   }
 }

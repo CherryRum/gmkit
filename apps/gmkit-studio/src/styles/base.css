@@ -1,0 +1,70 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--studio-text);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(40, 104, 255, 0.1), transparent 26%),
+    linear-gradient(180deg, #fbfdff 0%, var(--studio-bg) 100%);
+  font-family:
+    Inter, "PingFang SC", "Microsoft YaHei", system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.studio-shell {
+  min-height: 100vh;
+  padding: 48px;
+}
+
+.hero-panel {
+  max-width: 980px;
+  padding: 40px;
+  border: 1px solid var(--studio-line);
+  border-radius: var(--studio-radius-xl);
+  background: linear-gradient(180deg, var(--studio-surface), var(--studio-surface-soft));
+  box-shadow: var(--studio-shadow-lg);
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: var(--studio-primary);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero-panel h1 {
+  margin: 0;
+  font-size: 42px;
+  line-height: 1.16;
+  letter-spacing: 0;
+}
+
+.hero-copy {
+  max-width: 720px;
+  margin: 18px 0 0;
+  color: var(--studio-text-muted);
+  font-size: 16px;
+  line-height: 1.9;
+}
