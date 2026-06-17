@@ -41,6 +41,8 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
       - run: npm ci
+      - name: Work around npm optional dependency bug (rollup native binary)
+        run: npm install --no-save @rollup/rollup-linux-x64-gnu
       - name: Java interop compliance
         run: mvn -f packages/java/pom.xml -B -ntp -pl gmkit -Dtest=cn.gmkit.InteropComplianceTest test
       - name: TypeScript interop compliance
