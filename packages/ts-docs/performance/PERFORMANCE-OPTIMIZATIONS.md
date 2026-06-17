@@ -72,10 +72,10 @@ function kdf(z: Uint8Array, klen: number): Uint8Array {
 
 ```typescript
 // ✅ 推荐：使用非压缩格式（默认）
-const keyPair = generateKeyPair(); // compressed = false
+const keyPair = sm2GenerateKeyPair(); // compressed = false
 
 // ❌ 不推荐：压缩格式需要额外解压计算
-const keyPair = generateKeyPair(true);
+const keyPair = sm2GenerateKeyPair(true);
 ```
 
 **性能影响**：
@@ -89,10 +89,10 @@ const keyPair = generateKeyPair(true);
 
 ```typescript
 // ✅ GM/T 0009-2023 推荐：空字符串，略微提升性能
-const signature = sign(privateKey, data, { userId: '' });
+const signature = sm2Sign(privateKey, data, { userId: '' });
 
 // ✅ 向后兼容：使用默认值（性能差异极小）
-const signature = sign(privateKey, data);
+const signature = sm2Sign(privateKey, data);
 ```
 
 **性能影响**：
@@ -157,7 +157,7 @@ for (const data of dataList) {
 
 // ❌ 不推荐：每次都创建新实例
 for (const data of dataList) {
-  const signature = sign(privateKey, data); // 每次都解析私钥
+  const signature = sm2Sign(privateKey, data); // 每次都解析私钥
 }
 ```
 
@@ -172,10 +172,10 @@ for (const data of dataList) {
 ```typescript
 // ✅ 最优：直接使用 Uint8Array
 const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]);
-const signature = sign(privateKey, data);
+const signature = sm2Sign(privateKey, data);
 
 // ⚠️ 可用但有转换开销：字符串需要 UTF-8 编码
-const signature = sign(privateKey, 'Hello');
+const signature = sm2Sign(privateKey, 'Hello');
 ```
 
 **性能影响**：
@@ -186,10 +186,10 @@ const signature = sign(privateKey, 'Hello');
 
 ```typescript
 // ✅ 推荐：使用 Raw 格式签名（紧凑，解析快）
-const signature = sign(privateKey, data); // 默认 Raw 格式
+const signature = sm2Sign(privateKey, data); // 默认 Raw 格式
 
 // ⚠️ 互操作需要：DER 格式（标准但较大）
-const signature = sign(privateKey, data, { signatureFormat: 'der' });
+const signature = sm2Sign(privateKey, data, { signatureFormat: 'der' });
 ```
 
 **性能影响**：
@@ -200,8 +200,8 @@ const signature = sign(privateKey, data, { signatureFormat: 'der' });
 
 ```typescript
 // ⚠️ 仅用于特殊场景：不符合标准，降低安全性
-const signature = sign(privateKey, data, { skipZComputation: true });
-const isValid = verify(publicKey, data, signature, { skipZComputation: true });
+const signature = sm2Sign(privateKey, data, { skipZComputation: true });
+const isValid = sm2Verify(publicKey, data, signature, { skipZComputation: true });
 ```
 
 **性能提升**：约 15-20%（省略一次 Z 值计算和 SM3 哈希）
@@ -308,11 +308,11 @@ const worker = new Worker('crypto-worker.js');
 worker.postMessage({ operation: 'sign', privateKey, data });
 
 // crypto-worker.js
-import { sign } from 'gmkitx';
+import { sm2Sign } from 'gmkitx';
 self.onmessage = (e) => {
   const { operation, privateKey, data } = e.data;
   if (operation === 'sign') {
-    const signature = sign(privateKey, data);
+    const signature = sm2Sign(privateKey, data);
     self.postMessage({ signature });
   }
 };
@@ -353,7 +353,7 @@ self.onmessage = (e) => {
 4. **使用 Uint8Array 作为输入（大数据量时）**
    ```typescript
    const data = new Uint8Array(largeBuffer);
-   const signature = sign(privateKey, data);
+   const signature = sm2Sign(privateKey, data);
    ```
 
 ### ❌ 避免做法
@@ -361,7 +361,7 @@ self.onmessage = (e) => {
 1. **不要在生产环境跳过 Z 值计算**
    ```typescript
    // ❌ 降低安全性
-   const signature = sign(privateKey, data, { skipZComputation: true });
+   const signature = sm2Sign(privateKey, data, { skipZComputation: true });
    ```
 
 2. **不要依赖自动检测（性能敏感场景）**
@@ -374,7 +374,7 @@ self.onmessage = (e) => {
    ```typescript
    // ❌ 重复解析密钥
    for (const data of dataList) {
-     const signature = sign(privateKey, data);
+     const signature = sm2Sign(privateKey, data);
    }
    ```
 
@@ -385,13 +385,13 @@ self.onmessage = (e) => {
 ```typescript
 // 简单的性能计时
 console.time('sign');
-const signature = sign(privateKey, data);
+const signature = sm2Sign(privateKey, data);
 console.timeEnd('sign');
 
 // 更精确的性能测量
 const start = performance.now();
 for (let i = 0; i < 1000; i++) {
-  sign(privateKey, data);
+  sm2Sign(privateKey, data);
 }
 const end = performance.now();
 console.log(`Average: ${(end - start) / 1000}ms`);

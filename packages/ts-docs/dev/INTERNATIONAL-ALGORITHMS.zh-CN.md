@@ -73,19 +73,19 @@ GMKitX 采用参数配置方式而非函数名后缀方式，原因如下：
 #### SM3 哈希算法
 
 ```typescript
-import { digest, hmac, OutputFormat } from 'gmkitx';
+import { sm3Digest, sm3Hmac, OutputFormat } from 'gmkitx';
 
 // 十六进制格式（默认）
-const hexHash = digest('Hello, World!');
+const hexHash = sm3Digest('Hello, World!');
 console.log(hexHash); // SM3 哈希值的十六进制表示（64 个字符）
 
 // Base64 格式
-const base64Hash = digest('Hello, World!', { outputFormat: OutputFormat.BASE64 });
+const base64Hash = sm3Digest('Hello, World!', { outputFormat: OutputFormat.BASE64 });
 console.log(base64Hash); // SM3 哈希值的 Base64 表示
 
 // HMAC 也支持输出格式配置
-const hexMac = hmac('key', 'data');
-const base64Mac = hmac('key', 'data', { outputFormat: OutputFormat.BASE64 });
+const hexMac = sm3Hmac('key', 'data');
+const base64Mac = sm3Hmac('key', 'data', { outputFormat: OutputFormat.BASE64 });
 ```
 
 #### 面向对象 API
@@ -151,9 +151,9 @@ JavaScript 中的 PKCS7 填充等同于 Java 中的 PKCS5Padding：
 #### SM2 椭圆曲线密码算法
 
 ```typescript
-import { generateKeyPair, sm2Encrypt, sm2Decrypt, OutputFormat } from 'gmkitx';
+import { sm2GenerateKeyPair, sm2Encrypt, sm2Decrypt, OutputFormat } from 'gmkitx';
 
-const keyPair = generateKeyPair();
+const keyPair = sm2GenerateKeyPair();
 const plaintext = 'Hello, SM2!';
 
 // 十六进制格式（默认）
@@ -507,16 +507,16 @@ function decryptAES_Node(encrypted: string, key: Buffer, iv: string, tag: string
 
 ```typescript
 // URL 安全：使用 base64url（需要额外处理）
-const hash = digest('data', { outputFormat: OutputFormat.BASE64 })
+const hash = sm3Digest('data', { outputFormat: OutputFormat.BASE64 })
   .replace(/\+/g, '-')
   .replace(/\//g, '_')
   .replace(/=/g, '');
 
 // 存储到数据库：建议使用 base64（更紧凑）
-const storedHash = digest('password', { outputFormat: OutputFormat.BASE64 });
+const storedHash = sm3Digest('password', { outputFormat: OutputFormat.BASE64 });
 
 // 日志和调试：使用 hex（更易读）
-const logHash = digest('data'); // 默认 hex
+const logHash = sm3Digest('data'); // 默认 hex
 
 // 与其他系统对接：查看对方要求的格式
 ```
@@ -548,7 +548,7 @@ try {
 
 ```typescript
 // 不好：多次小数据哈希
-const hashes = data.map(d => digest(d));
+const hashes = data.map(d => sm3Digest(d));
 
 // 好：使用增量哈希
 const sm3 = new SM3();

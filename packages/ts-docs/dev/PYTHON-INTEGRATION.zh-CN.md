@@ -115,16 +115,16 @@ ECB/CBC 模式推荐使用 PKCS7 填充，可自动处理任意长度明文。
 @tab gmkitx
 ```typescript
 import { 
-  generateKeyPair, 
+  sm2GenerateKeyPair, 
   sm2Encrypt, 
   sm2Decrypt, 
-  sign, 
-  verify,
+  sm2Sign, 
+  sm2Verify,
   SM2CipherMode 
 } from 'gmkitx';
 
 // 生成密钥对
-const keyPair = generateKeyPair();
+const keyPair = sm2GenerateKeyPair();
 console.log('公钥:', keyPair.publicKey);
 console.log('私钥:', keyPair.privateKey);
 
@@ -143,11 +143,11 @@ console.log('明文:', decrypted);
 
 // 签名
 const message = 'Important message';
-const signature = sign(keyPair.privateKey, message);
+const signature = sm2Sign(keyPair.privateKey, message);
 console.log('签名:', signature);
 
 // 验签
-const isValid = verify(keyPair.publicKey, message, signature);
+const isValid = sm2Verify(keyPair.publicKey, message, signature);
 console.log('验签结果:', isValid);
 ```
 
@@ -230,14 +230,14 @@ sm2_sign_verify()
 
 @tab gmkitx
 ```typescript
-import { digest, hmac, SM3 } from 'gmkitx';
+import { sm3Digest, sm3Hmac, SM3 } from 'gmkitx';
 
 // 计算 SM3 摘要
-const hash = digest('Hello, SM3!');
+const hash = sm3Digest('Hello, SM3!');
 console.log('SM3摘要:', hash);
 
 // HMAC-SM3
-const mac = hmac('secret-key', 'message');
+const mac = sm3Hmac('secret-key', 'message');
 console.log('HMAC-SM3:', mac);
 
 // 增量哈希

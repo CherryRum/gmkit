@@ -1,5 +1,5 @@
 ---
-title: gmkit-java（同源 Java 实现）
+title: GMKit Java（同源 Java 实现）
 icon: java
 order: 2
 author: mumu
@@ -9,34 +9,33 @@ category:
   - 集成
 tag:
   - Java
-  - gmkit-java
+  - GMKit Java
   - JDK 1.8
   - Bouncy Castle
 ---
 
-# gmkit-java：与 gmkitx 同源的 Java 实现
+# GMKit Java：与 gmkitx 同源的 Java 实现
 
 ::: tip 这一页讲什么
-- gmkit-java 是什么、与 gmkitx 是什么关系
+- GMKit Java 是什么、与 gmkitx 是什么关系
 - 坐标 / JDK / 依赖一栏看完
 - 双入口约定（实例式 `XxxX` + 静态聚合 `XxxUtil`）
-- 与 gmkitx 一一对应的最小可运行示例（SM2/SM3/SM4/ZUC/SHA）
+- 与 gmkitx 对齐协议边界的最小可运行示例（SM2/SM3/SM4/ZUC/SHA）
 - 与 Hutool / Bouncy Castle / Tencent Kona 的差异
 :::
 
 ## 是什么
 
-`gmkit-java` 是 `gmkitx` 在 JVM 端的同源实现，包名 `cn.gmkit:gmkit`，
-保持与 TypeScript 端**完全一致的 ABI**：方法名、参数顺序、密文模式、
-签名格式、默认 `userId`、密文/签名/MAC 的字节级输出全部对齐。
+GMKit Java 是 `gmkitx` 在 JVM 端的同源实现，主包坐标为 `cn.gmkit:gmkit`。
+两端不承诺完全一致 ABI；项目通过共享互操作向量和明确的协议边界，对齐密文模式、
+签名格式、默认 `userId`、编码和可验证输出。
 
 设计目标只有两条：
 
-1. 后端写出的代码能够**逐行翻译**到前端，反过来也成立。
-2. 不引入新的术语；TypeScript 端 README 出现的每一个名词，在 Java
-   端都能找到一一对应的入口。
+1. 后端与前端在 SM2 / SM3 / SM4 / ZUC 的主路径上可以互相验证。
+2. 不引入新的协议隐式默认值；跨语言对接时必须显式固定格式和编码。
 
-> 具体的 ABI 对照见 [/standards/abi-matrix](/standards/abi-matrix)。
+> 具体互操作边界以 `vectors/interop.json` 和两端 compliance tests 为准。
 
 ## 坐标与依赖
 
@@ -44,7 +43,7 @@ tag:
 |---|---|
 | `groupId` | `cn.gmkit` |
 | `artifactId` | `gmkit` |
-| `version` | `0.9.4-SNAPSHOT`（dev） |
+| `version` | `0.10.0-SNAPSHOT`（dev） |
 | 最低 JDK | 1.8（由 `animal-sniffer-maven-plugin` 强制） |
 | 运行时依赖 | Bouncy Castle `bcprov-jdk15to18` / `bcpkix-jdk15to18` |
 
@@ -56,20 +55,20 @@ tag:
 <dependency>
   <groupId>cn.gmkit</groupId>
   <artifactId>gmkit</artifactId>
-  <version>0.9.4-SNAPSHOT</version>
+  <version>0.10.0-SNAPSHOT</version>
 </dependency>
 ```
 
 @tab Gradle (Groovy)
 
 ```groovy
-implementation 'cn.gmkit:gmkit:0.9.4-SNAPSHOT'
+implementation 'cn.gmkit:gmkit:0.10.0-SNAPSHOT'
 ```
 
 @tab Gradle (Kotlin)
 
 ```kotlin
-implementation("cn.gmkit:gmkit:0.9.4-SNAPSHOT")
+implementation("cn.gmkit:gmkit:0.10.0-SNAPSHOT")
 ```
 
 :::
@@ -110,7 +109,7 @@ import cn.gmkit.core.SM2CipherMode;
 SM2 sm2 = new SM2();
 SM2KeyPair kp = sm2.generateKeyPair();
 
-// 加解密：默认 C1C3C2，与 gmkitx 完全一致
+// 加解密：默认 C1C3C2，与 gmkitx 共享协议边界
 String cipherHex = sm2.encryptHex(kp.getPublicKeyHex(), "Hello, SM2!", SM2CipherMode.C1C3C2);
 String plain = sm2.decryptToUtf8(kp.getPrivateKeyHex(), cipherHex, SM2CipherMode.C1C3C2);
 
@@ -307,7 +306,7 @@ EEA3 keystream 与 EIA3 MAC 字节级完全一致。具体细节见
 
 ## SHA（国际标准）
 
-`gmkit-java` 内置 SHA-1/256/384/512 四档实现，每档同时暴露实例式与
+GMKit Java 内置 SHA-1/256/384/512 四档实现，每档同时暴露实例式与
 `SHAUtil` 静态聚合，签名风格与 SM3 模块对称。
 
 ::: code-tabs#sha-quick
@@ -344,22 +343,24 @@ const hex = sha.sha256('hello');
 
 ## 与 Hutool / BC / Kona 的取舍
 
-| 库 | 适合什么 | 与 gmkit-java 的差异 |
+| 库 | 适合什么 | 与 GMKit Java 的差异 |
 |---|---|---|
 | Hutool `cn.hutool:hutool-crypto` | 已经在用 Hutool 工具集 | API 命名不与 gmkitx 对齐；密文模式默认值不同 |
 | Bouncy Castle 直接调用 | 极致控制，自己拼算子 | 需要写一堆样板；密文/签名格式默认与国密推荐不同 |
 | Tencent Kona SM Suite | 想走 JCA Provider 风格 | 与 gmkitx 命名差距大；需要装 Provider |
-| **gmkit-java** | **跟前端共享同一份 ABI**，且只想写一次逻辑 | 命名 / 默认值 / 密文格式 100% 对齐；底层仍调用 BC，性能等价 |
+| **GMKit Java** | **跟前端共享互操作向量和协议边界** | 命名接近 gmkitx，但不承诺完全一致 ABI；底层仍调用 BC，性能等价 |
 
 > 已有 Hutool 项目想逐步迁移：可参照
 > [Java 对接指南](/dev/JAVA-INTEGRATION.zh-CN) 中的“Hutool 互通示例”，
-> 先确认密文/签名互验，再切到 gmkit-java 的同名 API，迁移成本极小。
+> 先确认密文/签名互验，再切到 GMKit Java 的对应 API，迁移成本更可控。
 
-## ABI 矩阵速查
+## 互操作速查
 
-完整方法对照表（含每一个算子在 TS 和 Java 双侧的入口名）请直接看：
+完整互操作边界请优先看：
 
-- [/standards/abi-matrix](/standards/abi-matrix)
+- `vectors/interop.json`
+- `packages/ts/test/interop-compliance.test.ts`
+- `packages/java/gmkit/src/test/java/cn/gmkit/InteropComplianceTest.java`
 
 如果发现某个 TS 端入口在 Java 端没有对应、或者反过来，欢迎在
-[CherryRum/gmkit](https://github.com/CherryRum/gmkit) 提 issue。
+[gmkits/gmkit](https://github.com/gmkits/gmkit) 提 issue。

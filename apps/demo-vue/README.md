@@ -1,109 +1,49 @@
 # GMKit Vue 3 演示
 
-这是一个基于 Vue 3 + TypeScript 构建的密码算法工具集 Web 应用，直接从 npm 引用 `gmkitx@^0.9.1`。
+这是 GMKit monorepo 内的 Vue 3 + TypeScript 演示应用，用于手工验证 `gmkitx` 在浏览器侧的常见交互。
 
-## 功能特点
+## 当前范围
 
-### 🔐 信创国密算法（已实现）
-- **SM2 椭圆曲线算法** - 公钥密码算法，用于数字签名、密钥交换和加密
-  - ✅ 密钥对生成
-  - ✅ 加密/解密
-  - ✅ 签名/验签
-- **SM3 哈希算法** - 密码杂凑算法，用于数字签名和验证、消息认证码生成及验证
-  - ✅ 哈希计算
-  - ✅ HMAC 消息认证码
-  - ✅ 文件哈希计算
-- **SM4 分组密码** - 对称加密算法，用于数据加密
-  - ✅ 加密/解密
-  - ✅ ECB 模式
-  - ✅ CBC 模式
-  - ✅ 随机密钥和 IV 生成
+- SM2：密钥生成、加密/解密、签名/验签
+- SM3：摘要、HMAC、文件哈希
+- SM4：ECB/CBC 等基础加解密演示
 
-### 🌐 国际标准算法（即将推出）
-- AES 加密算法
-- RSA 公钥算法
-- SHA 哈希算法
+TypeScript 包不包含 SM9，也不包装 native/WASM runtime；SM9 只在 Java 侧以 `gmkit-sm9` + `gmkit-sm9-native-*` 模块交付。
 
-### 🛠️ 实用工具（即将推出）
-- 密钥生成器 - 生成各种密钥对和随机数
-- 格式转换 - 十六进制、Base64、ASN.1 等格式互转
-- 签名验证 - 验证数字签名和证书
+## 开发命令
 
-## 技术栈
-
-- **Vue 3** - 使用 Composition API
-- **TypeScript** - 类型安全
-- **Vue Router** - 路由管理
-- **Pinia** - 状态管理
-- **Vite** - 构建工具
-
-## 开发
+从仓库根目录运行：
 
 ```bash
-# 安装依赖
-npm install
-
-# 启动开发服务器
-npm run dev
-
-# 构建生产版本
-npm run build
-
-# 预览生产版本
-npm run preview
+npm ci
+npm run dev -w apps/demo-vue
+npm run build -w apps/demo-vue
+npm run preview -w apps/demo-vue
 ```
 
-## 项目结构
+## 目录结构
 
-```
-demo-vue/
+```text
+apps/demo-vue/
 ├── src/
 │   ├── components/     # 可复用组件
-│   │   └── AppLayout.vue    # 左右布局组件
 │   ├── views/          # 页面视图
-│   │   ├── HomeView.vue     # 首页（工具导航）
-│   │   ├── SM2View.vue      # SM2 算法视图
-│   │   ├── SM3View.vue      # SM3 算法视图
-│   │   └── SM4View.vue      # SM4 算法视图
 │   ├── router/         # 路由配置
 │   ├── stores/         # Pinia 状态管理
 │   ├── App.vue         # 根组件
 │   └── main.ts         # 入口文件
-├── public/             # 静态资源
-└── index.html          # HTML 模板
+├── public/
+└── index.html
 ```
 
-## 架构设计
+## 技术栈
 
-### 界面布局
-- **左右结构设计**：左侧导航栏 + 右侧内容区
-- **左侧导航栏**：显示所有可用的算法工具，支持快速切换
-- **右侧内容区**：展示选中工具的详细操作界面
-- **响应式设计**：移动端自动切换为上下布局
-
-### 模块化组织
-- 按功能分类：中国国密算法、国际标准算法、实用工具
-- 每个工具都是独立的模块，便于维护和扩展
-- 组件采用 Composition API，代码结构清晰
-
-### 可扩展性
-- 新增算法工具只需添加新的视图组件和路由
-- 工具分类可以轻松扩展
-- 统一的 UI 组件库，保持界面一致性
-
-### 用户体验
-- 响应式设计，支持移动端和桌面端
-- 流畅的页面切换动画
-- 清晰的视觉层次和信息架构
-- 完善的中英文双语注释和提示信息
-- 实时的操作反馈和错误提示
-
-### 代码质量
-- 完整的 TypeScript 类型支持
-- 详细的中英文双语注释
-- 遵循 Vue 3 最佳实践
-- 组件化和模块化设计
+- Vue 3
+- TypeScript
+- Vue Router
+- Pinia
+- Vite
 
 ## 许可证
 
-Apache 2.0 License
+Apache License 2.0。

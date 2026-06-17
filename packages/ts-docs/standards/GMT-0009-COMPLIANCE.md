@@ -62,23 +62,23 @@ export const DEFAULT_USER_ID = '1234567812345678';
 符合 GM/T 0009-2023 最新标准的用法：
 
 ```typescript
-import { sign, verify } from 'gmkitx';
+import { sm2Sign, sm2Verify } from 'gmkitx';
 
 // 签名时显式指定空字符串 userId
-const signature = sign(privateKey, data, { userId: '' });
+const signature = sm2Sign(privateKey, data, { userId: '' });
 
 // 验签时必须使用相同的 userId
-const isValid = verify(publicKey, data, signature, { userId: '' });
+const isValid = sm2Verify(publicKey, data, signature, { userId: '' });
 ```
 
 保持向后兼容的用法（默认）：
 
 ```typescript
-import { sign, verify } from 'gmkitx';
+import { sm2Sign, sm2Verify } from 'gmkitx';
 
 // 使用默认 userId '1234567812345678'
-const signature = sign(privateKey, data);
-const isValid = verify(publicKey, data, signature);
+const signature = sm2Sign(privateKey, data);
+const isValid = sm2Verify(publicKey, data, signature);
 ```
 
 #### 技术说明
@@ -195,13 +195,13 @@ export function getPublicKeyFromPrivateKey(
 #### 格式转换支持
 
 ```typescript
-import { compressPublicKey, decompressPublicKey } from 'gmkitx';
+import { sm2CompressPublicKey, sm2DecompressPublicKey } from 'gmkitx';
 
 // 压缩公钥
-const compressed = compressPublicKey(uncompressedKey);
+const compressed = sm2CompressPublicKey(uncompressedKey);
 
 // 解压公钥
-const uncompressed = decompressPublicKey(compressedKey);
+const uncompressed = sm2DecompressPublicKey(compressedKey);
 ```
 
 **优势对比**：
@@ -306,14 +306,14 @@ function kdf(z: Uint8Array, klen: number): Uint8Array {
 
 **之前（GM/T 0009-2012 风格）**：
 ```typescript
-const signature = sign(privateKey, data);
-const isValid = verify(publicKey, data, signature);
+const signature = sm2Sign(privateKey, data);
+const isValid = sm2Verify(publicKey, data, signature);
 ```
 
 **之后（GM/T 0009-2023 风格）**：
 ```typescript
-const signature = sign(privateKey, data, { userId: '' });
-const isValid = verify(publicKey, data, signature, { userId: '' });
+const signature = sm2Sign(privateKey, data, { userId: '' });
+const isValid = sm2Verify(publicKey, data, signature, { userId: '' });
 ```
 
 **注意**：必须同时更新签名和验签代码，否则验签会失败！
@@ -338,10 +338,10 @@ const decrypted = sm2Decrypt(privateKey, encrypted);
 
 ```typescript
 // 推荐：使用默认的非压缩格式
-const keyPair = generateKeyPair(); // compressed = false（默认）
+const keyPair = sm2GenerateKeyPair(); // compressed = false（默认）
 
 // 如果已有压缩公钥，可以解压
-const uncompressedKey = decompressPublicKey(compressedKey);
+const uncompressedKey = sm2DecompressPublicKey(compressedKey);
 ```
 
 ### 向后兼容性保证
@@ -443,7 +443,7 @@ GMKitX 现有测试覆盖核心路径，包含：
 
 ### 相关链接
 
-- [GMKitX GitHub](https://github.com/CherryRum/gmkit)
+- [GMKitX GitHub](https://github.com/gmkits/gmkit)
 - [GMKitX NPM](https://www.npmjs.com/package/gmkitx)
 - [中国商用密码标准](http://www.gmbz.org.cn/)
 

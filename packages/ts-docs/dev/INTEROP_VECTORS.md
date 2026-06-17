@@ -36,11 +36,11 @@ order: 99
 @tab TypeScript (gmkitx)
 ```ts
 import {
-  sm2Encrypt, sm2Decrypt, sign, verify, SM2CipherMode
+  sm2Encrypt, sm2Decrypt, sm2Sign, sm2Verify, SM2CipherMode
 } from 'gmkitx';
 import fs from 'node:fs';
 
-const vec = JSON.parse(fs.readFileSync('test/vectors/interop.json', 'utf8'));
+const vec = JSON.parse(fs.readFileSync('vectors/interop.json', 'utf8'));
 
 for (const c of vec.cases.filter((v: any) => v.algo === 'SM2')) {
   const pub = c.publicKeyHex ?? vec.defaults.sm2PublicKeyHex;
@@ -52,8 +52,8 @@ for (const c of vec.cases.filter((v: any) => v.algo === 'SM2')) {
     console.assert(plain === c.input, c.id);
   }
   if (c.op === 'sign') {
-    const sig = sign(pri, c.input);
-    const ok = verify(pub, c.input, sig);
+    const sig = sm2Sign(pri, c.input);
+    const ok = sm2Verify(pub, c.input, sig);
     console.assert(ok === true, c.id);
   }
 }
@@ -329,16 +329,16 @@ fn main() {
 ::: code-tabs#sm3
 @tab TypeScript (gmkitx)
 ```ts
-import { digest, hmac } from 'gmkitx';
+import { sm3Digest, sm3Hmac } from 'gmkitx';
 import fs from 'node:fs';
 
-const vec = JSON.parse(fs.readFileSync('test/vectors/interop.json', 'utf8'));
+const vec = JSON.parse(fs.readFileSync('vectors/interop.json', 'utf8'));
 
 for (const c of vec.cases.filter((v: any) => v.algo === 'SM3')) {
-  const out = digest(c.input);
+  const out = sm3Digest(c.input);
   console.assert(out === c.expected.hex, c.id);
 }
-// 如需 HMAC，可参照 hmac(key, data) 并扩展 JSON
+// 如需 HMAC，可参照 sm3Hmac(key, data) 并扩展 JSON
 ```
 
 @tab Java (Hutool)
@@ -470,7 +470,7 @@ fn main() {
 import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkitx';
 import fs from 'node:fs';
 
-const vec = JSON.parse(fs.readFileSync('test/vectors/interop.json', 'utf8'));
+const vec = JSON.parse(fs.readFileSync('vectors/interop.json', 'utf8'));
 
 for (const c of vec.cases.filter((v: any) => v.algo === 'SM4')) {
   const key = c.keyHex ?? vec.defaults.sm4KeyHex;

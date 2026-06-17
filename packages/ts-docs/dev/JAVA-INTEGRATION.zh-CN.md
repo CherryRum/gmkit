@@ -28,11 +28,11 @@ tag:
 :::
 
 
-本页聚焦在第三方栈下与 gmkitx 互通的四种方案。如果你**就想跟 gmkitx 共享同一份 ABI**、不必再做映射，请直接看专门页：[gmkit-java（同源 Java 实现）](/dev/JAVA-LIBRARY.zh-CN)。
+本页聚焦在第三方栈下与 gmkitx 互通的四种方案。如果你想直接使用同源 Java 实现，并通过共享向量对齐协议边界，请看专门页：[GMKit Java（同源 Java 实现）](/dev/JAVA-LIBRARY.zh-CN)。
 
 | 项目 | 说明 |
 |:--|:--|
-| **gmkit-java**（推荐） | 与 gmkitx 同源、同 ABI，命名 / 默认值 / 字节级输出对齐，详见 [gmkit-java 专页](/dev/JAVA-LIBRARY.zh-CN) |
+| **GMKit Java**（推荐） | 与 gmkitx 同源，依靠共享互操作向量和显式协议边界对齐，详见 [GMKit Java 专页](/dev/JAVA-LIBRARY.zh-CN) |
 | Hutool + Bouncy Castle | 已有 Hutool 项目里最低成本的方案，需要引入 BC 依赖 |
 | 直接使用 Bouncy Castle | 底层实现，更灵活，需要自己拼装算子 |
 | Tencent Kona SM Suite | JCA 标准 Provider，纯 Java 实现，需要装 Provider |
@@ -283,19 +283,18 @@ public class JceCheck {
 - [OpenJDK / Oracle 差异参考（第三方资料，需运行时验证）](https://docs.datastax.com/en/dse/5.1/securing/enable-java-cryptography-extension-unlimited.html)
 :::
 
-### 方案四：gmkit-java
+### 方案四：GMKit Java
 
 ::: info
-说明：开发中
-gmkit-java 是纯 Java 实现的国密算法库，不依赖第三方库。敬请期待！
+说明：同源实现
+GMKit Java 主包提供 SM2/SM3/SM4/ZUC，SM9 通过独立 `gmkit-sm9` JNI/GmSSL 模块交付。
 :::
 
 ```xml
-<!-- 即将发布 -->
 <dependency>
-    <groupId>com.cherryrum</groupId>
-    <artifactId>gmkit-java</artifactId>
-    <version>1.0.0</version>
+    <groupId>cn.gmkit</groupId>
+    <artifactId>gmkit</artifactId>
+    <version>0.10.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -417,7 +416,7 @@ public class FullInteropDemo {
 
 @tab gmkitx
 ```typescript
-import { sm2Encrypt, sm2Decrypt, sign, verify, SM2CipherMode } from 'gmkitx';
+import { sm2Encrypt, sm2Decrypt, sm2Sign, sm2Verify, SM2CipherMode } from 'gmkitx';
 
 // 使用测试向量中的密钥
 const publicKey = '04a09455a450af78e7bc6b2f8c7f1e0e...'; // 完整的04开头公钥
@@ -434,11 +433,11 @@ console.log('明文:', decrypted); // 'Hello, SM2!'
 
 // 签名
 const message = 'Important message';
-const signature = sign(privateKey, message);
+const signature = sm2Sign(privateKey, message);
 console.log('签名:', signature);
 
 // 验签
-const isValid = verify(publicKey, message, signature);
+const isValid = sm2Verify(publicKey, message, signature);
 console.log('验签结果:', isValid); // true
 ```
 
@@ -670,15 +669,15 @@ public class SM2BCInterop {
 
 @tab gmkitx
 ```typescript
-import { digest, hmac } from 'gmkitx';
+import { sm3Digest, sm3Hmac } from 'gmkitx';
 
 // 计算 SM3 摘要
-const hash = digest('Hello, SM3!');
+const hash = sm3Digest('Hello, SM3!');
 console.log('SM3摘要:', hash);
 // 输出: 32字节（64位十六进制）哈希值
 
 // HMAC-SM3
-const mac = hmac('secret-key', 'message');
+const mac = sm3Hmac('secret-key', 'message');
 console.log('HMAC-SM3:', mac);
 
 // 增量哈希

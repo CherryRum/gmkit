@@ -2,25 +2,30 @@
 
 ## Unreleased
 
-### Monorepo merge (in progress)
+### Monorepo merge
 
-- Merged the `gmkit` (TypeScript) and `gmkit-java` repositories into a single
-  polyglot monorepo. The TypeScript stack now lives under `ts/`, the Java
-  stack under `java/`, with cross-language test vectors under `vectors/`.
+- Merged the TypeScript and Java stacks into a single polyglot monorepo.
+  The TypeScript stack now lives under `packages/ts/`, the Java stack under
+  `packages/java/`, docs under `packages/ts-docs/`, demo apps under `apps/`,
+  and cross-language vectors under `vectors/`.
 - TypeScript npm package name remains `gmkitx`; Java Maven coordinates
-  remain `cn.gmkit:gmkit:0.10.0-SNAPSHOT`. No user-facing API changes.
-- CI split into `ts-*` and `java-*` workflows under `.github/workflows/`
-  with `paths:` filters so TS-only and Java-only changes do not cross-trigger.
+  remain `cn.gmkit:gmkit:0.10.0-SNAPSHOT`.
+- Removed deprecated TypeScript top-level compatibility aliases such as
+  `generateKeyPair`, `sign`, `verify`, `digest`, and `hmac`. Use
+  `sm2GenerateKeyPair`, `sm2Sign`, `sm2Verify`, `sm3Digest`, `sm3Hmac`, or
+  the `sm2` / `sm3` namespaces instead.
+- CI rebuilt into `ci.yml`, `parity.yml`, `sm9-native.yml`, `docs.yml`,
+  `publish-ts.yml`, and `publish-java.yml` with monorepo `paths:` filters.
 - Release tag pattern updated: TS uses `ts-v*`, Java uses `java-v*`.
 - Added `vectors/interop.json` shared cross-language vectors, consumed by
-  `ts/test/interop-compliance.test.ts` (relative import) and
+  `packages/ts/test/interop-compliance.test.ts` and
   `cn.gmkit.InteropComplianceTest` (Maven test-resources mount + zero-dep
   classpath loader `cn.gmkit.test.Vectors`).
 
 ### Fixed
 
 - **TS SM4 CK table — GB/T 32907-2016 conformance fix** (audit-iter8-D).
-  The `CK[i]` constant generation in `ts/src/crypto/sm4/index.ts` omitted
+  The `CK[i]` constant generation in `packages/ts/src/crypto/sm4/index.ts` omitted
   the standard's required `×7 mod 256` multiplier, producing wrong round
   keys for every SM4 block encryption. Bug surfaced when the InteropCompliance
   suite was extended to verify Java↔TS bit-for-bit equality, and root-caused
@@ -58,6 +63,7 @@
 
 ### Compatibility
 
-- No public TypeScript API was removed.
-- Runtime behavior is unchanged; the compatibility impact is stricter tests and clearer documentation. Downstream tests that depended on the previous stale SM4 vector file may need to update those fixtures.
+- Deprecated TypeScript top-level compatibility aliases were removed during
+  the 0.x monorepo cleanup. Downstream code should use prefixed functions or
+  algorithm namespaces.
 - SM9 remains unsupported in TypeScript; no C, WASM, or native wrapper was added.

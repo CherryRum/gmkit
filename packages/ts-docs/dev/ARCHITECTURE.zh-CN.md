@@ -186,17 +186,17 @@ SHA 系列哈希算法实现（基于 @noble/hashes）。
 ### 函数式 API
 
 ```typescript
-import { digest, sm4Encrypt, generateKeyPair } from 'gmkitx';
+import { sm3Digest, sm4Encrypt, sm2GenerateKeyPair } from 'gmkitx';
 
 // SM3 哈希
-const hash = digest('Hello, World!');
+const hash = sm3Digest('Hello, World!');
 
 // SM4 加密
 const key = '0123456789abcdeffedcba9876543210';
 const encrypted = sm4Encrypt(key, 'secret message');
 
 // SM2 密钥生成
-const keyPair = generateKeyPair();
+const keyPair = sm2GenerateKeyPair();
 ```
 
 ### 面向对象 API

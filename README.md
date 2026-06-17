@@ -1,53 +1,68 @@
-# GMKit — 国密算法多语言工具库
+# GMKit - 国密算法多语言工具库
 
-GMKit 提供 SM2 / SM3 / SM4 / SM9 / ZUC 的多语言实现，本仓库以
-多语言 monorepo 形式同时维护 Java 与 TypeScript 两个栈。
-
-> 当前处于 0.x 阶段，重点保证常用算法的可用性、测试覆盖和跨语言互通；
-> 不同语言实现的支持范围不完全相同，详见下方支持矩阵。
-
-## 支持矩阵
-
-| 算法    | Java | TypeScript | 说明 |
-| ------- | ---- | ---------- | ---- |
-| SM2     | 支持 | 支持       | 注意密文格式（C1C3C2 / C1C2C3）和签名格式（raw / DER） |
-| SM3     | 支持 | 支持       | 摘要 / HMAC，建议统一使用 hex 输出 |
-| SM4     | 支持 | 支持       | 注意 mode、padding、iv、tag；当前 ECB/PKCS7 存在已知跨语言差异，详见 CHANGELOG |
-| SM9     | 支持 | 不支持     | Java 通过 JNI 调用 GmSSL v3.1.1；TS 侧不计划包装 native/WASM |
-| ZUC     | 支持 | 支持       | ZUC-128（含 EEA3 / EIA3），ZUC-256 暂不支持 |
-| SHA-2   | —    | 支持       | SHA-1/256/384/512 + HMAC；Java 侧直接用 JDK 自带 |
+GMKit 是一个 Java + TypeScript monorepo，维护 JVM 后端与前端/Node.js 侧的国密算法实现。项目目标不是让两个语言共享完全相同的 ABI，而是通过共享互操作向量和明确的协议边界，保证常用密文、签名、摘要和 MAC 能跨语言验证。
 
 ## 仓库结构
 
-```
-gmkit/                              ← git root
-├── .github/workflows/
-│   ├── ts-*.yml                    ← TS CI / publish / docs
-│   ├── java-*.yml                  ← Java CI / publish / native build
-│   └── parity.yml                  ← 跨语言互通向量校验
-├── ts/                             ← TypeScript / npm 包 gmkitx
-├── java/                           ← Java / Maven cn.gmkit:gmkit
-└── vectors/                        ← 共享测试向量（两栈均消费）
+```text
+gmkit/
+├── packages/
+│   ├── ts/        # npm 包 gmkitx；SM2/SM3/SM4/ZUC/SHA，纯 TypeScript
+│   ├── ts-docs/   # VuePress 文档站
+│   └── java/      # Maven 多模块；主包 gmkit，SM9 独立 JNI/GmSSL 模块
+├── apps/
+│   └── demo-vue/  # Vue 3 演示应用
+├── vectors/       # Java / TypeScript 共享互操作测试向量
+├── scripts/       # 本地校验脚本
+└── .github/       # monorepo CI、发布、文档和 SM9 native 工作流
 ```
 
-详细文档：`ts/README.md`、`java/README.md`、`vectors/README.md`。
+## 支持矩阵
 
-## 快速开始
+| 算法 | Java | TypeScript | 说明 |
+| --- | --- | --- | --- |
+| SM2 | 支持 | 支持 | 加解密、签名/验签、密钥交换；跨语言需固定 userId、密文模式和签名格式 |
+| SM3 | 支持 | 支持 | 摘要与 HMAC |
+| SM4 | 支持 | 支持 | ECB/CBC/CTR/CFB/OFB/GCM/CCM，AEAD 需传递 tag/AAD |
+| ZUC | 支持 | 支持 | ZUC-128、EEA3、EIA3；不支持 ZUC-256 |
+| SM9 | 支持 | 不支持 | 仅 Java 侧通过 `gmkit-sm9` + `gmkit-sm9-native-*` JNI/GmSSL runtime 交付 |
+| SHA | JDK 自带 | 支持 | TS 包提供 SHA-1/256/384/512 与 HMAC；SHA-1 仅用于兼容旧系统 |
+
+## 统一命令
 
 ```bash
-make verify          # 跑两栈所有测试 + parity
-make test-ts         # 仅 TS
-make test-java       # 仅 Java
-make parity          # 仅 parity 互通向量
+npm ci
+npm run verify          # TS type-check/test/build + Java test + parity
+npm run test:ts
+npm run test:java
+npm run parity
+npm run build:ts
+npm run docs:build
 ```
 
-或手动：
+Java 单独校验：
 
 ```bash
-cd ts   && npm ci && npm test && npm run build
-cd java && mvn -B test
+mvn -f packages/java/pom.xml -B -ntp test
+mvn -f packages/java/pom.xml -B -ntp -Prelease "-Dgpg.skip=true" -DskipTests verify
 ```
+
+## CI 与发布标签
+
+- `ci.yml`：TS 与普通 Java 测试；不强制 SM9 native。
+- `parity.yml`：运行共享 `vectors/interop.json` 互操作校验。
+- `sm9-native.yml`：专门编译 GmSSL/JNI 并强制运行 SM9 native 测试。
+- `docs.yml`：构建 VuePress 文档和 Vue demo。
+- `publish-ts.yml`：`ts-v*` 标签发布 npm 包。
+- `publish-java.yml`：`java-v*` 标签发布 Maven artifacts。
+
+## 文档入口
+
+- [TypeScript 包说明](packages/ts/README.md)
+- [Java 包说明](packages/java/README.md)
+- [共享向量说明](vectors/README.md)
+- [API 稳定性策略](docs/API_STABILITY.md)
 
 ## 许可证
 
-Apache License 2.0 — 见 LICENSE。
+Apache License 2.0，见 [LICENSE](LICENSE)。

@@ -38,9 +38,9 @@
 | SM4 | `ECB` / `CBC` / `CTR` / `CFB` / `OFB` / `GCM` / `CCM` | `PKCS7` / `ZERO` / `NONE`；AEAD 返回 `ciphertext` + `tag` | `ECB` 不建议保护敏感数据；AEAD 必须保存并校验 tag |
 | ZUC | ZUC-128 密钥流、加解密、EEA3/EIA3 兼容接口 | key/iv 均为 16 字节；密钥流长度按字节，`zucKeystreamWords` 按 32-bit word | 不支持 ZUC-256；ZUC 加密不自带完整性保护 |
 | SHA | SHA-1/224/256/384/512 摘要 | hex/base64 输出 | SHA-1 仅用于兼容旧系统 |
-| SM9 | 不支持 | 无 | TypeScript 侧没有 SM9；如需 SM9，请使用 `gmkit-java` 的 `gmkit-sm9` JNI/GmSSL 模块 |
+| SM9 | 不支持 | 无 | TypeScript 侧没有 SM9，也不包装 native/WASM；如需 SM9，请使用 Java 侧 `gmkit-sm9` JNI/GmSSL 模块 |
 
-测试中的 ZUC、SM3、SM4 固定值是本项目与 `gmkit-java` 对齐使用的项目向量；没有标注为外部标准向量的值，不应被当作标准测试向量来源。
+测试中的 ZUC、SM3、SM4 固定值是本项目 Java / TypeScript 两端对齐使用的项目向量；没有标注为外部标准向量的值，不应被当作标准测试向量来源。
 
 ---
 

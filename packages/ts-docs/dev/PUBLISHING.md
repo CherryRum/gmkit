@@ -44,7 +44,7 @@ The most modern module format with tree-shaking support, recommended for modern 
 ```javascript
 // 在现代打包工具中使用（Vite, Webpack 5+, Rollup）
 // Use with modern bundlers (Vite, Webpack 5+, Rollup)
-import { digest, sm4Encrypt, generateKeyPair } from 'gmkitx';
+import { sm3Digest, sm4Encrypt, sm2GenerateKeyPair } from 'gmkitx';
 
 // 或导入全部
 // Or import everything
@@ -61,7 +61,7 @@ Traditional Node.js module format, compatible with older Node.js versions and bu
 ```javascript
 // 在 Node.js 或旧版打包工具中使用
 // Use with Node.js or older bundlers
-const { digest, sm4Encrypt, generateKeyPair } = require('gmkitx');
+const { sm3Digest, sm4Encrypt, sm2GenerateKeyPair } = require('gmkitx');
 
 // 或导入全部
 // Or import everything
@@ -82,7 +82,7 @@ IIFE global build, can be used directly in browsers with `<script>` tags.
 <script>
   // 全局变量 GMKit 现在可用
   // Global variable GMKit is now available
-  const hash = GMKit.digest('Hello, World!');
+  const hash = GMKit.sm3Digest('Hello, World!');
   console.log(hash);
 </script>
 
@@ -216,7 +216,7 @@ npm install gmkitx@latest
 
 # 测试不同的导入方式
 # Test different import methods
-node -e "const gmkit = require('gmkitx'); console.log(gmkit.digest('test'));"
+node -e "const gmkit = require('gmkitx'); console.log(gmkit.sm3Digest('test'));"
 ```
 
 ## 版本管理最佳实践 / Version Management Best Practices

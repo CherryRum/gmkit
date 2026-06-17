@@ -152,7 +152,7 @@ const sha512Hash = sha.sha512('Hello World');
 - [SM3 算法文档](/algorithms/SM3) - 密码杂凑算法
 - [SM4 算法文档](/algorithms/SM4) - 分组密码算法
 - [公开 API 清单](/dev/API-SURFACE.zh-CN) - 当前全部导出、命名空间与 Java 端映射
-- [gmkit-java 同源实现](/dev/JAVA-LIBRARY.zh-CN) - JVM 端 cn.gmkit:gmkit 的接入与示例
+- [GMKit Java 实现](/dev/JAVA-LIBRARY.zh-CN) - JVM 端 `cn.gmkit:gmkit` 与 SM9 独立模块的接入与示例
 - [语言集成指南](/dev/JAVA-INTEGRATION.zh-CN) - Java、Go、Rust、Python 对接方案
 - [项目精简清单](/dev/PROJECT-SLIMMING-CHECKLIST.zh-CN) - 文档资产、构建告警、发布包体审计
 - [性能测试](/performance/PERFORMANCE) - 查看性能基准测试结果
