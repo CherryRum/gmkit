@@ -3,8 +3,19 @@
     grid-template-columns: 1fr;
   }
 
+  .workbench-grid {
+    grid-template-columns: 1fr;
+  }
+
   .hero-preview {
     justify-content: flex-start;
+  }
+}
+
+@media (max-width: 1180px) {
+  .tool-card-grid,
+  .related-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -79,7 +90,10 @@
   }
 
   .hero-actions,
-  .metric-grid {
+  .metric-grid,
+  .field-grid,
+  .tool-card-grid,
+  .related-grid {
     grid-template-columns: 1fr;
   }
 

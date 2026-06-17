@@ -37,16 +37,37 @@
         <p>{{ metric.description }}</p>
       </StudioCard>
     </section>
+
+    <section v-for="group in groupedTools" :key="group.category" class="tool-section">
+      <div class="section-title">
+        <h2>{{ group.category }}</h2>
+        <span>{{ group.items.length }} 个入口</span>
+      </div>
+      <div class="tool-card-grid">
+        <RouterLink v-for="tool in group.items" :key="tool.key" class="tool-card-link" :to="tool.path">
+          <IconTile :tone="tool.tone">{{ tool.icon }}</IconTile>
+          <span>
+            <strong>{{ tool.title }}</strong>
+            <small>{{ tool.subtitle }}</small>
+          </span>
+        </RouterLink>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
 import AppBadge from '@/components/common/AppBadge.vue';
+import IconTile from '@/components/common/IconTile.vue';
 import StudioCard from '@/components/common/StudioCard.vue';
+import { homeMetrics as metrics } from '@/data/pages';
+import { tools } from '@/data/tools';
 
-const metrics = [
-  { value: '5+', label: '算法域', description: 'SM2 / SM3 / SM4 / ZUC / SHA，SM9 作为 Java/WASM 边界。' },
-  { value: '12', label: '产品页面', description: '首页、算法工作台、辅助工具和项目说明完整覆盖。' },
-  { value: '1', label: '统一体验', description: '导航、卡片、表单、代码示例和结果展示保持同一视觉语言。' },
-];
+const groupedTools = Object.values(
+  tools.reduce<Record<string, { category: string; items: typeof tools }>>((groups, tool) => {
+    groups[tool.category] ??= { category: tool.category, items: [] };
+    groups[tool.category].items.push(tool);
+    return groups;
+  }, {}),
+);
 </script>
