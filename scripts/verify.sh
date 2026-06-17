@@ -14,22 +14,19 @@ step() {
   printf '\n\033[1;36m==> %s\033[0m\n' "$1"
 }
 
-step "TS: install"
-( cd ts && npm ci )
+step "npm: install"
+npm ci
 
 step "TS: type-check + test"
-( cd ts && npm run type-check && npm test )
+npm run test:ts
 
 step "Java: full reactor test"
-( cd java && mvn -B -ntp test )
+npm run test:java
 
-step "Parity: Java interop"
-( cd java && mvn -B -ntp -pl gmkit -Dtest=InteropComplianceTest test )
-
-step "Parity: TS interop"
-( cd ts && npx vitest run test/interop-compliance.test.ts )
+step "Parity: shared vectors"
+npm run parity
 
 step "TS: build"
-( cd ts && npm run build )
+npm run build:ts
 
 printf '\n\033[1;32mAll checks passed.\033[0m\n'

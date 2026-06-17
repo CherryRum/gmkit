@@ -13,26 +13,25 @@ SHELL := /bin/bash
 .PHONY: verify test-ts test-java parity build-ts build-java clean install-ts
 
 install-ts:
-	cd ts && npm ci
+	npm ci
 
 test-ts: install-ts
-	cd ts && npm run type-check && npm test
+	npm run test:ts
 
 test-java:
-	cd java && mvn -B -ntp test
+	npm run test:java
 
 parity:
-	cd java && mvn -B -ntp -pl gmkit -Dtest=InteropComplianceTest test
-	cd ts && npx vitest run test/interop-compliance.test.ts
+	npm run parity
 
 build-ts: install-ts
-	cd ts && npm run build
+	npm run build:ts
 
 build-java:
-	cd java && mvn -B -ntp -DskipTests install
+	npm run build:java
 
 verify: test-ts test-java parity build-ts
 
 clean:
-	cd ts && rm -rf dist node_modules
-	cd java && mvn -B -ntp -q clean
+	rm -rf packages/ts/dist node_modules packages/*/node_modules apps/*/node_modules
+	mvn -f packages/java/pom.xml -B -ntp -q clean

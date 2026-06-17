@@ -1,0 +1,23 @@
+{
+  "name": "gmkit-monorepo",
+  "version": "0.10.0",
+  "private": true,
+  "description": "GMKit polyglot monorepo for Java and TypeScript packages",
+  "workspaces": [
+    "packages/ts",
+    "packages/ts-docs",
+    "apps/demo-vue"
+  ],
+  "scripts": {
+    "verify": "npm run test:ts && npm run test:java && npm run parity && npm run build:ts",
+    "test:ts": "npm run type-check -w packages/ts && npm test -w packages/ts",
+    "test:java": "mvn -f packages/java/pom.xml -B -ntp test",
+    "parity": "mvn -f packages/java/pom.xml -B -ntp -pl gmkit -Dtest=InteropComplianceTest test && npx vitest run test/interop-compliance.test.ts --config vitest.config.ts --root packages/ts",
+    "build:ts": "npm run build -w packages/ts",
+    "build:java": "mvn -f packages/java/pom.xml -B -ntp -DskipTests install",
+    "docs:build": "npm run build -w packages/ts-docs"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
