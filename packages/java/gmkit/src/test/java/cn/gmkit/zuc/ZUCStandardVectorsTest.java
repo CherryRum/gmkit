@@ -21,10 +21,10 @@ class ZUCStandardVectorsTest {
     @Test
     void projectKeystreamVectorsShouldMatchTypeScriptImplementation() {
         assertEquals(
-            "fd3c73de9d095700",
+            "27bede74018082da",
             ZUC.keystreamWordsHex("00000000000000000000000000000000", "00000000000000000000000000000000", 2));
         assertEquals(
-            "64504403f3e0af510600fc2b611f7f5797a2384b8b33f25ca4314e4471f90d80",
+            "deeb81e388e6bbad1c44b2bbf56776644a80953ad9005380ec8d392fb3a1548b",
             ZUC.keystreamHex(KEY_HEX, IV_HEX, 32));
     }
 
@@ -56,14 +56,14 @@ class ZUCStandardVectorsTest {
         byte[] plaintext = HexCodec.decodeStrict("000102030405fffefdfc8040", "payload");
 
         byte[] ciphertext = ZUC.encrypt(key, iv, plaintext);
-        assertEquals("64514600f7e550affbfc7c6b", HexCodec.encode(ciphertext));
+        assertEquals("deea83e08ce34453e1b832fb", HexCodec.encode(ciphertext));
         assertArrayEquals(plaintext, ZUC.decrypt(key, iv, ciphertext));
     }
 
     @Test
     void eea3AndEia3ShouldMatchTypeScriptProjectVectors() {
-        assertEquals("a0d933edc1d7b696f920c8a2", ZUC.eea3(KEY_HEX, 0x398a59b4, 0x15, 1, 96));
-        assertEquals("9580e4bc", ZUC.eia3(KEY_HEX, 0x398a59b4, 0x15, 1, "中文 + emoji 😊 + English + 123"));
+        assertEquals("87613336c451fb0b94374bad", ZUC.eea3(KEY_HEX, 0x398a59b4, 0x15, 1, 96));
+        assertEquals("576ad924", ZUC.eia3(KEY_HEX, 0x398a59b4, 0x15, 1, "中文 + emoji 😊 + English + 123"));
     }
 
     @Test
@@ -88,12 +88,12 @@ class ZUCStandardVectorsTest {
 
     private static Stream<Arguments> unicodeRoundTripCases() {
         return Stream.of(
-            Arguments.of("ASCII", "hello gmkit", "0c35286f9cc0c83c6d6988"),
-            Arguments.of("Chinese", "你好，国密", "80ede4e6565d40ed8ae5679684b0f9"),
-            Arguments.of("Emoji", "国密测试 😊🚀🔥", "81cbf9e65c6649e48de853be41efe0cf1d52a7d10bc36dc801"),
-            Arguments.of("Mixed Unicode", "中文 + emoji 😊 + English + 123", "80e8e9e565678f7a266591440b765fa7083ab26ba013b732c35d273719d926a003a2c6"),
-            Arguments.of("Newlines and tabs", "第一行\nsecond line\t第三行", "83fce8e74b6047f08a0a8f4e02701133b7ce5125ee3a15f008d5f6cd995881"),
-            Arguments.of("Spaces", "  前后空格\tspaces  ", "4470a18a7e053fdfe1a946cdc1a37624e7c35b2ef813d2"),
-            Arguments.of("Symbols", "SM2/SM3/SM4/ZUC: !@#$%^&*()_+-=[]{}|;:,.<>?", "371d762ca0ad9c7e554dc8043b4a3c6db7837868af16ac7a8e19671b5ad430db6feb88af1b7d4c452f896a"));
+            Arguments.of("ASCII", "hello gmkit", "b68eed8fe7c6dcc0772dc6"),
+            Arguments.of("Chinese", "你好，国密", "3a5621062d5b541190a1290610c8f0"),
+            Arguments.of("Emoji", "国密测试 😊🚀🔥", "3b703c0627605d1897ac1d2ed597e9fcc0700aa059f0cc1449"),
+            Arguments.of("Mixed Unicode", "中文 + emoji 😊 + English + 123", "3a532c051e619b863c21dfd49f0e5694d5181f1af22016ee8be1505cdb817faba1d3d2"),
+            Arguments.of("Newlines and tabs", "第一行\nsecond line\t第三行", "39472d073066530c904ec1de960818006aecfc54bc09b42c406981a65b00d8"),
+            Arguments.of("Spaces", "  前后空格\tspaces  ", "fecb646a05032b23fbed085d55db7f173ae1f65faa2073"),
+            Arguments.of("Symbols", "SM2/SM3/SM4/ZUC: !@#$%^&*()_+-=[]{}|;:,.<>?", "8da6b3ccdbab88824f098694af32355e6aa1d519fd250da6c6a51070988c69d0cd9a9c83938be9a45e680c"));
     }
 }

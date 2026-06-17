@@ -64,7 +64,8 @@ public final class ZUC {
     };
 
     private static final int[] D_128 = {
-        22, 25, 5, 22, 25, 5, 22, 25, 5, 22, 25, 5, 22, 25, 5, 22
+        0x44d7, 0x26bc, 0x626b, 0x135e, 0x5789, 0x35e2, 0x7135, 0x09af,
+        0x4d78, 0x2f13, 0x6bc4, 0x1af1, 0x5e26, 0x3c4d, 0x789a, 0x47ac
     };
 
     private ZUC() {
@@ -394,28 +395,29 @@ public final class ZUC {
             r1 = 0;
             r2 = 0;
             for (int i = 0; i < 32; i++) {
-                int f = fFunction(bitReorganization());
-                lfsrWithInitMode(f >>> 1);
+                bitReorganization();
+                int w = fFunction();
+                lfsrWithInitMode(w >>> 1);
             }
+            bitReorganization();
+            fFunction();
+            lfsrWithWorkMode();
         }
 
-        private int[] bitReorganization() {
+        private void bitReorganization() {
             x[0] = ((lfsr[15] & 0x7fff8000) << 1) | (lfsr[14] & 0xffff);
             x[1] = ((lfsr[11] & 0xffff) << 16) | (lfsr[9] >>> 15);
             x[2] = ((lfsr[7] & 0xffff) << 16) | (lfsr[5] >>> 15);
             x[3] = ((lfsr[2] & 0xffff) << 16) | (lfsr[0] >>> 15);
-            return x;
         }
 
-        private int fFunction(int[] xValue) {
-            int w = (xValue[0] ^ r1) + r2;
-            int w1 = r1 + xValue[1];
-            int w2 = r2 ^ xValue[2];
-            int u = l1((w1 << 16) | (w2 >>> 16));
-            int v = l2((w2 << 16) | (w1 >>> 16));
-            r1 = s(l1((v << 16) | (u >>> 16)));
-            r2 = s(l2((u << 16) | (v >>> 16)));
-            return w ^ xValue[3];
+        private int fFunction() {
+            int w = (x[0] ^ r1) + r2;
+            int w1 = r1 + x[1];
+            int w2 = r2 ^ x[2];
+            r1 = s(l1(((w1 & 0xffff) << 16) | (w2 >>> 16)));
+            r2 = s(l2(((w2 & 0xffff) << 16) | (w1 >>> 16)));
+            return w;
         }
 
         private int s(int value) {
@@ -438,25 +440,28 @@ public final class ZUC {
         }
 
         private void lfsrWithInitMode(int u) {
-            int s16 = addMod(
-                addMod(
-                    addMod(mulByPow2(lfsr[0], 8), lfsr[4]),
-                    mulByPow2(lfsr[10], 8)
-                ),
-                lfsr[13]
-            );
-            shiftLfsr(addMod(s16, u) & 0x7fffffff);
+            int s16 = addMod(lfsrFeedback(), u);
+            if (s16 == 0) {
+                s16 = 0x7fffffff;
+            }
+            shiftLfsr(s16);
         }
 
         private void lfsrWithWorkMode() {
-            int s16 = addMod(
-                addMod(
-                    addMod(mulByPow2(lfsr[0], 8), lfsr[4]),
-                    mulByPow2(lfsr[10], 8)
-                ),
-                lfsr[13]
-            );
-            shiftLfsr(s16 & 0x7fffffff);
+            int s16 = lfsrFeedback();
+            if (s16 == 0) {
+                s16 = 0x7fffffff;
+            }
+            shiftLfsr(s16);
+        }
+
+        private int lfsrFeedback() {
+            int v = mulByPow2(lfsr[15], 15);
+            v = addMod(v, mulByPow2(lfsr[13], 17));
+            v = addMod(v, mulByPow2(lfsr[10], 21));
+            v = addMod(v, mulByPow2(lfsr[4], 20));
+            v = addMod(v, mulByPow2(lfsr[0], 8));
+            return addMod(v, lfsr[0]);
         }
 
         private void shiftLfsr(int next) {
@@ -474,7 +479,8 @@ public final class ZUC {
         }
 
         private int generateKeyword() {
-            int z = fFunction(bitReorganization());
+            bitReorganization();
+            int z = fFunction() ^ x[3];
             lfsrWithWorkMode();
             return z;
         }

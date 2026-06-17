@@ -53,13 +53,13 @@ const sm3Vectors = [
 ] as const;
 
 const zucCipherVectors = [
-  ['ascii', 'hello gmkit', '0c35286f9cc0c83c6d6988'],
-  ['chinese', '你好，国密', '80ede4e6565d40ed8ae5679684b0f9'],
-  ['emoji', '国密测试 😊🚀🔥', '81cbf9e65c6649e48de853be41efe0cf1d52a7d10bc36dc801'],
-  ['mixed unicode', '中文 + emoji 😊 + English + 123', '80e8e9e565678f7a266591440b765fa7083ab26ba013b732c35d273719d926a003a2c6'],
-  ['newlines and tabs', '第一行\nsecond line\t第三行', '83fce8e74b6047f08a0a8f4e02701133b7ce5125ee3a15f008d5f6cd995881'],
-  ['spaces', '  前后空格\tspaces  ', '4470a18a7e053fdfe1a946cdc1a37624e7c35b2ef813d2'],
-  ['symbols', 'SM2/SM3/SM4/ZUC: !@#$%^&*()_+-=[]{}|;:,.<>?', '371d762ca0ad9c7e554dc8043b4a3c6db7837868af16ac7a8e19671b5ad430db6feb88af1b7d4c452f896a'],
+  ['ascii', 'hello gmkit', 'b68eed8fe7c6dcc0772dc6'],
+  ['chinese', '你好，国密', '3a5621062d5b541190a1290610c8f0'],
+  ['emoji', '国密测试 😊🚀🔥', '3b703c0627605d1897ac1d2ed597e9fcc0700aa059f0cc1449'],
+  ['mixed unicode', '中文 + emoji 😊 + English + 123', '3a532c051e619b863c21dfd49f0e5694d5181f1af22016ee8be1505cdb817faba1d3d2'],
+  ['newlines and tabs', '第一行\nsecond line\t第三行', '39472d073066530c904ec1de960818006aecfc54bc09b42c406981a65b00d8'],
+  ['spaces', '  前后空格\tspaces  ', 'fecb646a05032b23fbed085d55db7f173ae1f65faa2073'],
+  ['symbols', 'SM2/SM3/SM4/ZUC: !@#$%^&*()_+-=[]{}|;:,.<>?', '8da6b3ccdbab88824f098694af32355e6aa1d519fd250da6c6a51070988c69d0cd9a9c83938be9a45e680c'],
 ] as const;
 
 describe('Java/TypeScript aligned GM coverage', () => {
@@ -204,16 +204,16 @@ describe('Java/TypeScript aligned GM coverage', () => {
 
       const binary = new Uint8Array([0, 1, 2, 3, 4, 5, 0xff, 0xfe, 0xfd, 0xfc, 0x80, 0x40]);
       const binaryCipher = zucEncrypt(ZUC_KEY, ZUC_IV, binary);
-      expect(binaryCipher).toBe('64514600f7e550affbfc7c6b');
+      expect(binaryCipher).toBe('deea83e08ce34453e1b832fb');
     });
 
     it('matches project keystream and LTE helper vectors', () => {
       expect(zucKeystream('00000000000000000000000000000000', '00000000000000000000000000000000', 8))
-        .toBe('fd3c73de9d095700');
+        .toBe('27bede74018082da');
       expect(zucKeystream(ZUC_KEY, ZUC_IV, 32))
-        .toBe('64504403f3e0af510600fc2b611f7f5797a2384b8b33f25ca4314e4471f90d80');
-      expect(eea3(ZUC_KEY, 0x398a59b4, 0x15, 1, 96)).toBe('a0d933edc1d7b696f920c8a2');
-      expect(eia3(ZUC_KEY, 0x398a59b4, 0x15, 1, '中文 + emoji 😊 + English + 123')).toBe('9580e4bc');
+        .toBe('deeb81e388e6bbad1c44b2bbf56776644a80953ad9005380ec8d392fb3a1548b');
+      expect(eea3(ZUC_KEY, 0x398a59b4, 0x15, 1, 96)).toBe('87613336c451fb0b94374bad');
+      expect(eia3(ZUC_KEY, 0x398a59b4, 0x15, 1, '中文 + emoji 😊 + English + 123')).toBe('576ad924');
     });
 
     it('rejects invalid ZUC key, IV, and hex ciphertext inputs', () => {

@@ -186,7 +186,7 @@
       "ivHex": "00000000000000000000000000000000",
       "lengthBytes": 8,
       "expected": {
-        "hex": "fd3c73de9d095700"
+        "hex": "27bede74018082da"
       }
     },
     {
@@ -197,7 +197,7 @@
       "ivHex": "ffeeddccbbaa99887766554433221100",
       "lengthBytes": 32,
       "expected": {
-        "hex": "64504403f3e0af510600fc2b611f7f5797a2384b8b33f25ca4314e4471f90d80"
+        "hex": "deeb81e388e6bbad1c44b2bbf56776644a80953ad9005380ec8d392fb3a1548b"
       }
     },
     {
@@ -206,8 +206,8 @@
       "op": "encrypt",
       "input": "hello gmkit",
       "expected": {
-        "cipherHex": "0c35286f9cc0c83c6d6988",
-        "cipherBase64": "DDUob5zAyDxtaYg="
+        "cipherHex": "b68eed8fe7c6dcc0772dc6",
+        "cipherBase64": "to7tj+fG3MB3LcY="
       }
     },
     {
@@ -216,7 +216,7 @@
       "op": "encrypt",
       "input": "你好，国密",
       "expected": {
-        "cipherHex": "80ede4e6565d40ed8ae5679684b0f9"
+        "cipherHex": "3a5621062d5b541190a1290610c8f0"
       }
     },
     {
@@ -225,7 +225,7 @@
       "op": "encrypt",
       "input": "国密测试 😊🚀🔥",
       "expected": {
-        "cipherHex": "81cbf9e65c6649e48de853be41efe0cf1d52a7d10bc36dc801"
+        "cipherHex": "3b703c0627605d1897ac1d2ed597e9fcc0700aa059f0cc1449"
       }
     },
     {
@@ -234,7 +234,7 @@
       "op": "encrypt",
       "input": "中文 + emoji 😊 + English + 123",
       "expected": {
-        "cipherHex": "80e8e9e565678f7a266591440b765fa7083ab26ba013b732c35d273719d926a003a2c6"
+        "cipherHex": "3a532c051e619b863c21dfd49f0e5694d5181f1af22016ee8be1505cdb817faba1d3d2"
       }
     },
     {
@@ -243,7 +243,7 @@
       "op": "encrypt",
       "input": "第一行\nsecond line\t第三行",
       "expected": {
-        "cipherHex": "83fce8e74b6047f08a0a8f4e02701133b7ce5125ee3a15f008d5f6cd995881"
+        "cipherHex": "39472d073066530c904ec1de960818006aecfc54bc09b42c406981a65b00d8"
       }
     },
     {
@@ -252,7 +252,7 @@
       "op": "encrypt",
       "input": "  前后空格\tspaces  ",
       "expected": {
-        "cipherHex": "4470a18a7e053fdfe1a946cdc1a37624e7c35b2ef813d2"
+        "cipherHex": "fecb646a05032b23fbed085d55db7f173ae1f65faa2073"
       }
     },
     {
@@ -261,7 +261,7 @@
       "op": "encrypt",
       "input": "SM2/SM3/SM4/ZUC: !@#$%^&*()_+-=[]{}|;:,.<>?",
       "expected": {
-        "cipherHex": "371d762ca0ad9c7e554dc8043b4a3c6db7837868af16ac7a8e19671b5ad430db6feb88af1b7d4c452f896a"
+        "cipherHex": "8da6b3ccdbab88824f098694af32355e6aa1d519fd250da6c6a51070988c69d0cd9a9c83938be9a45e680c"
       }
     },
     {
@@ -273,7 +273,7 @@
       "direction": 1,
       "bitLength": 96,
       "expected": {
-        "hex": "a0d933edc1d7b696f920c8a2"
+        "hex": "87613336c451fb0b94374bad"
       }
     },
     {
@@ -285,7 +285,7 @@
       "direction": 1,
       "input": "中文 + emoji 😊 + English + 123",
       "expected": {
-        "macHex": "9580e4bc"
+        "macHex": "576ad924"
       }
     },
     {

@@ -125,23 +125,23 @@ describe('ZUC 流密码测试', () => {
 
       const keystream = zucGenerateKeystream(key, iv, 2);
 
-      expect(keystream[0]).toBe(0xfd3c73de);
-      expect(keystream[1]).toBe(0x9d095700);
-      expect(zucKeystreamWords(key, iv, 2)).toBe('fd3c73de9d095700');
+      expect(keystream[0]).toBe(0x27bede74);
+      expect(keystream[1]).toBe(0x018082da);
+      expect(zucKeystreamWords(key, iv, 2)).toBe('27bede74018082da');
     });
 
     it('should match the Java-aligned project keystream vector', () => {
       const key = '00112233445566778899aabbccddeeff';
       const iv = 'ffeeddccbbaa99887766554433221100';
 
-      expect(zucKeystream(key, iv, 32)).toBe('64504403f3e0af510600fc2b611f7f5797a2384b8b33f25ca4314e4471f90d80');
+      expect(zucKeystream(key, iv, 32)).toBe('deeb81e388e6bbad1c44b2bbf56776644a80953ad9005380ec8d392fb3a1548b');
     });
 
     it('should match the project EEA3/EIA3 vectors', () => {
       const key = '00112233445566778899aabbccddeeff';
 
-      expect(eea3(key, 0x398a59b4, 0x15, 1, 96)).toBe('a0d933edc1d7b696f920c8a2');
-      expect(eia3(key, 0x398a59b4, 0x15, 1, '中文 + emoji 😊 + English + 123')).toBe('9580e4bc');
+      expect(eea3(key, 0x398a59b4, 0x15, 1, 96)).toBe('87613336c451fb0b94374bad');
+      expect(eia3(key, 0x398a59b4, 0x15, 1, '中文 + emoji 😊 + English + 123')).toBe('576ad924');
     });
   });
 

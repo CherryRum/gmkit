@@ -6,6 +6,7 @@ import cn.gmkit.sm3.SM3Util;
 import cn.gmkit.sm4.SM4Options;
 import cn.gmkit.sm4.SM4Util;
 import cn.gmkit.test.Vectors;
+import cn.gmkit.zuc.ZUC;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 
@@ -71,6 +72,52 @@ class InteropComplianceTest {
         });
     }
 
+    @TestFactory
+    @SuppressWarnings("unchecked")
+    Collection<DynamicTest> zucVectorsMatchTypeScript() throws Exception {
+        Map<String, Object> root = (Map<String, Object>) Vectors.load("/vectors/interop.json");
+        Map<String, Object> defaults = (Map<String, Object>) root.get("defaults");
+        List<Map<String, Object>> cases = (List<Map<String, Object>>) root.get("cases");
+        List<DynamicTest> tests = new ArrayList<>();
+        if (cases == null) return tests;
+        for (Map<String, Object> v : cases) {
+            if (!"ZUC".equals(v.get("algo"))) continue;
+            String id = (String) v.get("id");
+            String op = (String) v.get("op");
+            if (id == null || op == null) continue;
+            String keyHex = stringOr((String) v.get("keyHex"), (String) defaults.get("zucKeyHex"));
+            String ivHex = stringOr((String) v.get("ivHex"), (String) defaults.get("zucIvHex"));
+            tests.add(dynamicTest(id, () -> {
+                if ("keystream".equals(op)) {
+                    assertEquals(expectedHex(v, "hex"), ZUC.keystreamHex(keyHex, ivHex, intValue(v.get("lengthBytes"))));
+                    return;
+                }
+                if ("encrypt".equals(op)) {
+                    assertEquals(expectedHex(v, "cipherHex"), ZUC.encryptHex(keyHex, ivHex, (String) v.get("input")));
+                    return;
+                }
+                if ("eea3".equals(op)) {
+                    assertEquals(expectedHex(v, "hex"), ZUC.eea3(
+                            keyHex,
+                            intValue(v.get("count")),
+                            intValue(v.get("bearer")),
+                            intValue(v.get("direction")),
+                            intValue(v.get("bitLength"))));
+                    return;
+                }
+                if ("eia3".equals(op)) {
+                    assertEquals(expectedHex(v, "macHex"), ZUC.eia3(
+                            keyHex,
+                            intValue(v.get("count")),
+                            intValue(v.get("bearer")),
+                            intValue(v.get("direction")),
+                            (String) v.get("input")));
+                }
+            }));
+        }
+        return tests;
+    }
+
     @SuppressWarnings("unchecked")
     private static Collection<DynamicTest> iterate(String algo, String op,
             Function<Map<String, Object>, DynamicTest> mapper) throws Exception {
@@ -90,5 +137,13 @@ class InteropComplianceTest {
     private static String expectedHex(Map<String, Object> v, String field) {
         Map<String, Object> expected = (Map<String, Object>) v.get("expected");
         return expected == null ? null : (String) expected.get(field);
+    }
+
+    private static int intValue(Object value) {
+        return ((Number) value).intValue();
+    }
+
+    private static String stringOr(String value, String fallback) {
+        return value == null ? fallback : value;
     }
 }
