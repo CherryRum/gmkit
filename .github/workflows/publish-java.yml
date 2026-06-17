@@ -1,0 +1,82 @@
+name: Publish Java
+
+on:
+  push:
+    tags:
+      - 'java-v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  verify-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: |
+            packages/java/pom.xml
+            packages/java/gmkit/pom.xml
+            packages/java/gmkit-sm9/pom.xml
+            packages/java/gmkit-bom/pom.xml
+      - run: mvn -f packages/java/pom.xml -B -ntp -Prelease -Dgpg.skip=true -DskipTests verify
+
+  github-packages:
+    if: startsWith(github.ref, 'refs/tags/java-v')
+    needs: verify-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          server-id: github
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
+          cache-dependency-path: |
+            packages/java/pom.xml
+            packages/java/gmkit/pom.xml
+            packages/java/gmkit-sm9/pom.xml
+            packages/java/gmkit-bom/pom.xml
+      - name: Publish to GitHub Packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >
+          mvn -f packages/java/pom.xml -B -ntp -DskipTests deploy
+          -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/gmkits/gmkit
+
+  maven-central:
+    if: startsWith(github.ref, 'refs/tags/java-v')
+    needs: verify-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          server-id: central
+          server-username: CENTRAL_TOKEN_USERNAME
+          server-password: CENTRAL_TOKEN_PASSWORD
+          gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          cache-dependency-path: |
+            packages/java/pom.xml
+            packages/java/gmkit/pom.xml
+            packages/java/gmkit-sm9/pom.xml
+            packages/java/gmkit-bom/pom.xml
+      - name: Publish to Maven Central
+        env:
+          CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
+          CENTRAL_TOKEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: mvn -f packages/java/pom.xml -B -ntp -Prelease -DskipTests deploy
