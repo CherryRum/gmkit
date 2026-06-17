@@ -60,7 +60,7 @@ gmkit/
 │   │   └── constants.ts    # 常量定义
 │   └── index.ts            # 主入口文件
 ├── apps/
-│   └── gmkit-studio/        # GMKit Studio V4 静态产品原型
+│   └── gmkit-studio/        # GMKit Studio V4 Vue3 产品原型
 ├── packages/
 │   └── ts-docs/             # 文档站点
 ├── test/                    # 测试文件

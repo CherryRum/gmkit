@@ -11,7 +11,7 @@ gmkit/
 │   ├── ts-docs/   # VuePress 文档站
 │   └── java/      # Maven 多模块；主包 gmkit，SM9 独立 JNI/GmSSL 模块
 ├── apps/
-│   └── gmkit-studio/  # 静态 HTML/CSS/JS 产品原型
+│   └── gmkit-studio/  # Vue3 + Vite 工具平台原型
 ├── vectors/       # Java / TypeScript 共享互操作测试向量
 ├── scripts/       # 本地校验脚本
 └── .github/       # monorepo CI、发布、文档和 SM9 native 工作流
@@ -38,7 +38,8 @@ npm run test:java
 npm run parity
 npm run build:ts
 npm run docs:build
-npm run studio:build    # 校验 GMKit Studio V4 静态原型
+npm run studio:type-check
+npm run studio:build    # 构建 GMKit Studio Vue3 原型
 ```
 
 Java 单独校验：
@@ -53,7 +54,7 @@ mvn -f packages/java/pom.xml -B -ntp -Prelease "-Dgpg.skip=true" -DskipTests ver
 - `ci.yml`：TS 与普通 Java 测试；不强制 SM9 native。
 - `parity.yml`：运行共享 `vectors/interop.json` 互操作校验。
 - `sm9-native.yml`：专门编译 GmSSL/JNI 并强制运行 SM9 native 测试。
-- `docs.yml`：构建 VuePress 文档和 GMKit Studio 静态原型。
+- `docs.yml`：构建 VuePress 文档和 GMKit Studio Vue3 原型。
 - `publish-ts.yml`：`ts-v*` 标签发布 npm 包。
 - `publish-java.yml`：`java-v*` 标签发布 Maven artifacts。
 
@@ -63,7 +64,7 @@ mvn -f packages/java/pom.xml -B -ntp -Prelease "-Dgpg.skip=true" -DskipTests ver
 - [Java 包说明](packages/java/README.md)
 - [共享向量说明](vectors/README.md)
 - [API 稳定性策略](docs/API_STABILITY.md)
-- [GMKit Studio V4 原型](apps/gmkit-studio/README.md)
+- [GMKit Studio Vue3 原型](apps/gmkit-studio/README.md)
 
 ## 许可证
 
