@@ -751,6 +751,28 @@
   line-height: 1.7;
 }
 
+.result-status {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.result-status.success {
+  color: var(--studio-green);
+  background: var(--studio-green-soft);
+}
+
+.result-status.error {
+  color: var(--studio-danger);
+  background: #fff1f1;
+}
+
+.result-status.info {
+  color: var(--studio-slate);
+  background: var(--studio-slate-soft);
+}
+
 .ghost-button {
   min-height: 34px;
   padding: 0 12px;

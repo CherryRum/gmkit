@@ -2,14 +2,16 @@
   <section class="result-viewer">
     <div class="section-title">
       <h3>结果预览</h3>
-      <button class="ghost-button" type="button">复制</button>
+      <span class="result-status" :class="status">{{ title }}</span>
     </div>
-    <pre>{{ value }}</pre>
+    <pre>{{ output }}</pre>
   </section>
 </template>
 
 <script setup lang="ts">
 defineProps<{
-  value: string;
+  title: string;
+  status: 'success' | 'error' | 'info';
+  output: string;
 }>();
 </script>

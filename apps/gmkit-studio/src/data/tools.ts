@@ -97,6 +97,7 @@ export const tools: ToolDefinition[] = [
           { name: 'privateKey', label: '签名私钥', kind: 'textarea', placeholder: 'SM2 私钥 Hex' },
           { name: 'publicKey', label: '验签公钥', kind: 'textarea', placeholder: 'SM2 公钥 Hex' },
           { name: 'message', label: '消息', kind: 'textarea', placeholder: '待签名消息' },
+          { name: 'signature', label: '签名', kind: 'textarea', placeholder: '验签时填写 raw/DER 签名 Hex' },
           { name: 'userId', label: 'User ID', kind: 'input', value: '1234567812345678' },
         ],
         actions: ['签名', '验签', '复制结果'],
@@ -197,7 +198,7 @@ export const tools: ToolDefinition[] = [
         label: '模式参数',
         description: '展示模式、填充、输出格式之间的边界关系。',
         fields: [
-          { name: 'padding', label: '填充', kind: 'select', options: ['PKCS7', 'NoPadding'] },
+          { name: 'padding', label: '填充', kind: 'select', options: ['PKCS7', 'None', 'Zero'] },
           { name: 'output', label: '输出', kind: 'select', options: ['Hex', 'Base64'] },
         ],
         actions: ['应用参数'],

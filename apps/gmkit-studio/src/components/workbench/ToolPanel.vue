@@ -6,7 +6,13 @@
     </div>
 
     <div class="field-grid">
-      <ToolField v-for="field in tab.fields" :key="field.name" :field="field" />
+      <ToolField
+        v-for="field in tab.fields"
+        :key="field.name"
+        :field="field"
+        :model-value="values[field.name] ?? ''"
+        @update:model-value="$emit('update-field', field.name, $event)"
+      />
     </div>
 
     <div class="action-row">
@@ -16,6 +22,7 @@
         class="button"
         :class="index === 0 ? 'primary' : 'subtle'"
         type="button"
+        @click="$emit('run-action', action)"
       >
         {{ action }}
       </button>
@@ -30,5 +37,11 @@ import ToolField from './ToolField.vue';
 
 defineProps<{
   tab: ToolTab;
+  values: Record<string, string>;
+}>();
+
+defineEmits<{
+  'update-field': [name: string, value: string];
+  'run-action': [action: string];
 }>();
 </script>
