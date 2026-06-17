@@ -33,6 +33,14 @@ jobs:
             platform: linux-x86_64
             bridge: libgmkitsm9.so
             gmssl: libgmssl.so.3
+          - os: ubuntu-24.04-arm
+            platform: linux-aarch64
+            bridge: libgmkitsm9.so
+            gmssl: libgmssl.so.3
+          - os: macos-13
+            platform: darwin-x86_64
+            bridge: libgmkitsm9.dylib
+            gmssl: libgmssl.3.dylib
           - os: macos-14
             platform: darwin-aarch64
             bridge: libgmkitsm9.dylib
