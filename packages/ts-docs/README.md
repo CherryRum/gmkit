@@ -18,7 +18,7 @@ features:
     details: 同构 API，Node.js (>= 18) 与现代浏览器一致可用
   - title: 双端实现
     icon: code
-    details: 同源 Java 实现 cn.gmkit:gmkit，与前端共享一份 ABI 与默认值
+    details: 同源 Java 实现 cn.gmkit:gmkit，与前端共享互操作向量和协议边界
   - title: 双重范式
     icon: code
     details: 函数式 / OOP 双轨 API，友好按需加载与 Tree-shaking
@@ -36,10 +36,10 @@ copyright: false
 
 `gmkitx` 是一套纯 **TypeScript** 实现的密码学工具集。它实现了 **SM2 / SM3 / SM4 / ZUC** 等国密算法，同时集成了 **SHA** 系列国际算法。当前 TypeScript 包不支持 SM9，也不包装 C、WASM 或 native runtime。
 
-设计目标是提供一套**同构**（Isomorphic）的代码库，让开发者在**服务端**和**现代浏览器**前端，都能使用完全一致的 API 进行加密、解密、签名与哈希运算。
+设计目标是提供一套**同构**（Isomorphic）的代码库，让开发者在**服务端**和**现代浏览器**前端，都能使用一致的 API 进行加密、解密、签名与哈希运算。
 
 如果项目同时有 Java 后端，可以直接引入同源实现 [`cn.gmkit:gmkit`](/dev/JAVA-LIBRARY.zh-CN)，
-两边共享同一套方法名、参数顺序与默认值，密文 / 签名 / MAC 字节级互通。
+两边共享互操作向量和协议边界，密文 / 签名 / MAC 按约定格式互通。
 
 ## 快速安装
 
@@ -73,18 +73,18 @@ yarn add gmkitx
 
 ```typescript
 import {
-  digest,       // SM3
+  sm3Digest,    // SM3
   sm4Encrypt,   // SM4
   sm4Decrypt,
   sm2Encrypt,   // SM2
   sm2Decrypt,
-  generateKeyPair,
+  sm2GenerateKeyPair,
   CipherMode,
   PaddingMode
 } from 'gmkitx';
 
 // 1. SM3 摘要
-const hash = digest('Hello, SM3!');
+const hash = sm3Digest('Hello, SM3!');
 
 // 2. SM4 对称加密 (CBC模式)
 const key = '0123456789abcdeffedcba9876543210'; // 128位密钥
@@ -102,7 +102,7 @@ const plaintext = sm4Decrypt(key, sm4Result, {
 });
 
 // 3. SM2 非对称加密
-const { publicKey, privateKey } = generateKeyPair();
+const { publicKey, privateKey } = sm2GenerateKeyPair();
 const encData = sm2Encrypt(publicKey, 'Hello, SM2!');
 const decData = sm2Decrypt(privateKey, encData);
 ```

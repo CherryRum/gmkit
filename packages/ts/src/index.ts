@@ -10,9 +10,8 @@
  *   import { sm2, sm3, sm4, zuc, sha } from 'gmkitx'; // 算法模块
  *   import { sm2Encrypt, sm3Digest, sha256 } from 'gmkitx'; // 具名函数（推荐）
  *
- * 所有以无前缀方式导出的旧名（generateKeyPair / sign / digest 等）均标记为
- * @deprecated，将在 1.0 之前的某个 minor 版本一次性移除，新代码请使用带算法
- * 前缀的具名函数。
+ * 0.10 起不再导出 generateKeyPair / sign / digest 等无算法前缀旧名。
+ * 请使用带算法前缀的具名函数，或使用 sm2 / sm3 等算法命名空间。
  */
 
 // ============================================================================
@@ -114,42 +113,6 @@ export const sha1 = shaFunctions.sha1;
 export const hmacSha256 = shaFunctions.hmacSha256;
 export const hmacSha384 = shaFunctions.hmacSha384;
 export const hmacSha512 = shaFunctions.hmacSha512;
-
-/** @deprecated [removal: 1.0] Use `sm2GenerateKeyPair` instead. */
-// ============================================================================
-// 弃用别名（无算法前缀的旧名）
-// ----------------------------------------------------------------------------
-// 这些名字仅为兼容 0.9 之前直接使用 generateKeyPair / sign / digest 等无前缀
-// 名的代码，将于 1.0 之前的某个 minor 版本一次性移除。新代码请改用上方带算
-// 法前缀的具名函数。
-// ============================================================================
-
-/** @deprecated 请改用 {@link sm2GenerateKeyPair}。 */
-export const generateKeyPair = sm2GenerateKeyPair;
-
-/** @deprecated [removal: 1.0] Use `sm2GetPublicKeyFromPrivateKey` instead. */
-export const getPublicKeyFromPrivateKey = sm2GetPublicKeyFromPrivateKey;
-
-/** @deprecated [removal: 1.0] Use `sm2CompressPublicKey` instead. */
-export const compressPublicKey = sm2CompressPublicKey;
-
-/** @deprecated [removal: 1.0] Use `sm2DecompressPublicKey` instead. */
-export const decompressPublicKey = sm2DecompressPublicKey;
-
-/** @deprecated [removal: 1.0] Use `sm2Sign` instead. */
-export const sign = sm2Sign;
-
-/** @deprecated [removal: 1.0] Use `sm2Verify` instead. */
-export const verify = sm2Verify;
-
-/** @deprecated [removal: 1.0] Use `sm2KeyExchange` instead. */
-export const keyExchange = sm2KeyExchange;
-
-/** @deprecated [removal: 1.0] Use `sm3Digest` instead. */
-export const digest = sm3Digest;
-
-/** @deprecated [removal: 1.0] Use `sm3Hmac` instead. */
-export const hmac = sm3Hmac;
 
 // ============================================================================
 // 类型与对象式入口（每个算法重新导出对应 class）
@@ -297,14 +260,4 @@ export default {
   hmacSha256,
   hmacSha384,
   hmacSha512,
-  // 向后兼容的旧导出
-  generateKeyPair,
-  getPublicKeyFromPrivateKey,
-  compressPublicKey,
-  decompressPublicKey,
-  sign,
-  verify,
-  keyExchange,
-  digest,
-  hmac,
 };

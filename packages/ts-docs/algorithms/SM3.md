@@ -90,8 +90,8 @@ import { sm3 } from 'gmkitx';
 const hash = sm3.digest('Hello, SM3!');
 ```
 
-> 顶层函数式 API 推荐使用 `sm3Digest`、`sm3Hmac` 等带前缀名称。
-> 旧的 `digest`、`hmac` 仍继续导出，但仅作为兼容入口保留。
+> 顶层函数式 API 仅导出 `sm3Digest`、`sm3Hmac` 等带前缀名称。
+> 旧的 `digest`、`hmac` 已从顶层入口移除；命名空间 `sm3.digest` / `sm3.hmac` 与 `SM3` 类方法不受影响。
 
 ### Java 端等价写法
 
@@ -245,10 +245,8 @@ const newHash = sm3.digest();
 
 | 函数 | 说明 | 返回值 |
 |------|------|--------|
-| `sm3Digest(data, options?)` | 计算 SM3 哈希值（推荐） | `string` |
-| `sm3Hmac(key, data, options?)` | 计算 HMAC-SM3（推荐） | `string` |
-| `digest(data, options?)` | 兼容旧名，功能同 `sm3Digest` | `string` |
-| `hmac(key, data, options?)` | 兼容旧名，功能同 `sm3Hmac` | `string` |
+| `sm3Digest(data, options?)` | 计算 SM3 哈希值 | `string` |
+| `sm3Hmac(key, data, options?)` | 计算 HMAC-SM3 | `string` |
 
 ### 类 API
 

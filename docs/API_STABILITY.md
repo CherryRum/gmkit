@@ -5,21 +5,22 @@ these rules to minimize churn for users who depend on the pre-1.0 surface.
 
 ## Stability tiers
 
-- **Stable** — public APIs documented in `ts/README.md` and `java/README.md`.
+- **Stable** — public APIs documented in `packages/ts/README.md` and
+  `packages/java/README.md`.
   No breaking change without a major-version bump (1.x onwards).
-- **Deprecated** — exported with `@deprecated` JSDoc / `@Deprecated`
-  annotation. Scheduled for removal in a specific version; see lists below.
-  Still works in current release, no behavior change.
+- **Removed** — no longer exported from the public barrel. Use the replacement
+  listed below.
 - **Internal** — not exported from public barrel; may change at any time
   without notice. Source code internals.
 
-## TypeScript (`gmkitx`) — Deprecated removal schedule
+## TypeScript (`gmkitx`) — Removed compatibility aliases
 
-The following un-prefixed aliases were the original 0.1–0.8 API and remain
-exported with `@deprecated` JSDoc. They will be **removed in 1.0**.
-Migrate to the `sm2*` / `sm3*` prefixed equivalents.
+The following un-prefixed aliases were the original 0.1-0.8 API. They were
+removed from the top-level barrel during the monorepo cleanup because the 0.x
+line allows breaking changes. Use the `sm2*` / `sm3*` prefixed functions or the
+`sm2` / `sm3` namespaces instead.
 
-| Deprecated alias               | Replace with                          |
+| Removed alias                  | Replace with                          |
 | ------------------------------ | ------------------------------------- |
 | `generateKeyPair`              | `sm2GenerateKeyPair`                  |
 | `getPublicKeyFromPrivateKey`   | `sm2GetPublicKeyFromPrivateKey`       |
@@ -31,8 +32,8 @@ Migrate to the `sm2*` / `sm3*` prefixed equivalents.
 | `digest`                       | `sm3Digest`                           |
 | `hmac`                         | `sm3Hmac`                             |
 
-Programmatic detection: every alias above is annotated
-`@deprecated [removal: 1.0]` in its JSDoc, picked up by TS-aware IDEs.
+The algorithm namespaces remain stable: `sm2.generateKeyPair`, `sm2.sign`,
+`sm2.verify`, `sm3.digest`, and `sm3.hmac` are still supported.
 
 ## Java (`cn.gmkit:gmkit`) — Stability commitment
 
@@ -47,7 +48,7 @@ on every `verify` build. The following are stable for the 0.x line:
   SM2CipherMode, SM2SignatureFormat, SM4CipherMode, SM4Padding}`
 
 The `cn.gmkit.sm9` package surface depends on JNI + GmSSL native libraries;
-see `java/README.md` for platform support boundaries.
+see `packages/java/README.md` for platform support boundaries.
 
 Internal package `cn.gmkit.test` (test-only helpers like `Vectors`,
 `MiniJson`) is not part of the published artifact and not stable.

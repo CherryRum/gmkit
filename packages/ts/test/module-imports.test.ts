@@ -88,7 +88,7 @@ describe('模块导入方式测试', () => {
     });
   });
 
-  describe('具名函数导入（向后兼容）', () => {
+  describe('推荐具名函数导入', () => {
     it('应该能够导入具名函数', async () => {
       const {
         sm2GenerateKeyPair,
@@ -98,8 +98,6 @@ describe('模块导入方式测试', () => {
         sm3Hmac,
         sm2Encrypt,
         sm2Decrypt,
-        generateKeyPair,
-        digest,
         sm4Encrypt,
         sm4Decrypt,
         zucEncrypt,
@@ -112,7 +110,7 @@ describe('模块导入方式测试', () => {
       expect(preferredKeyPair.publicKey).toBeTruthy();
 
       // SM2
-      const keyPair = generateKeyPair();
+      const keyPair = sm2GenerateKeyPair();
       const sm2Cipher = sm2Encrypt(keyPair.publicKey, 'test');
       const sm2Plain = sm2Decrypt(keyPair.privateKey, sm2Cipher);
       expect(sm2Plain).toBe('test');
@@ -121,7 +119,7 @@ describe('模块导入方式测试', () => {
       expect(sm2Verify(keyPair.publicKey, 'test', signature)).toBe(true);
 
       // SM3
-      const hash = digest('abc');
+      const hash = sm3Digest('abc');
       expect(hash).toBe('66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0');
       expect(sm3Digest('abc')).toBe(hash);
       expect(sm3Hmac('key', 'data')).toHaveLength(64);
@@ -159,7 +157,7 @@ describe('模块导入方式测试', () => {
       expect(hash).toHaveLength(64);
     });
 
-    it('默认导出应该同时包含推荐前缀名和兼容旧名', async () => {
+    it('默认导出应该只包含推荐前缀名，不包含旧兼容裸名', async () => {
       const mod = await import('../src/index');
       const gmkit = mod.default;
 
@@ -168,10 +166,15 @@ describe('模块导入方式测试', () => {
       expect(gmkit.sm3Digest).toBe(mod.sm3Digest);
       expect(gmkit.sm3Hmac).toBe(mod.sm3Hmac);
 
-      expect(gmkit.generateKeyPair).toBe(mod.generateKeyPair);
-      expect(gmkit.sign).toBe(mod.sign);
-      expect(gmkit.digest).toBe(mod.digest);
-      expect(gmkit.hmac).toBe(mod.hmac);
+      expect(gmkit).not.toHaveProperty('generateKeyPair');
+      expect(gmkit).not.toHaveProperty('getPublicKeyFromPrivateKey');
+      expect(gmkit).not.toHaveProperty('compressPublicKey');
+      expect(gmkit).not.toHaveProperty('decompressPublicKey');
+      expect(gmkit).not.toHaveProperty('sign');
+      expect(gmkit).not.toHaveProperty('verify');
+      expect(gmkit).not.toHaveProperty('keyExchange');
+      expect(gmkit).not.toHaveProperty('digest');
+      expect(gmkit).not.toHaveProperty('hmac');
     });
   });
 });

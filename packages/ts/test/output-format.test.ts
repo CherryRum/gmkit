@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   sm2Encrypt,
   sm2Decrypt,
-  generateKeyPair,
+  sm2GenerateKeyPair,
   sm4Encrypt,
   sm4Decrypt,
   zucEncrypt,
@@ -108,7 +108,7 @@ describe('输出格式一致性测试 (Output Format Consistency Tests)', () => 
   });
 
   describe('SM2 输出格式', () => {
-    const keyPair = generateKeyPair();
+    const keyPair = sm2GenerateKeyPair();
     const plaintext = 'Hello, SM2!';
 
     it('应该支持 hex 格式输出（默认）', () => {

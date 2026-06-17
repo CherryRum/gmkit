@@ -16,12 +16,12 @@ tag:
 
 # 公开 API 清单
 
-本文以 `src/index.ts` 为准，整理 gmkitx `0.9.4` 当前对外暴露的全部 API，供文档核对、跨语言实现和小版本维护使用。
+本文以 `packages/ts/src/index.ts` 为准，整理 gmkitx 当前对外暴露的全部 API，供文档核对、跨语言实现和小版本维护使用。
 
 ## 维护原则
 
 - 以 `src/index.ts` 为唯一公开导出面
-- 小版本 `0.9.x` 默认不做破坏性重命名
+- `0.x` 阶段允许清理过期 ABI；无算法前缀的旧顶层别名已经移除
 - 涉及密码学参数的“容错”优先改为“显式拒绝”
 - Java / Go / Python / Rust 对接时，以协议字段完全对齐为先，不依赖自动推断
 
@@ -42,7 +42,6 @@ tag:
 | 分类 | 导出 |
 |:--|:--|
 | 函数 | `sm2GenerateKeyPair`, `sm2GetPublicKeyFromPrivateKey`, `sm2CompressPublicKey`, `sm2DecompressPublicKey`, `sm2Encrypt`, `sm2Decrypt`, `sm2Sign`, `sm2Verify`, `sm2KeyExchange` |
-| 兼容旧名 | `generateKeyPair`, `getPublicKeyFromPrivateKey`, `compressPublicKey`, `decompressPublicKey`, `sign`, `verify`, `keyExchange` |
 | 类 | `SM2` |
 | 类型 | `KeyPair`, `SignOptions`, `VerifyOptions`, `SM2CurveParams`, `SM2KeyExchangeParams`, `SM2KeyExchangeResult`, `SM2EncryptOptions`, `SM2DecryptOptions`, `SM2SignatureFormat`, `SM2SignatureInputFormat` |
 
@@ -51,7 +50,6 @@ tag:
 | 分类 | 导出 |
 |:--|:--|
 | 函数 | `sm3Digest`, `sm3Hmac` |
-| 兼容旧名 | `digest`, `hmac` |
 | 类 | `SM3` |
 | 类型 | `SM3Options` |
 
@@ -115,7 +113,8 @@ tag:
 - `zucEncrypt`, `zucDecrypt`, `zucKeystream`, `zucKeystreamWords`, `zucGenerateKeystream`, `eea3`, `eia3`
 - `sha256`, `sha384`, `sha512`, `sha1`
 - `hmacSha256`, `hmacSha384`, `hmacSha512`
-- 以及兼容旧名：`generateKeyPair`, `getPublicKeyFromPrivateKey`, `compressPublicKey`, `decompressPublicKey`, `sign`, `verify`, `keyExchange`, `digest`, `hmac`
+
+默认导出不再包含 `generateKeyPair`、`getPublicKeyFromPrivateKey`、`compressPublicKey`、`decompressPublicKey`、`sign`、`verify`、`keyExchange`、`digest`、`hmac` 等无算法前缀旧名。
 
 ## Java 端建议优先实现顺序
 
@@ -133,7 +132,7 @@ tag:
 | gmkitx API | Java 端建议 |
 |:--|:--|
 | `sm2GenerateKeyPair`, `sm2GetPublicKeyFromPrivateKey` | 统一原始 hex 表示，避免 PEM/DER 与裸密钥混淆 |
-| `compressPublicKey`, `decompressPublicKey` | 互操作常见，建议补齐 |
+| `sm2CompressPublicKey`, `sm2DecompressPublicKey` | 互操作常见，建议补齐 |
 | `sm2KeyExchange` | 单独做协议测试，不能与普通 ECDH 混淆 |
 | `SM2` / `SM3` / `SM4` 类 | 在函数式 API 稳定后再封装 OOP 版本 |
 | `ASN.1` / utils | 作为互操作工具层补齐，不建议先写业务封装再回补 |
