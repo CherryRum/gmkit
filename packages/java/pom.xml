@@ -31,9 +31,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git:https://github.com/gmkits/gmkit-java.git</connection>
-        <developerConnection>scm:git:https://github.com/gmkits/gmkit-java.git</developerConnection>
-        <url>https://github.com/gmkits/gmkit-java</url>
+        <connection>scm:git:https://github.com/gmkits/gmkit.git</connection>
+        <developerConnection>scm:git:https://github.com/gmkits/gmkit.git</developerConnection>
+        <url>https://github.com/gmkits/gmkit/tree/main/packages/java</url>
         <tag>HEAD</tag>
     </scm>
 

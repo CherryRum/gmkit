@@ -324,7 +324,7 @@ mvn -pl gmkit-sm9 -Pnative-build -Dgmssl.root=/usr/local process-classes
 
 将桥接库与 `gmssl` 依赖库复制到对应平台目录
 `gmkit-sm9-native-{平台}/src/main/resources/native/{平台}/` 后，即可被打包与加载。
-各平台的 native 库也可由 GitHub Actions 工作流 `build-native.yml` 自动构建。
+各平台的 native 库也可由 GitHub Actions 工作流 `sm9-native.yml` 自动构建和校验。
 
 ## 迁移说明
 
@@ -352,7 +352,7 @@ byte[] decoded = ByteEncodings.decode(base64, InputFormat.BASE64, "payload");
 ## 仓库结构
 
 ```text
-gmkit-java/
+packages/java/
 ├── gmkit/               # 主运行时模块（SM2/SM3/SM4/ZUC）
 ├── gmkit-sm9/           # SM9 Java API 与 JNI C 源码
 │   └── src/main/c/      # JNI C 源码与 CMakeLists.txt
@@ -367,9 +367,9 @@ gmkit-java/
 ## 构建
 
 ```bash
-mvn clean test
-mvn -DskipTests verify
-mvn -pl gmkit-benchmarks -am -DskipTests package
+mvn -f packages/java/pom.xml clean test
+mvn -f packages/java/pom.xml -DskipTests verify
+mvn -f packages/java/pom.xml -pl gmkit-benchmarks -am -DskipTests package
 ```
 
 ## 性能基线
@@ -377,17 +377,17 @@ mvn -pl gmkit-benchmarks -am -DskipTests package
 JMH 基准已拆到独立模块 `gmkit-benchmarks`，用于固定 SM2、SM3、SM4 的吞吐与延迟指标；ZUC 基准尚未补入。
 
 ```bash
-java -jar gmkit-benchmarks/target/gmkit-benchmarks-0.10.0-SNAPSHOT.jar ".*SM3.*" -bm thrpt -tu s -wi 3 -i 5 -f 1
+java -jar packages/java/gmkit-benchmarks/target/gmkit-benchmarks-0.10.0-SNAPSHOT.jar ".*SM3.*" -bm thrpt -tu s -wi 3 -i 5 -f 1
 ```
 
 完整说明见 [docs/performance.md](docs/performance.md)。
 
 ## GitHub Actions
 
-仓库已提供 CI、Release Verify、GitHub Packages 发布和 Maven Central 发布工作流，使用方法见 [docs/github-actions.md](docs/github-actions.md)。
+仓库已提供 monorepo CI、互操作 parity、SM9 native、Java 发布工作流，使用方法见 [docs/github-actions.md](docs/github-actions.md)。
 
-此外，`build-native.yml` 用于在各平台从 GmSSL v3.1.1 源码编译 SM9 native 库；CI 中的 `sm9-native`
-作业会在 Linux / macOS 上编译 GmSSL 后运行 SM9 模块的全部功能测试。
+普通 Java CI 不要求 native runtime；没有可用 GmSSL/JNI 时，SM9 native 相关测试会通过 assumptions 跳过。
+`sm9-native.yml` 是专门的强制 native 作业，会在 Linux / macOS 上编译 GmSSL 后运行 SM9 模块的全部功能测试。
 
 ## 许可证
 

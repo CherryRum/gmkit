@@ -5,16 +5,16 @@
 | 工作流                     | 文件                                              | 作用                                                       | 触发方式                          |
 |-------------------------|-------------------------------------------------|----------------------------------------------------------|-------------------------------|
 | CI                      | `.github/workflows/ci.yml`                      | 运行 JDK 8/11/17 测试矩阵，并在 JDK 17 上执行 `verify`               | push、pull_request             |
-| Release Verify          | `.github/workflows/release-verify.yml`          | 检查 release profile 是否能正常生成 sources/javadocs/signing 所需产物 | 手动触发、`v*` tag push            |
-| Publish GitHub Packages | `.github/workflows/publish-github-packages.yml` | 发布到 GitHub Packages Maven 仓库                             | 手动触发、`main` push              |
-| Publish Maven Central   | `.github/workflows/publish-maven-central.yml`   | 发布到 Sonatype Central Portal / Maven Central              | 手动触发、GitHub Release published |
+| Parity                  | `.github/workflows/parity.yml`                  | 运行 Java / TypeScript 共享互操作向量校验                     | push、pull_request、手动触发       |
+| SM9 Native              | `.github/workflows/sm9-native.yml`              | 在专门环境编译 GmSSL/JNI 并强制运行 SM9 native 测试             | 手动触发、相关路径变更             |
+| Publish Java            | `.github/workflows/publish-java.yml`            | 发布 Java artifacts 到 GitHub Packages / Maven Central       | `java-v*` tag、手动触发            |
 
 ## 触发策略
 
 - `ci.yml` 会在所有 push 和 PR 上执行，作为日常代码校验。
-- `release-verify.yml` 默认不自动跑在每次提交上，避免 release 构建把 CI 拉长；需要时可手动点，也可在推送 `v*` 标签时自动验证。
-- `publish-github-packages.yml` 在 `main` 上只会自动发布 `-SNAPSHOT` 版本；如果当前版本不是 `-SNAPSHOT`，工作流会直接跳过并给出提示。
-- `publish-maven-central.yml` 会强制检查版本不能以 `-SNAPSHOT` 结尾，否则直接失败。
+- `ci.yml` 不强制运行 SM9 native 测试；没有 native runtime 时，SM9 相关测试通过 JUnit assumptions 跳过。
+- `sm9-native.yml` 是唯一强制 GmSSL/JNI native 可用性的工作流。
+- `publish-java.yml` 使用 `java-v*` 标签发布正式版本，并可手动发布快照或执行 release 校验。
 
 ## 必要 Secrets
 
@@ -37,7 +37,7 @@
 
 ## 发布前准备
 
-1. 确认 `pom.xml` 里的版本号正确。
+1. 确认 `packages/java/pom.xml` 里的版本号正确。
 2. 发布 Maven Central 前，把版本改成非 `-SNAPSHOT`，例如 `0.9.4`。
 3. 如果需要，同时创建与版本对应的 Git tag，例如 `v0.9.4`。
 4. 先执行 `Release Verify`，确认 sources/javadocs 构建正常。
@@ -47,28 +47,29 @@
 
 ```bash
 # 日常校验
-mvn clean test
-mvn -DskipTests verify
+mvn -f packages/java/pom.xml clean test
+mvn -f packages/java/pom.xml -DskipTests verify
 
 # release 构建校验（本地跳过 GPG）
-mvn -Prelease -Dgpg.skip=true -DskipTests verify
+mvn -f packages/java/pom.xml -Prelease -Dgpg.skip=true -DskipTests verify
 
 # 发布到 GitHub Packages
-mvn -DskipTests deploy \
-  -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/gmkits/gmkit-java
+mvn -f packages/java/pom.xml -DskipTests deploy \
+  -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/gmkits/gmkit
 
 # 发布到 Maven Central
-mvn -Prelease -DskipTests deploy
+mvn -f packages/java/pom.xml -Prelease -DskipTests deploy
 ```
 
 如果你在 Windows PowerShell 里本地执行 release 校验，请改用下面这条，避免 `-Dgpg.skip=true` 被 PowerShell 错误拆分：
 
 ```powershell
-mvn -Prelease "-Dgpg.skip=true" -DskipTests verify
+mvn -f packages/java/pom.xml -Prelease "-Dgpg.skip=true" -DskipTests verify
 ```
 
 ## 说明
 
 - 当前 workflow 默认分支按仓库现状使用 `main`。
-- GitHub Packages 发布仓库地址固定为 `https://maven.pkg.github.com/gmkits/gmkit-java`。
+- GitHub Packages 发布仓库地址固定为 `https://maven.pkg.github.com/gmkits/gmkit`。
+- 普通 Java CI 只要求 `gmkit`、`gmkit-sm9` Java API 编译和可跳过测试通过；SM9 native runtime 只在 `sm9-native.yml` 中强制。
 - Maven Central 发布基于 Sonatype 官方 `central-publishing-maven-plugin`，并使用 `setup-java` 动态生成 `settings.xml` 与导入 GPG key。
