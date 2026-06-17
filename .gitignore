@@ -27,7 +27,7 @@ lib-cov
 # Coverage directory used by tools like istanbul
 coverage
 *.lcov
-ts/coverage/
+packages/ts/coverage/
 
 # nyc test coverage
 .nyc_output
@@ -88,7 +88,7 @@ out
 # Nuxt.js build / generate output
 .nuxt
 dist
-ts/demo-vue/dist
+apps/demo-vue/dist
 
 # Gatsby files
 # Comment in the public line in if your project uses Gatsby and not Next.js
@@ -97,12 +97,12 @@ ts/demo-vue/dist
 
 # vuepress build output
 .vuepress/dist
-ts/docs/.vuepress/dist
+packages/ts-docs/.vuepress/dist
 
 # vuepress v2.x temp and cache directory
 .temp
-ts/docs/.vuepress/.temp
-ts/docs/.vuepress/.cache
+packages/ts-docs/.vuepress/.temp
+packages/ts-docs/.vuepress/.cache
 
 # Sveltekit cache directory
 .svelte-kit/
@@ -147,10 +147,10 @@ ts/docs/.vuepress/.cache
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 /demo/
-ts/demo/
+packages/ts/demo/
 
 # ---------------------------------------------------------------------------
-# Java (Maven) — applies to java/** in monorepo
+# Java (Maven) - applies to packages/java/** in monorepo
 # ---------------------------------------------------------------------------
 
 # Compiled class file

@@ -52,7 +52,7 @@
                  Exposed on the test classpath under /vectors/.
                  Consumed by cn.gmkit.InteropComplianceTest etc. -->
             <testResource>
-                <directory>${project.basedir}/../../vectors</directory>
+                <directory>${project.basedir}/../../../vectors</directory>
                 <targetPath>vectors</targetPath>
             </testResource>
         </testResources>

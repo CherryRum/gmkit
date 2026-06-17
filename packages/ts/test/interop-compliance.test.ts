@@ -29,7 +29,7 @@ describe('互操作性和标准测试向量', () => {
 
   beforeEach(() => {
     try {
-      const vectorPath = resolve(__dirname, '../../vectors/interop.json');
+      const vectorPath = resolve(__dirname, '../../../vectors/interop.json');
       const vectorData = readFileSync(vectorPath, 'utf-8');
       interopVectors = JSON.parse(vectorData);
     } catch (error) {
