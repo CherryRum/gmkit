@@ -79,6 +79,19 @@
     padding: 18px 14px 28px;
   }
 
+  .workbench-head {
+    flex-direction: column;
+    padding: 22px;
+  }
+
+  .workbench-head .icon-tile {
+    align-self: flex-start;
+  }
+
+  .workbench-head h1 {
+    font-size: 28px;
+  }
+
   .hero-panel {
     min-height: auto;
     padding: 22px;

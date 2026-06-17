@@ -1,4 +1,13 @@
-import { sm2Decrypt, sm2Encrypt, sm2GenerateKeyPair, sm2Sign, sm2Verify } from 'gmkitx';
+import {
+  bytesToBase64,
+  hexToBytes,
+  sm2CompressPublicKey,
+  sm2Decrypt,
+  sm2Encrypt,
+  sm2GenerateKeyPair,
+  sm2Sign,
+  sm2Verify,
+} from 'gmkitx';
 
 import { makeJson, required, type ToolValues } from '../format';
 
@@ -38,8 +47,32 @@ export function runSm2(tabKey: string, action: string, values: ToolValues): stri
   }
 
   if (tabKey === 'keys' || action === '生成密钥对') {
-    return makeJson(sm2GenerateKeyPair());
+    const format = values.format === 'Base64' ? 'base64' : 'hex';
+    if (action === '压缩公钥') {
+      const compressed = sm2CompressPublicKey(required(values, 'publicKey', '公钥压缩输入'));
+      return makeJson({
+        format,
+        compressedPublicKey: format === 'base64' ? hexToBase64(compressed) : compressed,
+        compressedPublicKeyHex: compressed,
+      });
+    }
+    const keyPair = sm2GenerateKeyPair();
+    return makeJson(
+      format === 'base64'
+        ? {
+            format,
+            publicKey: hexToBase64(keyPair.publicKey),
+            privateKey: hexToBase64(keyPair.privateKey),
+            publicKeyHex: keyPair.publicKey,
+            privateKeyHex: keyPair.privateKey,
+          }
+        : { format, ...keyPair },
+    );
   }
 
   throw new Error(`SM2 暂不支持操作: ${action}`);
+}
+
+function hexToBase64(hex: string): string {
+  return bytesToBase64(hexToBytes(hex));
 }

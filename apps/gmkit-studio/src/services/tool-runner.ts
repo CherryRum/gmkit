@@ -1,4 +1,4 @@
-import { sm2GenerateKeyPair } from 'gmkitx';
+import { sm2GenerateKeyPair, sm2Sign } from 'gmkitx';
 
 import type { ToolKey } from '@/data/tools';
 
@@ -23,6 +23,19 @@ export async function runToolAction(
   values: ToolValues,
 ): Promise<ToolActionResult> {
   try {
+    if (action === '填入示例') {
+      const valuesWithSample = {
+        ...values,
+        ...getSampleValues(toolKey, tabKey),
+      };
+      return {
+        status: 'info',
+        title: '已填入示例',
+        output: makeJson({ tool: toolKey, tab: tabKey, sampleReady: true }),
+        values: valuesWithSample,
+      };
+    }
+
     const result = await dispatchToolAction(toolKey, tabKey, action, values);
     return {
       status: 'success',
@@ -56,7 +69,7 @@ async function dispatchToolAction(
   if (toolKey === 'sm9') return runSm9(tabKey, action, values);
   if (toolKey === 'key') return runKeyTool(tabKey, action, values);
   if (toolKey === 'cert') return runCertTool(tabKey, action, values);
-  if (toolKey === 'encoding') return runEncodingTool(values);
+  if (toolKey === 'encoding') return runEncodingTool(action, values);
   if (toolKey === 'api-playground') return runApiPlayground(action, values);
   if (toolKey === 'data') return runDataTool(tabKey, action, values);
 
@@ -98,9 +111,11 @@ function runKeyTool(tabKey: string, action: string, values: ToolValues): { outpu
     return { output: makeJson(sm2GenerateKeyPair()) };
   }
   if ((values.type || '').includes('SM4')) {
+    const key = randomHex(16);
+    const iv = randomHex(16);
     return {
-      output: makeJson({ key: '已生成', iv: '已生成' }),
-      values: { ...values, key: randomHex(16), iv: randomHex(16) },
+      output: makeJson({ key, iv }),
+      values: { ...values, key, iv },
     };
   }
   const length = normalizeLength(values.length, 16);
@@ -119,7 +134,11 @@ function runCertTool(tabKey: string, action: string, values: ToolValues): string
   });
 }
 
-function runEncodingTool(values: ToolValues): string {
+function runEncodingTool(action: string, values: ToolValues): string | { output: string; values?: ToolValues } {
+  if (action === '交换格式') {
+    const next = { ...values, from: values.to || 'Hex', to: values.from || 'UTF-8' };
+    return { output: makeJson({ swapped: true, from: next.from, to: next.to }), values: next };
+  }
   const output = convertEncoding(values.from || 'UTF-8', values.to || 'Hex', required(values, 'value', '内容'));
   return makeJson({ from: values.from || 'UTF-8', to: values.to || 'Hex', output });
 }
@@ -153,4 +172,78 @@ function parseJson(value: string): unknown {
   } catch {
     throw new Error('JSON 格式不正确');
   }
+}
+
+function getSampleValues(toolKey: ToolKey, tabKey: string): ToolValues {
+  const sm4Key = '0123456789abcdeffedcba9876543210';
+  const iv = '00000000000000000000000000000000';
+  const zucKey = '00000000000000000000000000000000';
+  const keyPair = sm2GenerateKeyPair();
+
+  if (toolKey === 'sm2' && tabKey === 'encrypt') {
+    return {
+      publicKey: keyPair.publicKey,
+      privateKey: keyPair.privateKey,
+      message: 'GMKit Studio',
+      cipherMode: 'C1C3C2',
+    };
+  }
+  if (toolKey === 'sm2' && tabKey === 'sign') {
+    const message = 'GMKit Studio';
+    return {
+      privateKey: keyPair.privateKey,
+      publicKey: keyPair.publicKey,
+      message,
+      signature: sm2Sign(keyPair.privateKey, message, { userId: '1234567812345678' }),
+      userId: '1234567812345678',
+    };
+  }
+  if (toolKey === 'sm2' && tabKey === 'keys') {
+    return { publicKey: keyPair.publicKey, format: 'Hex' };
+  }
+  if (toolKey === 'sm3') {
+    return tabKey === 'hmac'
+      ? { algorithm: 'HMAC-SM3', key: 'gmkit-secret', message: 'GMKit Studio' }
+      : { algorithm: 'SM3', message: 'GMKit Studio' };
+  }
+  if (toolKey === 'sm4') {
+    return {
+      mode: 'CBC',
+      key: sm4Key,
+      iv,
+      padding: 'PKCS7',
+      output: 'Hex',
+      message: 'GMKit Studio',
+      aad: 'gmkit-aad',
+    };
+  }
+  if (toolKey === 'zuc') {
+    return {
+      key: zucKey,
+      iv,
+      length: '32',
+      count: '66051',
+      bearer: '15',
+      direction: '0',
+      message: 'GMKit Studio',
+    };
+  }
+  if (toolKey === 'sm9') {
+    return {
+      endpoint: 'http://localhost:8080/api/sm9',
+      operation: 'sign',
+      payload: '{\n  "userId": "alice@example.com",\n  "message": "GMKit Studio"\n}',
+      wasmUrl: '/runtime/sm9.wasm',
+    };
+  }
+  if (toolKey === 'key') return { type: 'SM2 密钥对', format: 'Hex', length: '16' };
+  if (toolKey === 'cert') return { cert: '-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----' };
+  if (toolKey === 'encoding') return { from: 'UTF-8', to: 'Hex', value: 'GMKit Studio' };
+  if (toolKey === 'api-playground') {
+    return { environment: 'Mock', path: '/api/sm2/encrypt', body: '{\n  "message": "GMKit Studio"\n}' };
+  }
+  if (toolKey === 'data') {
+    return tabKey === 'json' ? { json: '{ "name": "GMKit Studio" }' } : { kind: 'UUID' };
+  }
+  return {};
 }

@@ -1,4 +1,11 @@
-import { sm4Decrypt, sm4Encrypt, type CipherModeType, type PaddingModeType } from 'gmkitx';
+import {
+  sm4Decrypt,
+  sm4Encrypt,
+  type CipherModeType,
+  type InputFormatType,
+  type OutputFormatType,
+  type PaddingModeType,
+} from 'gmkitx';
 
 import { makeJson, randomHex, required, type ToolValues } from '../format';
 
@@ -16,6 +23,7 @@ export function runSm4(tabKey: string, action: string, values: ToolValues): { ou
 
   const mode = normalizeMode(values.mode);
   const padding = normalizePadding(values.padding);
+  const outputFormat = normalizeOutput(values.output);
   const key = required(values, 'key', 'Key');
   const iv = values.iv?.trim() || undefined;
 
@@ -24,7 +32,7 @@ export function runSm4(tabKey: string, action: string, values: ToolValues): { ou
       mode,
       padding,
       iv,
-      outputFormat: 'hex',
+      outputFormat,
     });
     return { output: makeJson(result) };
   }
@@ -34,12 +42,12 @@ export function runSm4(tabKey: string, action: string, values: ToolValues): { ou
       mode,
       padding,
       iv,
-      inputFormat: 'hex',
+      inputFormat: outputFormat as InputFormatType,
     });
     return { output: makeJson({ plaintext }) };
   }
 
-  return { output: makeJson({ mode, padding, ivRequired: mode !== 'ecb' }) };
+  return { output: makeJson({ mode, padding, outputFormat, ivRequired: mode !== 'ecb' }) };
 }
 
 function normalizeMode(value?: string): CipherModeType {
@@ -52,4 +60,8 @@ function normalizePadding(value?: string): PaddingModeType {
   if (value === 'None') return 'none';
   if (value === 'Zero') return 'zero';
   return 'pkcs7';
+}
+
+function normalizeOutput(value?: string): OutputFormatType {
+  return value === 'Base64' ? 'base64' : 'hex';
 }
