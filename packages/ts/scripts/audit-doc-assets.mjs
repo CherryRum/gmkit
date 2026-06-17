@@ -4,7 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
-const publicDir = path.join(root, 'docs', '.vuepress', 'public');
+const docsRoot = path.resolve(root, '..', 'ts-docs');
+const publicDir = path.join(docsRoot, '.vuepress', 'public');
 const maxAssetKB = Number(process.env.DOC_ASSET_MAX_KB || 200);
 
 function walk(dir) {
@@ -35,7 +36,7 @@ const totalKB = assets.reduce((sum, item) => sum + item.size, 0) / 1024;
 const oversized = assets.filter((item) => item.size / 1024 > maxAssetKB);
 
 console.log('[audit-doc-assets] docs static assets');
-console.log(`- directory: docs/.vuepress/public`);
+console.log(`- directory: ${path.relative(root, publicDir).replace(/\\/g, '/')}`);
 console.log(`- file count: ${assets.length}`);
 console.log(`- total size: ${totalKB.toFixed(2)} KB`);
 console.log('- top assets:');

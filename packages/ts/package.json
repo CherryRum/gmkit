@@ -36,11 +36,11 @@
     "audit:docs:assets": "node scripts/audit-doc-assets.mjs",
     "audit:slim": "npm run audit:docs:assets && npm run build && npm run audit:pack",
     "verify": "npm run type-check && npm run test && npm run build && npm run audit:pack",
-    "demo:vue": "cd demo-vue && npm run dev",
+    "demo:vue": "npm run dev -w apps/demo-vue",
     "prepublishOnly": "npm run verify",
-    "docs:dev": "cd docs && npm run dev",
-    "docs:build": "cd docs && npm run build",
-    "docs:clean": "cd docs && npm run clean",
+    "docs:dev": "npm run dev -w packages/ts-docs",
+    "docs:build": "npm run build -w packages/ts-docs",
+    "docs:clean": "npm run clean -w packages/ts-docs",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix"
@@ -68,12 +68,13 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/CherryRum/gmkit.git"
+    "url": "https://github.com/gmkits/gmkit.git",
+    "directory": "packages/ts"
   },
   "bugs": {
-    "url": "https://github.com/CherryRum/gmkit/issues"
+    "url": "https://github.com/gmkits/gmkit/issues"
   },
-  "homepage": "https://github.com/CherryRum/gmkit#readme",
+  "homepage": "https://github.com/gmkits/gmkit/tree/main/packages/ts#readme",
   "engines": {
     "node": ">=18.0.0"
   },

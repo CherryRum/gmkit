@@ -644,7 +644,7 @@ export function getEnvReport(): EnvReport {
  * @returns 内容相同返回 true
  */
 export function constantTimeEqual(a: Uint8Array | null | undefined, b: Uint8Array | null | undefined): boolean {
-  if (a == null || b == null) return false;
+  if (a === null || a === undefined || b === null || b === undefined) return false;
   if (a.length !== b.length) return false;
   let diff = 0;
   for (let i = 0; i < a.length; i++) {
