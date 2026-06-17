@@ -59,9 +59,10 @@ gmkit/
 │   ├── types/              # 类型定义
 │   │   └── constants.ts    # 常量定义
 │   └── index.ts            # 主入口文件
-├── demo/                    # Demo 应用
-├── demo-vue/                # Vue Demo
-├── docs/                    # 文档站点
+├── apps/
+│   └── gmkit-studio/        # GMKit Studio V4 静态产品原型
+├── packages/
+│   └── ts-docs/             # 文档站点
 ├── test/                    # 测试文件
 ├── dist/                    # 构建输出（gitignored）
 └── package.json            # 包配置

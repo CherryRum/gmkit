@@ -1,0 +1,42 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>SM3 工具 - GMKit Studio</title><link rel="stylesheet" href="assets/styles.css"/></head><body><div class="layout"><header class="topbar"><div class="brand"><div class="logo"></div><div><div class="brand-title">GMKit Studio</div><div class="brand-sub">Open Source Crypto Tool Platform</div></div></div><div class="search"><span>🔍</span><input placeholder="搜索工具、算法、文档..."/><span class="kbd">⌘ K</span></div><nav class="topnav"><a href="index.html" class="active">工具</a><a href="#" class="">文档中心</a><a href="#" class="">API 文档</a><a href="#" class="">更新日志</a></nav><div class="top-actions"><button class="icon-btn">☼</button><a class="login-btn" href="#">GitHub / 登录</a></div></header><aside class="sidebar"><div class="side-group"><a class="side-item " href="index.html"><span class="side-icon">首</span><div class="side-main"><span>首页</span><span class="side-note"></span></div></a></div><div class="side-group"><a class="side-item " href="sm2.html"><span class="side-icon">加</span><div class="side-main"><span>加密解密</span><span class="side-note">4</span></div></a></div><div class="side-group"><a class="side-item active" href="sm3.html"><span class="side-icon">摘</span><div class="side-main"><span>摘要哈希</span><span class="side-note">2</span></div></a><div class="side-children"><a class="side-leaf active" href="sm3.html">SM3</a><a class="side-leaf " href="data-tools.html">摘要校验</a></div></div><div class="side-group"><a class="side-item " href="key-tools.html"><span class="side-icon">证</span><div class="side-main"><span>密钥与证书</span><span class="side-note">2</span></div></a></div><div class="side-group"><a class="side-item " href="encoding-tools.html"><span class="side-icon">编</span><div class="side-main"><span>编码转换</span><span class="side-note">1</span></div></a></div><div class="side-group"><a class="side-item " href="api-playground.html"><span class="side-icon">调</span><div class="side-main"><span>开发调试</span><span class="side-note">1</span></div></a></div><div class="side-group"><a class="side-item " href="data-tools.html"><span class="side-icon">数</span><div class="side-main"><span>数据与生成</span><span class="side-note">1</span></div></a></div><div class="side-group"><a class="side-item " href="about.html"><span class="side-icon">关</span><div class="side-main"><span>关于项目</span><span class="side-note"></span></div></a></div><div class="side-footer"><div class="side-card"><b>开源工具平台原型</b>更像正式产品的视觉升级版：首页按分类组织，详情页采用完整工作台布局，便于继续演进为真实前端工程。</div></div></aside><main class="main">
+<div class="breadcrumb">摘要哈希 / SM3</div>
+<div class="workbench">
+  <section class="panel">
+    <div class="page-head"><div><h1>SM3 工具</h1><p>适合做文本、文件和 HMAC-SM3 的统一摘要工作台。</p></div><span class="badge">高保真工作台</span></div>
+    <div class="tabbar" data-tabs="tool-sm3.html"><button class="tab active" data-tab="tab0">摘要计算</button><button class="tab " data-tab="tab1">HMAC-SM3</button><button class="tab " data-tab="tab2">文件摘要</button><button class="tab " data-tab="tab3">批量处理</button></div>
+    <div data-panel="tool-sm3.html" data-key="tab0">
+      <div class="form-grid"><div><div class="field"><div class="label-row"><label>输入内容</label><a class="helper" href="#">粘贴示例</a></div><textarea placeholder="请输入待计算摘要的文本内容，支持 UTF-8 / Hex"></textarea></div><div class="field"><div class="label-row"><label>HMAC 密钥（可选）</label><a class="helper" href="#">粘贴示例</a></div><textarea placeholder="HMAC 模式下填写密钥"></textarea></div></div><div><div class="field"><div class="label-row"><label>摘要结果</label><a class="helper" href="#">粘贴示例</a></div><textarea id="main-result" placeholder="摘要结果将在此显示"></textarea></div><div class="field"><div class="label-row"><label>附加说明</label><a class="helper" href="#">粘贴示例</a></div><textarea placeholder="可展示长度、耗时、摘要比对信息"></textarea></div></div><div class="swap">⇄</div></div>
+      <div class="field"><label>模式选择</label><div class="option-row"><span class="option-pill active">SM3</span><span class="option-pill ">HMAC-SM3</span><span class="option-pill ">文件摘要</span></div></div>
+      <div class="form-grid"><div class="field"><label>输入格式</label><select><option>Hex</option><option>UTF-8</option><option>Base64</option></select></div><div class="field"><label>输出格式</label><select><option>Hex</option><option>Base64</option><option>PEM</option></select></div></div>
+      <div class="btn-row"><button class="btn primary">计算摘要</button><button class="btn green">计算 HMAC</button><button class="btn subtle" data-copy-target="#main-result">复制结果</button><button class="btn subtle">清空</button></div>
+      <div class="field" style="margin-top:14px"><label>快速示例</label><div class="tag-row"><span class="mini-tag">空字符串</span><span class="mini-tag">中文示例</span><span class="mini-tag">Emoji 示例</span><span class="mini-tag">文件校验示例</span><span class="mini-tag">标准测试向量</span></div></div>
+    </div>
+    <div data-panel="tool-sm3.html" data-key="tab1" class="hide"><div class="callout">这里是“HMAC-SM3”子流程的占位区域，后续可以继续补充独立表单、表格、批量处理面板和文件导入能力。</div></div><div data-panel="tool-sm3.html" data-key="tab2" class="hide"><div class="callout">这里是“文件摘要”子流程的占位区域，后续可以继续补充独立表单、表格、批量处理面板和文件导入能力。</div></div><div data-panel="tool-sm3.html" data-key="tab3" class="hide"><div class="callout">这里是“批量处理”子流程的占位区域，后续可以继续补充独立表单、表格、批量处理面板和文件导入能力。</div></div>
+  </section>
+  <aside class="right-stack">
+    <section class="panel">
+      <div class="page-head" style="margin-bottom:10px"><div><h2 style="font-size:20px">API 调试</h2><p>右侧保留轻量示例，便于边看边对照开发</p></div><select style="max-width:180px"><option>环境：默认环境</option><option>测试环境</option></select></div>
+      <div class="small">请求示例</div>
+      <div class="langs" data-langs="sm3.html-langs"><button class="lang active" data-lang="curl">cURL</button><button class="lang" data-lang="java">Java</button><button class="lang" data-lang="ts">TypeScript</button></div>
+      <div class="codebox" data-lang-panel="sm3.html-langs" data-lang-key="curl">curl -X POST "https://api.gmkit.dev/v1/sm3/digest" \
+-H "Content-Type: application/json" \
+-d {"data":"hello world","inputFormat":"utf8"}</div>
+      <div class="codebox hide" data-lang-panel="sm3.html-langs" data-lang-key="java">String digest = client.sm3().digest("hello world");</div>
+      <div class="codebox hide" data-lang-panel="sm3.html-langs" data-lang-key="ts">const digest = await client.sm3.digest({ data: "hello world" });</div>
+      <div class="small" style="margin:12px 0 8px">响应示例</div>
+      <div class="codebox">{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "result": "示例输出结果",
+    "requestId": "req_demo_001"
+  }
+}</div>
+    </section>
+    <div class="info-card"><h4>参数说明</h4><table><thead><tr><th>参数</th><th>说明</th></tr></thead><tbody><tr><td>data</td><td>待摘要内容</td></tr><tr><td>key</td><td>HMAC 密钥</td></tr><tr><td>inputFormat</td><td>输入格式</td></tr><tr><td>outputFormat</td><td>输出格式</td></tr></tbody></table></div>
+    <div class="info-card"><h4>算法说明</h4><div class="small">SM3 是国密杂凑算法，常用于消息摘要、文件完整性校验以及与 HMAC 组合完成消息认证。页面保留了统一工作台形式，后续非常适合扩展“拖拽文件上传”“摘要对比”“批量校验结果表格”等功能。</div></div>
+    <div class="info-card"><h4>安全提示</h4><div class="small">• 请妥善保管私钥、主密钥等敏感信息。<br>• 测试环境和正式环境建议使用不同的密钥材料。<br>• 批量处理建议配套任务状态、失败重试和审计日志。</div></div>
+  </aside>
+</div>
+<section class="section"><div class="section-head"><h2>相关工具</h2><span>保持能力之间的协同关系</span></div><div class="bottom-links"><a class="simple-card" href="sm2.html"><div class="tool-icon i-green" style="width:42px;height:42px;border-radius:13px">S2</div><div><h4>SM2 工具</h4><div class="small">配合签名与摘要流程使用</div><span class="cta">进入页面</span></div></a><a class="simple-card" href="data-tools.html"><div class="tool-icon i-cyan" style="width:42px;height:42px;border-radius:13px">数</div><div><h4>数据与生成</h4><div class="small">配套生成测试文本与摘要比对数据</div><span class="cta">进入页面</span></div></a><a class="simple-card" href="encoding-tools.html"><div class="tool-icon i-orange" style="width:42px;height:42px;border-radius:13px">编</div><div><h4>编码转换</h4><div class="small">处理 Hex / Base64 输入输出</div><span class="cta">进入页面</span></div></a><a class="simple-card" href="api-playground.html"><div class="tool-icon i-purple" style="width:42px;height:42px;border-radius:13px">AP</div><div><h4>API Playground</h4><div class="small">联调摘要接口</div><span class="cta">进入页面</span></div></a></div></section>
+<div class="footer-note">GMKit Studio · SM3 工具 页面原型（V4）</div></main></div><script src="assets/app.js"></script></body></html>

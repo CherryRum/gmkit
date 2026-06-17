@@ -5,7 +5,7 @@ on:
     paths:
       - 'packages/ts-docs/**'
       - 'packages/ts/**'
-      - 'apps/demo-vue/**'
+      - 'apps/gmkit-studio/**'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/docs.yml'
@@ -13,7 +13,7 @@ on:
     paths:
       - 'packages/ts-docs/**'
       - 'packages/ts/**'
-      - 'apps/demo-vue/**'
+      - 'apps/gmkit-studio/**'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/docs.yml'
@@ -34,4 +34,4 @@ jobs:
           cache-dependency-path: package-lock.json
       - run: npm ci
       - run: npm run docs:build
-      - run: npm run build -w apps/demo-vue
+      - run: npm run build -w apps/gmkit-studio

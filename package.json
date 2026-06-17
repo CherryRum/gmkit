@@ -6,7 +6,7 @@
   "workspaces": [
     "packages/ts",
     "packages/ts-docs",
-    "apps/demo-vue"
+    "apps/gmkit-studio"
   ],
   "scripts": {
     "verify": "npm run test:ts && npm run test:java && npm run parity && npm run build:ts",
@@ -15,7 +15,9 @@
     "parity": "mvn -f packages/java/pom.xml -B -ntp -pl gmkit -Dtest=InteropComplianceTest test && npx vitest run test/interop-compliance.test.ts --config vitest.config.ts --root packages/ts",
     "build:ts": "npm run build -w packages/ts",
     "build:java": "mvn -f packages/java/pom.xml -B -ntp -DskipTests install",
-    "docs:build": "npm run build -w packages/ts-docs"
+    "docs:build": "npm run build -w packages/ts-docs",
+    "studio:build": "npm run build -w apps/gmkit-studio",
+    "studio:dev": "npm run dev -w apps/gmkit-studio"
   },
   "engines": {
     "node": ">=22.12.0"

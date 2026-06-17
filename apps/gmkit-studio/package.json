@@ -1,0 +1,15 @@
+{
+  "name": "gmkit-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GMKit Studio V4 static product prototype",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/validate.mjs",
+    "dev": "node scripts/serve.mjs",
+    "preview": "node scripts/serve.mjs"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

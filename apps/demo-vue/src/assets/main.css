@@ -1,8 +1,0 @@
-@import './base.css';
-
-/* Remove conflicting layout rules that interfere with the app layout */
-#app {
-  width: 100%;
-  height: 100%;
-  font-weight: normal;
-}

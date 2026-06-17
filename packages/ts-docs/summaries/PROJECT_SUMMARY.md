@@ -50,9 +50,10 @@ gmkit/
 │   ├── core/
 │   ├── types/
 │   └── index.ts
-├── demo/
-├── demo-vue/
-├── docs/
+├── apps/
+│   └── gmkit-studio/
+├── packages/
+│   └── ts-docs/
 ├── test/
 └── dist/
 ```

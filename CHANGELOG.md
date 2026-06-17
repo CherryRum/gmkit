@@ -17,6 +17,8 @@
 - CI rebuilt into `ci.yml`, `parity.yml`, `sm9-native.yml`, `docs.yml`,
   `publish-ts.yml`, and `publish-java.yml` with monorepo `paths:` filters.
 - Release tag pattern updated: TS uses `ts-v*`, Java uses `java-v*`.
+- Replaced the old Vue demo app with the static GMKit Studio V4 prototype under
+  `apps/gmkit-studio/`, including a workspace build validator for CI.
 - Added `vectors/interop.json` shared cross-language vectors, consumed by
   `packages/ts/test/interop-compliance.test.ts` and
   `cn.gmkit.InteropComplianceTest` (Maven test-resources mount + zero-dep

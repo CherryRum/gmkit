@@ -36,7 +36,7 @@
     "audit:docs:assets": "node scripts/audit-doc-assets.mjs",
     "audit:slim": "npm run audit:docs:assets && npm run build && npm run audit:pack",
     "verify": "npm run type-check && npm run test && npm run build && npm run audit:pack",
-    "demo:vue": "npm run dev -w apps/demo-vue",
+    "studio:dev": "npm run dev -w apps/gmkit-studio",
     "prepublishOnly": "npm run verify",
     "docs:dev": "npm run dev -w packages/ts-docs",
     "docs:build": "npm run build -w packages/ts-docs",
