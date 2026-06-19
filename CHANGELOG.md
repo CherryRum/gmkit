@@ -20,6 +20,11 @@
 - Replaced the old Vue demo app with a Vue3 + Vite GMKit Studio product
   prototype under `apps/gmkit-studio/`, including real gmkitx-powered TS tools
   and an explicit SM9 Java API / WASM runtime boundary.
+- Rebuilt GMKit Studio as the V5 tool-site UI: query-driven category navigation,
+  non-duplicated home tool grid, `/tools/:toolId` workbench routes, empty ad
+  rail placeholders, full V5 tool catalog, JSON worker workflow, and real
+  browser/dependency-backed runners for crypto, hash, data, encoding, time,
+  text, key/cert, and network tools.
 - Added `vectors/interop.json` shared cross-language vectors, consumed by
   `packages/ts/test/interop-compliance.test.ts` and
   `cn.gmkit.InteropComplianceTest` (Maven test-resources mount + zero-dep
