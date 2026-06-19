@@ -87,9 +87,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 
 import type { StudioTool } from '@/data/studio-tools';
+import { runStudioTool, type ToolValues } from '@/services/tools/runner';
 
 const props = defineProps<{
   tool: StudioTool;
@@ -100,7 +101,7 @@ const input = ref('');
 const output = ref('');
 const result = ref('等待执行');
 const resultStatus = ref<'success' | 'error' | 'info'>('info');
-const optionValues = ref<Record<string, string | boolean>>({});
+const optionValues = ref<ToolValues>({});
 
 watch(
   () => props.tool.id,
@@ -115,16 +116,26 @@ watch(
   { immediate: true },
 );
 
-const activeTabLabel = computed(() => props.tool.tabs.find((tab) => tab.key === activeTab.value)?.label ?? activeTab.value);
-
 function setOption(key: string, value: string | boolean): void {
   optionValues.value = { ...optionValues.value, [key]: value };
 }
 
-function run(): void {
-  output.value = input.value || props.tool.sample;
-  result.value = `${props.tool.name} / ${activeTabLabel.value}\n\nrunner 将在后续提交接入真实执行。`;
+async function run(): Promise<void> {
+  result.value = '执行中...';
   resultStatus.value = 'info';
+  const next = await runStudioTool({
+    tool: props.tool,
+    tab: activeTab.value,
+    input: input.value,
+    output: output.value,
+    options: optionValues.value,
+  });
+  output.value = next.output;
+  result.value = next.detail;
+  resultStatus.value = next.status;
+  if (next.options) {
+    optionValues.value = { ...optionValues.value, ...next.options };
+  }
 }
 
 function fillSample(): void {
