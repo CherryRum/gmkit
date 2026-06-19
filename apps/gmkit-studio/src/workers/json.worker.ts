@@ -22,24 +22,29 @@ interface JsonWorkerResponse {
   detail: string;
 }
 
-const ctx = self as unknown as {
-  onmessage: ((event: MessageEvent<JsonWorkerRequest>) => void) | null;
-  postMessage: (message: JsonWorkerResponse) => void;
-};
+const ctx =
+  typeof self === 'undefined'
+    ? undefined
+    : (self as unknown as {
+        onmessage: ((event: MessageEvent<JsonWorkerRequest>) => void) | null;
+        postMessage: (message: JsonWorkerResponse) => void;
+      });
 
-ctx.onmessage = (event: MessageEvent<JsonWorkerRequest>) => {
-  const request = event.data;
-  try {
-    ctx.postMessage({ id: request.id, ...runJsonAction(request) } satisfies JsonWorkerResponse);
-  } catch (error) {
-    ctx.postMessage({
-      id: request.id,
-      status: 'error',
-      output: '',
-      detail: describeJsonError(request.input, error),
-    } satisfies JsonWorkerResponse);
-  }
-};
+if (ctx) {
+  ctx.onmessage = (event: MessageEvent<JsonWorkerRequest>) => {
+    const request = event.data;
+    try {
+      ctx.postMessage({ id: request.id, ...runJsonAction(request) } satisfies JsonWorkerResponse);
+    } catch (error) {
+      ctx.postMessage({
+        id: request.id,
+        status: 'error',
+        output: '',
+        detail: describeJsonError(request.input, error),
+      } satisfies JsonWorkerResponse);
+    }
+  };
+}
 
 function runJsonAction(request: JsonWorkerRequest): Omit<JsonWorkerResponse, 'id'> {
   const { action, input, options } = request;
