@@ -1,8 +1,10 @@
 import { fail, type ToolRunRequest, type ToolRunResult, type ToolRunner } from './types';
 import { cryptoRunners } from './crypto-runners';
+import { dataRunners } from './data-runners';
 
 const runners: Record<string, ToolRunner> = {
   ...cryptoRunners,
+  ...dataRunners,
 };
 
 export function registerToolRunner(toolId: string, runner: ToolRunner): void {

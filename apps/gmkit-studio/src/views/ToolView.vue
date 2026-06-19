@@ -1,5 +1,6 @@
 <template>
-  <ToolWorkspace v-if="tool" :tool="tool" />
+  <JsonWorkspace v-if="tool?.id === 'json'" :tool="tool" />
+  <ToolWorkspace v-else-if="tool" :tool="tool" />
   <section v-else class="home-panel">
     <div class="page-head">
       <div>
@@ -14,6 +15,7 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue';
 
+import JsonWorkspace from '@/components/workbench/JsonWorkspace.vue';
 import ToolWorkspace from '@/components/workbench/ToolWorkspace.vue';
 import { getTool } from '@/data/studio-tools';
 import { saveRecentToolId } from '@/services/recent-tools';
