@@ -1,7 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
-import { tools } from '@/data/tools';
-
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -10,12 +8,12 @@ const router = createRouter({
       name: 'home',
       component: () => import('@/views/HomeView.vue'),
     },
-    ...tools.map((tool) => ({
-      path: tool.path,
-      name: `tool-${tool.key}`,
+    {
+      path: '/tools/:toolId',
+      name: 'tool',
       component: () => import('@/views/ToolView.vue'),
-      props: { toolKey: tool.key },
-    })),
+      props: (route) => ({ toolId: route.params.toolId }),
+    },
     {
       path: '/about',
       name: 'about',

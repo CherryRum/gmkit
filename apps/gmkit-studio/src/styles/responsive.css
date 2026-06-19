@@ -1,120 +1,99 @@
 @media (max-width: 1280px) {
-  .hero-panel {
-    grid-template-columns: 1fr;
+  .studio-shell {
+    grid-template-columns: 154px minmax(0, 1fr);
   }
 
-  .workbench-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .hero-preview {
-    justify-content: flex-start;
-  }
-}
-
-@media (max-width: 1180px) {
-  .tool-card-grid,
-  .related-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 1060px) {
-  .studio-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .nav-toggle {
-    display: inline-block;
-  }
-
-  .brand {
-    min-width: auto;
-  }
-
-  .brand small,
-  .topnav,
-  .topbar-actions {
+  .ad-rail {
     display: none;
   }
 
-  .sidenav {
-    position: fixed;
-    z-index: 50;
-    top: 76px;
-    bottom: 0;
-    left: 0;
-    width: 286px;
+  .tool-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  body {
+    overflow: auto;
+  }
+
+  .studio-app {
     height: auto;
-    transform: translateX(-102%);
-    transition: transform 180ms ease;
-    box-shadow: var(--studio-shadow-lg);
+    min-height: 100vh;
   }
 
-  .nav-open .sidenav {
-    transform: translateX(0);
-  }
-
-  .mobile-scrim {
-    position: fixed;
-    inset: 76px 0 0;
-    z-index: 40;
-    display: block;
-    border: 0;
-    background: rgba(16, 27, 46, 0.28);
-  }
-}
-
-@media (max-width: 760px) {
   .topbar {
-    gap: 12px;
-    padding: 0 14px;
+    grid-template-columns: 1fr;
+    height: auto;
+    gap: 10px;
+    padding: 12px;
   }
 
-  .global-search {
+  .top-actions {
+    justify-self: stretch;
+    overflow: auto;
+  }
+
+  .studio-shell {
+    display: block;
+  }
+
+  .category-nav {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .side-mark {
     display: none;
   }
 
-  .studio-main {
-    padding: 18px 14px 28px;
+  .category-list {
+    flex-direction: row;
+    overflow: auto;
   }
 
-  .workbench-head {
-    flex-direction: column;
-    padding: 22px;
+  .category-button {
+    min-width: 94px;
   }
 
-  .workbench-head .icon-tile {
-    align-self: flex-start;
+  .main-pane {
+    overflow: visible;
+    padding: 14px;
   }
 
-  .workbench-head h1 {
-    font-size: 28px;
-  }
-
-  .hero-panel {
-    min-height: auto;
-    padding: 22px;
-    border-radius: 22px;
-  }
-
-  .hero-content h1 {
-    font-size: 30px;
-  }
-
-  .hero-actions,
-  .metric-grid,
-  .field-grid,
-  .tool-card-grid,
-  .related-grid {
+  .tool-grid,
+  .editor-grid,
+  .work-layout {
     grid-template-columns: 1fr;
   }
 
-  .hero-actions {
-    display: grid;
+  .workspace-title,
+  .page-head {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
-  .metric-grid {
-    display: grid;
+  .workspace-title p {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 640px) {
+  .tool-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .search .kbd,
+  .top-actions .icon-btn {
+    display: none;
+  }
+
+  .home-panel,
+  .workspace-body {
+    padding: 14px;
+  }
+
+  textarea {
+    min-height: 220px;
   }
 }

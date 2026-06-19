@@ -10,14 +10,17 @@ body,
 
 body {
   margin: 0;
-  color: var(--studio-text);
+  overflow: hidden;
+  color: var(--text);
   background:
-    radial-gradient(circle at 16% 0%, rgba(40, 104, 255, 0.12), transparent 24%),
-    radial-gradient(circle at 88% 12%, rgba(20, 160, 210, 0.09), transparent 26%),
-    linear-gradient(180deg, #fbfdff 0%, var(--studio-bg) 100%);
+    radial-gradient(circle at 24% -6%, rgba(37, 99, 235, 0.08), transparent 30%),
+    radial-gradient(circle at 94% 4%, rgba(15, 168, 107, 0.07), transparent 28%),
+    var(--bg);
   font-family:
-    Inter, "PingFang SC", "Microsoft YaHei", system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", sans-serif;
+    "Maple Mono NF", "JetBrains Mono", "Cascadia Code", SFMono-Regular, Menlo, Consolas,
+    "Noto Sans Mono CJK SC", "Microsoft YaHei UI", monospace;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
 button,
@@ -25,6 +28,7 @@ input,
 textarea,
 select {
   font: inherit;
+  font-weight: 700;
 }
 
 button {
@@ -44,5 +48,5 @@ svg {
 
 ::selection {
   color: #ffffff;
-  background: var(--studio-primary);
+  background: var(--blue);
 }
