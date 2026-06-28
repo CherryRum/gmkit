@@ -1,8 +1,9 @@
 import { decode as decodeHtml, encode as encodeHtml } from 'html-entities';
 import { base64ToBytes, bytesToBase64, bytesToHex, hexToBytes, stringToBytes } from 'gmkitx';
+import { decodeJwt, decodeProtectedHeader, jwtVerify, SignJWT } from 'jose';
 
-import { asArrayBuffer, decodeBytes, encodeBytes, pretty, textValue } from './shared';
-import { ok, type ToolRunner, type ToolRunRequest, type ToolRunResult } from './types';
+import { pretty, textValue } from './shared';
+import { okFields, outputField, type ToolRunner, type ToolRunRequest, type ToolRunResult } from './types';
 
 export const encodingRunners: Record<string, ToolRunner> = {
   base64: runBase64,
@@ -14,76 +15,76 @@ export const encodingRunners: Record<string, ToolRunner> = {
 };
 
 function runBase64(request: ToolRunRequest): ToolRunResult {
-  if (request.tab === '解码') return ok(new TextDecoder().decode(base64ToBytes(request.input.trim())), 'Base64 解码完成');
-  return ok(bytesToBase64(stringToBytes(request.input)), 'Base64 编码完成');
+  const urlSafe = textValue(request.options, 'variant', 'Standard') === 'URL Safe';
+  if (request.tab === '解码') {
+    const normalized = urlSafe ? fromUrlSafe(request.input.trim()) : request.input.trim();
+    return okFields([outputField('text', '解码文本', new TextDecoder().decode(base64ToBytes(normalized)), 'text', { primary: true })], 'Base64 解码完成');
+  }
+  const encoded = bytesToBase64(stringToBytes(request.input));
+  return okFields([outputField('base64', urlSafe ? 'Base64 URL Safe' : 'Base64', urlSafe ? toUrlSafe(encoded) : encoded, 'base64', { primary: true })], 'Base64 编码完成');
 }
 
 function runUrl(request: ToolRunRequest): ToolRunResult {
-  if (request.tab === '解码') return ok(decodeURIComponent(request.input), 'URL 解码完成');
-  return ok(encodeURIComponent(request.input), 'URL 编码完成');
+  if (request.tab === '解码') return okFields([outputField('text', '解码文本', decodeURIComponent(request.input), 'text', { primary: true })], 'URL 解码完成');
+  return okFields([outputField('encoded', 'URL 编码', encodeURIComponent(request.input), 'text', { primary: true })], 'URL 编码完成');
 }
 
 function runHex(request: ToolRunRequest): ToolRunResult {
-  if (request.tab === '解码') return ok(new TextDecoder().decode(hexToBytes(request.input.replace(/\s+/g, ''))), 'Hex 解码完成');
-  return ok(bytesToHex(stringToBytes(request.input)), 'Hex 编码完成');
+  if (request.tab === '解码') return okFields([outputField('text', '解码文本', new TextDecoder().decode(hexToBytes(request.input.replace(/\s+/g, ''))), 'text', { primary: true })], 'Hex 解码完成');
+  return okFields([outputField('hex', 'Hex', bytesToHex(stringToBytes(request.input)), 'hex', { primary: true })], 'Hex 编码完成');
 }
 
 function runUnicode(request: ToolRunRequest): ToolRunResult {
   if (request.tab === '解码') {
-    return ok(request.input.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex: string) => String.fromCharCode(Number.parseInt(hex, 16))), 'Unicode 反转义完成');
+    return okFields([outputField('text', '解码文本', request.input.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex: string) => String.fromCharCode(Number.parseInt(hex, 16))), 'text', { primary: true })], 'Unicode 反转义完成');
   }
-  return ok(Array.from(request.input).map((char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`).join(''), 'Unicode 转义完成');
+  return okFields([outputField('escaped', 'Unicode 转义', Array.from(request.input).map((char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`).join(''), 'text', { primary: true })], 'Unicode 转义完成');
 }
 
 function runHtmlEntity(request: ToolRunRequest): ToolRunResult {
-  if (request.tab === '解码') return ok(decodeHtml(request.input), 'HTML Entity 解码完成');
-  return ok(encodeHtml(request.input), 'HTML Entity 编码完成');
+  if (request.tab === '解码') return okFields([outputField('text', '解码文本', decodeHtml(request.input), 'text', { primary: true })], 'HTML Entity 解码完成');
+  return okFields([outputField('entity', 'HTML Entity', encodeHtml(request.input), 'text', { primary: true })], 'HTML Entity 编码完成');
 }
 
 async function runJwt(request: ToolRunRequest): Promise<ToolRunResult> {
   const secret = textValue(request.options, 'secret', 'gmkit-secret');
+  const algorithm = textValue(request.options, 'algorithm', 'HS256') as 'HS256' | 'HS384' | 'HS512';
+  const secretBytes = stringToBytes(secret);
   if (request.tab === '解析') {
-    const [header, payload, signature] = request.input.trim().split('.');
-    return ok(
-      {
-        header: JSON.parse(new TextDecoder().decode(base64UrlToBytes(header))),
-        payload: JSON.parse(new TextDecoder().decode(base64UrlToBytes(payload))),
-        signature,
-      },
+    const token = request.input.trim();
+    return okFields(
+      [
+        outputField('header', 'Header', decodeProtectedHeader(token), 'json'),
+        outputField('payload', 'Payload', decodeJwt(token), 'json', { primary: true }),
+        outputField('signature', 'Signature', token.split('.')[2] ?? '', 'base64'),
+      ],
       'JWT 解析完成',
     );
   }
 
   if (request.tab === '验签') {
-    const [header, payload, signature] = request.input.trim().split('.');
-    const expected = await hmacJwt(`${header}.${payload}`, secret);
-    return ok({ valid: expected === signature, expected, signature }, 'JWT HS256 验签完成');
+    const verified = await jwtVerify(request.input.trim(), secretBytes, { algorithms: [algorithm] });
+    return okFields(
+      [
+        outputField('valid', '验签结果', 'true', 'boolean', { primary: true }),
+        outputField('payload', 'Payload', verified.payload, 'json'),
+        outputField('protectedHeader', 'Header', verified.protectedHeader, 'json'),
+      ],
+      `JWT ${algorithm} 验签完成`,
+    );
   }
 
   const input = request.input.trim() ? JSON.parse(request.input) : { name: 'GMKit', iat: Math.floor(Date.now() / 1000) };
-  const header = base64Url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const payload = base64Url(JSON.stringify(input));
-  const signature = await hmacJwt(`${header}.${payload}`, secret);
-  return ok(`${header}.${payload}.${signature}`, 'JWT HS256 生成完成');
+  const token = await new SignJWT(input).setProtectedHeader({ alg: algorithm, typ: 'JWT' }).sign(secretBytes);
+  return okFields([outputField('token', `JWT ${algorithm}`, token, 'text', { primary: true })], `JWT ${algorithm} 生成完成`);
 }
 
-async function hmacJwt(data: string, secret: string): Promise<string> {
-  const key = await crypto.subtle.importKey('raw', asArrayBuffer(stringToBytes(secret)), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const signature = await crypto.subtle.sign('HMAC', key, asArrayBuffer(stringToBytes(data)));
-  return bytesToBase64Url(new Uint8Array(signature));
+function toUrlSafe(value: string): string {
+  return value.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 
-function base64Url(input: string): string {
-  return bytesToBase64Url(stringToBytes(input));
-}
-
-function bytesToBase64Url(bytes: Uint8Array): string {
-  return encodeBytes(bytes, 'Base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-}
-
-function base64UrlToBytes(value: string): Uint8Array {
-  const padded = value.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(value.length / 4) * 4, '=');
-  return decodeBytes(padded, 'Base64');
+function fromUrlSafe(value: string): string {
+  return value.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(value.length / 4) * 4, '=');
 }
 
 export function describeEncoding(value: unknown): string {

@@ -1,7 +1,10 @@
+import { camelCase, kebabCase, pascalCase, snakeCase } from 'change-case';
+import { diffChars, diffLines, diffWords } from 'diff';
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
+import slugify from 'slugify';
 
-import { ok, type ToolRunner, type ToolRunRequest, type ToolRunResult } from './types';
+import { okFields, outputField, type ToolRunner, type ToolRunRequest, type ToolRunResult } from './types';
 import { textValue } from './shared';
 
 export const textRunners: Record<string, ToolRunner> = {
@@ -16,14 +19,16 @@ export const textRunners: Record<string, ToolRunner> = {
 
 function runDiff(request: ToolRunRequest): ToolRunResult {
   const [left = '', right = ''] = request.input.split(/\n---\n/);
-  const leftLines = left.split(/\r?\n/);
-  const rightLines = right.split(/\r?\n/);
-  const max = Math.max(leftLines.length, rightLines.length);
-  const rows = Array.from({ length: max }, (_, index) => {
-    if (leftLines[index] === rightLines[index]) return `  ${leftLines[index] ?? ''}`;
-    return `- ${leftLines[index] ?? ''}\n+ ${rightLines[index] ?? ''}`;
-  });
-  return ok(rows.join('\n'), '文本 Diff 完成');
+  const mode = textValue(request.options, 'mode', '行');
+  const parts = mode === '词' ? diffWords(left, right) : mode === '字符' ? diffChars(left, right) : diffLines(left, right);
+  const patch = parts.map((part) => `${part.added ? '+ ' : part.removed ? '- ' : '  '}${part.value}`).join('');
+  return okFields(
+    [
+      outputField('diff', `${mode}级 Diff`, patch, 'text', { primary: true }),
+      outputField('summary', '统计', { added: parts.filter((part) => part.added).length, removed: parts.filter((part) => part.removed).length }, 'json'),
+    ],
+    '文本 Diff 完成',
+  );
 }
 
 function runRegex(request: ToolRunRequest): ToolRunResult {
@@ -31,42 +36,39 @@ function runRegex(request: ToolRunRequest): ToolRunResult {
   const flags = textValue(request.options, 'flags', 'gmi').replace(/[^dgimsuvy]/g, '') || 'g';
   const regex = new RegExp(pattern, flags);
   const matches = Array.from(request.input.matchAll(regex)).map((match) => ({ match: match[0], index: match.index, groups: match.groups ?? [] }));
-  return ok(matches, '正则匹配完成');
+  return okFields([outputField('matches', '匹配结果', matches, 'json', { primary: true })], '正则匹配完成');
 }
 
 function runCase(request: ToolRunRequest): ToolRunResult {
-  const words = request.input.trim().split(/[\s_-]+/).filter(Boolean);
-  const camel = words.map((word, index) => (index === 0 ? word.toLowerCase() : capitalize(word))).join('');
-  return ok({ camelCase: camel, PascalCase: capitalize(camel), snake_case: words.join('_').toLowerCase(), kebabCase: words.join('-').toLowerCase() }, '大小写转换完成');
+  const value = request.input.trim();
+  return okFields(
+    [
+      outputField('camelCase', 'camelCase', camelCase(value), 'text', { primary: true }),
+      outputField('pascalCase', 'PascalCase', pascalCase(value), 'text'),
+      outputField('snakeCase', 'snake_case', snakeCase(value), 'text'),
+      outputField('kebabCase', 'kebab-case', kebabCase(value), 'text'),
+    ],
+    '大小写转换完成',
+  );
 }
 
 function runSlug(request: ToolRunRequest): ToolRunResult {
-  const slug = request.input
-    .normalize('NFKD')
-    .replace(/[^\w\s-]/g, '')
-    .trim()
-    .replace(/[\s_]+/g, '-')
-    .toLowerCase();
-  return ok(slug, 'Slug 生成完成');
+  return okFields([outputField('slug', 'Slug', slugify(request.input, { lower: true, strict: true, trim: true }), 'text', { primary: true })], 'Slug 生成完成');
 }
 
 async function runMarkdown(request: ToolRunRequest): Promise<ToolRunResult> {
   const html = await marked.parse(request.input);
-  return ok(DOMPurify.sanitize(html), 'Markdown 转 HTML 完成');
+  return okFields([outputField('html', 'HTML', DOMPurify.sanitize(html), 'code', { primary: true })], 'Markdown 转 HTML 完成');
 }
 
 function runTextStat(request: ToolRunRequest): ToolRunResult {
   const lines = request.input.split(/\r?\n/);
   const words = request.input.trim() ? request.input.trim().split(/\s+/) : [];
-  return ok({ chars: request.input.length, charsNoSpace: request.input.replace(/\s/g, '').length, words: words.length, lines: lines.length }, '文本统计完成');
+  return okFields([outputField('stats', '统计', { chars: request.input.length, charsNoSpace: request.input.replace(/\s/g, '').length, words: words.length, lines: lines.length }, 'json', { primary: true })], '文本统计完成');
 }
 
 function runDedupe(request: ToolRunRequest): ToolRunResult {
   const lines = request.input.split(/\r?\n/).filter((line) => line.length > 0);
   const unique = Array.from(new Set(lines)).sort((a, b) => a.localeCompare(b));
-  return ok(unique.join('\n'), '去重排序完成');
-}
-
-function capitalize(value: string): string {
-  return value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : value;
+  return okFields([outputField('lines', '去重结果', unique.join('\n'), 'text', { primary: true })], '去重排序完成');
 }

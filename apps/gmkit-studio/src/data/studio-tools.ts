@@ -27,6 +27,9 @@ export interface ToolOption {
   defaultValue: string | boolean;
   options?: string[];
   placeholder?: string;
+  tabs?: string[];
+  help?: string;
+  inputMode?: 'text' | 'password';
 }
 
 export interface ToolTab {
@@ -50,35 +53,31 @@ export interface StudioTool {
   tags?: string[];
 }
 
-const select = (key: string, label: string, defaultValue: string, options: string[]): ToolOption => ({
+const select = (key: string, label: string, defaultValue: string, options: string[], extra: Partial<ToolOption> = {}): ToolOption => ({
   key,
   label,
   kind: 'select',
   defaultValue,
   options,
+  ...extra,
 });
 
-const bool = (key: string, label: string, defaultValue: boolean): ToolOption => ({
-  key,
-  label,
-  kind: 'boolean',
-  defaultValue,
-});
-
-const text = (key: string, label: string, defaultValue = '', placeholder?: string): ToolOption => ({
+const text = (key: string, label: string, defaultValue = '', placeholder?: string, extra: Partial<ToolOption> = {}): ToolOption => ({
   key,
   label,
   kind: 'text',
   defaultValue,
   placeholder,
+  ...extra,
 });
 
-const number = (key: string, label: string, defaultValue: string, placeholder?: string): ToolOption => ({
+const number = (key: string, label: string, defaultValue: string, placeholder?: string, extra: Partial<ToolOption> = {}): ToolOption => ({
   key,
   label,
   kind: 'number',
   defaultValue,
   placeholder,
+  ...extra,
 });
 
 export const categories: ToolCategory[] = [
@@ -93,14 +92,10 @@ export const categories: ToolCategory[] = [
   { id: 'network', name: '网络', icon: '◎', description: 'URL、DNS、CIDR 与 HTTP' },
 ];
 
-const encodingOptions = [
-  select('inputEncoding', '输入编码', 'UTF-8', ['UTF-8', 'Hex', 'Base64', 'Text', 'PEM', 'DER']),
-  select('outputEncoding', '输出编码', 'Hex', ['Hex', 'Base64', 'UTF-8', 'Text', 'JSON', 'Code']),
-];
-
 const hashOptions = [
   select('outputEncoding', '输出编码', 'Hex', ['Hex', 'Base64']),
   select('case', '大小写', 'Lower', ['Lower', 'Upper']),
+  text('key', 'HMAC Key', 'gmkit-secret', 'HMAC 密钥', { tabs: ['HMAC'], inputMode: 'password' }),
 ];
 
 export const tools: StudioTool[] = [
@@ -111,8 +106,11 @@ export const tools: StudioTool[] = [
     category: 'crypto',
     tone: 'green',
     description: '国密 SM2 加密、解密、签名、验签和密钥生成。',
-    tabs: ['加密', '解密', '签名', '验签', '密钥'].map((label) => ({ key: label, label })),
-    options: [select('mode', '模式', 'C1C3C2', ['C1C3C2', 'C1C2C3']), ...encodingOptions, bool('compressPublicKey', '压缩公钥', true)],
+    tabs: ['加密', '解密', '签名', '验签', '密钥', '压缩公钥', '解压公钥'].map((label) => ({ key: label, label })),
+    options: [
+      select('mode', '密文顺序', 'C1C3C2', ['C1C3C2', 'C1C2C3'], { tabs: ['加密', '解密'] }),
+      text('userId', 'User ID', '1234567812345678', '签名/验签用户标识', { tabs: ['签名', '验签'] }),
+    ],
     sample: 'GMKit Studio',
     tags: ['gmkitx', '国密', 'signature'],
   },
@@ -127,7 +125,7 @@ export const tools: StudioTool[] = [
     options: [
       select('mode', '模式', 'CBC', ['CBC', 'ECB', 'CTR', 'CFB', 'OFB']),
       select('padding', '填充', 'PKCS7', ['PKCS7', 'NoPadding', 'Zero']),
-      ...encodingOptions,
+      select('outputEncoding', '输出编码', 'Base64', ['Base64', 'Hex']),
       text('key', 'Key', '', '32 hex chars'),
       text('iv', 'IV', '', '32 hex chars, ECB 可为空'),
     ],
@@ -142,7 +140,14 @@ export const tools: StudioTool[] = [
     tone: 'cyan',
     description: 'ZUC 密钥流、流加密、EEA3/EIA3。',
     tabs: ['密钥流', '加密', '解密', 'EEA3', 'EIA3'].map((label) => ({ key: label, label })),
-    options: [text('key', 'Key', '', '32 hex chars'), text('iv', 'IV', '', '32 hex chars'), number('length', '长度', '32')],
+    options: [
+      text('key', 'Key', '', '32 hex chars'),
+      text('iv', 'IV', '', '32 hex chars'),
+      number('length', '长度', '32', undefined, { tabs: ['密钥流'] }),
+      number('count', 'COUNT', '0', undefined, { tabs: ['EEA3', 'EIA3'] }),
+      number('bearer', 'Bearer', '0', undefined, { tabs: ['EEA3', 'EIA3'] }),
+      number('direction', 'Direction', '0', undefined, { tabs: ['EEA3', 'EIA3'] }),
+    ],
     sample: 'GMKit Studio',
     tags: ['gmkitx', 'stream'],
   },
@@ -154,7 +159,10 @@ export const tools: StudioTool[] = [
     tone: 'purple',
     description: 'SM9 Java API / WASM runtime 接入边界。',
     tabs: ['Java API', 'WASM', '能力'].map((label) => ({ key: label, label })),
-    options: [text('endpoint', 'Endpoint', '', 'http://localhost:8080/api/sm9'), text('wasmUrl', 'WASM URL', '', '/runtime/sm9.wasm')],
+    options: [
+      text('endpoint', 'Endpoint', '', 'http://localhost:8080/api/sm9', { tabs: ['Java API'] }),
+      text('wasmUrl', 'WASM URL', '', '/runtime/sm9.wasm', { tabs: ['WASM'] }),
+    ],
     sample: '{\n  "operation": "sign",\n  "payload": { "userId": "alice", "message": "GMKit Studio" }\n}',
     tags: ['java-api', 'wasm'],
   },
@@ -168,10 +176,10 @@ export const tools: StudioTool[] = [
     tabs: ['加密', '解密'].map((label) => ({ key: label, label })),
     options: [
       select('mode', '模式', 'GCM', ['GCM', 'CBC', 'CTR']),
-      select('keyLength', 'Key长度', '256', ['128', '192', '256']),
+      select('keyLength', 'Key长度', '256', ['128', '192', '256'], { tabs: ['加密'] }),
       select('outputEncoding', '输出编码', 'Base64', ['Base64', 'Hex']),
-      text('key', 'Key', '', '为空则自动生成'),
-      text('iv', 'IV/Nonce', '', '为空则自动生成'),
+      text('key', 'Key', '', 'Base64；加密为空则自动生成'),
+      text('iv', 'IV/Nonce', '', 'Base64；加密为空则自动生成'),
     ],
     sample: 'GMKit Studio',
     tags: ['webcrypto'],
@@ -184,7 +192,12 @@ export const tools: StudioTool[] = [
     tone: 'purple',
     description: 'Web Crypto RSA-OAEP 与 RSA-PSS。',
     tabs: ['生成密钥', '加密', '解密', '签名', '验签'].map((label) => ({ key: label, label })),
-    options: [select('hash', '哈希', 'SHA-256', ['SHA-1', 'SHA-256', 'SHA-384', 'SHA-512']), select('keyLength', 'Key长度', '2048', ['2048', '3072', '4096'])],
+    options: [
+      select('usage', '用途', 'OAEP 加解密', ['OAEP 加解密', 'PSS 签名验签'], { tabs: ['生成密钥'] }),
+      select('hash', '哈希', 'SHA-256', ['SHA-1', 'SHA-256', 'SHA-384', 'SHA-512']),
+      select('keyLength', 'Key长度', '2048', ['2048', '3072', '4096'], { tabs: ['生成密钥'] }),
+      number('saltLength', 'PSS Salt长度', '32', undefined, { tabs: ['签名', '验签'] }),
+    ],
     sample: 'GMKit Studio',
     tags: ['webcrypto', 'pem'],
   },
@@ -229,7 +242,9 @@ export const tools: StudioTool[] = [
     tone: tone as ToolTone,
     description,
     tabs: id === 'bcrypt' ? [{ key: '生成', label: '生成' }, { key: '校验', label: '校验' }] : [{ key: '摘要', label: '摘要' }, { key: 'HMAC', label: 'HMAC' }],
-    options: id === 'bcrypt' ? [number('cost', 'Cost', '12'), text('compare', '校验值', '', 'bcrypt hash')] : hashOptions,
+    options: id === 'bcrypt'
+      ? [number('cost', 'Cost', '12', undefined, { tabs: ['生成'] }), text('compare', '校验值', '', 'bcrypt hash', { tabs: ['校验'] })]
+      : hashOptions,
     sample: 'GMKit Studio',
     tags: ['digest'],
   })),
@@ -249,7 +264,13 @@ export const tools: StudioTool[] = [
     tone: tone as ToolTone,
     description,
     tabs: ['生成', '解析', '转换'].map((label) => ({ key: label, label })),
-    options: [select('type', '类型', 'SM2', ['SM2', 'RSA', 'AES', 'SM4', '证书']), select('format', '格式', 'PEM', ['PEM', 'DER', 'JWK', 'JSON', 'Text']), text('password', '密码', '')],
+    options: id === 'keygen'
+      ? [select('type', '类型', 'SM2', ['SM2', 'RSA', 'AES', 'SM4', '3DES'])]
+      : id === 'pemder'
+        ? [select('pemLabel', 'PEM标签', 'CERTIFICATE', ['CERTIFICATE', 'PUBLIC KEY', 'PRIVATE KEY', 'CERTIFICATE REQUEST'])]
+        : id === 'pfx'
+          ? [text('password', '密码', '', 'P12/PFX 密码', { inputMode: 'password' })]
+          : [],
     sample: 'GMKit Studio',
     tags: ['key', 'certificate'],
   })),
@@ -268,7 +289,14 @@ export const tools: StudioTool[] = [
     tone: tone as ToolTone,
     description,
     tabs: id === 'jwt' ? ['解析', '生成', '验签'].map((label) => ({ key: label, label })) : ['编码', '解码'].map((label) => ({ key: label, label })),
-    options: [select('variant', '变体', 'Standard', ['Standard', 'URL Safe']), text('secret', 'Secret', '')],
+    options: id === 'jwt'
+      ? [
+          select('algorithm', '算法', 'HS256', ['HS256', 'HS384', 'HS512'], { tabs: ['生成', '验签'] }),
+          text('secret', 'Secret', 'gmkit-secret', 'JWT HMAC 密钥', { tabs: ['生成', '验签'], inputMode: 'password' }),
+        ]
+      : id === 'base64'
+        ? [select('variant', '变体', 'Standard', ['Standard', 'URL Safe'])]
+        : [],
     sample: id === 'jwt' ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiR01LaXQifQ.DUMMY' : 'GMKit Studio',
     tags: ['encoding'],
   })),
@@ -289,7 +317,13 @@ export const tools: StudioTool[] = [
     tone: tone as ToolTone,
     description,
     tabs: id === 'json' ? ['格式化', '压缩', '校验', '修复', '查询', 'Schema', '树'].map((label) => ({ key: label, label })) : ['转换', '生成', '校验'].map((label) => ({ key: label, label })),
-    options: [select('indent', '缩进', '2', ['2', '4', 'Tab', '0']), bool('sortKeys', '排序键名', false), bool('escapeUnicode', '转义Unicode', false), text('query', '表达式/Schema', '$.data[*]')],
+    options: id === 'jsonpath'
+      ? [text('query', 'JSONPath', '$.data[*]')]
+      : id === 'jsonschema'
+        ? [text('query', 'Schema', '{}', 'JSON Schema')]
+        : id === 'random' || id === 'mock'
+          ? [number('count', '数量', '5'), number('length', '长度', '16', undefined, { tabs: ['生成'] })]
+          : [],
     sample: '{\n  "name": "GMKit",\n  "stars": 1250,\n  "data": [{ "id": 1 }]\n}',
     tags: ['json', 'data'],
   })),
@@ -309,7 +343,11 @@ export const tools: StudioTool[] = [
     tone: tone as ToolTone,
     description,
     tabs: ['转换', '当前', '生成', '解析'].map((label) => ({ key: label, label })),
-    options: [select('unit', '单位', '毫秒', ['秒', '毫秒', '天']), select('timezone', '时区', 'Asia/Shanghai', ['本地', 'UTC', 'Asia/Shanghai', 'Asia/Seoul']), number('count', '数量', '5')],
+    options: id === 'timezone'
+      ? [select('timezone', '时区', 'Asia/Shanghai', ['本地', 'UTC', 'Asia/Shanghai', 'Asia/Seoul'])]
+      : id === 'uuid' || id === 'ulid' || id === 'cron'
+        ? [number('count', '数量', '5')]
+        : [],
     sample: String(Date.now()),
     tags: ['time'],
   })),
@@ -329,7 +367,11 @@ export const tools: StudioTool[] = [
     tone: tone as ToolTone,
     description,
     tabs: ['转换', '校验', '统计'].map((label) => ({ key: label, label })),
-    options: [select('mode', '模式', '默认', ['默认', '行', '匹配', '替换']), text('flags', 'Flags', 'gmi'), bool('ignoreCase', '忽略大小写', false)],
+    options: id === 'diff'
+      ? [select('mode', '模式', '行', ['行', '词', '字符'])]
+      : id === 'regex'
+        ? [text('query', '表达式', '\\w+'), text('flags', 'Flags', 'gmi')]
+        : [],
     sample: id === 'diff' ? 'left\n---\nright' : 'gmkit studio clean redesign',
     tags: ['text'],
   })),
@@ -349,7 +391,13 @@ export const tools: StudioTool[] = [
     tone: tone as ToolTone,
     description,
     tabs: ['解析', '查询', '转换'].map((label) => ({ key: label, label })),
-    options: [select('target', '目标', 'Fetch', ['Fetch', 'Axios', 'Java', 'JSON']), select('dnsType', 'DNS类型', 'A', ['A', 'AAAA', 'CNAME', 'MX', 'TXT']), text('apiEndpoint', 'API Endpoint', '')],
+    options: id === 'curl'
+      ? [select('target', '目标', 'Fetch', ['Fetch', 'Axios', 'Java', 'JSON'])]
+      : id === 'dns'
+        ? [select('dnsType', 'DNS类型', 'A', ['A', 'AAAA', 'CNAME', 'MX', 'TXT'])]
+        : id === 'ipinfo'
+          ? [text('apiEndpoint', 'API Endpoint', '', '为空则使用 ipapi.co')]
+          : [],
     sample: id === 'curl' ? "curl -X POST https://api.example.com -H 'Content-Type: application/json' -d '{\"name\":\"GMKit\"}'" : 'https://gmkit.example/tools?name=国密工具',
     tags: ['network'],
   })),

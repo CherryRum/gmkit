@@ -5,7 +5,7 @@ import { jsonrepair } from 'jsonrepair';
 import { parse as parseToml, stringify as stringifyToml } from 'smol-toml';
 import YAML from 'yaml';
 
-import { ok, type ToolRunner, type ToolRunRequest, type ToolRunResult } from './types';
+import { ok, okFields, outputField, type ToolRunner, type ToolRunRequest, type ToolRunResult } from './types';
 import { pretty, randomBase64, randomHex, textValue } from './shared';
 
 export const dataRunners: Record<string, ToolRunner> = {
@@ -51,7 +51,7 @@ function runJsonPath(request: ToolRunRequest): ToolRunResult {
   const json = JSON.parse(request.input);
   const path = textValue(request.options, 'query', '$');
   const result = JSONPath({ path, json });
-  return ok(result, `JSONPath 查询完成: ${path}`);
+  return okFields([outputField('result', '查询结果', result, 'json', { primary: true })], `JSONPath 查询完成: ${path}`);
 }
 
 function runJsonSchema(request: ToolRunRequest): ToolRunResult {
@@ -60,12 +60,15 @@ function runJsonSchema(request: ToolRunRequest): ToolRunResult {
   const ajv = new Ajv({ allErrors: true });
   const validate = ajv.compile(schema);
   const valid = validate(payload);
-  return ok({ valid, errors: validate.errors ?? [] }, valid ? 'Schema 校验通过' : 'Schema 校验未通过');
+  return okFields(
+    [outputField('valid', '校验结果', String(valid), 'boolean', { primary: true }), outputField('errors', '错误列表', validate.errors ?? [], 'json')],
+    valid ? 'Schema 校验通过' : 'Schema 校验未通过',
+  );
 }
 
 function runJsonToTs(request: ToolRunRequest): ToolRunResult {
   const value = JSON.parse(request.input);
-  return ok(toInterface('Root', value), 'TypeScript 接口生成完成');
+  return okFields([outputField('types', 'TypeScript 类型', toInterface('Root', value), 'code', { primary: true })], 'TypeScript 接口生成完成');
 }
 
 function runRandom(request: ToolRunRequest): ToolRunResult {
@@ -76,7 +79,15 @@ function runRandom(request: ToolRunRequest): ToolRunResult {
     base64: randomBase64(length),
     uuid: crypto.randomUUID(),
   }));
-  return ok(values, '随机数据生成完成');
+  return okFields(
+    [
+      outputField('hex', 'Hex 列表', values.map((value) => value.hex).join('\n'), 'hex', { primary: true }),
+      outputField('base64', 'Base64 列表', values.map((value) => value.base64).join('\n'), 'base64'),
+      outputField('uuid', 'UUID 列表', values.map((value) => value.uuid).join('\n'), 'text'),
+      outputField('json', 'JSON 详情', values, 'json'),
+    ],
+    '随机数据生成完成',
+  );
 }
 
 function runMock(request: ToolRunRequest): ToolRunResult {
@@ -88,7 +99,7 @@ function runMock(request: ToolRunRequest): ToolRunResult {
     company: faker.company.name(),
     createdAt: faker.date.recent().toISOString(),
   }));
-  return ok(rows, 'Mock 数据生成完成');
+  return okFields([outputField('json', 'Mock JSON', rows, 'json', { primary: true })], 'Mock 数据生成完成');
 }
 
 function toInterface(name: string, value: unknown): string {
