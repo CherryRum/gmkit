@@ -40,7 +40,7 @@ jobs:
           - os: ubuntu-24.04-arm
             platform: linux-aarch64
             generator: ''
-          - os: macos-13
+          - os: macos-15-intel
             platform: darwin-x86_64
             generator: ''
           - os: macos-14
