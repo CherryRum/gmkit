@@ -38,8 +38,8 @@
 ## 发布前准备
 
 1. 确认 `packages/java/pom.xml` 里的版本号正确。
-2. 发布 Maven Central 前，把版本改成非 `-SNAPSHOT`，例如 `0.10.0-preview.0`。
-3. 如果需要，同时创建与版本对应的 Git tag，例如 `java-v0.10.0-preview.0`。
+2. 发布 Maven Central 前，把版本改成非 `-SNAPSHOT`，例如 `0.10.0-preview.1`。
+3. 如果需要，同时创建与版本对应的 Git tag，例如 `java-v0.10.0-preview.1`。
 4. 先执行 `Release Verify`，确认 sources/javadocs 构建正常。
 5. 再执行 `Publish Maven Central`；发布 workflow 会先调用 `scripts/sm9-native.ps1` 构建各平台 runtime。
 

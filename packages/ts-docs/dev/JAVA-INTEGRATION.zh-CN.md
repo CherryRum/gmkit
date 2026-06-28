@@ -294,7 +294,7 @@ GMKit Java 主包提供 SM2/SM3/SM4/ZUC，SM9 通过独立 `gmkit-sm9` JNI/GmSSL
 <dependency>
     <groupId>cn.gmkit</groupId>
     <artifactId>gmkit</artifactId>
-    <version>0.10.0-preview.0</version>
+    <version>0.10.0-preview.1</version>
 </dependency>
 ```
 
