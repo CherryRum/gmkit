@@ -36,4 +36,5 @@ jobs:
       - name: Repair Rollup optional native package
         run: npm install --no-save --package-lock=false @rollup/rollup-linux-x64-gnu@$(node -p "require('./node_modules/rollup/package.json').version")
       - run: npm run docs:build
+      - run: npm run build -w packages/ts
       - run: npm run build -w apps/gmkit-studio
