@@ -63,14 +63,14 @@ jobs:
       - name: Build SM9 native runtime
         shell: pwsh
         run: |
-          $scriptArgs = @(
-            '-Platform', '${{ matrix.platform }}',
-            '-GmsslRef', 'v3.1.1',
-            '-Stage',
-            '-Test'
-          )
+          $scriptArgs = @{
+            Platform = '${{ matrix.platform }}'
+            GmsslRef = 'v3.1.1'
+            Stage = $true
+            Test = $true
+          }
           if ('${{ matrix.generator }}') {
-            $scriptArgs += @('-Generator', '${{ matrix.generator }}')
+            $scriptArgs.Generator = '${{ matrix.generator }}'
           }
           ./scripts/sm9-native.ps1 @scriptArgs
       - name: Stage native runtime artifact
