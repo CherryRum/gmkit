@@ -73,11 +73,19 @@
                                 </goals>
                                 <configuration>
                                     <target>
+                                        <condition property="cmake.generator.args" value="-G &quot;${cmake.generator}&quot;" else="">
+                                            <isset property="cmake.generator"/>
+                                        </condition>
+                                        <condition property="cmake.platform.args" value="-A ${cmake.generator.platform}" else="">
+                                            <isset property="cmake.generator.platform"/>
+                                        </condition>
                                         <mkdir dir="${project.build.directory}/native-build"/>
                                         <exec executable="cmake" dir="${project.build.directory}/native-build"
                                               failonerror="true">
                                             <arg value="-DCMAKE_BUILD_TYPE=${cmake.build.type}"/>
                                             <arg value="-DGMSSL_ROOT=${gmssl.root}"/>
+                                            <arg line="${cmake.generator.args}"/>
+                                            <arg line="${cmake.platform.args}"/>
                                             <arg value="${project.basedir}/src/main/c"/>
                                         </exec>
                                         <exec executable="cmake" dir="${project.build.directory}/native-build"

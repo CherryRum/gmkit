@@ -13,7 +13,7 @@ gmkit/
 ├── apps/
 │   └── gmkit-studio/  # Vue3 + Vite 工具站；V5 三栏工具工作台
 ├── vectors/       # Java / TypeScript 共享互操作测试向量
-├── scripts/       # 本地校验脚本
+├── scripts/       # 本地校验与 SM9 native 构建脚本
 └── .github/       # monorepo CI、发布、文档和 SM9 native 工作流
 ```
 
@@ -49,14 +49,23 @@ mvn -f packages/java/pom.xml -B -ntp test
 mvn -f packages/java/pom.xml -B -ntp -Prelease "-Dgpg.skip=true" -DskipTests verify
 ```
 
+SM9 Java native runtime 构建：
+
+```powershell
+./scripts/sm9-native.ps1 -Platform current -Stage -PackageRuntime -Test
+```
+
+该脚本会拉取 GmSSL、构建 JNI 桥接库、把 `gmkitsm9` 与 `gmssl` native 资源填充到对应 `gmkit-sm9-native-*`
+模块，并用 `-Dgmkit.sm9.requireNative=true` 强制跑 SM9 native 测试。Windows 需要 CMake 和 Visual Studio C++ Build Tools。
+
 ## CI 与发布标签
 
 - `ci.yml`：TS 与普通 Java 测试；不强制 SM9 native。
 - `parity.yml`：运行共享 `vectors/interop.json` 互操作校验。
-- `sm9-native.yml`：专门编译 GmSSL/JNI 并强制运行 SM9 native 测试。
+- `sm9-native.yml`：在 Linux、macOS、Windows 上编译 GmSSL/JNI runtime 并强制运行 SM9 native 测试。
 - `docs.yml`：构建 VuePress 文档和 GMKit Studio Vue3 原型。
 - `publish-ts.yml`：`ts-v*` 标签发布 npm 包。
-- `publish-java.yml`：`java-v*` 标签发布 Maven artifacts。
+- `publish-java.yml`：`java-v*` 标签发布 Maven artifacts，并在发布前构建各平台 `gmkit-sm9-native-*` runtime。
 
 ## 文档入口
 
