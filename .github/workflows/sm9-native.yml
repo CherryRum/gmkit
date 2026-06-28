@@ -43,7 +43,7 @@ jobs:
           - os: macos-14
             platform: darwin-aarch64
             generator: ''
-          - os: windows-latest
+          - os: windows-2022
             platform: windows-x86_64
             generator: 'Visual Studio 17 2022'
     steps:
