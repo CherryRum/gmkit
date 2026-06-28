@@ -1,6 +1,6 @@
 {
   "name": "gmkit-studio",
-  "version": "0.1.0",
+  "version": "0.10.0-preview.0",
   "private": true,
   "description": "GMKit Studio Vue3 product prototype",
   "type": "module",

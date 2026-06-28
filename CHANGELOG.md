@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## Unreleased
+## 0.10.0-preview.0 - 2026-06-28
 
 ### Monorepo merge
 
@@ -9,7 +9,7 @@
   `packages/java/`, docs under `packages/ts-docs/`, demo apps under `apps/`,
   and cross-language vectors under `vectors/`.
 - TypeScript npm package name remains `gmkitx`; Java Maven coordinates
-  remain `cn.gmkit:gmkit:0.10.0-SNAPSHOT`.
+  remain `cn.gmkit:gmkit:0.10.0-preview.0`.
 - Removed deprecated TypeScript top-level compatibility aliases such as
   `generateKeyPair`, `sign`, `verify`, `digest`, and `hmac`. Use
   `sm2GenerateKeyPair`, `sm2Sign`, `sm2Verify`, `sm3Digest`, `sm3Hmac`, or

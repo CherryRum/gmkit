@@ -43,7 +43,7 @@ GMKit Java 是 `gmkitx` 在 JVM 端的同源实现，主包坐标为 `cn.gmkit:g
 |---|---|
 | `groupId` | `cn.gmkit` |
 | `artifactId` | `gmkit` |
-| `version` | `0.10.0-SNAPSHOT`（dev） |
+| `version` | `0.10.0-preview.0`（preview） |
 | 最低 JDK | 1.8（由 `animal-sniffer-maven-plugin` 强制） |
 | 运行时依赖 | Bouncy Castle `bcprov-jdk15to18` / `bcpkix-jdk15to18` |
 
@@ -55,20 +55,20 @@ GMKit Java 是 `gmkitx` 在 JVM 端的同源实现，主包坐标为 `cn.gmkit:g
 <dependency>
   <groupId>cn.gmkit</groupId>
   <artifactId>gmkit</artifactId>
-  <version>0.10.0-SNAPSHOT</version>
+  <version>0.10.0-preview.0</version>
 </dependency>
 ```
 
 @tab Gradle (Groovy)
 
 ```groovy
-implementation 'cn.gmkit:gmkit:0.10.0-SNAPSHOT'
+implementation 'cn.gmkit:gmkit:0.10.0-preview.0'
 ```
 
 @tab Gradle (Kotlin)
 
 ```kotlin
-implementation("cn.gmkit:gmkit:0.10.0-SNAPSHOT")
+implementation("cn.gmkit:gmkit:0.10.0-preview.0")
 ```
 
 :::

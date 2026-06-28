@@ -1,6 +1,6 @@
 {
   "name": "gmkit-monorepo",
-  "version": "0.10.0",
+  "version": "0.10.0-preview.0",
   "private": true,
   "description": "GMKit polyglot monorepo for Java and TypeScript packages",
   "workspaces": [

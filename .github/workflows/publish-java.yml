@@ -25,6 +25,13 @@ jobs:
             packages/java/gmkit/pom.xml
             packages/java/gmkit-sm9/pom.xml
             packages/java/gmkit-bom/pom.xml
+      - name: Check tag version
+        if: startsWith(github.ref, 'refs/tags/java-v')
+        shell: bash
+        run: |
+          tag_version="${GITHUB_REF#refs/tags/java-v}"
+          pom_version="$(mvn -f packages/java/pom.xml -q -DforceStdout help:evaluate -Dexpression=project.version)"
+          test "$tag_version" = "$pom_version"
       - run: mvn -f packages/java/pom.xml -B -ntp -Prelease -Dgpg.skip=true -DskipTests verify
 
   build-native-runtimes:

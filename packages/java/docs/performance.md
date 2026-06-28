@@ -38,25 +38,25 @@ mvn -pl gmkit-benchmarks -am -DskipTests package
 运行全部基准：
 
 ```bash
-java -jar gmkit-benchmarks/target/gmkit-benchmarks-0.9.4-SNAPSHOT.jar
+java -jar gmkit-benchmarks/target/gmkit-benchmarks-0.10.0-preview.0.jar
 ```
 
 只看吞吐量：
 
 ```bash
-java -jar gmkit-benchmarks/target/gmkit-benchmarks-0.9.4-SNAPSHOT.jar ".*SM3.*" -bm thrpt -tu s -wi 3 -i 5 -f 1
+java -jar gmkit-benchmarks/target/gmkit-benchmarks-0.10.0-preview.0.jar ".*SM3.*" -bm thrpt -tu s -wi 3 -i 5 -f 1
 ```
 
 只看平均耗时：
 
 ```bash
-java -jar gmkit-benchmarks/target/gmkit-benchmarks-0.9.4-SNAPSHOT.jar ".*SM2.*" -bm avgt -tu us -wi 3 -i 5 -f 1
+java -jar gmkit-benchmarks/target/gmkit-benchmarks-0.10.0-preview.0.jar ".*SM2.*" -bm avgt -tu us -wi 3 -i 5 -f 1
 ```
 
 附带分配与 GC 指标：
 
 ```bash
-java -jar gmkit-benchmarks/target/gmkit-benchmarks-0.9.4-SNAPSHOT.jar ".*SM4.*" -bm avgt -tu us -prof gc -wi 3 -i 5 -f 1
+java -jar gmkit-benchmarks/target/gmkit-benchmarks-0.10.0-preview.0.jar ".*SM4.*" -bm avgt -tu us -prof gc -wi 3 -i 5 -f 1
 ```
 
 ## 结果记录建议
