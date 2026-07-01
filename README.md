@@ -19,14 +19,14 @@ gmkit/
 
 ## 支持矩阵
 
-| 算法 | Java | TypeScript | 说明 |
-| --- | --- | --- | --- |
-| SM2 | 支持 | 支持 | 加解密、签名/验签、密钥交换；跨语言需固定 userId、密文模式和签名格式 |
-| SM3 | 支持 | 支持 | 摘要与 HMAC |
-| SM4 | 支持 | 支持 | ECB/CBC/CTR/CFB/OFB/GCM/CCM，AEAD 需传递 tag/AAD |
-| ZUC | 支持 | 支持 | ZUC-128、EEA3、EIA3；不支持 ZUC-256 |
-| SM9 | 支持 | 不支持 | 仅 Java 侧通过 `gmkit-sm9` + `gmkit-sm9-native-*` JNI/GmSSL runtime 交付 |
-| SHA | JDK 自带 | 支持 | TS 包提供 SHA-1/256/384/512 与 HMAC；SHA-1 仅用于兼容旧系统 |
+| 算法  | Java   | TypeScript | 说明                                                                 |
+|-----|--------|------------|--------------------------------------------------------------------|
+| SM2 | 支持     | 支持         | 加解密、签名/验签、密钥交换；跨语言需固定 userId、密文模式和签名格式                             |
+| SM3 | 支持     | 支持         | 摘要与 HMAC                                                           |
+| SM4 | 支持     | 支持         | ECB/CBC/CTR/CFB/OFB/GCM/CCM，AEAD 需传递 tag/AAD                       |
+| ZUC | 支持     | 支持         | ZUC-128、EEA3、EIA3；不支持 ZUC-256                                      |
+| SM9 | 支持     | 不支持        | 仅 Java 侧通过 `gmkit-sm9` + `gmkit-sm9-native-*` JNI/GmSSL runtime 交付 |
+| SHA | JDK 自带 | 支持         | TS 包提供 SHA-1/256/384/512 与 HMAC；SHA-1 仅用于兼容旧系统                     |
 
 ## 统一命令
 
