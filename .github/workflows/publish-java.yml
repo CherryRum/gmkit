@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'java-v*'
+      - 'v*'
   workflow_dispatch:
 
 permissions:
@@ -25,11 +26,87 @@ jobs:
             packages/java/gmkit/pom.xml
             packages/java/gmkit-sm9/pom.xml
             packages/java/gmkit-bom/pom.xml
+      - name: Check tag version
+        if: startsWith(github.ref, 'refs/tags/java-v') || startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          tag_name="${GITHUB_REF_NAME}"
+          tag_version="${tag_name#java-v}"
+          tag_version="${tag_version#v}"
+          pom_version="$(mvn -f packages/java/pom.xml -q -DforceStdout help:evaluate -Dexpression=project.version)"
+          test "$tag_version" = "$pom_version"
       - run: mvn -f packages/java/pom.xml -B -ntp -Prelease -Dgpg.skip=true -DskipTests verify
 
-  github-packages:
-    if: startsWith(github.ref, 'refs/tags/java-v')
+  build-native-runtimes:
+    if: startsWith(github.ref, 'refs/tags/java-v') || startsWith(github.ref, 'refs/tags/v')
     needs: verify-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x86_64
+            generator: ''
+          - os: ubuntu-24.04-arm
+            platform: linux-aarch64
+            generator: ''
+          - os: macos-15-intel
+            platform: darwin-x86_64
+            generator: ''
+          - os: macos-14
+            platform: darwin-aarch64
+            generator: ''
+          - os: windows-2022
+            platform: windows-x86_64
+            generator: 'Visual Studio 17 2022'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: |
+            packages/java/pom.xml
+            packages/java/gmkit-sm9/pom.xml
+      - name: Build SM9 native runtime
+        shell: pwsh
+        run: |
+          $scriptArgs = @{
+            Platform = '${{ matrix.platform }}'
+            GmsslRef = 'v3.1.1'
+            Stage = $true
+            Test = $true
+          }
+          if ('${{ matrix.generator }}') {
+            $scriptArgs.Generator = '${{ matrix.generator }}'
+          }
+          ./scripts/sm9-native.ps1 @scriptArgs
+      - name: Stage native runtime artifact
+        shell: pwsh
+        run: |
+          $platform = '${{ matrix.platform }}'
+          $module = switch ($platform) {
+            'linux-x86_64' { 'gmkit-sm9-native-linux-x86_64' }
+            'linux-aarch64' { 'gmkit-sm9-native-linux-aarch64' }
+            'darwin-x86_64' { 'gmkit-sm9-native-darwin-x86_64' }
+            'darwin-aarch64' { 'gmkit-sm9-native-darwin-aarch64' }
+            'windows-x86_64' { 'gmkit-sm9-native-windows-x86_64' }
+          }
+          $source = "packages/java/$module/src/main/resources/native/$platform"
+          $target = "native-artifacts/packages/java/$module/src/main/resources/native/$platform"
+          New-Item -ItemType Directory -Force -Path $target | Out-Null
+          Copy-Item -LiteralPath "$source" -Destination (Split-Path -Parent $target) -Recurse -Force
+      - name: Upload native runtime resources
+        uses: actions/upload-artifact@v4
+        with:
+          name: sm9-native-${{ matrix.platform }}
+          path: native-artifacts/**
+
+  github-packages:
+    if: startsWith(github.ref, 'refs/tags/java-v') || startsWith(github.ref, 'refs/tags/v')
+    needs: build-native-runtimes
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,17 +123,37 @@ jobs:
             packages/java/gmkit/pom.xml
             packages/java/gmkit-sm9/pom.xml
             packages/java/gmkit-bom/pom.xml
-      - name: Publish to GitHub Packages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            packages/java/gmkit-sm9-native-*/pom.xml
+      - name: Download native runtime resources
+        uses: actions/download-artifact@v4
+        with:
+          pattern: sm9-native-*
+          path: native-download
+          merge-multiple: true
+      - name: Restore native runtime resources
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path native-download -Recurse -Directory -Filter 'gmkit-sm9-native-*' | ForEach-Object {
+            $module = $_.Name
+            $source = Join-Path $_.FullName 'src/main/resources/native'
+            $target = "packages/java/$module/src/main/resources/native"
+            if (Test-Path -LiteralPath $source) {
+              New-Item -ItemType Directory -Force -Path $target | Out-Null
+              Copy-Item -Path (Join-Path $source '*') -Destination $target -Recurse -Force
+            }
+          }
+      - name: Verify GitHub Packages deploy artifacts
         run: >
-          mvn -f packages/java/pom.xml -B -ntp -DskipTests deploy
-          -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/gmkits/gmkit
+          mvn -f packages/java/pom.xml -B -ntp -Pnative-modules -DskipTests
+          -DaltDeploymentRepository=github::default::file://${{ runner.temp }}/github-packages-dry-run
+          deploy
 
   maven-central:
-    if: startsWith(github.ref, 'refs/tags/java-v')
-    needs: verify-release
+    if: startsWith(github.ref, 'refs/tags/java-v') || startsWith(github.ref, 'refs/tags/v')
+    needs: build-native-runtimes
     runs-on: ubuntu-latest
+    env:
+      HAS_CENTRAL_SECRETS: ${{ secrets.CENTRAL_TOKEN_USERNAME != '' && secrets.CENTRAL_TOKEN_PASSWORD != '' && secrets.MAVEN_GPG_PRIVATE_KEY != '' && secrets.MAVEN_GPG_PASSPHRASE != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -74,9 +171,32 @@ jobs:
             packages/java/gmkit/pom.xml
             packages/java/gmkit-sm9/pom.xml
             packages/java/gmkit-bom/pom.xml
+            packages/java/gmkit-sm9-native-*/pom.xml
+      - name: Download native runtime resources
+        uses: actions/download-artifact@v4
+        with:
+          pattern: sm9-native-*
+          path: native-download
+          merge-multiple: true
+      - name: Restore native runtime resources
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path native-download -Recurse -Directory -Filter 'gmkit-sm9-native-*' | ForEach-Object {
+            $module = $_.Name
+            $source = Join-Path $_.FullName 'src/main/resources/native'
+            $target = "packages/java/$module/src/main/resources/native"
+            if (Test-Path -LiteralPath $source) {
+              New-Item -ItemType Directory -Force -Path $target | Out-Null
+              Copy-Item -Path (Join-Path $source '*') -Destination $target -Recurse -Force
+            }
+          }
+      - name: Skip Maven Central publish without secrets
+        if: env.HAS_CENTRAL_SECRETS != 'true'
+        run: echo "Maven Central/GPG secrets are not configured; release verification passed, Maven Central publish skipped."
       - name: Publish to Maven Central
+        if: env.HAS_CENTRAL_SECRETS == 'true'
         env:
           CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
           CENTRAL_TOKEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-        run: mvn -f packages/java/pom.xml -B -ntp -Prelease -DskipTests deploy
+        run: mvn -f packages/java/pom.xml -B -ntp -Pnative-modules,release -DskipTests deploy

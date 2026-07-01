@@ -22,6 +22,7 @@ export function registerToolRunner(toolId: string, runner: ToolRunner): void {
 }
 
 export async function runStudioTool(request: ToolRunRequest): Promise<ToolRunResult> {
+  // 所有工具都从这里进入；runner 抛出的真实错误会展示给用户，不在 UI 层伪造成成功。
   const runner = runners[request.tool.id];
   if (!runner) {
     return fail(`${request.tool.name} runner 尚未接入真实实现。`);

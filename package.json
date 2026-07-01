@@ -1,6 +1,6 @@
 {
   "name": "gmkit-monorepo",
-  "version": "0.10.0",
+  "version": "0.10.0-preview.1",
   "private": true,
   "description": "GMKit polyglot monorepo for Java and TypeScript packages",
   "workspaces": [
@@ -17,7 +17,7 @@
     "build:java": "mvn -f packages/java/pom.xml -B -ntp -DskipTests install",
     "docs:build": "npm run build -w packages/ts-docs",
     "studio:build": "npm run build -w apps/gmkit-studio",
-    "studio:dev": "npm run dev -w apps/gmkit-studio",
+    "studio:dev": "npm run dev -w apps/gmkit-studio --",
     "studio:type-check": "npm run type-check -w apps/gmkit-studio"
   },
   "engines": {

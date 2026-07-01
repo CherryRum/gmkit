@@ -6,17 +6,23 @@ on:
       - 'packages/java/gmkit-sm9/**'
       - 'packages/java/gmkit-sm9-native-*/**'
       - 'packages/java/pom.xml'
+      - 'scripts/sm9-native.ps1'
       - '.github/workflows/sm9-native.yml'
   pull_request:
     paths:
       - 'packages/java/gmkit-sm9/**'
       - 'packages/java/gmkit-sm9-native-*/**'
       - 'packages/java/pom.xml'
+      - 'scripts/sm9-native.ps1'
       - '.github/workflows/sm9-native.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: sm9-native-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   GMSSL_REF: v3.1.1
@@ -31,22 +37,22 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux-x86_64
-            bridge: libgmkitsm9.so
-            gmssl: libgmssl.so.3
+            generator: ''
           - os: ubuntu-24.04-arm
             platform: linux-aarch64
-            bridge: libgmkitsm9.so
-            gmssl: libgmssl.so.3
-          - os: macos-13
+            generator: ''
+          - os: macos-15-intel
             platform: darwin-x86_64
-            bridge: libgmkitsm9.dylib
-            gmssl: libgmssl.3.dylib
+            generator: ''
           - os: macos-14
             platform: darwin-aarch64
-            bridge: libgmkitsm9.dylib
-            gmssl: libgmssl.3.dylib
+            generator: ''
+          - os: windows-2022
+            platform: windows-x86_64
+            generator: 'Visual Studio 17 2022'
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -55,20 +61,18 @@ jobs:
           cache-dependency-path: |
             packages/java/pom.xml
             packages/java/gmkit-sm9/pom.xml
-      - name: Build GmSSL
+
+      - name: Build and test SM9 JNI runtime
+        shell: pwsh
         run: |
-          git clone --depth 1 --branch "$GMSSL_REF" https://github.com/guanzhi/GmSSL.git gmssl-src
-          cmake -S gmssl-src -B gmssl-build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON
-          cmake --build gmssl-build --parallel 2
-          sudo cmake --install gmssl-build
-      - name: Build JNI bridge
-        run: mvn -f packages/java/pom.xml -B -ntp -pl gmkit-sm9 -Pnative-build -Dgmssl.root=/usr/local process-classes
-      - name: Stage native runtime for tests
-        shell: bash
-        run: |
-          dst="packages/java/gmkit-sm9/src/test/resources/native/${{ matrix.platform }}"
-          mkdir -p "$dst"
-          find packages/java/gmkit-sm9/target/native-build -name '${{ matrix.bridge }}' -exec cp {} "$dst/" \;
-          cp "/usr/local/lib/${{ matrix.gmssl }}" "$dst/"
-      - name: Run SM9 native tests
-        run: mvn -f packages/java/pom.xml -B -ntp -pl gmkit-sm9 test
+          $scriptArgs = @{
+            Platform = '${{ matrix.platform }}'
+            GmsslRef = $env:GMSSL_REF
+            Stage = $true
+            PackageRuntime = $true
+            Test = $true
+          }
+          if ('${{ matrix.generator }}') {
+            $scriptArgs.Generator = '${{ matrix.generator }}'
+          }
+          ./scripts/sm9-native.ps1 @scriptArgs

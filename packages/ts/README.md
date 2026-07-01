@@ -184,7 +184,7 @@ const sha512Hash = sha.sha512('Hello World');
 
 -----
 
-## 0.9.4 修订提示（安全与文档对齐）
+## 0.10.0-preview.1 预览版修订提示（安全与文档对齐）
 
 - `sm4Encrypt` 现在返回 `{ ciphertext, tag?, format }` 对象；`sm4Decrypt` 可直接接收该对象。
 - `zucKeystream(key, iv, length)` 的 `length` 改为 **字节数**；若需要按 32-bit word，使用 `zucKeystreamWords`。

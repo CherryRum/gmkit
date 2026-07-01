@@ -14,7 +14,9 @@ import {
   sha1,
   sha256,
   sha512,
+  sm2CompressPublicKey,
   sm2Decrypt,
+  sm2DecompressPublicKey,
   sm2Encrypt,
   sm2GenerateKeyPair,
   sm2Sign,
@@ -42,7 +44,7 @@ import {
   requireJsonInput,
   textValue,
 } from './shared';
-import { ok, type ToolRunner, type ToolRunRequest, type ToolRunResult } from './types';
+import { ok, okFields, outputField, type ToolRunner, type ToolRunRequest, type ToolRunResult } from './types';
 
 type JsonRecord = Record<string, any>;
 
@@ -68,9 +70,47 @@ export const cryptoRunners: Record<string, ToolRunner> = {
 function runSm2(request: ToolRunRequest): ToolRunResult {
   const payload = jsonInput<JsonRecord>(request.input, { message: request.input });
   const mode = textValue(request.options, 'mode', 'C1C3C2') as 'C1C3C2' | 'C1C2C3';
+  const userId = textValue(request.options, 'userId', '1234567812345678');
 
   if (request.tab === '密钥') {
-    return ok(sm2GenerateKeyPair(), 'SM2 密钥对已生成');
+    const keyPair = sm2GenerateKeyPair();
+    // SM2 工具站需要同时给出非压缩和压缩公钥，便于直接对接不同 SDK 的输入格式。
+    const compressed = sm2CompressPublicKey(keyPair.publicKey);
+    return okFields(
+      [
+        outputField('privateKeyHex', '私钥 Hex', keyPair.privateKey, 'hex', { secret: true }),
+        outputField('privateKeyBase64', '私钥 Base64', bytesToBase64(hexToBytes(keyPair.privateKey)), 'base64', { secret: true }),
+        outputField('publicKeyHex', '公钥 Hex', keyPair.publicKey, 'hex', { primary: true }),
+        outputField('publicKeyBase64', '公钥 Base64', bytesToBase64(hexToBytes(keyPair.publicKey)), 'base64'),
+        outputField('compressedPublicKeyHex', '压缩公钥 Hex', compressed, 'hex'),
+        outputField('compressedPublicKeyBase64', '压缩公钥 Base64', bytesToBase64(hexToBytes(compressed)), 'base64'),
+      ],
+      'SM2 密钥对已生成',
+    );
+  }
+
+  if (request.tab === '压缩公钥') {
+    const publicKey = String(payload.publicKey ?? request.input).trim();
+    const compressed = sm2CompressPublicKey(publicKey);
+    return okFields(
+      [
+        outputField('compressedPublicKeyHex', '压缩公钥 Hex', compressed, 'hex', { primary: true }),
+        outputField('compressedPublicKeyBase64', '压缩公钥 Base64', bytesToBase64(hexToBytes(compressed)), 'base64'),
+      ],
+      'SM2 公钥压缩完成',
+    );
+  }
+
+  if (request.tab === '解压公钥') {
+    const publicKey = String(payload.publicKey ?? request.input).trim();
+    const uncompressed = sm2DecompressPublicKey(publicKey);
+    return okFields(
+      [
+        outputField('publicKeyHex', '非压缩公钥 Hex', uncompressed, 'hex', { primary: true }),
+        outputField('publicKeyBase64', '非压缩公钥 Base64', bytesToBase64(hexToBytes(uncompressed)), 'base64'),
+      ],
+      'SM2 公钥解压完成',
+    );
   }
 
   if (request.tab === '加密') {
@@ -78,13 +118,25 @@ function runSm2(request: ToolRunRequest): ToolRunResult {
     const publicKey = String(payload.publicKey ?? keyPair?.publicKey);
     const message = String(payload.message ?? request.input);
     const ciphertext = sm2Encrypt(publicKey, message, { mode });
-    return ok({ ciphertext, mode, demoPrivateKey: keyPair?.privateKey }, 'SM2 加密完成');
+    return okFields(
+      [
+        outputField('ciphertext', '密文', ciphertext, 'hex', { primary: true }),
+        outputField('mode', '密文顺序', mode),
+        ...(keyPair
+          ? [
+              outputField('demoPrivateKey', '临时私钥 Hex', keyPair.privateKey, 'hex', { secret: true, note: '未填写公钥时自动生成，仅用于本次解密验证。' }),
+              outputField('demoPublicKey', '临时公钥 Hex', keyPair.publicKey, 'hex'),
+            ]
+          : []),
+      ],
+      'SM2 加密完成',
+    );
   }
 
   if (request.tab === '解密') {
     const payloadStrict = requireJsonInput<JsonRecord>(request.input, '包含 privateKey/ciphertext 的 JSON');
     const plaintext = sm2Decrypt(String(payloadStrict.privateKey), String(payloadStrict.ciphertext), { mode });
-    return ok({ plaintext, mode }, 'SM2 解密完成');
+    return okFields([outputField('plaintext', '明文', plaintext, 'text', { primary: true }), outputField('mode', '密文顺序', mode)], 'SM2 解密完成');
   }
 
   if (request.tab === '签名') {
@@ -92,10 +144,17 @@ function runSm2(request: ToolRunRequest): ToolRunResult {
     const privateKey = String(payload.privateKey ?? keyPair?.privateKey);
     const message = String(payload.message ?? request.input);
     const signature = sm2Sign(privateKey, message, {
-      userId: String(payload.userId ?? '1234567812345678'),
+      userId: String(payload.userId ?? userId),
       signatureFormat: 'raw',
     });
-    return ok({ signature, publicKey: keyPair?.publicKey, message }, 'SM2 签名完成');
+    return okFields(
+      [
+        outputField('signature', '签名 Hex', signature, 'hex', { primary: true }),
+        outputField('message', '签名原文', message),
+        ...(keyPair ? [outputField('demoPublicKey', '临时公钥 Hex', keyPair.publicKey, 'hex')] : []),
+      ],
+      'SM2 签名完成',
+    );
   }
 
   const verifyPayload = requireJsonInput<JsonRecord>(request.input, '包含 publicKey/message/signature 的 JSON');
@@ -103,9 +162,9 @@ function runSm2(request: ToolRunRequest): ToolRunResult {
     String(verifyPayload.publicKey),
     String(verifyPayload.message),
     String(verifyPayload.signature),
-    { userId: String(verifyPayload.userId ?? '1234567812345678'), signatureFormat: 'auto' },
+    { userId: String(verifyPayload.userId ?? userId), signatureFormat: 'auto' },
   );
-  return ok({ valid }, 'SM2 验签完成');
+  return okFields([outputField('valid', '验签结果', String(valid), 'boolean', { primary: true })], 'SM2 验签完成');
 }
 
 function runSm4(request: ToolRunRequest): ToolRunResult {
@@ -123,7 +182,14 @@ function runSm4(request: ToolRunRequest): ToolRunResult {
       iv: iv || undefined,
       outputFormat,
     });
-    return ok({ ...result, key, iv: iv || undefined }, 'SM4 加密完成');
+    return okFields(
+      [
+        outputField('ciphertext', '密文', result.ciphertext, outputFormat, { primary: true }),
+        outputField('key', 'Key Hex', key, 'hex', { secret: true }),
+        ...(iv ? [outputField('iv', 'IV Hex', iv, 'hex')] : []),
+      ],
+      'SM4 加密完成',
+    );
   }
 
   const payload = requireJsonInput<JsonRecord>(request.input, '包含 key/ciphertext 的 JSON，或在选项中填写 key');
@@ -134,7 +200,7 @@ function runSm4(request: ToolRunRequest): ToolRunResult {
     iv: String(payload.iv ?? iv) || undefined,
     inputFormat: outputFormat,
   });
-  return ok({ plaintext }, 'SM4 解密完成');
+  return okFields([outputField('plaintext', '明文', plaintext, 'text', { primary: true })], 'SM4 解密完成');
 }
 
 function runZuc(request: ToolRunRequest): ToolRunResult {
@@ -144,24 +210,27 @@ function runZuc(request: ToolRunRequest): ToolRunResult {
   const length = Number(textValue(request.options, 'length', '32'));
 
   if (request.tab === '密钥流') {
-    return ok({ keystream: zucKeystream(key, iv, length), bytes: length }, 'ZUC 密钥流生成完成');
+    return okFields(
+      [outputField('keystream', '密钥流 Hex', zucKeystream(key, iv, length), 'hex', { primary: true }), outputField('bytes', '字节数', String(length), 'number')],
+      'ZUC 密钥流生成完成',
+    );
   }
   if (request.tab === '解密') {
-    return ok({ plaintext: zucDecrypt(key, iv, String(payload.message ?? request.input)) }, 'ZUC 解密完成');
+    return okFields([outputField('plaintext', '明文', zucDecrypt(key, iv, String(payload.message ?? request.input)), 'text', { primary: true })], 'ZUC 解密完成');
   }
   if (request.tab === 'EEA3') {
-    const count = Number(payload.count ?? 0);
-    const bearer = Number(payload.bearer ?? 0);
-    const direction = Number(payload.direction ?? 0);
-    return ok({ keystream: eea3(key, count, bearer, direction, String(payload.message ?? '').length * 8) }, 'EEA3 执行完成');
+    const count = Number(payload.count ?? textValue(request.options, 'count', '0'));
+    const bearer = Number(payload.bearer ?? textValue(request.options, 'bearer', '0'));
+    const direction = Number(payload.direction ?? textValue(request.options, 'direction', '0'));
+    return okFields([outputField('keystream', 'EEA3 密钥流 Hex', eea3(key, count, bearer, direction, String(payload.message ?? '').length * 8), 'hex', { primary: true })], 'EEA3 执行完成');
   }
   if (request.tab === 'EIA3') {
-    const count = Number(payload.count ?? 0);
-    const bearer = Number(payload.bearer ?? 0);
-    const direction = Number(payload.direction ?? 0);
-    return ok({ mac: eia3(key, count, bearer, direction, String(payload.message ?? request.input)) }, 'EIA3 执行完成');
+    const count = Number(payload.count ?? textValue(request.options, 'count', '0'));
+    const bearer = Number(payload.bearer ?? textValue(request.options, 'bearer', '0'));
+    const direction = Number(payload.direction ?? textValue(request.options, 'direction', '0'));
+    return okFields([outputField('mac', 'MAC Hex', eia3(key, count, bearer, direction, String(payload.message ?? request.input)), 'hex', { primary: true })], 'EIA3 执行完成');
   }
-  return ok({ ciphertext: zucEncrypt(key, iv, String(payload.message ?? request.input)) }, 'ZUC 加密完成');
+  return okFields([outputField('ciphertext', '密文 Hex', zucEncrypt(key, iv, String(payload.message ?? request.input)), 'hex', { primary: true })], 'ZUC 加密完成');
 }
 
 async function runSm9(request: ToolRunRequest): Promise<ToolRunResult> {
@@ -175,6 +244,7 @@ async function runSm9(request: ToolRunRequest): Promise<ToolRunResult> {
   }
 
   if (request.tab === 'Java API') {
+    // SM9 不在 TS 侧假实现；Java API 未配置或请求失败时直接把错误返回给工作台。
     const runtime = new JavaApiSm9Runtime(textValue(request.options, 'endpoint'));
     return ok(await runtime.execute(runtimeRequest), 'SM9 Java API 调用完成');
   }
@@ -190,10 +260,10 @@ async function runAes(request: ToolRunRequest): Promise<ToolRunResult> {
   const payload = jsonInput<JsonRecord>(request.input, { message: request.input });
   const algorithmName = `AES-${mode}`;
   const keyBytes = textValue(request.options, 'key')
-    ? decodeBytes(textValue(request.options, 'key'), 'Base64')
+    ? decodeAutoBytes(textValue(request.options, 'key'))
     : getRandomBytes(keyLength / 8);
   const ivBytes = textValue(request.options, 'iv')
-    ? decodeBytes(textValue(request.options, 'iv'), 'Base64')
+    ? decodeAutoBytes(textValue(request.options, 'iv'))
     : getRandomBytes(mode === 'GCM' ? 12 : 16);
   const key = await crypto.subtle.importKey('raw', asArrayBuffer(keyBytes), algorithmName, false, ['encrypt', 'decrypt']);
   const algorithm = mode === 'CTR'
@@ -203,17 +273,18 @@ async function runAes(request: ToolRunRequest): Promise<ToolRunResult> {
   if (request.tab === '解密') {
     const ciphertext = decodeBytes(String(payload.ciphertext ?? request.input), outputEncoding);
     const plaintext = await crypto.subtle.decrypt(algorithm, key, asArrayBuffer(ciphertext));
-    return ok({ plaintext: new TextDecoder().decode(plaintext) }, 'AES 解密完成');
+    return okFields([outputField('plaintext', '明文', new TextDecoder().decode(plaintext), 'text', { primary: true })], 'AES 解密完成');
   }
 
   const encrypted = await crypto.subtle.encrypt(algorithm, key, asArrayBuffer(stringToBytes(String(payload.message ?? request.input))));
-  return ok(
-    {
-      ciphertext: encodeBytes(new Uint8Array(encrypted), outputEncoding),
-      key: bytesToBase64(keyBytes),
-      iv: bytesToBase64(ivBytes),
-      encoding: outputEncoding,
-    },
+  return okFields(
+    [
+      outputField('ciphertext', '密文', encodeBytes(new Uint8Array(encrypted), outputEncoding), outputEncoding.toLowerCase() as 'base64' | 'hex', { primary: true }),
+      outputField('keyBase64', 'Key Base64', bytesToBase64(keyBytes), 'base64', { secret: true }),
+      outputField('keyHex', 'Key Hex', bytesToHex(keyBytes), 'hex', { secret: true }),
+      outputField('ivBase64', 'IV/Nonce Base64', bytesToBase64(ivBytes), 'base64'),
+      outputField('ivHex', 'IV/Nonce Hex', bytesToHex(ivBytes), 'hex'),
+    ],
     'AES 加密完成',
   );
 }
@@ -222,38 +293,58 @@ async function runRsa(request: ToolRunRequest): Promise<ToolRunResult> {
   const hash = textValue(request.options, 'hash', 'SHA-256');
   const keyLength = Number(textValue(request.options, 'keyLength', '2048'));
   if (request.tab === '生成密钥') {
+    const isPss = textValue(request.options, 'usage', 'OAEP 加解密') === 'PSS 签名验签';
+    // Web Crypto 的 RSA-OAEP 与 RSA-PSS key usages 不兼容，生成时必须按用途拆开。
+    const algorithm = isPss
+      ? { name: 'RSA-PSS', modulusLength: keyLength, publicExponent: new Uint8Array([1, 0, 1]), hash }
+      : { name: 'RSA-OAEP', modulusLength: keyLength, publicExponent: new Uint8Array([1, 0, 1]), hash };
     const pair = await crypto.subtle.generateKey(
-      {
-        name: 'RSA-OAEP',
-        modulusLength: keyLength,
-        publicExponent: new Uint8Array([1, 0, 1]),
-        hash,
-      },
+      algorithm,
       true,
-      ['encrypt', 'decrypt'],
+      isPss ? ['sign', 'verify'] : ['encrypt', 'decrypt'],
     );
-    return ok(
-      {
-        publicKey: await crypto.subtle.exportKey('jwk', pair.publicKey),
-        privateKey: await crypto.subtle.exportKey('jwk', pair.privateKey),
-      },
-      'RSA-OAEP 密钥生成完成',
+    const publicJwk = await crypto.subtle.exportKey('jwk', pair.publicKey);
+    const privateJwk = await crypto.subtle.exportKey('jwk', pair.privateKey);
+    const spki = new Uint8Array(await crypto.subtle.exportKey('spki', pair.publicKey));
+    const pkcs8 = new Uint8Array(await crypto.subtle.exportKey('pkcs8', pair.privateKey));
+    return okFields(
+      [
+        outputField('publicKeyPem', '公钥 PEM', pemWrap('PUBLIC KEY', spki), 'pem', { primary: true }),
+        outputField('privateKeyPem', '私钥 PEM', pemWrap('PRIVATE KEY', pkcs8), 'pem', { secret: true }),
+        outputField('publicJwk', '公钥 JWK', publicJwk, 'json'),
+        outputField('privateJwk', '私钥 JWK', privateJwk, 'json', { secret: true }),
+      ],
+      isPss ? 'RSA-PSS 密钥生成完成' : 'RSA-OAEP 密钥生成完成',
     );
   }
 
   const payload = requireJsonInput<JsonRecord>(request.input, 'RSA JSON');
   if (request.tab === '加密') {
-    const publicKey = await crypto.subtle.importKey('jwk', payload.publicKey, { name: 'RSA-OAEP', hash }, false, ['encrypt']);
+    const publicKey = await crypto.subtle.importKey('jwk', payload.publicKey ?? payload.publicJwk, { name: 'RSA-OAEP', hash }, false, ['encrypt']);
     const ciphertext = await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, publicKey, asArrayBuffer(stringToBytes(String(payload.message ?? ''))));
-    return ok({ ciphertext: bytesToBase64(new Uint8Array(ciphertext)) }, 'RSA 加密完成');
+    return okFields([outputField('ciphertext', '密文 Base64', bytesToBase64(new Uint8Array(ciphertext)), 'base64', { primary: true })], 'RSA 加密完成');
   }
   if (request.tab === '解密') {
-    const privateKey = await crypto.subtle.importKey('jwk', payload.privateKey, { name: 'RSA-OAEP', hash }, false, ['decrypt']);
+    const privateKey = await crypto.subtle.importKey('jwk', payload.privateKey ?? payload.privateJwk, { name: 'RSA-OAEP', hash }, false, ['decrypt']);
     const plaintext = await crypto.subtle.decrypt({ name: 'RSA-OAEP' }, privateKey, asArrayBuffer(decodeBytes(String(payload.ciphertext), 'Base64')));
-    return ok({ plaintext: new TextDecoder().decode(plaintext) }, 'RSA 解密完成');
+    return okFields([outputField('plaintext', '明文', new TextDecoder().decode(plaintext), 'text', { primary: true })], 'RSA 解密完成');
   }
 
-  throw new Error('RSA 签名/验签请先使用 PSS key JSON，当前工作台先提供 OAEP 生成/加解密。');
+  const saltLength = Number(textValue(request.options, 'saltLength', '32'));
+  if (request.tab === '签名') {
+    const privateKey = await crypto.subtle.importKey('jwk', payload.privateKey ?? payload.privateJwk, { name: 'RSA-PSS', hash }, false, ['sign']);
+    const signature = await crypto.subtle.sign({ name: 'RSA-PSS', saltLength }, privateKey, asArrayBuffer(stringToBytes(String(payload.message ?? ''))));
+    return okFields([outputField('signature', '签名 Base64', bytesToBase64(new Uint8Array(signature)), 'base64', { primary: true })], 'RSA-PSS 签名完成');
+  }
+
+  const publicKey = await crypto.subtle.importKey('jwk', payload.publicKey ?? payload.publicJwk, { name: 'RSA-PSS', hash }, false, ['verify']);
+  const valid = await crypto.subtle.verify(
+    { name: 'RSA-PSS', saltLength },
+    publicKey,
+    asArrayBuffer(decodeBytes(String(payload.signature), 'Base64')),
+    asArrayBuffer(stringToBytes(String(payload.message ?? ''))),
+  );
+  return okFields([outputField('valid', '验签结果', String(valid), 'boolean', { primary: true })], 'RSA-PSS 验签完成');
 }
 
 function runDes3(request: ToolRunRequest): ToolRunResult {
@@ -270,7 +361,7 @@ function runDes3(request: ToolRunRequest): ToolRunResult {
     decipher.update(forge.util.createBuffer(bytesToForgeBinary(decodeBytes(String(payload.ciphertext ?? request.input), outputEncoding))));
     const pass = decipher.finish();
     if (!pass) throw new Error('3DES 解密失败');
-    return ok({ plaintext: decipher.output.toString() }, '3DES 解密完成');
+    return okFields([outputField('plaintext', '明文', decipher.output.toString(), 'text', { primary: true })], '3DES 解密完成');
   }
 
   const cipher = forge.cipher.createCipher('3DES-CBC', keyBytes);
@@ -278,7 +369,14 @@ function runDes3(request: ToolRunRequest): ToolRunResult {
   cipher.update(forge.util.createBuffer(String(payload.message ?? request.input), 'utf8'));
   cipher.finish();
   const bytes = Uint8Array.from(cipher.output.getBytes(), (char) => char.charCodeAt(0));
-  return ok({ ciphertext: encodeBytes(bytes, outputEncoding), key, iv }, '3DES 加密完成');
+  return okFields(
+    [
+      outputField('ciphertext', '密文', encodeBytes(bytes, outputEncoding), outputEncoding.toLowerCase() as 'base64' | 'hex', { primary: true }),
+      outputField('keyHex', 'Key Hex', key.padEnd(48, '0').slice(0, 48), 'hex', { secret: true }),
+      outputField('ivHex', 'IV Hex', iv.padEnd(16, '0').slice(0, 16), 'hex'),
+    ],
+    '3DES 加密完成',
+  );
 }
 
 async function runPbkdf2(request: ToolRunRequest): Promise<ToolRunResult> {
@@ -288,7 +386,15 @@ async function runPbkdf2(request: ToolRunRequest): Promise<ToolRunResult> {
   const salt = textValue(request.options, 'salt', 'gmkit-salt');
   const baseKey = await crypto.subtle.importKey('raw', asArrayBuffer(stringToBytes(request.input)), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash, salt: asArrayBuffer(stringToBytes(salt)), iterations }, baseKey, length * 8);
-  return ok({ key: bytesToHex(new Uint8Array(bits)), hash, iterations, length, salt }, 'PBKDF2 派生完成');
+  const key = bytesToHex(new Uint8Array(bits));
+  return okFields(
+    [
+      outputField('keyHex', '派生 Key Hex', key, 'hex', { primary: true, secret: true }),
+      outputField('keyBase64', '派生 Key Base64', bytesToBase64(hexToBytes(key)), 'base64', { secret: true }),
+      outputField('params', '参数', { hash, iterations, length, salt }, 'json'),
+    ],
+    'PBKDF2 派生完成',
+  );
 }
 
 async function runDigest(request: ToolRunRequest): Promise<ToolRunResult> {
@@ -296,15 +402,15 @@ async function runDigest(request: ToolRunRequest): Promise<ToolRunResult> {
   const upper = textValue(request.options, 'case', 'Lower') === 'Upper';
   const payload = jsonInput<JsonRecord>(request.input, { message: request.input });
   const message = String(payload.message ?? request.input);
-  const key = String(payload.key ?? 'gmkit-secret');
+  const key = String(payload.key ?? textValue(request.options, 'key', 'gmkit-secret'));
   let digest = '';
 
   if (request.tool.id === 'bcrypt') {
     if (request.tab === '校验') {
       const hash = textValue(request.options, 'compare') || String(payload.hash ?? '');
-      return ok({ valid: await bcrypt.compare(message, hash) }, 'bcrypt 校验完成');
+      return okFields([outputField('valid', '校验结果', String(await bcrypt.compare(message, hash)), 'boolean', { primary: true })], 'bcrypt 校验完成');
     }
-    return ok({ hash: await bcrypt.hash(message, Number(textValue(request.options, 'cost', '12'))) }, 'bcrypt 生成完成');
+    return okFields([outputField('hash', 'bcrypt Hash', await bcrypt.hash(message, Number(textValue(request.options, 'cost', '12'))), 'secret', { primary: true, secret: true })], 'bcrypt 生成完成');
   }
 
   if (request.tool.id === 'crc32') {
@@ -322,7 +428,7 @@ async function runDigest(request: ToolRunRequest): Promise<ToolRunResult> {
   if (outputEncoding === 'Base64') {
     digest = bytesToBase64(hexToBytes(digest));
   }
-  return ok({ digest: upper ? digest.toUpperCase() : digest.toLowerCase() }, '摘要计算完成');
+  return okFields([outputField('digest', '摘要', upper ? digest.toUpperCase() : digest.toLowerCase(), outputEncoding.toLowerCase() as 'hex' | 'base64', { primary: true })], '摘要计算完成');
 }
 
 function plainDigest(id: string, message: string): string {
@@ -352,4 +458,14 @@ function bytesToForgeBinary(bytes: Uint8Array): string {
   let output = '';
   for (const byte of bytes) output += String.fromCharCode(byte);
   return output;
+}
+
+function decodeAutoBytes(value: string): Uint8Array {
+  const clean = value.trim();
+  return /^[0-9a-fA-F]+$/.test(clean) && clean.length % 2 === 0 ? hexToBytes(clean) : decodeBytes(clean, 'Base64');
+}
+
+function pemWrap(label: string, bytes: Uint8Array): string {
+  const body = bytesToBase64(bytes).match(/.{1,64}/g)?.join('\n') ?? '';
+  return `-----BEGIN ${label}-----\n${body}\n-----END ${label}-----`;
 }
