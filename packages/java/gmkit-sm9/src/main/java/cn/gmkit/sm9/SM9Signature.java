@@ -36,7 +36,14 @@ public final class SM9Signature implements AutoCloseable {
             throw new SM9Exception(SM9Messages.operationReturnedNull("sign ctx new"));
         }
         this.ctx = context;
-        init(doSign);
+        try {
+            init(doSign);
+        } catch (RuntimeException ex) {
+            SM9NativeBridge.sm9SignCtxFree(context);
+            this.ctx = 0L;
+            this.closed = true;
+            throw ex;
+        }
     }
 
     private void init(boolean doSign) {
@@ -77,10 +84,7 @@ public final class SM9Signature implements AutoCloseable {
      * @return 当前上下文，便于链式调用
      */
     public SM9Signature update(byte[] data, int offset, int length) {
-        SM9Checks.requireNonNull(data, "data");
-        if (offset < 0 || length < 0 || offset + length > data.length) {
-            throw new SM9Exception(SM9Messages.emptyValue("data range"));
-        }
+        SM9Checks.requireRange(data, offset, length, "data range");
         if (length == 0) {
             return this;
         }

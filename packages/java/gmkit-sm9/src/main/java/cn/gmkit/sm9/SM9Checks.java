@@ -31,4 +31,13 @@ final class SM9Checks {
         }
         return value;
     }
+
+    static byte[] requireRange(byte[] value, int offset, int length, String label) {
+        requireNonNull(value, label);
+        // 先比较剩余长度，避免 offset + length 在 int 范围内溢出。
+        if (offset < 0 || length < 0 || offset > value.length || length > value.length - offset) {
+            throw new SM9Exception(SM9Messages.emptyValue(label));
+        }
+        return value;
+    }
 }

@@ -114,12 +114,14 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9SignMasterKeyInfoDecryptFromPem(JNIEnv *env
 	}
 	fp = open_file(env, jfile, "rb");
 	if (fp == NULL) {
+		memset(msk, 0, sizeof(SM9_SIGN_MASTER_KEY));
 		free(msk);
 		return 0;
 	}
 	pass = (*env)->GetStringUTFChars(env, jpass, NULL);
 	if (pass == NULL) {
 		fclose(fp);
+		memset(msk, 0, sizeof(SM9_SIGN_MASTER_KEY));
 		free(msk);
 		return 0;
 	}
@@ -127,6 +129,7 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9SignMasterKeyInfoDecryptFromPem(JNIEnv *env
 	(*env)->ReleaseStringUTFChars(env, jpass, pass);
 	fclose(fp);
 	if (ret != 1) {
+		memset(msk, 0, sizeof(SM9_SIGN_MASTER_KEY));
 		free(msk);
 		return 0;
 	}
@@ -197,12 +200,14 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9SignMasterKeyExtractKey(JNIEnv *env, jclass
 	}
 	id = (*env)->GetStringUTFChars(env, jid, NULL);
 	if (id == NULL) {
+		memset(key, 0, sizeof(SM9_SIGN_KEY));
 		free(key);
 		return 0;
 	}
 	ret = sm9_sign_master_key_extract_key(msk, id, strlen(id), key);
 	(*env)->ReleaseStringUTFChars(env, jid, id);
 	if (ret != 1) {
+		memset(key, 0, sizeof(SM9_SIGN_KEY));
 		free(key);
 		return 0;
 	}
@@ -268,12 +273,14 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9SignKeyInfoDecryptFromPem(JNIEnv *env, jcla
 	}
 	fp = open_file(env, jfile, "rb");
 	if (fp == NULL) {
+		memset(key, 0, sizeof(SM9_SIGN_KEY));
 		free(key);
 		return 0;
 	}
 	pass = (*env)->GetStringUTFChars(env, jpass, NULL);
 	if (pass == NULL) {
 		fclose(fp);
+		memset(key, 0, sizeof(SM9_SIGN_KEY));
 		free(key);
 		return 0;
 	}
@@ -281,6 +288,7 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9SignKeyInfoDecryptFromPem(JNIEnv *env, jcla
 	(*env)->ReleaseStringUTFChars(env, jpass, pass);
 	fclose(fp);
 	if (ret != 1) {
+		memset(key, 0, sizeof(SM9_SIGN_KEY));
 		free(key);
 		return 0;
 	}
@@ -324,9 +332,14 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9SignUpdate(JNIEnv *env, jclass cls,
 {
 	SM9_SIGN_CTX *ctx = HANDLE_PTR(SM9_SIGN_CTX, handle);
 	jbyte *data;
+	jsize data_len;
 	int ret;
 
 	if (ctx == NULL || jdata == NULL || length < 0 || offset < 0) {
+		return 0;
+	}
+	data_len = (*env)->GetArrayLength(env, jdata);
+	if (offset > data_len || length > data_len - offset) {
 		return 0;
 	}
 	data = (*env)->GetByteArrayElements(env, jdata, NULL);
@@ -378,9 +391,14 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9VerifyUpdate(JNIEnv *env, jclass cls,
 {
 	SM9_SIGN_CTX *ctx = HANDLE_PTR(SM9_SIGN_CTX, handle);
 	jbyte *data;
+	jsize data_len;
 	int ret;
 
 	if (ctx == NULL || jdata == NULL || length < 0 || offset < 0) {
+		return 0;
+	}
+	data_len = (*env)->GetArrayLength(env, jdata);
+	if (offset > data_len || length > data_len - offset) {
 		return 0;
 	}
 	data = (*env)->GetByteArrayElements(env, jdata, NULL);
@@ -434,6 +452,7 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9EncMasterKeyGenerate(JNIEnv *env, jclass cl
 		return 0;
 	}
 	if (sm9_enc_master_key_generate(msk) != 1) {
+		memset(msk, 0, sizeof(SM9_ENC_MASTER_KEY));
 		free(msk);
 		return 0;
 	}
@@ -495,12 +514,14 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9EncMasterKeyInfoDecryptFromPem(JNIEnv *env,
 	}
 	fp = open_file(env, jfile, "rb");
 	if (fp == NULL) {
+		memset(msk, 0, sizeof(SM9_ENC_MASTER_KEY));
 		free(msk);
 		return 0;
 	}
 	pass = (*env)->GetStringUTFChars(env, jpass, NULL);
 	if (pass == NULL) {
 		fclose(fp);
+		memset(msk, 0, sizeof(SM9_ENC_MASTER_KEY));
 		free(msk);
 		return 0;
 	}
@@ -508,6 +529,7 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9EncMasterKeyInfoDecryptFromPem(JNIEnv *env,
 	(*env)->ReleaseStringUTFChars(env, jpass, pass);
 	fclose(fp);
 	if (ret != 1) {
+		memset(msk, 0, sizeof(SM9_ENC_MASTER_KEY));
 		free(msk);
 		return 0;
 	}
@@ -578,12 +600,14 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9EncMasterKeyExtractKey(JNIEnv *env, jclass 
 	}
 	id = (*env)->GetStringUTFChars(env, jid, NULL);
 	if (id == NULL) {
+		memset(key, 0, sizeof(SM9_ENC_KEY));
 		free(key);
 		return 0;
 	}
 	ret = sm9_enc_master_key_extract_key(msk, id, strlen(id), key);
 	(*env)->ReleaseStringUTFChars(env, jid, id);
 	if (ret != 1) {
+		memset(key, 0, sizeof(SM9_ENC_KEY));
 		free(key);
 		return 0;
 	}
@@ -649,12 +673,14 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9EncKeyInfoDecryptFromPem(JNIEnv *env, jclas
 	}
 	fp = open_file(env, jfile, "rb");
 	if (fp == NULL) {
+		memset(key, 0, sizeof(SM9_ENC_KEY));
 		free(key);
 		return 0;
 	}
 	pass = (*env)->GetStringUTFChars(env, jpass, NULL);
 	if (pass == NULL) {
 		fclose(fp);
+		memset(key, 0, sizeof(SM9_ENC_KEY));
 		free(key);
 		return 0;
 	}
@@ -662,6 +688,7 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9EncKeyInfoDecryptFromPem(JNIEnv *env, jclas
 	(*env)->ReleaseStringUTFChars(env, jpass, pass);
 	fclose(fp);
 	if (ret != 1) {
+		memset(key, 0, sizeof(SM9_ENC_KEY));
 		free(key);
 		return 0;
 	}
