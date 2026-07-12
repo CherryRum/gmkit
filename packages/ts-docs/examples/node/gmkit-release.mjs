@@ -17,6 +17,7 @@ const {
   sm2DecompressPublicKey,
   sm2Encrypt,
   sm2GenerateKeyPair,
+  sm2GetPublicKeyFromPrivateKey,
   sm2Sign,
   sm2Verify,
   sm3Digest,
@@ -46,6 +47,10 @@ const signature = sm2Sign(keys.privateKey, binary, { userId: 'gmkit-release-v1',
 assert.equal(sm2Verify(keys.publicKey, binary, signature, { userId: 'gmkit-release-v1', signatureFormat: 'der' }), true);
 assert.equal(sm2Verify(keys.publicKey, Uint8Array.of(1), signature, { userId: 'gmkit-release-v1', signatureFormat: 'der' }), false);
 
+// 空 userId 是历史兼容输入，必须继续与 DEFAULT_USER_ID 使用同一验签语义。
+const emptyUserIdSignature = sm2Sign(keys.privateKey, binary, { userId: '' });
+assert.equal(sm2Verify(keys.publicKey, binary, emptyUserIdSignature, { userId: gmkit.DEFAULT_USER_ID }), true);
+
 const sm4Key = '0123456789abcdeffedcba9876543210';
 const gcmOptions = { mode: CipherMode.GCM, iv: '000102030405060708090a0b', aad: 'release-v1', tagLength: 16 };
 const sm4Cipher = sm4Encrypt(sm4Key, binary, gcmOptions);
@@ -54,13 +59,42 @@ assert.throws(() => sm4DecryptBytes(sm4Key, { ...sm4Cipher, tag: '00'.repeat(16)
 
 assert.equal(zucKeystream('00'.repeat(16), '00'.repeat(16), 8), '27bede74018082da');
 assert.equal(eia3('000102030405060708090a0b0c0d0e0f', 0x01234567, 0x0a, 0, hexToBytes('5bad724710ba1c56'), 64), '1b3d0f74');
-assert.equal(eea3Encrypt('173d14ba5003731d7a60049470f00a29', 0x66035492, 0x0f, 0, hexToBytes('6cf65340735552ab0c9752fa6f9025fe0bd675d9005875b200'), 193).length, 50);
+assert.equal(
+  eea3Encrypt(
+    'e5bd3ea0eb55ade866c6ac58bd54302a',
+    0x00056823,
+    0x18,
+    1,
+    hexToBytes(
+      '14a8ef693d678507bbe7270a7f67ff5006c3525b9807e467c4e56000ba338f5d' +
+      '429559036751822246c80d3b38f07f4be2d8ff5805f5132229bde93bbbdcaf38' +
+      '2bf1ee972fbf9977bada8945847a2a6c9ad34a667554e04d1f7fa2c33241bd8f' +
+      '01ba220d',
+    ),
+    800,
+  ),
+  '131d43e0dea1be5c5a1bfd971d852cbf712d7b4f57961fea3208afa8bca433f' +
+  '456ad09c7417e58bc69cf8866d1353f74865e80781d202dfb3ecff7fcbc3b190' +
+  'fe82a204ed0e350fc0f6f2613b2f2bca6df5a473a57a4a00d985ebad880d6f2' +
+  '3864a07b01',
+);
 
 assert.equal(sha256('abc'), 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
 assert.equal(hmacSha256(hexToBytes('0b'.repeat(20)), 'Hi There'), 'b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7');
 
-for (const legacyName of ['generateKeyPair', 'sign', 'verify', 'digest', 'hmac']) {
-  assert.equal(typeof gmkit[legacyName], 'function', `兼容导出缺失: ${legacyName}`);
+const legacyAliases = {
+  generateKeyPair: sm2GenerateKeyPair,
+  getPublicKeyFromPrivateKey: sm2GetPublicKeyFromPrivateKey,
+  compressPublicKey: sm2CompressPublicKey,
+  decompressPublicKey: sm2DecompressPublicKey,
+  sign: sm2Sign,
+  verify: sm2Verify,
+  keyExchange: gmkit.sm2KeyExchange,
+  digest: sm3Digest,
+  hmac: gmkit.sm3Hmac,
+};
+for (const [legacyName, replacement] of Object.entries(legacyAliases)) {
+  assert.equal(gmkit[legacyName], replacement, `兼容导出映射错误: ${legacyName}`);
 }
 
 console.log('GMKitX release API example passed');

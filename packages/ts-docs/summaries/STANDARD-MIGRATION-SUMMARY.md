@@ -35,5 +35,5 @@ npm test -w packages/ts -- sm2
 mvn -f packages/java/pom.xml -B -ntp -pl gmkit test
 ```
 
-- [实现符合性边界](/standards/GMT-0009-COMPLIANCE)
+- [实现边界与验证状态](/standards/GMT-0009-COMPLIANCE)
 - [快速参考](/standards/GMT-0009-快速参考)

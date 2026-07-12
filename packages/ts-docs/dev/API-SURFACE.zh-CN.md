@@ -2,8 +2,6 @@
 title: 公开 API 清单
 icon: list
 order: 2
-author: mumu
-date: 2025-11-23
 category:
   - 开发指南
   - API
@@ -20,10 +18,10 @@ tag:
 
 ## 维护原则
 
-- 以 `src/index.ts` 为唯一公开导出面
-- 无算法前缀的旧顶层别名保留为 `@deprecated`，避免已有项目升级时发生运行时中断
-- 涉及密码学参数的“容错”优先改为“显式拒绝”
-- Java / Go / Python / Rust 对接时，以协议字段完全对齐为先，不依赖自动推断
+- 以 `packages/ts/src/index.ts` 为唯一公开导出入口，包的 `exports` 目前只开放根入口和 `package.json`。
+- 无算法前缀的旧顶层别名继续保留并标记 `@deprecated`，避免已有项目升级后发生运行时中断。
+- 参数默认值属于兼容协议；无效枚举、非法编码和不满足长度要求的输入应明确拒绝。
+- Java 与 TypeScript 共享互操作向量，但不承诺 API 或 ABI 相同。其他语言对接也必须显式固定协议字段。
 
 ## 顶层命名空间导出
 
@@ -117,26 +115,36 @@ tag:
 
 默认导出继续包含 `generateKeyPair`、`getPublicKeyFromPrivateKey`、`compressPublicKey`、`decompressPublicKey`、`sign`、`verify`、`keyExchange`、`digest`、`hmac` 等已弃用旧名，以保证 UMD/CDN 和旧项目运行时兼容。新代码应使用带算法前缀的函数或命名空间。
 
-## Java 端建议优先实现顺序
+## 弃用兼容别名
 
-### 第一阶段：先覆盖协议主路径
+下列名称仍是公开导出，也仍包含在默认导出对象中。它们不会在本次版本中删除，但只用于兼容旧项目：
 
-| gmkitx API | Java 端建议 |
+| 旧名称 | 推荐替代项 |
 |:--|:--|
-| `sm2Encrypt` / `sm2Decrypt` | 先用 Bouncy Castle 或 Kona 对齐 `C1C3C2`、公钥格式、编码格式 |
-| `sm2Sign` / `sm2Verify` | 先固定 `userId` 与 `signatureFormat`，推荐先支持 DER + raw 两种 |
-| `sm3Digest` / `sm3Hmac` | 用 `SM3` 和 `HmacSM3` 对齐结果格式 |
-| `sm4Encrypt` / `sm4Decrypt` | 优先实现 `CBC + PKCS7` 与 `GCM`，再扩展 `CCM/CTR/CFB/OFB` |
+| `generateKeyPair` | `sm2GenerateKeyPair` |
+| `getPublicKeyFromPrivateKey` | `sm2GetPublicKeyFromPrivateKey` |
+| `compressPublicKey` | `sm2CompressPublicKey` |
+| `decompressPublicKey` | `sm2DecompressPublicKey` |
+| `sign` | `sm2Sign` |
+| `verify` | `sm2Verify` |
+| `keyExchange` | `sm2KeyExchange` |
+| `digest` | `sm3Digest` |
+| `hmac` | `sm3Hmac` |
 
-### 第二阶段：补全工程能力
+弃用标记只影响类型提示，不改变运行时行为。正式删除任何兼容名称都必须经过主版本变更、迁移说明和发布记录，不能在小版本中静默移除。
 
-| gmkitx API | Java 端建议 |
+## Java 对照边界
+
+Java 主包已经实现 SM2、SM3、SM4 和 ZUC。跨语言调用以 [共享互操作向量](/dev/INTEROP_VECTORS) 为验证依据，而不是按函数名推断行为一致：
+
+| 协议项 | 对接要求 |
 |:--|:--|
-| `sm2GenerateKeyPair`, `sm2GetPublicKeyFromPrivateKey` | 统一原始 hex 表示，避免 PEM/DER 与裸密钥混淆 |
-| `sm2CompressPublicKey`, `sm2DecompressPublicKey` | 互操作常见，建议补齐 |
-| `sm2KeyExchange` | 单独做协议测试，不能与普通 ECDH 混淆 |
-| `SM2` / `SM3` / `SM4` 类 | 在函数式 API 稳定后再封装 OOP 版本 |
-| `ASN.1` / utils | 作为互操作工具层补齐，不建议先写业务封装再回补 |
+| SM2 | 固定 `userId`、C1C3C2/C1C2C3、raw/DER、公钥表示和文本编码 |
+| SM3 | 固定原始字节或 UTF-8 输入，以及 hex/base64 输出 |
+| SM4 | 固定 mode、padding、IV/nonce、AAD、tag 和 tag 长度 |
+| ZUC | 固定 key、IV、COUNT、BEARER、DIRECTION 和消息 bit length |
+
+Java 独有的 SM9 JNI/GmSSL 模块不属于 gmkitx 的公开 API，TypeScript 端不提供 SM9 占位实现。
 
 ## 跨语言协议冻结清单
 
@@ -151,13 +159,15 @@ tag:
 | 文本 | UTF-8，不混用本地编码 |
 | RNG | 默认策略为 `warn`：无 CSPRNG 时警告并兼容降级；安全敏感应用应注入 CSPRNG 或启用 `configureRNG('strict')` |
 
-## 0.10.0-preview.1 安全边界
+## 输入校验与兼容边界
 
-`0.10.0-preview.1` 补充了对错误输入的显式拒绝，文档和其他语言实现都应同步：
+当前公开入口会显式拒绝以下错误输入，调用方不能依赖自动修补或静默回退：
 
 - SM2 拒绝非法 `mode`
 - SM2 拒绝非法 `signatureFormat`
 - SM4 拒绝奇数长度的 hex key / iv / nonce
 - SM4-GCM 拒绝不合规的标签长度
 
-如果其他语言实现仍然“自动补零”“自动回退默认模式”，就会和当前 TypeScript 行为不一致，必须避免。
+`userId` 是特意保留的兼容例外：省略值和空字符串都会回落到 `DEFAULT_USER_ID`。随机源默认策略同样保持为 `warn`，缺少 CSPRNG 时警告并兼容降级；安全敏感环境应调用 `configureRNG('strict')`，受限小程序应通过 `setCustomRNG()` 注入平台随机源。
+
+文档审计会从 `packages/ts/src/index.ts` 提取全部顶层导出，并检查本页是否覆盖。新增或删除公开名称时，应同步更新本页、类型测试和 CHANGELOG。

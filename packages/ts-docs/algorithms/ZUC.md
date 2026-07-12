@@ -18,16 +18,23 @@ GMKitX 实现 ZUC-128 密钥流，以及 3GPP 128-EEA3 机密性算法和 128-EI
 
 | API | 语义 | 返回值 |
 |:--|:--|:--|
-| `zucKeystream(key, iv, length)` | 生成指定**字节数**的 ZUC-128 密钥流 | hex string |
-| `zucKeystreamWords(key, iv, words)` | 生成指定 32-bit word 数的密钥流 | hex string |
-| `zucEncrypt(key, iv, data, options?)` | 通用 ZUC 流加密 | hex/base64 string |
-| `zucDecrypt(key, iv, cipher, options?)` | 解密并按 UTF-8 返回文本 | string |
+| `zucKeystream(key, iv, length)` | 生成指定**字节数**的 ZUC-128 密钥流 | hex 字符串 |
+| `zucKeystreamWords(key, iv, words)` | 生成指定 32-bit 字数量的密钥流 | hex 字符串 |
+| `zucEncrypt(key, iv, data, options?)` | 通用 ZUC 流加密 | hex/base64 字符串 |
+| `zucDecrypt(key, iv, cipher, options?)` | 解密并按 UTF-8 返回文本 | 字符串 |
 | `zucDecryptBytes(key, iv, cipher, options?)` | 解密为原始字节 | `Uint8Array` |
-| `eea3(key, count, bearer, direction, bitLength)` | 兼容旧 API，返回 word-aligned EEA3 密钥流 | hex string |
-| `eea3Encrypt(key, count, bearer, direction, message, bitLength?)` | 按 3GPP 位长度加密消息 | hex string |
-| `eia3(key, count, bearer, direction, message, bitLength?)` | 计算 32-bit MAC-I | 8-char hex string |
+| `eea3(key, count, bearer, direction, bitLength)` | 兼容旧 API，返回向上取整到 32-bit 字边界的 EEA3 密钥流 | hex 字符串 |
+| `eea3Encrypt(key, count, bearer, direction, message, bitLength?)` | 按 3GPP 消息比特长度加密 | hex 字符串 |
+| `eia3(key, count, bearer, direction, message, bitLength?)` | 计算 32-bit MAC-I | 8 个 hex 字符 |
 
-key 和通用 ZUC IV 必须是 16 字节。`bearer` 范围是 0-31，`direction` 只能是 0 或 1；`bitLength` 不能超过消息实际比特数。非整字节 EEA3 输出的末尾未使用低位会清零。
+key 和通用 ZUC IV 必须是 16 字节。`bearer` 范围是 0-31，`direction` 只能是 0 或 1；`bitLength` 是消息的有效比特数，不能超过输入字节实际承载的比特数。非整字节 EEA3 输出的末尾未使用低位会清零。
+
+## API 选择
+
+- 只需要固定长度密钥流时使用 `zucKeystream`；协议以 32-bit 字计数时使用 `zucKeystreamWords`。
+- 加解密普通字节数据时使用 `zucEncrypt` 和 `zucDecryptBytes`，不要对二进制结果做 UTF-8 解码。
+- 3GPP 机密性处理使用 `eea3Encrypt`；旧 `eea3` 返回的是字对齐密钥流，不直接接收消息。
+- 3GPP 完整性处理使用 `eia3`。EEA3 和 EIA3 的 IV 构造不同，不能自行混用。
 
 ## 通用流加密
 
@@ -142,7 +149,7 @@ Java 和 TypeScript 都消费根目录 `vectors/interop.json` 中的关键 3GPP 
 
 - 通用 ZUC 加密每次调用都从 IV 起始生成密钥流，不可对多个分片重复使用同一 key/IV。
 - `zucDecrypt` 面向 UTF-8 文本；任意二进制必须使用 `zucDecryptBytes`。
-- EEA3 提供机密性，不提供完整性；EIA3 是 3GPP 协议 MAC，不应随意替代通用 HMAC。
+- EEA3 提供机密性，不提供完整性；EIA3 是 3GPP 协议完整性算法，不应脱离协议参数管理后替代通用 HMAC。
 - 不要使用简单字符串拼接或截断哈希派生 key/IV；使用经审查的 KDF 和协议定义的 nonce/counter 管理。
 
 ## 参考
