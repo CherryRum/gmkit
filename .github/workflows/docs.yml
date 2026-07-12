@@ -5,7 +5,6 @@ on:
     paths:
       - 'packages/ts-docs/**'
       - 'packages/ts/**'
-      - 'apps/gmkit-studio/**'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/docs.yml'
@@ -13,7 +12,6 @@ on:
     paths:
       - 'packages/ts-docs/**'
       - 'packages/ts/**'
-      - 'apps/gmkit-studio/**'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/docs.yml'
@@ -32,9 +30,24 @@ jobs:
           node-version: '22.x'
           cache: npm
           cache-dependency-path: package-lock.json
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: packages/ts-docs/examples/go/go.mod
+          cache-dependency-path: packages/ts-docs/examples/go/go.sum
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: packages/ts-docs/examples/hutool/pom.xml
       - run: npm ci
       - name: Repair Rollup optional native package
         run: npm install --no-save --package-lock=false @rollup/rollup-linux-x64-gnu@$(node -p "require('./node_modules/rollup/package.json').version")
-      - run: npm run docs:build
       - run: npm run build -w packages/ts
-      - run: npm run build -w apps/gmkit-studio
+      - run: npm run docs:check
+      - run: npm run docs:test-examples
+      - run: npm run docs:build

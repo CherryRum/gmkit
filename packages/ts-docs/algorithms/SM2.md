@@ -2,450 +2,147 @@
 title: SM2 椭圆曲线公钥密码算法
 icon: key
 order: 1
-author: mumu
-date: 2025-11-23
-category:
-  - 国密算法
-  - 椭圆曲线密码
-tag:
-  - SM2
-  - 公钥加密
-  - 数字签名
-  - 密钥交换
+category: [国密算法]
+tag: [SM2, 加密, 签名, 密钥交换]
 ---
 
 # SM2 椭圆曲线公钥密码算法
 
-## 概述
+GMKitX 提供 SM2 密钥生成、公钥派生与压缩、加解密、签名验签和密钥交换。实现仅接受标准 SM2 曲线。固定行为以 [GM/T 0009 实现边界](/standards/GMT-0009-COMPLIANCE) 和共享向量为准，本文不构成产品认证声明。
 
-SM2 是基于 256 位椭圆曲线的公钥密码算法，覆盖**数字签名、密钥交换、公钥加密**三大能力。  
-它在同等安全等级下密钥更短，适合带宽与存储敏感的业务场景，并强调“身份绑定”的签名语义。
+## 协议边界
 
-### 参考标准
+| 项目 | 当前行为 |
+|:--|:--|
+| 私钥 | 32 字节标量，hex 或 `Uint8Array` |
+| 公钥 | 非压缩 `04 || x || y`（65 字节）或压缩 `02/03 || x`（33 字节） |
+| 密文排列 | 默认 `C1C3C2`，支持 `C1C2C3` |
+| 签名 | 默认 raw `r || s`（64 字节），支持 ASN.1 DER |
+| userId | 省略或传 `''` 都回落到 `DEFAULT_USER_ID`，用于兼容旧版本 |
+| 文本 | 字符串按 UTF-8 编码；任意二进制使用 `Uint8Array` 和 `sm2DecryptBytes` |
 
-- **GM/T 0003-2012**: SM2 椭圆曲线公钥密码算法
-- **GM/T 0009-2023**: SM2 密码算法使用规范（替代 GM/T 0009-2012）
+SM2 加密与签名含随机数，正常情况下每次结果不同。测试应验证解密、验签和篡改拒绝，不应比较随机密文或签名的完整字面值。
 
-### 关键要点
+## 密钥与公钥格式
 
-- **安全强度**：256 位椭圆曲线安全级别约等于 RSA-3072  
-- **典型用法**：SM2 加密对称密钥，SM4 处理大数据
-- **身份绑定**：签名包含用户标识（userId），需严格一致
+```ts
+import {
+  sm2CompressPublicKey,
+  sm2DecompressPublicKey,
+  sm2GenerateKeyPair,
+  sm2GetPublicKeyFromPrivateKey,
+} from 'gmkitx';
 
-### 商密场景中的 SM2
-
-在商密体系中，SM2 通常承担“**身份与信任**”的角色：  
-签名用于确认“是谁发起”，加密用于保护“密钥本身”，密钥交换用于建立安全会话。  
-与外部系统对接时，优先确认 **userId、密文模式、公钥格式** 三项约定。
-
-### 安全与性能
-
-SM2 的加密/签名属于非对称运算，性能开销明显高于对称加密。  
-在大数据场景中建议使用“SM2 + SM4”混合加密以兼顾安全与效率。
-
-## 快速开始
-
-### 密钥对生成
-
-```typescript
-import { sm2GenerateKeyPair } from 'gmkitx';
-
-// 生成非压缩格式密钥对（默认）
-const { publicKey, privateKey } = sm2GenerateKeyPair();
-console.log('公钥:', publicKey);   // 130位十六进制字符串，04开头
-console.log('私钥:', privateKey);  // 64位十六进制字符串
-
-// 生成压缩格式密钥对
-const compressed = sm2GenerateKeyPair(true);
-console.log('压缩公钥:', compressed.publicKey);  // 66位十六进制字符串，02或03开头
-```
-
-### 从私钥导出公钥
-
-```typescript
-import { sm2GetPublicKeyFromPrivateKey } from 'gmkitx';
-
-const privateKey = '228049e009de869baf9aba74f8f8c52e09cde1b52cafb0df7ab154ba4593743e';
-
-// 导出非压缩公钥
-const publicKey = sm2GetPublicKeyFromPrivateKey(privateKey);
-
-// 导出压缩公钥
-const compressedPubKey = sm2GetPublicKeyFromPrivateKey(privateKey, true);
-```
-
-### 公钥压缩与解压
-
-```typescript
-import { sm2CompressPublicKey, sm2DecompressPublicKey } from 'gmkitx';
-
-// 压缩公钥（130位 -> 66位）
+const { privateKey, publicKey } = sm2GenerateKeyPair();
 const compressed = sm2CompressPublicKey(publicKey);
 
-// 解压公钥（66位 -> 130位）
-const uncompressed = sm2DecompressPublicKey(compressed);
-```
-
-## Java 端等价写法
-
-如果项目里同时使用 [`cn.gmkit:gmkit`](/dev/JAVA-LIBRARY.zh-CN)，相同的密钥
-对、密文和签名可以在两端互通。最常用的两件事写法对照如下：
-
-::: tabs#sm2-lang
-
-@tab TypeScript
-
-```typescript
-import { sm2GenerateKeyPair, sm2Encrypt, sm2Sign } from 'gmkitx';
-
-const { publicKey, privateKey } = sm2GenerateKeyPair();
-const cipher = sm2Encrypt(publicKey, '机密数据');
-const sig    = sm2Sign(privateKey, '重要消息');
-```
-
-@tab Java（静态聚合）
-
-```java
-import cn.gmkit.sm2.SM2Util;
-import cn.gmkit.sm2.SM2KeyPair;
-import cn.gmkit.sm2.SM2SignOptions;
-import cn.gmkit.core.SM2CipherMode;
-
-SM2KeyPair kp = SM2Util.generateKeyPair();
-String cipher = SM2Util.encryptHex(kp.getPublicKeyHex(), "机密数据", SM2CipherMode.C1C3C2);
-String sig    = SM2Util.signHex(kp.getPrivateKeyHex(), "重要消息", SM2SignOptions.builder().build());
-```
-
-@tab Java（实例式）
-
-```java
-import cn.gmkit.sm2.SM2;
-
-SM2 sm2 = new SM2();
-SM2KeyPair kp = sm2.generateKeyPair();
-String cipher = sm2.encryptHex(kp.getPublicKeyHex(), "机密数据", SM2CipherMode.C1C3C2);
-String sig    = sm2.signHex(kp.getPrivateKeyHex(), "重要消息", SM2SignOptions.builder().build());
-```
-
-:::
-
-## 加密与解密
-
-SM2 支持非对称加密，使用公钥加密、私钥解密。
-
-> 文本默认按 UTF-8 处理；如需加密二进制数据，请传入 `Uint8Array`，并使用 `sm2DecryptBytes` 解密，避免把任意字节强制转成 UTF-8。
-
-### 基本用法
-
-```typescript
-import { sm2GenerateKeyPair, sm2Encrypt, sm2Decrypt } from 'gmkitx';
-
-const { publicKey, privateKey } = sm2GenerateKeyPair();
-
-// 加密
-const plaintext = 'Hello, SM2!';
-const ciphertext = sm2Encrypt(publicKey, plaintext);
-
-// 解密
-const decrypted = sm2Decrypt(privateKey, ciphertext);
-if (decrypted !== plaintext) {
-  throw new Error(`SM2 round-trip mismatch: ${decrypted}`);
+if (privateKey.length !== 64 || publicKey.length !== 130 || compressed.length !== 66) {
+  throw new Error('unexpected SM2 key encoding');
+}
+if (sm2GetPublicKeyFromPrivateKey(privateKey) !== publicKey) {
+  throw new Error('SM2 public/private key mismatch');
+}
+if (sm2DecompressPublicKey(compressed) !== publicKey) {
+  throw new Error('SM2 public key compression round-trip failed');
 }
 ```
 
-> 顶层函数式 API 推荐使用 `sm2GenerateKeyPair`、`sm2Sign`、`sm2Verify`、`sm2KeyExchange` 等带前缀名称。
-> 旧的 `generateKeyPair`、`sign`、`verify`、`keyExchange` 仍保留为弃用别名，已有项目升级不会因导出缺失而中断。
+公钥压缩只改变点的编码，不改变密钥本身。协议必须明确接收哪一种表示，不能通过字符串长度猜测其他 ASN.1/PEM 格式。
 
-### 密文模式
+## 加密与二进制解密
 
-SM2 密文由三部分组成：**C1（曲线点）/ C2（密文）/ C3（哈希）**。  
-GM/T 0009-2023 推荐 `C1C3C2` 排列：
+```ts
+import {
+  InputFormat,
+  OutputFormat,
+  SM2CipherMode,
+  sm2DecryptBytes,
+  sm2Encrypt,
+  sm2GenerateKeyPair,
+} from 'gmkitx';
 
-$$
-C = C1 || C3 || C2
-$$
-
-其中：
-- C1：椭圆曲线点（非压缩 65 字节，压缩 33 字节）
-- C2：密文数据（与明文等长）
-- C3：SM3 摘要（32 字节）
-
-当前实现边界：
-
-| 项目 | 说明 |
-|:--|:--|
-| 公钥输入 | 支持非压缩 `04 || x || y` 与压缩 `02/03 || x` |
-| 加密输出 | C1 当前输出为非压缩点；密文整体可按 `C1C3C2` 或 `C1C2C3` 排列 |
-| 解密输入 | 支持 raw `C1C3C2` / `C1C2C3` 与 ASN.1 DER；未显式指定 mode 时先尝试 `C1C3C2` |
-| 签名格式 | 默认 raw `r || s`，可指定 DER；验签可使用 `auto` |
-| 用户 ID | 默认 `1234567812345678`；为兼容旧版，省略值和空字符串都会回落到该默认值 |
-
-```typescript
-import { sm2Encrypt, SM2CipherMode } from 'gmkitx';
-
-// 使用 C1C3C2 模式（默认）
-const cipher1 = sm2Encrypt(publicKey, plaintext, {
-  mode: SM2CipherMode.C1C3C2
+const { privateKey, publicKey } = sm2GenerateKeyPair();
+const input = Uint8Array.of(0x00, 0xff, 0x80, 0x41);
+const cipher = sm2Encrypt(publicKey, input, {
+  mode: SM2CipherMode.C1C3C2,
+  outputFormat: OutputFormat.BASE64,
+});
+const output = sm2DecryptBytes(privateKey, cipher, {
+  mode: SM2CipherMode.C1C3C2,
+  inputFormat: InputFormat.BASE64,
 });
 
-// 使用 C1C2C3 模式
-const cipher2 = sm2Encrypt(publicKey, plaintext, {
-  mode: SM2CipherMode.C1C2C3
-});
+if (output.length !== input.length || output.some((value, i) => value !== input[i])) {
+  throw new Error('SM2 binary round-trip failed');
+}
 ```
 
-### 输出格式
+解密会验证 C3。密文损坏、密钥不匹配或格式不合法时必须视为失败，不要捕获异常后继续使用空明文。
 
-支持十六进制与 Base64 输出，解密端可自动识别输入格式：
+## 签名与 userId
 
-```typescript
-import { sm2Encrypt, sm2Decrypt, OutputFormat } from 'gmkitx';
+```ts
+import {
+  InputFormat,
+  OutputFormat,
+  sm2GenerateKeyPair,
+  sm2Sign,
+  sm2Verify,
+} from 'gmkitx';
 
-// 十六进制输出（默认）
-const hexCipher = sm2Encrypt(publicKey, plaintext, {
-  outputFormat: OutputFormat.HEX
-});
-
-// Base64 输出
-const base64Cipher = sm2Encrypt(publicKey, plaintext, {
-  outputFormat: OutputFormat.BASE64
-});
-
-// 解密时自动检测 hex/base64
-const plain1 = sm2Decrypt(privateKey, hexCipher);
-const plain2 = sm2Decrypt(privateKey, base64Cipher);
-```
-
-## 数字签名
-
-SM2 支持数字签名和验签功能，确保数据完整性和来源可信。
-
-### 基本签名
-
-```typescript
-import { sm2GenerateKeyPair, sm2Sign, sm2Verify } from 'gmkitx';
-
-const { publicKey, privateKey } = sm2GenerateKeyPair();
-const message = '重要消息';
-
-// 签名
-const signature = sm2Sign(privateKey, message);
-
-// 验签
-const isValid = sm2Verify(publicKey, message, signature);
-console.log('签名有效:', isValid);
-```
-
-> 签名/验签同样默认将字符串按 UTF-8 处理；二进制消息请使用 `Uint8Array`。
-
-### 带用户 ID 的签名
-
-SM2 签名支持用户标识符（User ID）。GMKitX 为向后兼容保留 `DEFAULT_USER_ID`，省略值和空字符串都会选择该默认值。
-签名内部会先计算用户绑定的 Z 值（基于 userId 与公钥参数），避免身份与签名脱钩。
-
-```typescript
-import { sm2Sign, sm2Verify, DEFAULT_USER_ID } from 'gmkitx';
-
-const userId = '1234567812345678'; // 自定义用户 ID
-
-// 使用自定义 userId 签名
+const { privateKey, publicKey } = sm2GenerateKeyPair();
+const message = 'GMKit release signature check';
+const userId = 'gmkit-release-v1';
 const signature = sm2Sign(privateKey, message, {
-  userId
+  userId,
+  signatureFormat: 'der',
+  outputFormat: OutputFormat.BASE64,
 });
 
-// 验签时也必须提供相同的 userId
-const isValid = sm2Verify(publicKey, message, signature, {
-  userId
-});
+if (!sm2Verify(publicKey, message, signature, {
+  userId,
+  signatureFormat: 'der',
+  inputFormat: InputFormat.BASE64,
+})) {
+  throw new Error('SM2 signature verification failed');
+}
+if (sm2Verify(publicKey, `${message}!`, signature, {
+  userId,
+  signatureFormat: 'der',
+  inputFormat: InputFormat.BASE64,
+})) {
+  throw new Error('SM2 accepted a modified message');
+}
 ```
 
-> **注意**: 不指定 `userId` 或传入空字符串都会使用 `DEFAULT_USER_ID = '1234567812345678'`。当前 API 不能用空字符串表达“真实空 ID”；需要身份绑定时请传非空值，并保证签名、验签两端一致。
-
-### 签名格式
-
-支持 DER 与 Raw 两种签名格式（默认 Raw）：
-
-```typescript
-import { sm2Sign, sm2Verify } from 'gmkitx';
-
-// DER 格式（ASN.1 编码）
-const derSig = sm2Sign(privateKey, message, { signatureFormat: 'der' });
-
-// Raw 格式（r || s，128 位十六进制）
-const rawSig = sm2Sign(privateKey, message, { signatureFormat: 'raw' });
-
-// 验签时请显式指定签名格式；如需自动识别可用 signatureFormat: 'auto'
-const ok = sm2Verify(publicKey, message, derSig, { signatureFormat: 'der' });
-```
+签名端和验签端必须固定相同的 `userId` 与签名格式。`skipZComputation` 仅用于明确要求“直接签消息摘要”的旧系统互操作，不是标准 SM2 签名默认流程，新协议不要启用。
 
 ## 密钥交换
 
-SM2 密钥交换遵循 GM/T 0003.3/GM/T 0009 协议，包含长期密钥 + 临时密钥，支持相互认证与前向保密。  
-它**不是**简单 ECDH，需要交换临时公钥并按协议顺序执行。
+`sm2KeyExchange` 实现 SM2 双方密钥协商，不等同于普通 ECDH。调用方需要分别维护双方静态密钥和临时密钥，并核对确认标签。详细字段以 `SM2KeyExchangeParams` 类型为准，测试覆盖位于 `packages/ts/test/sm2.test.ts`。
 
-```typescript
-import { sm2GenerateKeyPair, sm2KeyExchange } from 'gmkitx';
+密钥交换协议必须明确：双方角色、userId、派生长度、静态/临时公钥编码和确认标签传输顺序。不要只交换公钥后忽略确认标签。
 
-// A/B 长期密钥对
-const alice = sm2GenerateKeyPair();
-const bob = sm2GenerateKeyPair();
+## 随机数
 
-// A/B 临时密钥对
-const aliceTemp = sm2GenerateKeyPair();
-const bobTemp = sm2GenerateKeyPair();
+密钥生成、加密和签名依赖安全随机数。默认 `warn` 策略在缺少 CSPRNG 时为旧小程序兼容而警告降级；生产环境应注入平台安全随机源或启用严格模式：
 
-// A 先把临时公钥发给 B
-const aliceTempPub = aliceTemp.publicKey;
-const bobTempPub = bobTemp.publicKey;
+```ts
+import { configureRNG, setCustomRNG } from 'gmkitx';
 
-// B 计算共享密钥，并返回自己的临时公钥
-const resultB = sm2KeyExchange({
-  privateKey: bob.privateKey,
-  publicKey: bob.publicKey,
-  tempPrivateKey: bobTemp.privateKey,
-  peerPublicKey: alice.publicKey,
-  peerTempPublicKey: aliceTempPub,
-  isInitiator: false
-});
-
-// A 收到 B 的临时公钥后，完成协商
-const resultA = sm2KeyExchange({
-  privateKey: alice.privateKey,
-  publicKey: alice.publicKey,
-  tempPrivateKey: aliceTemp.privateKey,
-  peerPublicKey: bob.publicKey,
-  peerTempPublicKey: resultB.tempPublicKey,
-  isInitiator: true
-});
-
-if (resultA.sharedKey !== resultB.sharedKey) {
-  throw new Error('SM2 key exchange mismatch');
-}
+configureRNG('strict');
+// 受限环境可通过 setCustomRNG((length) => platformSecureRandom(length)) 注入安全源。
 ```
 
-## 面向对象 API
+详见[安全边界](/guide/security)。
 
-除了函数式 API，gmkitx 还提供了面向对象的 API：
+## 验证
 
-```typescript
-import { SM2 } from 'gmkitx';
-
-// 从私钥创建实例
-const sm2 = SM2.fromPrivateKey(privateKey);
-
-// 加密
-const ciphertext = sm2.encrypt('Hello, SM2!');
-
-// 解密
-const plaintext = sm2.decrypt(ciphertext);
-
-// 签名
-const signature = sm2.sign('Message');
-
-// 验签
-const isValid = sm2.verify('Message', signature);
-
-// 获取公钥
-const publicKey = sm2.getPublicKey();
+```bash
+npm test -w packages/ts -- sm2
+npm run parity
 ```
 
-## 完整 API 参考
-
-### 密钥管理
-
-| 函数 | 说明 | 返回值 |
-|------|------|--------|
-| `sm2GenerateKeyPair(compressed?: boolean)` | 生成 SM2 密钥对 | `KeyPair` |
-| `sm2GetPublicKeyFromPrivateKey(privateKey, compressed?)` | 从私钥导出公钥 | `string` |
-| `sm2CompressPublicKey(publicKey)` | 压缩公钥 | `string` |
-| `sm2DecompressPublicKey(publicKey)` | 解压公钥 | `string` |
-
-### 加密解密
-
-| 函数 | 说明 | 返回值 |
-|------|------|--------|
-| `sm2Encrypt(publicKey, plaintext, options?)` | SM2 加密 | `string` |
-| `sm2Decrypt(privateKey, ciphertext, options?)` | SM2 解密 | `string` |
-| `sm2DecryptBytes(privateKey, ciphertext, options?)` | SM2 解密为原始字节 | `Uint8Array` |
-
-### 签名验签
-
-| 函数 | 说明 | 返回值 |
-|------|------|--------|
-| `sm2Sign(privateKey, message, options?)` | SM2 签名 | `string` |
-| `sm2Verify(publicKey, message, signature, options?)` | SM2 验签 | `boolean` |
-
-### 密钥交换
-
-| 函数 | 说明 | 返回值 |
-|------|------|--------|
-| `sm2KeyExchange(params)` | SM2 密钥交换 | `SM2KeyExchangeResult` |
-
-## 高级用法
-
-### 曲线参数边界
-
-类型中保留 `curveParams` 是为了兼容旧调用代码；当前实现只接受标准 SM2 曲线。传入不同曲线参数会明确报错，不会静默忽略，也不会切换为任意椭圆曲线实现。
-
-### 批量操作
-
-```typescript
-// 批量生成密钥对
-const keyPairs = Array.from({ length: 10 }, () => sm2GenerateKeyPair());
-
-// 批量签名
-const signatures = messages.map(msg => sm2Sign(privateKey, msg));
-
-// 批量验签
-const results = messages.map((msg, i) => 
-  sm2Verify(publicKey, msg, signatures[i])
-);
-```
-
-## 注意事项
-
-1. **私钥安全**: 私钥必须妥善保管，泄露将导致安全风险
-2. **密钥长度**: SM2 私钥固定为 256 位（64 位十六进制）
-3. **公钥格式**: 
-   - 非压缩格式: 04 开头，130 位十六进制（65 字节）
-   - 压缩格式: 02 或 03 开头，66 位十六进制（33 字节）
-4. **用户 ID**: 签名/验签必须使用相同 userId；省略值和空字符串均使用 `DEFAULT_USER_ID`
-5. **密文模式**: C1C3C2 与 C1C2C3 必须一致；必要时显式指定模式
-6. **编码格式**: 输出为 hex/base64，解密端需匹配或使用自动识别
-7. **ASN.1 密文**: 如密文以 `0x30` 开头，按 ASN.1 解析；与 Java/OpenSSL 互操作时常见
-8. **签名输入**: 默认会计算 `SM3(Z || M)`，不要自行先哈希；如需签名哈希，请使用 `skipZComputation`
-9. **大数据**: SM2 适合加密小数据；大数据请走 SM4 + SM2 混合加密
-
-## 常见问题
-
-### Q: SM2 和 RSA 有什么区别？
-
-A: SM2 是基于椭圆曲线的算法，相比 RSA：
-- 更短的密钥长度（256位 vs 2048位）
-- 更快的运算速度
-- 更少的存储和带宽需求
-- 安全强度相当或更高
-
-### Q: 如何选择密文模式？
-
-A: 推荐使用 **C1C3C2** 模式（默认），这是 GM/T 0009-2023 标准推荐的模式。C1C2C3 模式主要用于兼容旧系统。
-
-### Q: 公钥压缩有什么好处？
-
-A: 压缩公钥可以节省存储空间和传输带宽（从 65 字节减少到 33 字节），但需要额外的计算来解压。对于存储和传输敏感的场景推荐使用。
-
-### Q: 可以在浏览器中使用吗？
-
-A: 是的，gmkitx 完全支持现代浏览器环境，不需要任何 polyfill。
-
-## 相关资源
-
-- [SM2 标准文档](http://www.gmbz.org.cn/main/viewfile/2018011001400692565.html)
-- [GM/T 0009-2023 使用规范](http://www.gmbz.org.cn/)
-- [椭圆曲线密码学基础](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography)
-
-## 相关算法
-
-- [SM3 - 密码杂凑算法](./SM3.md)
-- [SM4 - 分组密码算法](./SM4.md)
-
+- [GM/T 0009 快速参考](/standards/GMT-0009-快速参考)
+- [Java 同源实现](/dev/JAVA-LIBRARY.zh-CN)
+- [跨语言互操作向量](/dev/INTEROP_VECTORS)

@@ -1,66 +1,42 @@
 ---
-title: IMPLEMENTATION SUMMARY
-icon: file-alt
-author: mumu
-date: 2025-11-23
-category:
-  - 技术总结
-tag:
-  - 总结
+title: TypeScript 实现状态
+icon: code
+order: 2
+category: [维护记录]
 ---
 
-# 实现总结 / Implementation Summary
+# TypeScript 实现状态
 
-::: tip
-提示：本章要点
+## 算法
 
-- 主要实现
-- 构建与分发
-- 测试与类型
-- 向后兼容
-- 后续建议
-:::
-
-
-# 目的
-聚焦实现与交付层面的要点，确保文档与代码一致。
-
-## 主要实现
-| 项目 | 说明 |
+| 算法 | 当前实现 |
 |:--|:--|
-| 打包 | `tsup` 输出 ESM/CJS/IIFE 与类型定义，IIFE 全局名为 `GMKit`。 |
-| 依赖 | 运行时仅 `@noble/curves`、`@noble/hashes`；其余为开发工具链。 |
-| API | 函数式导出 + 类封装；支持命名空间导出，便于 tree-shaking。 |
-| 解码 | 默认 hex，部分算法支持 base64；解密端自动识别输入格式。 |
+| SM2 | 密钥、公钥压缩、C1C3C2/C1C2C3、raw/DER 签名、密钥交换、二进制解密 |
+| SM3 | 一次性与真实增量摘要、HMAC-SM3 |
+| SM4 | ECB/CBC/CTR/CFB/OFB/GCM/CCM、结构化密文/tag、二进制解密 |
+| ZUC | ZUC-128、EEA3 密钥流兼容入口、标准 EEA3 加密、EIA3 |
+| SHA | SHA-1/256/384/512、HMAC-SHA-256/384/512 |
 
+## 兼容性
 
-## 构建与分发
-| 项目 | 说明 |
-|:--|:--|
-| 入口 | `src/index.ts`。 |
-| 产物 | `dist/index.js`、`dist/index.cjs`、`dist/index.global.js`。 |
+无算法前缀的 `generateKeyPair`、`sign`、`digest` 等旧顶层导出继续存在并标记 deprecated。新代码使用带算法前缀函数或 `sm2`/`sm3` 命名空间。
 
-- **CDN**：
-  - unpkg: `https://unpkg.com/gmkitx@latest/dist/index.global.js`
-  - jsDelivr: `https://cdn.jsdelivr.net/npm/gmkitx@latest/dist/index.global.js`
+SM2 `userId` 兼容行为是：省略值或 `''` 都回落到 `DEFAULT_USER_ID`。当前 API 不能用空字符串表达真实空 ID，不能在小版本改变该行为。
 
-## 测试与类型
-| 项目 | 说明 |
-|:--|:--|
-| 测试 | Vitest 覆盖核心算法路径与边界场景。 |
-| 类型 | `tsc --noEmit` 作为发布前校验。 |
+RNG 默认策略是 `warn`：缺少 CSPRNG 时打印警告并兼容降级。安全部署应使用 `configureRNG('strict')`，受限平台可通过 `setCustomRNG` 注入安全源。
 
+## 构建
 
-## 向后兼容
-- 具名函数导出保持稳定（`sm2Encrypt`/`sm4Encrypt`/`digest` 等）。
-- SM2 默认 userId 仍为 `DEFAULT_USER_ID`，需手动切换到 `''` 以对齐 GM/T 0009-2023。
+发布 ESM、CJS、IIFE 和类型声明，公共导出面以 `packages/ts/src/index.ts` 为唯一依据。`npm run audit:pack -w packages/ts` 审计 tarball。
 
-## 后续建议
-1. 补充跨语言互操作向量与性能基准。
-2. 完善密钥格式（PEM/DER）与流式接口。
-3. 安排第三方安全审计。
+## 正确性证据
 
-## 相关资源 / Related Resources
-- [PUBLISHING.md](../dev/PUBLISHING.md)
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [NPM Publishing Guide](https://docs.npmjs.com/packages-and-modules/contributing-packages-to-the-registry)
+- TypeScript 单测和标准向量。
+- Java/TypeScript `vectors/interop.json` parity。
+- ZUC 3GPP EEA3/EIA3 固定向量。
+- SM4 与 Bouncy Castle 差分测试。
+
+这些证据限定已测行为，不等于独立密码学审计。
+
+- [公开 API 清单](/dev/API-SURFACE.zh-CN)
+- [互操作向量](/dev/INTEROP_VECTORS)

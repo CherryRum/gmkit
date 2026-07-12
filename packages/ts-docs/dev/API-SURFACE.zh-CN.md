@@ -92,7 +92,8 @@ tag:
 | 输入输出 | `normalizeInput`, `decodeInput`, `encodeOutput`, `autoDecodeString` |
 | 基础运算 | `xor`, `rotl`, `bytes4ToUint32BE`, `uint32ToBytes4BE` |
 | 格式判断 | `isHexString`, `isBase64String` |
-| RNG / 环境 | `configureRNG`, `setRNGPolicy`, `setCustomRNG`, `getRandomBytes`, `setTextCodec`, `getEnvReport` |
+| RNG / 环境 | `configureRNG`, `setRNGPolicy`, `setCustomRNG`, `clearCustomRNG`, `hasCustomRNG`, `getRandomBytes`, `setTextCodec`, `getEnvReport` |
+| 比较 | `constantTimeEqual`（尽力而为；JavaScript 运行时不提供严格常量时间保证） |
 | 类型 | `BytesLike`, `RNGPolicy`, `TextCodec`, `EnvReport` |
 
 ### ASN.1

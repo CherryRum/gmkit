@@ -1,216 +1,73 @@
 ---
 title: SHA 系列密码杂凑算法
-icon: hash
+icon: fingerprint
 order: 5
-author: mumu
-date: 2025-11-23
-category:
-  - 国际算法
-  - 哈希算法
-tag:
-  - SHA
-  - SHA-256
-  - SHA-512
-  - 哈希
-  - 国际标准
+category: [国际算法]
+tag: [SHA-1, SHA-256, SHA-384, SHA-512, HMAC]
 ---
 
 # SHA 系列密码杂凑算法
 
-::: tip
-提示：本章要点
+GMKitX 提供 SHA-1、SHA-256、SHA-384、SHA-512 及 HMAC-SHA-256/384/512。**不提供 SHA-224**。SHA-1 只保留旧协议兼容，新设计使用 SHA-256 或更高版本。
 
-- 概述
-- 快速开始
-- 支持的算法
-- HMAC 用法
-- 🧪 测试向量示例
-:::
+## 固定向量
 
-
-## 概述
-
-SHA（Secure Hash Algorithm）是 NIST 发布的国际标准哈希族。`gmkitx` 基于 `@noble/hashes` 提供 SHA-2 系列（SHA-256 / SHA-384 / SHA-512）与兼容性用途的 SHA-1，作为 SM3 的互补选择。
-
-### 支持的算法
-
-| 项目 | 说明 |
-|:--|:--|
-| SHA-256 | 256 位输出，通用与兼容性最佳 |
-| SHA-384 | 384 位输出，更高安全强度 |
-| SHA-512 | 512 位输出，高安全/长寿命场景 |
-| SHA-1 | 160 位输出，仅用于兼容旧系统（不推荐用于新应用） |
-| HMAC | HMAC-SHA256 / HMAC-SHA384 / HMAC-SHA512 |
-
-
-### 主要特性
-
-- 国际标准：SHA-2 全系列 + SHA-1 兼容
-- 性能：纯 TypeScript，依托 `@noble/hashes`，在支持 SHA Extensions 的处理器上性能优异
-- 多输出：`hex`（默认）与 `base64`
-- 同构 API：Node 与浏览器一致
-
-### 性能与安全权衡
-
-SHA 系列算法在不同平台上的性能差异：
-| 项目 | 说明 |
-|:--|:--|
-| 硬件加速 | 在 Intel/AMD 处理器上，SHA-256 可利用 SHA Extensions 指令集，性能提升 2-5 倍 |
-| 算法选择 | SHA-256（256位）、SHA-384（384位）、SHA-512（512位）安全性递增，但计算量也递增 |
-| 与 SM3 对比 | SHA-256 和 SM3 安全强度相当（256位），性能主要取决于硬件支持 |
-
-  - 国际芯片: SHA-256 通常更快（硬件加速）
-  - 国产芯片: SM3 通常更快（专用指令）
-  - 纯软件实现: 性能相近
-
-::: tip
-提示：算法选择建议
-
-- 国际化应用或需要广泛兼容性：优先使用 SHA-256
-- 国密合规要求：使用 SM3
-- 需要更高安全强度：考虑 SHA-384 或 SHA-512
-- 旧系统兼容：SHA-1（但不推荐用于新应用，已知安全漏洞）
-:::
-
-## 快速开始
-
-```typescript
-import { sha256, sha512, OutputFormat } from 'gmkitx';
-
-const hex256 = sha256('Hello, World!'); // 64 字符 hex
-const b64512 = sha512('Hello, World!', { outputFormat: OutputFormat.BASE64 });
-```
-
-命名空间等价用法：
-
-```typescript
-import { sha } from 'gmkitx';
-
-const hash256 = sha.sha256('data');
-const mac = sha.hmacSha256('key', 'data');
-```
-
-> 输入支持 `string | Uint8Array`；字符串按 UTF-8 处理。
-
-### Java 端等价写法
-
-[`cn.gmkit:gmkit`](/dev/JAVA-LIBRARY.zh-CN) 在 JVM 端封装 JDK 自带的
-`MessageDigest` / `Mac`，输出与 TS 端字节级一致。
-
-::: tabs#sha-lang
-
-@tab TypeScript
-
-```typescript
-import { sha } from 'gmkitx';
-
-const hex = sha.sha256('hello');
-const mac = sha.hmacSha256('key', 'msg');
-```
-
-@tab Java（静态聚合）
-
-```java
-import cn.gmkit.sha.SHAUtil;
-
-String hex = SHAUtil.sha256Hex("hello");
-byte[] mac = SHAUtil.sha256Hmac("key".getBytes(), "msg".getBytes());
-```
-
-@tab Java（实例式）
-
-```java
-import cn.gmkit.sha.SHA256;
-
-SHA256 sha = new SHA256();
-String hex = sha.digestHex("hello");
-byte[] mac = sha.hmac("key".getBytes(), "msg".getBytes());
-```
-
-:::
-
-## 支持的算法
-
-### SHA-256（推荐）
-
-```typescript
-import { sha256, OutputFormat } from 'gmkitx';
-
-const hex = sha256('payload');
-const base64 = sha256('payload', { outputFormat: OutputFormat.BASE64 });
-```
-
-### SHA-384
-
-```typescript
-import { sha384 } from 'gmkitx';
-
-const hash = sha384('payload'); // 96 字符 hex
-```
-
-### SHA-512
-
-```typescript
-import { sha512 } from 'gmkitx';
-
-const hash = sha512('payload'); // 128 字符 hex
-```
-
-### SHA-1（兼容性用途）
-
-```typescript
-import { sha1 } from 'gmkitx';
-
-const legacy = sha1('legacy payload'); // 40 字符 hex
-```
-
-## HMAC 用法
-
-```typescript
-import { hmacSha256, hmacSha384, hmacSha512 } from 'gmkitx';
-
-const payload = 'authenticated data';
-const mac256 = hmacSha256('secret-key', payload);
-const mac512 = hmacSha512('secret-key', payload);
-```
-
-## 测试向量示例
-
-```typescript
+```ts
 import { sha256, sha512 } from 'gmkitx';
 
-const testData = 'abc';
-console.log('SHA-256:', sha256(testData)); // ba7816bf...
-console.log('SHA-512:', sha512(testData)); // ddaf35a1...
+const sha256Actual = sha256('abc');
+const sha512Actual = sha512('abc');
+
+if (sha256Actual !== 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad') {
+  throw new Error(`SHA-256 vector mismatch: ${sha256Actual}`);
+}
+if (sha512Actual !==
+  'ddaf35a193617abacc417349ae204131' +
+  '12e6fa4e89a97ea20a9eeee64b55d39a' +
+  '2192992a274fc1a836ba3c23a3feebbd' +
+  '454d4423643ce80e2a9ac94fa54ca49f') {
+  throw new Error(`SHA-512 vector mismatch: ${sha512Actual}`);
+}
 ```
 
-## 性能提示（示意）
+## HMAC 固定向量
 
-| 算法 | 速度 (MB/s) | 适用场景 |
-|:----|:-----------|:---------|
-| SHA-256 | ★★★★☆ | 通用、兼容性最佳 |
-| SHA-512 | ★★★☆☆ | 更高安全、长寿命场景 |
-| SHA-384 | ★★★☆☆ | 兼顾性能与安全 |
-| SM3 | ★★★☆☆ | 国密兼容，性能接近 SHA-256 |
+```ts
+import { hmacSha256, hexToBytes } from 'gmkitx';
 
-::: tip
-提示：速度受硬件/输入大小影响，请以实测为准。
-:::
+const actual = hmacSha256(
+  hexToBytes('0b'.repeat(20)),
+  'Hi There',
+);
+const expected = 'b0344c61d8db38535ca8afceaf0bf12b' +
+  '881dc200c9833da726e9376c2e32cff7';
+if (actual !== expected) {
+  throw new Error(`HMAC-SHA-256 vector mismatch: ${actual}`);
+}
+```
 
-## 常见问题
+HMAC key 是原始密钥字节，不是 hex 文本时应传 `Uint8Array`。签名 token、Webhook 或协议消息时，双方必须固定输入字节序列和 canonicalization 规则。
 
-- **选哪种算法？** 优先 SHA-256；高安全/证书签名可用 SHA-384/512；仅兼容旧协议时使用 SHA-1。
-- **输出格式怎么选？** 系统内部用 hex，跨语言接口或 header 传输可用 Base64。
+## 类 API
 
-## API 速览
+`SHA1`、`SHA256`、`SHA384`、`SHA512` 提供对象式入口。对于一次性摘要优先使用具名函数；需要流式处理时使用类 API，并用单测核对分块与一次性结果一致。
 
-| 函数 | 描述 | 输出长度 |
-|:-----|:-----|:--------|
-| `sha256(data, options?)` | 计算 SHA-256 哈希 | 256 位 (32 字节) |
-| `sha384(data, options?)` | 计算 SHA-384 哈希 | 384 位 (48 字节) |
-| `sha512(data, options?)` | 计算 SHA-512 哈希 | 512 位 (64 字节) |
-| `sha1(data, options?)` | 计算 SHA-1 哈希（兼容用途） | 160 位 (20 字节) |
-| `hmacSha256(key, data, options?)` | HMAC-SHA256 | 256 位 |
-| `hmacSha384(key, data, options?)` | HMAC-SHA384 | 384 位 |
-| `hmacSha512(key, data, options?)` | HMAC-SHA512 | 512 位 |
-| `sha.sha256 / sha.sha384 / sha.sha512 / sha.sha1` | 命名空间调用 | 同上 |
+## 安全选择
+
+| 用途 | 建议 |
+|:--|:--|
+| 新协议摘要 | SHA-256/384/512 |
+| 有密钥消息认证 | HMAC-SHA-256/384/512 |
+| 旧协议校验 | 仅在协议强制时使用 SHA-1，不用于签名和抗碰撞设计 |
+| 用户密码存储 | 不使用普通 SHA；选择 Argon2id、scrypt 或 bcrypt |
+
+摘要不是加密，普通摘要也不证明发送者身份。安全敏感场景还需明确密钥管理、消息编码和比较方式。
+
+## 验证
+
+```bash
+npm test -w packages/ts -- sha
+```
+
+- [国际算法边界](/dev/INTERNATIONAL-ALGORITHMS.zh-CN)
+- [安全边界](/guide/security)

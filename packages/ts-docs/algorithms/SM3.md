@@ -2,561 +2,88 @@
 title: SM3 密码杂凑算法
 icon: fingerprint
 order: 2
-author: mumu
-date: 2025-11-23
-category:
-  - 国密算法
-  - 哈希算法
-tag:
-  - SM3
-  - 哈希
-  - 摘要算法
-  - 消息认证
+category: [国密算法]
+tag: [SM3, HMAC, 摘要]
 ---
 
 # SM3 密码杂凑算法
 
-::: tip
-提示：本章要点
+SM3 接收任意长度字节输入并输出 256-bit 摘要。摘要提供完整性指纹，不提供加密或身份认证；有密钥的消息认证应使用 HMAC-SM3。
 
-- 概述
-- 快速开始
-- 输出格式
-- 流式处理
-- 面向对象 API
-:::
+## 固定向量
 
+```ts
+import { OutputFormat, sm3Digest } from 'gmkitx';
 
-## 概述
+const hex = sm3Digest('abc');
+const base64 = sm3Digest('abc', { outputFormat: OutputFormat.BASE64 });
 
-SM3 是国密哈希算法，输出 256 位摘要，用于完整性校验与数字指纹。  
-它常用于**签名预处理、文件指纹、接口验签**等场景，与 SHA-256 安全强度相近，但**算法不兼容**。
-
-### 参考标准
-
-| 项目 | 说明 |
-|:--|:--|
-| GM/T 0004-2012 | SM3 密码杂凑算法 |
-| ISO/IEC 10118-3:2018 | 国际标准收录 |
-
-
-### 商密场景中的 SM3
-
-| 项目 | 说明 |
-|:--|:--|
-| 合规诉求 | 在涉密或国密合规系统里，SM3 往往是默认哈希选择 |
-| 业务习惯 | 签名验签前先做摘要（SM2 内部已自动处理） |
-| 接口协定 | 跨系统对接时，明确输出编码（hex/base64） |
-
-
-### 使用要点
-
-| 项目 | 说明 |
-|:--|:--|
-| 输出长度 | 固定 256 位（32 字节） |
-| 输入类型 | `string` 或 `Uint8Array` |
-| 输出格式 | hex（默认）/ base64 |
-| 流式处理 | 适合大文件分块更新 |
-
-
-::: tip
-提示：性能提示
-SM3 与 SHA-256 性能接近，实际速度取决于平台硬件与运行环境。  
-合规场景优先 SM3，其余场景可按平台特性选择。
-:::
-
-## 快速开始
-
-### 基本用法
-
-```typescript
-import { sm3Digest } from 'gmkitx';
-
-// 输入支持 string 或 Uint8Array，默认输出十六进制（64 字符）
-const hash = sm3Digest('Hello, SM3!');
-
-// 处理二进制数据：自行构造 Uint8Array
-const bytesHash = sm3Digest(new TextEncoder().encode('binary-data'));
-
-// 结构化数据需自行序列化
-const objHash = sm3Digest(JSON.stringify({ name: '张三', age: 30 }));
+if (hex !== '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0') {
+  throw new Error(`SM3 vector mismatch: ${hex}`);
+}
+if (base64 !== 'Zsfw9GLu7dnR8tRr3BDk4kFnyHXP9/KinX2gK49LqOA=') {
+  throw new Error(`SM3 Base64 vector mismatch: ${base64}`);
+}
 ```
 
-### 使用命名空间
+字符串按 UTF-8 编码。文件、压缩数据和协议帧应直接传 `Uint8Array`，避免隐式文本转换。
 
-```typescript
-import { sm3 } from 'gmkitx';
+## 增量摘要
 
-const hash = sm3.digest('Hello, SM3!');
+`SM3` 类维护真实增量状态，适合分块读取文件，不需要把整个输入拼到内存中：
+
+```ts
+import { SM3 } from 'gmkitx';
+
+const hash = new SM3();
+hash.update('a').update(Uint8Array.of(0x62, 0x63));
+const actual = hash.digest();
+
+if (actual !== '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0') {
+  throw new Error(`incremental SM3 mismatch: ${actual}`);
+}
 ```
 
-> 顶层函数式 API 推荐使用 `sm3Digest`、`sm3Hmac` 等带前缀名称。
-> 旧的 `digest`、`hmac` 仍保留为弃用别名；命名空间 `sm3.digest` / `sm3.hmac` 与 `SM3` 类方法继续稳定支持。
+调用 `digest()` 后实例完成当前摘要；是否可重用应以类类型和测试为准。最稳妥的模式是每个独立消息创建一个实例。
 
-### Java 端等价写法
+## HMAC-SM3
 
-[`cn.gmkit:gmkit`](/dev/JAVA-LIBRARY.zh-CN) 的 SM3 入口与 TS 端字节级一致。
+```ts
+import { sm3Hmac } from 'gmkitx';
 
-::: tabs#sm3-lang
-
-@tab TypeScript
-
-```typescript
-import { sm3Digest, sm3Hmac } from 'gmkitx';
-
-const hash = sm3Digest('Hello, SM3!');
-const mac  = sm3Hmac(new TextEncoder().encode('secret-key'), 'msg');
+const key = Uint8Array.from({ length: 32 }, (_, index) => index);
+const mac = sm3Hmac(key, 'authenticated message');
+if (!/^[0-9a-f]{64}$/.test(mac)) {
+  throw new Error(`invalid HMAC-SM3 output: ${mac}`);
+}
 ```
 
-@tab Java（静态聚合）
+HMAC key 应来自安全随机源或经审查的密钥派生流程，不要使用短口令直接作为 key。验证 MAC 时应使用恒时比较能力；本库 `constantTimeEqual` 在 JavaScript 能力范围内尽力减少早退，但运行时无法保证严格常量时间。
+
+## 不适合的用途
+
+- **用户密码存储**：普通 SM3 太快，不能抵抗离线暴力破解。使用 Argon2id、scrypt 或 bcrypt，并按其规范生成 salt 和成本参数。
+- **数据加密**：摘要不可逆，但不是加密。需要机密性时使用 SM4-GCM/CCM 等认证加密。
+- **无密钥身份认证**：攻击者可以重新计算普通摘要；需要 HMAC 或数字签名。
+- **长度扩展敏感协议**：不要设计 `SM3(secret || message)`，使用 HMAC-SM3。
+
+## Java 对照与验证
 
 ```java
 import cn.gmkit.sm3.SM3Util;
 
-String hash = SM3Util.digestHex("Hello, SM3!");
-String mac  = SM3Util.hmacHex("secret-key".getBytes(), "msg".getBytes());
-```
-
-@tab Java（实例式）
-
-```java
-import cn.gmkit.sm3.SM3;
-
-SM3 sm3 = new SM3();
-String hash = sm3.digestHex("Hello, SM3!");
-String mac  = sm3.hmacHex("secret-key".getBytes(), "msg".getBytes());
-```
-
-:::
-
-## 输出格式
-
-SM3 支持多种输出格式：
-
-### 十六进制输出（默认）
-
-```typescript
-import { sm3Digest, OutputFormat } from 'gmkitx';
-
-const hash = sm3Digest('abc', {
-  outputFormat: OutputFormat.HEX
-});
-// 输出: "66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0"
-```
-
-### Base64 输出
-
-```typescript
-const hash = sm3Digest('abc', {
-  outputFormat: OutputFormat.BASE64
-});
-// 输出: "Zsfw9GLu7dnR8tRr3BDk4kFnxIdc8veiKX2gK49LqOA="
-```
-
-如需字节数组，可自行从 hex/base64 转换：
-
-```typescript
-const hexHash = sm3Digest('Hello');
-const bytes = Buffer.from(hexHash, 'hex'); // Node.js
-```
-
-## 流式处理
-
-对于大文件或需要分块处理的场景，可以使用流式 API：
-
-### 基本流式处理
-
-```typescript
-import { SM3 } from 'gmkitx';
-
-const sm3 = new SM3();
-
-// 分块更新数据
-sm3.update('第一部分数据');
-sm3.update('第二部分数据');
-sm3.update('第三部分数据');
-
-// 获取最终哈希值
-const hash = sm3.digest();
-```
-
-### 处理大文件
-
-```typescript
-import { SM3 } from 'gmkitx';
-import fs from 'fs';
-
-const sm3 = new SM3();
-const stream = fs.createReadStream('large-file.dat');
-
-stream.on('data', (chunk) => {
-  sm3.update(chunk);
-});
-
-stream.on('end', () => {
-  const hash = sm3.digest();
-  console.log('文件哈希:', hash);
-});
-```
-
-### Node.js 文件哈希示例
-
-```typescript
-import { SM3, sm3Digest } from 'gmkitx';
-import { readFileSync } from 'fs';
-
-function hashFile(filePath: string): string {
-  const data = readFileSync(filePath);
-  return sm3Digest(data);
-}
-
-const fileHash = hashFile('./document.pdf');
-```
-
-## 面向对象 API
-
-```typescript
-import { SM3, OutputFormat } from 'gmkitx';
-
-// 创建实例（构造时可指定输出格式）
-const sm3 = new SM3(OutputFormat.HEX);
-
-// 更新数据（可多次调用）
-sm3.update('part1');
-sm3.update('part2');
-
-// 获取哈希值（十六进制）
-const hexHash = sm3.digest();
-
-// 修改输出格式后再 digest
-sm3.setOutputFormat(OutputFormat.BASE64);
-sm3.update('new data');
-const base64Hash = sm3.digest();
-
-// 重置状态，可以重新使用
-sm3.reset();
-sm3.update('other data');
-const newHash = sm3.digest();
-```
-
-## 完整 API 参考
-
-### 函数式 API
-
-| 函数 | 说明 | 返回值 |
-|------|------|--------|
-| `sm3Digest(data, options?)` | 计算 SM3 哈希值 | `string` |
-| `sm3Hmac(key, data, options?)` | 计算 HMAC-SM3 | `string` |
-
-### 类 API
-
-| 方法 | 说明 | 返回值 |
-|------|------|--------|
-| `new SM3()` | 创建 SM3 实例 | `SM3` |
-| `update(data)` | 更新数据 | `void` |
-| `digest()` | 获取哈希值 | `string` |
-| `reset()` | 重置状态 | `void` |
-| `SM3.hmac(key, data, options?)` | 计算 HMAC-SM3（静态方法） | `string` |
-
-### 选项参数
-
-```typescript
-interface SM3Options {
-  outputFormat?: 'hex' | 'base64';  // 输出格式
+String actual = SM3Util.digestHex("abc");
+if (!"66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0".equals(actual)) {
+    throw new IllegalStateException("SM3 vector mismatch: " + actual);
 }
 ```
 
-## 使用场景
-
-### 1. 数据完整性校验
-
-```typescript
-import { sm3Digest } from 'gmkitx';
-
-// 发送方计算哈希
-const data = '重要数据';
-const hash = sm3Digest(data);
-sendData(data, hash);
-
-// 接收方验证
-const receivedData = receiveData();
-const receivedHash = receiveHash();
-const calculatedHash = sm3Digest(receivedData);
-
-if (calculatedHash === receivedHash) {
-  console.log('数据完整，未被篡改');
-} else {
-  console.log('数据已被篡改！');
-}
+```bash
+npm test -w packages/ts -- sm3
+npm run parity
 ```
 
-### 2. 密码存储
-
-```typescript
-import { sm3Digest } from 'gmkitx';
-
-// 存储密码时先哈希（示例；生产请使用带迭代的 KDF）
-function hashPassword(password: string, salt: string): string {
-  return sm3Digest(password + salt);
-}
-
-// 注册
-const salt = generateRandomSalt();
-const hashedPassword = hashPassword('userPassword', salt);
-saveToDatabase(username, hashedPassword, salt);
-
-// 登录验证
-const storedHash = getFromDatabase(username);
-const storedSalt = getSaltFromDatabase(username);
-const inputHash = hashPassword(inputPassword, storedSalt);
-
-if (inputHash === storedHash) {
-  console.log('密码正确');
-}
-```
-
-### 3. 数字签名的消息摘要
-
-```typescript
-import { sm2Sign } from 'gmkitx';
-
-// 注意：SM2 签名默认会计算 SM3(Z || M)，一般无需手动预哈希
-const message = '合同内容...';
-const signature = sm2Sign(privateKey, message);
-```
-
-### 4. 区块链哈希
-
-```typescript
-import { sm3Digest } from 'gmkitx';
-
-interface Block {
-  index: number;
-  timestamp: number;
-  data: string;
-  previousHash: string;
-  nonce: number;
-}
-
-function calculateBlockHash(block: Block): string {
-  const blockString = JSON.stringify(block);
-  return sm3Digest(blockString);
-}
-
-function mineBlock(block: Block, difficulty: number): string {
-  const target = '0'.repeat(difficulty);
-  
-  while (true) {
-    block.nonce++;
-    const hash = calculateBlockHash(block);
-    
-    if (hash.startsWith(target)) {
-      return hash;
-    }
-  }
-}
-```
-
-### 5. 内容去重
-
-```typescript
-import { sm3Digest } from 'gmkitx';
-
-const contentHashMap = new Map<string, string>();
-
-function isDuplicate(content: string): boolean {
-  const hash = sm3Digest(content);
-  
-  if (contentHashMap.has(hash)) {
-    return true; // 重复内容
-  }
-  
-  contentHashMap.set(hash, content);
-  return false;
-}
-```
-
-## 高级用法
-
-### HMAC-SM3（密钥哈希）
-
-GMKitX 已内置 HMAC-SM3：
-
-```typescript
-import { sm3Hmac, OutputFormat } from 'gmkitx';
-
-const mac = sm3Hmac('secret-key', 'message');
-const mac64 = sm3Hmac('secret-key', 'message', { outputFormat: OutputFormat.BASE64 });
-```
-
-### 计算文件指纹
-
-```typescript
-import { SM3 } from 'gmkitx';
-
-interface FileFingerprint {
-  hash: string;
-  size: number;
-  chunkCount: number;
-}
-
-function calculateFileFingerprint(
-  fileData: Uint8Array,
-  chunkSize: number = 1024 * 1024 // 1MB
-): FileFingerprint {
-  const sm3 = new SM3();
-  let chunkCount = 0;
-  
-  for (let i = 0; i < fileData.length; i += chunkSize) {
-    const chunk = fileData.slice(i, i + chunkSize);
-    sm3.update(chunk);
-    chunkCount++;
-  }
-  
-  return {
-    hash: sm3.digest(),
-    size: fileData.length,
-    chunkCount
-  };
-}
-```
-
-### 批量哈希计算
-
-```typescript
-import { sm3Digest } from 'gmkitx';
-
-// 并行计算多个哈希值
-function batchHash(items: string[]): Map<string, string> {
-  const results = new Map<string, string>();
-  
-  for (const item of items) {
-    results.set(item, sm3Digest(item));
-  }
-  
-  return results;
-}
-
-// 使用
-const items = ['item1', 'item2', 'item3'];
-const hashes = batchHash(items);
-```
-
-## 性能优化
-
-### 1. 重用实例
-
-```typescript
-import { SM3 } from 'gmkitx';
-
-// 创建实例并重用
-const sm3 = new SM3();
-
-function hashMultipleMessages(messages: string[]): string[] {
-  return messages.map(msg => {
-    sm3.reset(); // 重置状态
-    sm3.update(msg);
-    return sm3.digest();
-  });
-}
-```
-
-### 2. 流式处理大数据
-
-```typescript
-// ✅ 推荐：流式处理
-const sm3 = new SM3();
-for (const chunk of largeData) {
-  sm3.update(chunk);
-}
-const hash = sm3.digest();
-
-// ❌ 不推荐：一次性处理
-const hash = sm3Digest(largeDataAsString); // 可能导致内存问题
-```
-
-## 注意事项
-
-::: warning
-注意：以下内容涉及安全性、互操作或易错点，建议上线前逐条核对。
-:::
-
-| 项目 | 说明 |
-|:--|:--|
-| 哈希不可逆 | SM3 是单向函数，无法从哈希值还原原始数据 |
-| 雪崩效应 | 输入微小变化会导致输出完全不同 |
-| 固定长度 | 无论输入多大，输出始终是 256 位（32 字节） |
-| 编码一致性 | 确保输入数据编码一致（UTF-8） |
-| 不要用于加密 | SM3 是哈希算法，不是加密算法 |
-| 盐值 | 存储密码时务必加盐（salt） |
-| 密码存储 | 仅哈希不够，建议使用 PBKDF2/BCrypt 等加盐与迭代的 KDF |
-
-
-## 常见问题
-
-### Q: SM3 和 SHA-256 有什么区别？
-
-A: SM3 和 SHA-256 都输出 256 位哈希值，但：
-- SM3 是中国国家标准
-- SM3 的内部结构和设计不同
-- 两者不兼容，对相同输入产生不同的哈希值
-- 安全强度相当
-
-### Q: 如何验证 SM3 实现的正确性？
-
-A: 可以使用官方测试向量验证：
-```typescript
-// GM/T 0004-2012 标准测试向量
-import { sm3Digest } from 'gmkitx';
-
-const expectedHash =
-  '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0';
-const actualHash = sm3Digest('abc');
-
-if (actualHash !== expectedHash) {
-  throw new Error(`SM3 vector mismatch: ${actualHash}`);
-}
-```
-
-### Q: 可以用 SM3 加密数据吗？
-
-A: 不可以。SM3 是哈希算法，不是加密算法。哈希是单向的，无法解密。如需加密，请使用 SM4 或 SM2。
-
-### Q: 如何处理二进制数据？
-
-A: SM3 支持多种输入格式：
-```typescript
-// 字符串
-sm3Digest('text');
-
-// 字节数组
-sm3Digest(new Uint8Array([1, 2, 3]));
-
-// Buffer (Node.js)
-sm3Digest(Buffer.from('data'));
-```
-
-## 性能基准
-
-在现代硬件上的性能参考（仅供参考）：
-
-| 数据大小 | 处理时间 |
-|---------|---------|
-| 1 KB | < 1 ms |
-| 1 MB | ~10 ms |
-| 10 MB | ~100 ms |
-| 100 MB | ~1 s |
-
-> 注: 实际性能取决于硬件配置和运行环境
-
-## 相关资源
-
-- [SM3 标准文档](http://www.gmbz.org.cn/main/viewfile/2018011001400692565.html)
-- [ISO/IEC 10118-3:2018](https://www.iso.org/standard/67116.html)
-- [密码杂凑算法基础](https://en.wikipedia.org/wiki/Cryptographic_hash_function)
-
-## 相关算法
-
-- [SM2 - 椭圆曲线公钥密码算法](./SM2.md)
-- [SM4 - 分组密码算法](./SM4.md)
-- [SHA - 国际标准哈希算法](./SHA.md)
+- [安全边界](/guide/security)
+- [Go 对接](/dev/GO-INTEGRATION.zh-CN)
+- [Python 对接](/dev/PYTHON-INTEGRATION.zh-CN)
+- [Rust 对接](/dev/RUST-INTEGRATION.zh-CN)

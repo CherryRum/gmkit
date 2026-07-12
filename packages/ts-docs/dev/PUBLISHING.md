@@ -1,373 +1,77 @@
 ---
-title: 发布流程指南
+title: TypeScript 发布流程
 icon: upload
-order: 8
-author: mumu
-date: 2025-11-23
-category:
-  - 开发指南
-  - 发布
-tag:
-  - NPM
-  - 发布
-  - 版本管理
+order: 9
+category: [开发指南, 发布]
+tag: [npm, GitHub Actions, Provenance]
 ---
 
-# 发布指南 / Publishing Guide
+# TypeScript 发布流程
 
-::: tip
-提示：本章要点
+本文与 `.github/workflows/publish-ts.yml` 对齐。Monorepo 的 TypeScript 发布标签使用 `ts-v<package version>`；工作流暂时兼容旧 `v*` 标签，但新发布不要继续创建无语言前缀标签。
 
-- 模块格式支持 / Module Format Support
-- 发布流程 / Publishing Process
-- 版本管理最佳实践 / Version Management Best Practices
-- 故障排除 / Troubleshooting
-- 回滚发布 / Rolling Back a Release
-:::
+## 产物
 
+| 格式 | 文件 | 入口 |
+|:--|:--|:--|
+| ESM | `dist/index.js` | `exports.import` |
+| CommonJS | `dist/index.cjs` | `exports.require` |
+| IIFE | `dist/index.global.js` | 全局 `GMKit` |
+| 类型 | `dist/index.d.ts` | `types` |
 
-本文档介绍如何发布 GMKitX 到 NPM，以及如何使用不同的模块格式。
+发布包只包含 `dist`、`README.md`、`LICENSE`。源码、测试、docs 和 Studio 不进入 npm tarball。
 
-This document describes how to publish GMKitX to NPM and how to use different module formats.
+## 发布前检查
 
-## 模块格式支持 / Module Format Support
-
-GMKitX 现在支持三种模块格式，确保在各种环境下都能正常工作：
-
-GMKitX now supports three module formats to ensure it works in various environments:
-
-### 1. ES Module (ESM)
-最现代的模块格式，支持 tree-shaking，推荐在现代 JavaScript 项目中使用。
-
-The most modern module format with tree-shaking support, recommended for modern JavaScript projects.
-
-```javascript
-// 在现代打包工具中使用（Vite, Webpack 5+, Rollup）
-// Use with modern bundlers (Vite, Webpack 5+, Rollup)
-import { sm3Digest, sm4Encrypt, sm2GenerateKeyPair } from 'gmkitx';
-
-// 或导入全部
-// Or import everything
-import * as gmkit from 'gmkitx';
-```
-
-**文件位置 / File Location:** `dist/index.js`
-
-### 2. CommonJS (CJS)
-Node.js 传统模块格式，兼容旧版 Node.js 和打包工具。
-
-Traditional Node.js module format, compatible with older Node.js versions and bundlers.
-
-```javascript
-// 在 Node.js 或旧版打包工具中使用
-// Use with Node.js or older bundlers
-const { sm3Digest, sm4Encrypt, sm2GenerateKeyPair } = require('gmkitx');
-
-// 或导入全部
-// Or import everything
-const gmkit = require('gmkitx');
-```
-
-**文件位置 / File Location:** `dist/index.cjs`
-
-### 3. IIFE (Global Build)
-全局构建格式，可以直接在浏览器中通过 `<script>` 标签使用。
-
-IIFE global build, can be used directly in browsers with `<script>` tags.
-
-```html
-<!-- 通过 CDN 使用（推荐） -->
-<!-- Use via CDN (recommended) -->
-<script src="https://unpkg.com/gmkitx@latest/dist/index.global.js"></script>
-<script>
-  // 全局变量 GMKit 现在可用
-  // Global variable GMKit is now available
-  const hash = GMKit.sm3Digest('Hello, World!');
-  console.log(hash);
-</script>
-
-<!-- 或使用 jsDelivr -->
-<!-- Or use jsDelivr -->
-<script src="https://cdn.jsdelivr.net/npm/gmkitx@latest/dist/index.global.js"></script>
-```
-
-**文件位置 / File Location:** `dist/index.global.js`
-
-**CDN 链接 / CDN Links:**
-- unpkg: `https://unpkg.com/gmkitx@latest/dist/index.global.js`
-- jsDelivr: `https://cdn.jsdelivr.net/npm/gmkitx@latest/dist/index.global.js`
-
-## 发布流程 / Publishing Process
-
-### 前置准备 / Prerequisites
-
-| 项目 | 说明 |
-|:--|:--|
-| NPM 账号 / NPM Account | 在 [npmjs.com](https://www.npmjs.com/) 注册账号；Register an account at [npmjs.com](https://www.npmjs.com/) |
-| 生成 NPM Token / Generate NPM Token | 登录 NPM 网站；访问 Account Settings -> Access Tokens；点击 "Generate New Token" -> "Classic Token"；选择 "Automation" 类型；复制生成的 token；Login to NPM website, visit Account Settings -> Access Tokens, click "Generate New Token" -> "Classic Token", select "Automation" type, and copy the generated token. |
-| 配置 GitHub Secret / Configure GitHub Secret | 在 GitHub 仓库中，访问 Settings -> Secrets and variables -> Actions；点击 "New repository secret"；Name: `NPM_TOKEN`；Value: 粘贴你的 NPM token；In your GitHub repository, go to Settings -> Secrets and variables -> Actions, click "New repository secret", set Name to `NPM_TOKEN` and paste your NPM token as Value. |
-
-### 发布步骤 / Publishing Steps
-
-#### 1. 更新版本号 / Update Version
-
-首先，更新 `package.json` 中的版本号，遵循[语义化版本控制](https://semver.org/)：
-
-First, update the version in `package.json` following [Semantic Versioning](https://semver.org/):
+1. 同步 `packages/ts/package.json`、根版本记录和 `CHANGELOG.md`。
+2. 保留旧顶层兼容 API，breaking change 必须单独评估，不在小版本静默删除。
+3. 从仓库根执行：
 
 ```bash
-# 补丁版本（bug 修复）/ Patch version (bug fixes)
-npm version patch  # 0.1.0 -> 0.1.1
-
-# 次要版本（新功能，向后兼容）/ Minor version (new features, backward compatible)
-npm version minor  # 0.1.0 -> 0.2.0
-
-# 主要版本（破坏性变更）/ Major version (breaking changes)
-npm version major  # 0.1.0 -> 1.0.0
-
-# 或手动编辑 package.json
-# Or manually edit package.json
+npm ci
+npm run type-check -w packages/ts
+npm test -w packages/ts
+npm run lint -w packages/ts
+npm run build -w packages/ts
+npm run audit:pack -w packages/ts
+npm run parity
+npm run docs:check
+npm run docs:build
 ```
 
-#### 2. 更新 CHANGELOG / Update CHANGELOG
+跨语言文档有变化时还需执行 `npm run docs:test-examples`。
 
-在 `CHANGELOG.md` 中记录本次发布的变更：
+## 标签与自动发布
 
-Document the changes in `CHANGELOG.md`:
-
-```markdown
-## [0.2.0] - 2025-10-14
-
-### Added
-- IIFE 全局构建支持
-- CDN 使用支持（unpkg, jsDelivr）
-
-### Changed
-- 改进了打包配置
-```
-
-#### 3. 提交变更 / Commit Changes
+假设 `packages/ts/package.json` 为 `0.10.0-preview.1`：
 
 ```bash
-git add package.json CHANGELOG.md
-git commit -m "chore: bump version to 0.2.0"
-git push
+git tag ts-v0.10.0-preview.1
+git push origin ts-v0.10.0-preview.1
 ```
 
-#### 4. 运行预发布检查 / Run prepublish checks
+工作流会核对标签版本与 package version，执行 type-check、测试、构建和 pack 审计。版本包含 `-` 时发布到 npm `preview` tag，否则发布到 `latest`。配置 `NPM_TOKEN` 时执行带 provenance 的发布；缺少 token 时只完成验证并明确跳过发布。
 
-在发布前执行自动化检查，确保类型检查、单元测试和构建流程全部通过：
+## 发布后验证
 
-Run the automated prepublish checks to ensure type checking, unit tests, and the production build all succeed:
+不要直接用浮动 `latest` 做首次验收。创建空目录，安装刚发布的精确版本并验证 ESM/CJS：
 
 ```bash
-npm run prepublishOnly
+npm init -y
+npm install gmkitx@0.10.0-preview.1
+node --input-type=module -e "import { sm3Digest } from 'gmkitx'; if (sm3Digest('abc') !== '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0') process.exit(1)"
+node -e "const { sm3Digest } = require('gmkitx'); if (sm3Digest('abc') !== '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0') process.exit(1)"
 ```
 
-#### 5. 创建并推送标签 / Create and Push Tag
+再检查 npm 页面 provenance、dist-tag、tarball 文件列表和 CDN 的精确版本 URL。
 
-**重要：标签版本必须与 package.json 中的版本一致**
+## 回滚
 
-**Important: Tag version must match the version in package.json**
+npm 已发布版本不可覆盖。发现问题时：
 
-```bash
-# 创建标签（必须以 'v' 开头）
-# Create tag (must start with 'v')
-git tag v0.2.0
+1. 视影响使用 `npm deprecate gmkitx@<bad-version> "reason"` 标记。
+2. 修复后发布新版本，不重写已有 tag 或 tarball。
+3. 若泄露 token 或密钥，立即吊销并按安全事件处理，不只撤销版本。
 
-# 推送标签到 GitHub，这将触发发布工作流
-# Push tag to GitHub, this will trigger the publish workflow
-git push origin v0.2.0
-```
-
-#### 6. 自动发布 / Automatic Publishing
-
-当标签被推送后，GitHub Actions 会自动：
-
-When the tag is pushed, GitHub Actions will automatically:
-
-1. ✅ 检出代码 / Checkout code
-2. ✅ 安装依赖 / Install dependencies
-3. ✅ 运行类型检查 / Run type checking
-4. ✅ 运行测试 / Run tests
-5. ✅ 构建项目（生成 ESM, CJS, IIFE）/ Build project (generate ESM, CJS, IIFE)
-6. ✅ 验证标签版本与 package.json 版本一致 / Verify tag version matches package.json
-7. ✅ 发布到 NPM / Publish to NPM
-8. ✅ 创建 GitHub Release / Create GitHub Release
-
-你可以在 GitHub 仓库的 "Actions" 标签页中查看发布进度。
-
-You can monitor the publishing progress in the "Actions" tab of your GitHub repository.
-
-#### 7. 验证发布 / Verify Publication
-
-发布成功后，验证包是否可用：
-
-After successful publication, verify the package:
-
-```bash
-# 检查 NPM 上的最新版本
-# Check latest version on NPM
-npm view gmkitx version
-
-# 在新项目中安装测试
-# Install and test in a new project
-npm install gmkitx@latest
-
-# 测试不同的导入方式
-# Test different import methods
-node -e "const gmkit = require('gmkitx'); console.log(gmkit.sm3Digest('test'));"
-```
-
-## 版本管理最佳实践 / Version Management Best Practices
-
-### 语义化版本控制 / Semantic Versioning
-
-| 项目 | 说明 |
-|:--|:--|
-| MAJOR (主版本) | 不兼容的 API 变更 / Incompatible API changes |
-| MINOR (次版本) | 向后兼容的新功能 / Backward-compatible new features |
-| PATCH (补丁版本) | 向后兼容的 bug 修复 / Backward-compatible bug fixes |
-
-
-### 预发布版本 / Pre-release Versions
-
-对于 beta 测试或候选版本：
-
-For beta testing or release candidates:
-
-```bash
-# Beta 版本
-npm version 0.2.0-beta.1
-git tag v0.2.0-beta.1
-git push origin v0.2.0-beta.1
-
-# Release Candidate
-npm version 0.2.0-rc.1
-git tag v0.2.0-rc.1
-git push origin v0.2.0-rc.1
-```
-
-安装预发布版本：
-
-Install pre-release versions:
-
-```bash
-npm install gmkitx@beta
-npm install gmkitx@0.2.0-beta.1
-```
-
-## 故障排除 / Troubleshooting
-
-### 版本不匹配 / Version Mismatch
-
-如果看到 "Version mismatch" 错误：
-
-If you see "Version mismatch" error:
-
-```bash
-# 删除本地标签
-# Delete local tag
-git tag -d v0.2.0
-
-# 删除远程标签
-# Delete remote tag
-git push origin :refs/tags/v0.2.0
-
-# 修正 package.json 中的版本
-# Fix version in package.json
-
-# 重新创建和推送标签
-# Recreate and push tag
-git tag v0.2.0
-git push origin v0.2.0
-```
-
-### NPM 发布失败 / NPM Publish Failed
-
-检查：
-
-Check:
-
-1. NPM_TOKEN 是否正确配置 / Is NPM_TOKEN correctly configured?
-2. 你的 NPM 账号是否有发布权限 / Does your NPM account have publish permissions?
-3. 包名是否已被占用 / Is the package name already taken?
-4. 网络连接是否正常 / Is the network connection stable?
-
-### 工作流未触发 / Workflow Not Triggered
-
-确保：
-
-Ensure:
-
-1. 标签以 'v' 开头 / Tag starts with 'v'
-2. 标签已推送到 GitHub / Tag is pushed to GitHub
-3. 工作流文件位于 `.github/workflows/` 目录 / Workflow file is in `.github/workflows/` directory
-
-## 回滚发布 / Rolling Back a Release
-
-如果发布出现问题，可以弃用有问题的版本：
-
-If there's an issue with a release, you can deprecate the problematic version:
-
-```bash
-# 弃用特定版本
-# Deprecate a specific version
-npm deprecate gmkitx@0.2.0 "This version has critical bugs, please upgrade to 0.2.1"
-
-# 或者发布一个新的修复版本
-# Or publish a new patch version
-npm version patch
-git tag v0.2.1
-git push origin v0.2.1
-```
-
-## 本地测试发布 / Local Testing Before Publishing
-
-在正式发布前，可以本地测试打包：
-
-Before official publishing, test the package locally:
-
-```bash
-# 构建项目
-# Build the project
-npm run build
-
-# 创建本地包
-# Create local package
-npm pack
-
-# 这会生成 gmkitx-0.2.0.tgz 文件
-# This generates a gmkitx-0.2.0.tgz file
-
-# 在另一个项目中测试安装
-# Test installation in another project
-npm install /path/to/gmkitx-0.2.0.tgz
-```
-
-## 持续集成 / Continuous Integration
-
-发布工作流包含完整的 CI 检查：
-
-The publish workflow includes complete CI checks:
-
-::: tip
-提示：
-
-- 类型检查 / Type checking
-- 单元测试 / Unit tests
-- 构建验证 / Build verification
-- 版本一致性验证 / Version consistency verification
-:::
-
-
-只有所有检查通过后才会发布到 NPM。
-
-The package is only published to NPM after all checks pass.
-
-## 相关资源 / Related Resources
-
-- [NPM Publishing Guide](https://docs.npmjs.com/packages-and-modules/contributing-packages-to-the-registry)
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [Semantic Versioning](https://semver.org/)
-- [Keep a Changelog](https://keepachangelog.com/)
+- [项目发布精简清单](/dev/PROJECT-SLIMMING-CHECKLIST.zh-CN)
+- [安全状态](/summaries/SECURITY-SUMMARY)

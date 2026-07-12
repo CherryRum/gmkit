@@ -1,278 +1,125 @@
 ---
 title: 快速开始
-icon: rocket
+icon: play
 order: 1
-author: mumu
-date: 2025-11-23
 category:
-  - 指南
+  - 使用指南
 tag:
-  - 快速开始
   - 安装
-  - 使用
+  - TypeScript
 ---
 
 # 快速开始
 
-::: tip
-提示：本章要点
+## 环境与安装
 
-- 安装
-- 第一个例子
-- 导入方式
-- 常见使用场景
-- 安全注意与常见攻击（通俗版）
-:::
-
-
-欢迎使用 **GMKitX**！本指南将帮助您快速上手国密算法与国际标准的 TypeScript 实现。
-
-::: info Java 后端同学
-项目的 JVM 端有同源实现 [`cn.gmkit:gmkit`](/dev/JAVA-LIBRARY.zh-CN)，
-方法名、参数顺序、密文格式与本库保持一致，前后端可以共用一套约定。
-:::
-
-## 安装
-
-### 环境要求
-
-- **Node.js** >= 18.0.0
-- 或任意支持 ES6+ 的现代浏览器
-
-### 使用包管理器安装
-
-::: code-tabs#shell
-
-@tab npm
+GMKitX 支持 Node.js 18 及以上版本和具备 ES2020、`TextEncoder`、`TextDecoder` 的现代浏览器。Monorepo 开发与文档构建使用 Node.js 22.12 及以上版本。
 
 ```bash
 npm install gmkitx
 ```
 
-@tab pnpm
+安全敏感的服务端或浏览器应用建议在启动时启用严格随机源策略：
 
-```bash
-pnpm add gmkitx
+```ts
+import { configureRNG, getEnvReport } from 'gmkitx';
+
+configureRNG('strict');
+const env = getEnvReport();
+if (!env.hasCSPRNG) {
+  throw new Error('当前运行环境没有可用的 CSPRNG');
+}
 ```
 
-@tab yarn
+受限小程序环境可保留默认 `warn` 策略，但必须关注警告，并优先通过 `setCustomRNG()` 注入平台安全随机源。默认兼容降级不是密码学安全随机数。
 
-```bash
-yarn add gmkitx
-```
+## 最小可验证示例
 
-:::
+```ts
+import {
+  CipherMode,
+  PaddingMode,
+  bytesToHex,
+  getRandomBytes,
+  sm2Decrypt,
+  sm2Encrypt,
+  sm2GenerateKeyPair,
+  sm2Sign,
+  sm2Verify,
+  sm3Digest,
+  sm4Decrypt,
+  sm4Encrypt,
+} from 'gmkitx';
 
-## 第一个例子
+const message = 'GMKitX release check';
 
-让我们先从 SM2 加解密与签名开始：
+const keyPair = sm2GenerateKeyPair();
+const sm2Cipher = sm2Encrypt(keyPair.publicKey, message);
+if (sm2Decrypt(keyPair.privateKey, sm2Cipher) !== message) {
+  throw new Error('SM2 round-trip failed');
+}
 
-```typescript
-import { sm2GenerateKeyPair, sm2Encrypt, sm2Decrypt, sm2Sign, sm2Verify, SM2CipherMode } from 'gmkitx';
+const signature = sm2Sign(keyPair.privateKey, message);
+if (!sm2Verify(keyPair.publicKey, message, signature)) {
+  throw new Error('SM2 signature verification failed');
+}
 
-const { publicKey, privateKey } = sm2GenerateKeyPair();
-const message = 'Hello, GMKitX!';
+const sm3 = sm3Digest('abc');
+if (sm3 !== '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0') {
+  throw new Error(`SM3 vector mismatch: ${sm3}`);
+}
 
-const cipher = sm2Encrypt(publicKey, message, { mode: SM2CipherMode.C1C3C2 });
-const plain = sm2Decrypt(privateKey, cipher, { mode: SM2CipherMode.C1C3C2 });
-
-const signature = sm2Sign(privateKey, message);
-const ok = sm2Verify(publicKey, message, signature);
+const sm4Key = bytesToHex(getRandomBytes(16));
+const nonce = bytesToHex(getRandomBytes(12));
+const sm4Cipher = sm4Encrypt(sm4Key, message, {
+  mode: CipherMode.GCM,
+  padding: PaddingMode.NONE,
+  iv: nonce,
+  aad: 'example-v1',
+});
+const sm4Plain = sm4Decrypt(sm4Key, sm4Cipher, {
+  mode: CipherMode.GCM,
+  padding: PaddingMode.NONE,
+  iv: nonce,
+  aad: 'example-v1',
+});
+if (sm4Plain !== message) {
+  throw new Error('SM4-GCM round-trip failed');
+}
 ```
 
 ## 导入方式
 
-根据场景选择即可：按需导入（最优 Tree-shaking）、类实例化（面向对象），或浏览器直引。
+推荐使用具名导出，名称能直接表达算法归属，也便于 tree-shaking：
 
-### 按需导入（函数或命名空间，推荐）
-
-```typescript
-// 函数级别：仅打包所需 API
-import { sm2GenerateKeyPair, sm2Encrypt, sm2Decrypt, sm3Digest, sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkitx';
-
-const { publicKey, privateKey } = sm2GenerateKeyPair();
-const cipher = sm2Encrypt(publicKey, '订单数据');
-const plain = sm2Decrypt(privateKey, cipher);
-
-const hash = sm3Digest('订单摘要');
-
-const key = '0123456789abcdeffedcba9876543210';
-const iv = 'fedcba98765432100123456789abcdef';
-const sm4Payload = sm4Encrypt(key, '敏感数据', { mode: CipherMode.CBC, padding: PaddingMode.PKCS7, iv });
-const sm4Plain = sm4Decrypt(key, sm4Payload, { mode: CipherMode.CBC, padding: PaddingMode.PKCS7, iv });
+```ts
+import { sm2Encrypt, sm3Digest, sm4Encrypt } from 'gmkitx';
 ```
 
-```typescript
-// 命名空间：结构清晰，便于批量使用
+需要统一组织调用时可以使用算法命名空间：
+
+```ts
 import { sm2, sm3, sm4, zuc, sha } from 'gmkitx';
-const digestHex = sm3.digest('订单摘要');
-const keypair = sm2.generateKeyPair();
+
+const hash = sm3.digest('message');
+const shaHash = sha.sha256('message');
 ```
 
-### 类实例化
+旧的 `sign`、`digest`、`generateKeyPair` 等无算法前缀名称仍保留，但已弃用。新代码不要继续依赖这些别名。
 
-适合需要持久上下文（流式更新、重复加解密）的场景。
+## 文本与二进制
 
-```typescript
-import { SM2, SM3, SM4 } from 'gmkitx';
+字符串输入统一按 UTF-8 编码。解密任意二进制数据时使用字节 API：
 
-const sm3Instance = new SM3();
-sm3Instance.update('订单摘要');
-sm3Instance.update('附件摘要');
-const hash = sm3Instance.digest(); // 默认 Hex
-```
+- `sm2DecryptBytes`
+- `sm4DecryptBytes`
+- `zucDecryptBytes`
 
-### 浏览器直引（CDN）
-
-无需构建工具，脚本直接可用。
-
-```html
-<script src="https://unpkg.com/gmkitx@latest/dist/index.global.js"></script>
-<script>
-  const { sm3Digest, sm4Encrypt } = GMKit;
-  console.log('SM3 Hash:', sm3Digest('Browser Test'));
-</script>
-```
-
-## 常见使用场景
-
-### 场景 1：非对称加密（SM2）
-
-```typescript
-import { sm2GenerateKeyPair, sm2Encrypt, sm2Decrypt, SM2CipherMode, InputFormat, OutputFormat } from 'gmkitx';
-
-const { publicKey, privateKey } = sm2GenerateKeyPair();
-
-const cipher = sm2Encrypt(publicKey, '业务载荷', {
-  mode: SM2CipherMode.C1C3C2,
-  outputFormat: OutputFormat.BASE64,
-});
-const plain = sm2Decrypt(privateKey, cipher, {
-  mode: SM2CipherMode.C1C3C2,
-  inputFormat: InputFormat.BASE64,
-});
-```
-
-### 场景 2：数字签名（SM2）
-
-```typescript
-import { sm2GenerateKeyPair, sm2Sign, sm2Verify, InputFormat, OutputFormat } from 'gmkitx';
-
-const { publicKey, privateKey } = sm2GenerateKeyPair();
-const message = '重要文件内容';
-
-const signature = sm2Sign(privateKey, message, {
-  outputFormat: OutputFormat.BASE64,
-});
-const isValid = sm2Verify(publicKey, message, signature, {
-  inputFormat: InputFormat.BASE64,
-});
-```
-
-### 场景 3：数据哈希（SM3）
-
-```typescript
-import { sm3Digest, OutputFormat } from 'gmkitx';
-
-const hexHash = sm3Digest('订单摘要'); // 默认输出 Hex
-const base64Hash = sm3Digest('订单摘要', { outputFormat: OutputFormat.BASE64 });
-
-// 如需字节数组可自行转换（Node.js 示例）
-const bytesHash = Buffer.from(hexHash, 'hex');
-```
-
-### 场景 4：对称加密（SM4）
-
-密钥与 IV 均为 32 字符十六进制字符串（128 位）；不要混用 UTF-8 文本。
-
-```typescript
-import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkitx';
-
-const key = '0123456789abcdeffedcba9876543210'; // 32 字符 hex (128 位)
-const iv = 'fedcba98765432100123456789abcdef';  // 32 字符 hex (128 位)
-
-// 加密
-const sm4Result = sm4Encrypt(key, '敏感数据', {
-  mode: CipherMode.CBC,
-  padding: PaddingMode.PKCS7,
-  iv,
-});
-
-// 解密
-const plaintext = sm4Decrypt(key, sm4Result, {
-  mode: CipherMode.CBC,
-  padding: PaddingMode.PKCS7,
-  iv,
-});
-
-console.log(plaintext); // '敏感数据'
-```
-
-## 安全注意与常见攻击（通俗版）
-
-下面是业务里最常见、最容易踩坑的风险点，以及几乎不损耗性能的防护建议。
-
-### 常见攻击/误用
-
-| 项目 | 说明 |
-|:--|:--|
-| 明文泄露（ECB 模式） | 相同明文块会产生相同密文块，结构会“露馅”。 |
-| IV/Nonce 复用 | CBC/CTR/CFB/OFB/GCM 复用 IV 会导致密文可被关联或明文被恢复。 |
-| 未认证的加密 | 只“加密”不“认证”，会被篡改（CBC/CTR 等不自带完整性）。 |
-| 弱随机数 | SM2/SM4 依赖随机数，低熵会导致私钥/会话密钥可被推断。 |
-| 哈希误用 | 把 SM3 当 MAC 使用会受长度扩展攻击。 |
-| 编码/格式混用 | Hex/Base64、C1C3C2/C1C2C3、DER/RAW 混用，导致验签/解密失败或被误判。 |
-| 签名验签不一致 | userId、签名格式或 skipZComputation 不一致会导致验签失败。 |
-| 时间序列/侧信道攻击 | 通过运行时间、错误信息差异推测密钥或内部状态。 |
-| Padding Oracle | CBC 模式如果对“填充错误”返回不同错误/耗时，会泄露明文。 |
-| 随机数/nonce 复用 | SM2 签名或加密若重复使用随机数，会导致私钥泄露或密文被恢复。 |
-
-
-### 低性能损耗的防护要点
-
-| 项目 | 说明 |
-|:--|:--|
-| 优先用 AEAD | SM4-GCM 一步解决“加密 + 认证”，性能开销小，安全收益最大。 |
-| IV/Nonce 必须唯一 | 对每条消息生成新 IV（CBC/CTR/CFB/OFB/GCM）；GCM 建议 12 字节 IV。 |
-| 不要用 ECB | 除非用于测试或特殊兼容场景；生产环境避免。 |
-| 不可信输入先校验 | 密文长度、IV 长度、tag 存在性、格式（Hex/Base64）先校验再解密。 |
-| 签名显式约定 | 双方固定 `C1C3C2/C1C2C3`、`signatureFormat`、`userId`，避免互操作问题。 |
-| MAC 用 HMAC-SM3 | 不要直接用 SM3 当 MAC；HMAC 对长度扩展免疫，性能损耗很小。 |
-| 密钥管理与轮换 | 密钥不要硬编码，及时轮换；测试数据用固定密钥，生产用安全随机源。 |
-| 减少侧信道差异 | 尽量保持错误信息与处理路径一致；不要在日志中泄露密钥/中间态。 |
-| CBC 注意填充 | 对外不要暴露“填充错误”的细节，统一错误提示。 |
-
-
-### 常见场景推荐
-
-| 项目 | 说明 |
-|:--|:--|
-| 传输数据 | SM4-GCM（或 SM4-CBC + HMAC-SM3）。 |
-| 签名验签 | SM2 + 统一 userId + 统一签名格式。 |
-| 数据摘要 | SM3；需要认证时用 HMAC-SM3。 |
-
+文本解密 API 会执行 UTF-8 解码，不能无损表示任意字节序列。
 
 ## 下一步
 
-- 查看 [SM2 完整文档](/algorithms/SM2) 了解椭圆曲线公钥密码
-- 查看 [SM3 完整文档](/algorithms/SM3) 了解密码杂凑算法
-- 查看 [SM4 完整文档](/algorithms/SM4) 了解分组密码算法
-- 查看 [开发指南](/dev/ARCHITECTURE.zh-CN) 了解架构设计
-
-## 提示
-
-::: tip
-提示：性能优化
-
-- 对于大文件哈希，使用流式 API（`SM3` 类的 `update` 方法）
-- SM4 推荐使用 GCM 模式，提供认证加密
-- 生产环境建议使用 CDN 加速
-:::
-
-::: warning
-注意：安全注意
-
-- 密钥必须使用安全的随机数生成
-- 不要在代码中硬编码密钥
-- IV（初始化向量）不应重复使用
-:::
+- [安全边界](/guide/security)：上线前必须确认的随机源、密钥、nonce 和认证要求。
+- [API 清单](/dev/API-SURFACE.zh-CN)：当前公开导出与兼容别名。
+- [共享测试向量](/dev/INTEROP_VECTORS)：Java/TypeScript 互操作验证方式。
+- [算法文档](/algorithms/SM2)：逐算法参数与固定向量。

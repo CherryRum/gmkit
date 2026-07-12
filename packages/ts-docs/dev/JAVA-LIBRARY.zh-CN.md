@@ -1,55 +1,16 @@
 ---
-title: GMKit Java（同源 Java 实现）
+title: GMKit Java 同源实现
 icon: java
-order: 2
-author: mumu
-date: 2026-05-03
-category:
-  - 开发指南
-  - 集成
-tag:
-  - Java
-  - GMKit Java
-  - JDK 1.8
-  - Bouncy Castle
+order: 3
+category: [开发指南, 集成]
+tag: [Java, GMKit Java, Bouncy Castle]
 ---
 
-# GMKit Java：与 gmkitx 同源的 Java 实现
+# GMKit Java 同源实现
 
-::: tip 这一页讲什么
-- GMKit Java 是什么、与 gmkitx 是什么关系
-- 坐标 / JDK / 依赖一栏看完
-- 双入口约定（实例式 `XxxX` + 静态聚合 `XxxUtil`）
-- 与 gmkitx 对齐协议边界的最小可运行示例（SM2/SM3/SM4/ZUC/SHA）
-- 与 Hutool / Bouncy Castle / Tencent Kona 的差异
-:::
+`packages/java/gmkit` 提供 `cn.gmkit:gmkit` 主包，当前包含 SM2、SM3、SM4、ZUC 和组合工具。它与 gmkitx 共用协议向量，但不承诺 API/ABI 完全一致。Java 主包当前**没有** `cn.gmkit.sha` 模块；SHA 可直接使用 JDK `MessageDigest`/`Mac`。
 
-## 是什么
-
-GMKit Java 是 `gmkitx` 在 JVM 端的同源实现，主包坐标为 `cn.gmkit:gmkit`。
-两端不承诺完全一致 ABI；项目通过共享互操作向量和明确的协议边界，对齐密文模式、
-签名格式、默认 `userId`、编码和可验证输出。
-
-设计目标只有两条：
-
-1. 后端与前端在 SM2 / SM3 / SM4 / ZUC 的主路径上可以互相验证。
-2. 不引入新的协议隐式默认值；跨语言对接时必须显式固定格式和编码。
-
-> 具体互操作边界以 `vectors/interop.json` 和两端 compliance tests 为准。
-
-## 坐标与依赖
-
-| 项目 | 取值 |
-|---|---|
-| `groupId` | `cn.gmkit` |
-| `artifactId` | `gmkit` |
-| `version` | `0.10.0-preview.1`（preview） |
-| 最低 JDK | 1.8（由 `animal-sniffer-maven-plugin` 强制） |
-| 运行时依赖 | Bouncy Castle `bcprov-jdk15to18` / `bcpkix-jdk15to18` |
-
-::: code-tabs#java-deps
-
-@tab Maven
+## 依赖
 
 ```xml
 <dependency>
@@ -59,312 +20,112 @@ GMKit Java 是 `gmkitx` 在 JVM 端的同源实现，主包坐标为 `cn.gmkit:g
 </dependency>
 ```
 
-@tab Gradle (Groovy)
+最低 Java 8；主包使用 Bouncy Castle `jdk15to18` 产物族。不要与其他 BC 产物族混装。
 
-```groovy
-implementation 'cn.gmkit:gmkit:0.10.0-preview.1'
-```
-
-@tab Gradle (Kotlin)
-
-```kotlin
-implementation("cn.gmkit:gmkit:0.10.0-preview.1")
-```
-
-:::
-
-::: warning BC 产物族
-Bouncy Castle 同时存在 `jdk15on` / `jdk15to18` / `jdk18on` 三个产物族，
-混用会导致 `Duplicate class`、`NoSuchMethodError`。`gmkit` 选用
-`jdk15to18` 是为了照顾仍跑在 JDK 1.8 / 老容器的项目，详细排雷
-请见 [Java 对接指南](/dev/JAVA-INTEGRATION.zh-CN#bouncy-castle-版本-产物说明-务必看)。
-:::
-
-## 两套入口的约定
-
-SM2/SM3/SM4 同时提供实例式与静态工具入口；ZUC 当前是静态入口类，按场景挑：
-
-| 入口风格 | 示例 | 适合 |
-|---|---|---|
-| 实例式 `XxxX` | `new SM3()`, `new SHA256()` | 需要复用上下文、流式 update、注入到框架中 |
-| 静态聚合 `XxxUtil` | `SM3Util.digestHex(...)` | 一次性调用、像工具方法一样使用 |
-| ZUC 静态入口 | `ZUC.encrypt(...)`, `ZUCUtil.encrypt(...)` | ZUC-128、EEA3/EIA3 一次性运算 |
-
-对提供两套入口的算法，两者语义等价；ZUC 不提供公开构造器或增量状态对象。
-推荐在 Spring Bean / 长生命周期对象里持有实例式，在脚本场景里
-用 `XxxUtil`。
-
-## SM2
-
-::: code-tabs#sm2-quick
-
-@tab Java（ZUC 静态入口）
+## SM2 可运行示例
 
 ```java
+import cn.gmkit.core.SM2CipherMode;
 import cn.gmkit.sm2.SM2;
 import cn.gmkit.sm2.SM2KeyPair;
 import cn.gmkit.sm2.SM2SignOptions;
 import cn.gmkit.sm2.SM2VerifyOptions;
-import cn.gmkit.core.SM2CipherMode;
 
 SM2 sm2 = new SM2();
-SM2KeyPair kp = sm2.generateKeyPair();
+SM2KeyPair keys = sm2.generateKeyPair();
+String message = "GMKit Java release check";
 
-// 加解密：默认 C1C3C2，与 gmkitx 共享协议边界
-String cipherHex = sm2.encryptHex(kp.getPublicKeyHex(), "Hello, SM2!", SM2CipherMode.C1C3C2);
-String plain = sm2.decryptToUtf8(kp.getPrivateKeyHex(), cipherHex, SM2CipherMode.C1C3C2);
+String cipherHex = sm2.encryptHex(keys.publicKey(), message, SM2CipherMode.C1C3C2);
+String plain = sm2.decryptToUtf8(keys.privateKey(), cipherHex, SM2CipherMode.C1C3C2);
+if (!message.equals(plain)) {
+    throw new IllegalStateException("SM2 round-trip failed");
+}
 
-// 签名 / 验签：默认 userId 与 gmkitx 一致
-SM2SignOptions signOpts = SM2SignOptions.builder().build();
-String sigHex = sm2.signHex(kp.getPrivateKeyHex(), "重要消息", signOpts);
-
-SM2VerifyOptions verifyOpts = SM2VerifyOptions.builder().build();
-boolean ok = sm2.verify(kp.getPublicKeyHex(), "重要消息", sigHex, verifyOpts);
+String signature = sm2.signHex(keys.privateKey(), message, SM2SignOptions.builder().build());
+boolean verified = sm2.verify(
+    keys.publicKey(), message, signature, SM2VerifyOptions.builder().build());
+if (!verified) {
+    throw new IllegalStateException("SM2 signature verification failed");
+}
 ```
 
-@tab Java（静态）
+`SM2KeyPair` 使用 fluent accessor：`publicKey()`、`privateKey()`，不是 JavaBean `getPublicKeyHex()`。静态调用可改用 `SM2Util`，参数和返回语义与实例入口一致。
 
-```java
-import cn.gmkit.sm2.SM2Util;
-import cn.gmkit.sm2.SM2KeyPair;
-import cn.gmkit.sm2.SM2SignOptions;
-import cn.gmkit.sm2.SM2VerifyOptions;
-import cn.gmkit.core.SM2CipherMode;
-
-SM2KeyPair kp = SM2Util.generateKeyPair();
-
-String cipherHex = SM2Util.encryptHex(kp.getPublicKeyHex(), "Hello, SM2!", SM2CipherMode.C1C3C2);
-String plain = SM2Util.decryptToUtf8(kp.getPrivateKeyHex(), cipherHex, SM2CipherMode.C1C3C2);
-
-String sigHex = SM2Util.signHex(kp.getPrivateKeyHex(), "重要消息", SM2SignOptions.builder().build());
-boolean ok = SM2Util.verify(kp.getPublicKeyHex(), "重要消息", sigHex, SM2VerifyOptions.builder().build());
-```
-
-@tab TypeScript（对照）
-
-```typescript
-import { sm2GenerateKeyPair, sm2Encrypt, sm2Decrypt, sm2Sign, sm2Verify, SM2CipherMode } from 'gmkitx';
-
-const { publicKey, privateKey } = sm2GenerateKeyPair();
-const cipher = sm2Encrypt(publicKey, 'Hello, SM2!', { mode: SM2CipherMode.C1C3C2 });
-const plain = sm2Decrypt(privateKey, cipher, { mode: SM2CipherMode.C1C3C2 });
-
-const sig = sm2Sign(privateKey, '重要消息');
-const ok = sm2Verify(publicKey, '重要消息', sig);
-```
-
-:::
-
-::: tip userId
-两端的默认 `userId` 都是 `"1234567812345678"`。TypeScript 为保持旧版兼容，
-省略值和空字符串都会回落到这个默认值；Java 是否允许真实空 ID 取决于其
-`SM2SignOptions`。跨语言对接时应优先约定同一个非空 `userId`，并用固定向量验证，
-不要把 TS 的 `{ userId: '' }` 当成真实空 ID。
-:::
-
-## SM3
-
-::: code-tabs#sm3-quick
-
-@tab Java（实例式）
-
-```java
-import cn.gmkit.sm3.SM3;
-
-SM3 sm3 = new SM3();
-String hashHex = sm3.digestHex("订单摘要");
-String hmacHex = sm3.hmacHex("secret-key".getBytes(), "msg".getBytes());
-```
-
-@tab Java（静态）
+## SM3 固定向量
 
 ```java
 import cn.gmkit.sm3.SM3Util;
 
-String hashHex = SM3Util.digestHex("订单摘要");
-String hmacHex = SM3Util.hmacHex("secret-key".getBytes(), "msg".getBytes());
+String actual = SM3Util.digestHex("abc");
+if (!"66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0".equals(actual)) {
+    throw new IllegalStateException("SM3 vector mismatch: " + actual);
+}
 ```
 
-@tab TypeScript（对照）
+`SM3` Java 对象是无状态一次性入口，不是 TypeScript `SM3` 的增量状态机。Java 大文件增量摘要应选择明确支持 update/final 的接口或流式封装，不能从 TS 类行为推导 Java 行为。
 
-```typescript
-import { sm3Digest, sm3Hmac } from 'gmkitx';
-
-const hashHex = sm3Digest('订单摘要');
-const hmacHex = sm3Hmac(new TextEncoder().encode('secret-key'), 'msg');
-```
-
-:::
-
-## SM4
-
-::: code-tabs#sm4-quick
-
-@tab Java（实例式）
+## SM4 CBC
 
 ```java
-import cn.gmkit.sm4.SM4;
-import cn.gmkit.sm4.SM4Options;
-import cn.gmkit.sm4.SM4CipherResult;
 import cn.gmkit.core.HexCodec;
 import cn.gmkit.core.SM4CipherMode;
 import cn.gmkit.core.SM4Padding;
+import cn.gmkit.sm4.SM4;
+import cn.gmkit.sm4.SM4CipherResult;
+import cn.gmkit.sm4.SM4Options;
 
-SM4 sm4 = new SM4();
 byte[] key = HexCodec.decodeStrict("0123456789abcdeffedcba9876543210", "SM4 key");
-byte[] iv  = HexCodec.decodeStrict("000102030405060708090a0b0c0d0e0f", "SM4 IV");
-
-SM4Options cbc = SM4Options.builder()
+byte[] iv = HexCodec.decodeStrict("000102030405060708090a0b0c0d0e0f", "SM4 IV");
+SM4Options options = SM4Options.builder()
     .mode(SM4CipherMode.CBC)
     .padding(SM4Padding.PKCS7)
     .iv(iv)
     .build();
 
-SM4CipherResult cipher = sm4.encrypt(key, "敏感数据".getBytes(), cbc);
-byte[] plain = sm4.decrypt(key, cipher.getCiphertext(), cbc);
+SM4 sm4 = new SM4();
+SM4CipherResult encrypted = sm4.encrypt(key, "sensitive data", options);
+String plain = sm4.decryptToUtf8(key, encrypted, options);
+if (!"sensitive data".equals(plain)) {
+    throw new IllegalStateException("SM4 CBC round-trip failed");
+}
 ```
 
-@tab Java（静态 2 参 / 3 参）
+`SM4CipherResult` 使用 `ciphertext()`、`tag()`、`ciphertextHex()`、`tagHex()`。GCM/CCM 解密时传整个 result，主包会带入认证标签。
+
+## ZUC 与 EIA3
 
 ```java
-import cn.gmkit.sm4.SM4Util;
-
-// 与 SM4 实例式完全对称的 2 参重载（默认 ECB / PKCS7）
-byte[] cipher = SM4Util.encrypt(key, "敏感数据".getBytes());
-byte[] plain  = SM4Util.decrypt(key, cipher);
-
-// 显式 3 参重载，对齐 gmkitx 的 options 写法
-SM4CipherResult result = SM4Util.encrypt(key, "敏感数据".getBytes(), cbc);
-```
-
-@tab TypeScript（对照）
-
-```typescript
-import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkitx';
-
-const key = '0123456789abcdeffedcba9876543210';
-const iv  = '000102030405060708090a0b0c0d0e0f';
-
-const cipher = sm4Encrypt(key, '敏感数据', { mode: CipherMode.CBC, padding: PaddingMode.PKCS7, iv });
-const plain  = sm4Decrypt(key, cipher,    { mode: CipherMode.CBC, padding: PaddingMode.PKCS7, iv });
-```
-
-:::
-
-::: tip 输出类型
-Java 端 `encrypt` 返回 `SM4CipherResult`，里面同时携带 `ciphertext`、
-`tag`（仅 GCM/CCM）、`mode`，等价于 gmkitx `SM4Result`。
-:::
-
-## ZUC
-
-::: code-tabs#zuc-quick
-
-@tab Java（实例式）
-
-```java
+import cn.gmkit.core.HexCodec;
 import cn.gmkit.zuc.ZUC;
 
-// 通用流加密（与 gmkitx zucEncrypt 字节级一致）
-byte[] cipher = ZUC.encrypt(key16, iv16, plaintext);
+String stream = ZUC.keystreamHex(
+    "00000000000000000000000000000000",
+    "00000000000000000000000000000000",
+    8);
+if (!"27bede74018082da".equals(stream)) {
+    throw new IllegalStateException("ZUC vector mismatch: " + stream);
+}
 
-// 兼容入口：返回 word-aligned EEA3 密钥流
-String keystream = ZUC.eea3(ckHex, count, bearer, direction, bitLength);
-
-// 标准 EEA3：直接按 bitLength 加密消息
-byte[] encrypted = ZUC.eea3Encrypt(ckHex, count, bearer, direction, message, bitLength);
-
-// EIA3：返回 8 个十六进制字符表示的 32-bit MAC
-String mac = ZUC.eia3(ikHex, count, bearer, direction, message);
+String mac = ZUC.eia3(
+    "000102030405060708090a0b0c0d0e0f",
+    0x01234567,
+    0x0a,
+    0,
+    HexCodec.decodeStrict("5bad724710ba1c56", "message"),
+    64);
+if (!"1b3d0f74".equals(mac)) {
+    throw new IllegalStateException("EIA3 vector mismatch: " + mac);
+}
 ```
 
-@tab Java（静态）
+## 验证
 
-```java
-import cn.gmkit.zuc.ZUCUtil;
+文档中的 Java API 示例由主模块测试源码编译，完整命令：
 
-byte[] cipher  = ZUCUtil.encrypt(key16, iv16, plaintext);
-String keystream = ZUCUtil.eea3(ckHex, count, bearer, direction, bitLength);
-byte[] encrypted = ZUCUtil.eea3Encrypt(ckHex, count, bearer, direction, message, bitLength);
-String mac       = ZUCUtil.eia3(ikHex, count, bearer, direction, message);
+```bash
+mvn -f packages/java/pom.xml -B -ntp -pl gmkit test
+npm run parity
 ```
 
-@tab TypeScript（对照）
-
-```typescript
-import { zucEncrypt, eea3, eea3Encrypt, eia3 } from 'gmkitx';
-
-const cipher    = zucEncrypt(key16, iv16, plaintext);
-const keystream = eea3(ck, count, bearer, direction, bitLength); // 兼容密钥流，hex
-const encrypted = eea3Encrypt(ck, count, bearer, direction, message, bitLength);
-const mac       = eia3(ik, count, bearer, direction, message);   // hex
-```
-
-:::
-
-::: tip 标准对齐
-两端均通过 ZUC-128 密钥流向量，以及 3GPP TS 35.221/35.222 的关键
-EEA3/EIA3 固定向量。具体细节见
-[ZUC 算法](/algorithms/ZUC)。
-:::
-
-## SHA（国际标准）
-
-GMKit Java 内置 SHA-1/256/384/512 四档实现，每档同时暴露实例式与
-`SHAUtil` 静态聚合，签名风格与 SM3 模块对称。
-
-::: code-tabs#sha-quick
-
-@tab Java（实例式）
-
-```java
-import cn.gmkit.sha.SHA256;
-
-SHA256 sha = new SHA256();
-String hex = sha.digestHex("hello");
-byte[] mac = sha.hmac("key".getBytes(), "msg".getBytes());
-```
-
-@tab Java（静态）
-
-```java
-import cn.gmkit.sha.SHAUtil;
-
-String hex = SHAUtil.sha256Hex("hello");
-byte[] mac = SHAUtil.sha256Hmac("key".getBytes(), "msg".getBytes());
-```
-
-@tab TypeScript（对照）
-
-```typescript
-import { sha } from 'gmkitx';
-
-const hex = sha.sha256('hello');
-// HMAC：sha.hmac('sha256', 'key', 'msg')
-```
-
-:::
-
-## 与 Hutool / BC / Kona 的取舍
-
-| 库 | 适合什么 | 与 GMKit Java 的差异 |
-|---|---|---|
-| Hutool `cn.hutool:hutool-crypto` | 已经在用 Hutool 工具集 | API 命名不与 gmkitx 对齐；密文模式默认值不同 |
-| Bouncy Castle 直接调用 | 极致控制，自己拼算子 | 需要写一堆样板；密文/签名格式默认与国密推荐不同 |
-| Tencent Kona SM Suite | 想走 JCA Provider 风格 | 与 gmkitx 命名差距大；需要装 Provider |
-| **GMKit Java** | **跟前端共享互操作向量和协议边界** | 命名接近 gmkitx，但不承诺完全一致 ABI；底层仍调用 BC，性能等价 |
-
-> 已有 Hutool 项目想逐步迁移：可参照
-> [Java 对接指南](/dev/JAVA-INTEGRATION.zh-CN) 中的“Hutool 互通示例”，
-> 先确认密文/签名互验，再切到 GMKit Java 的对应 API，迁移成本更可控。
-
-## 互操作速查
-
-完整互操作边界请优先看：
-
-- `vectors/interop.json`
-- `packages/ts/test/interop-compliance.test.ts`
-- `packages/java/gmkit/src/test/java/cn/gmkit/InteropComplianceTest.java`
-
-如果发现某个 TS 端入口在 Java 端没有对应、或者反过来，欢迎在
-[gmkits/gmkit](https://github.com/gmkits/gmkit) 提 issue。
+- [Java / Hutool 对接](/dev/JAVA-INTEGRATION.zh-CN)
+- [互操作向量](/dev/INTEROP_VECTORS)

@@ -1,0 +1,6 @@
+[source.crates-io]
+replace-with = "gmkit-docs-sparse"
+
+# 项目级配置用于覆盖开发机上可能已经失效的全局镜像，不改变用户配置。
+[source.gmkit-docs-sparse]
+registry = "sparse+https://rsproxy.cn/index/"

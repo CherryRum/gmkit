@@ -1,84 +1,47 @@
 ---
-title: 项目总结
-icon: clipboard-list
+title: 项目状态
+icon: info
 order: 1
-author: mumu
-date: 2025-11-23
-category:
-  - 技术总结
-  - 项目
-tag:
-  - 项目总结
-  - 技术栈
+category: [维护记录]
 ---
 
-# GMKitX Project Summary
+# 项目状态
 
-::: tip
-提示：本章要点
+本文是当前 Monorepo 的维护入口，不是营销材料。版本、模块和验证命令以仓库文件为准。
 
-- 当前范围
-- 构建与发布
-- 目录结构（节选）
-- 特性概览
-- 风险与待办
-:::
+## 模块
 
+| 路径 | 内容 |
+|:--|:--|
+| `packages/ts` | `gmkitx`：SM2/SM3/SM4/ZUC/SHA 的纯 TypeScript 包 |
+| `packages/java` | GMKit Java 主包、BOM、SM9 API/native 模块和基准 |
+| `packages/ts-docs` | VuePress 技术文档与跨语言 fixture |
+| `vectors` | Java/TypeScript 共享互操作数据 |
+| `apps/gmkit-studio` | 工具站应用，独立于算法包发布 |
 
-> 本页用于快速了解仓库现状与边界，避免与实际实现脱节。
+## 能力边界
 
-## 当前范围
-- 算法：SM2、SM3、SM4、ZUC、SHA（SHA-1/256/384/512）。
-- 形态：函数式 API + 类封装，支持命名空间导出。
-- 输出：默认 hex，部分算法支持 base64。
+- TypeScript 不实现 SM9；SM9 位于 Java/native 边界。
+- TypeScript 不提供 AES/RSA；文档示例来自 Web Crypto。
+- ZUC 当前为 ZUC-128、128-EEA3、128-EIA3，不支持 ZUC-256。
+- 固定向量和单测不等于第三方安全审计或产品认证。
 
-## 构建与发布
-- 打包工具：`tsup` 输出 ESM/CJS/IIFE 与类型定义。
-- 产物路径：`dist/index.js`（ESM）、`dist/index.cjs`（CJS）、`dist/index.global.js`（IIFE）。
-- CDN：`unpkg`/`jsDelivr` 指向 `dist/index.global.js`。
+## 验证入口
 
-## 目录结构（节选）
-```
-gmkit/
-├── src/
-│   ├── crypto/
-│   │   ├── sm2/
-│   │   ├── sm3/
-│   │   ├── sm4/
-│   │   ├── zuc/
-│   │   └── sha/
-│   ├── core/
-│   ├── types/
-│   └── index.ts
-├── apps/
-│   └── gmkit-studio/
-├── packages/
-│   └── ts-docs/
-├── test/
-└── dist/
+```bash
+npm run verify
+npm run docs:check
+npm run docs:test-examples
+npm run docs:build
 ```
 
-## 特性概览
-| 项目 | 说明 |
-|:--|:--|
-| 依赖 | 运行时仅 `@noble/curves` 与 `@noble/hashes`。 |
-| 同构 | Node.js 与浏览器 API 一致。 |
-| 可拆分 | 具名导出与命名空间导出均支持 tree-shaking。 |
-| 类型 | 完整 TypeScript 类型定义。 |
+发布标签区分 `ts-v*` 和 `java-v*`。TypeScript 旧 `v*` 触发器只为兼容历史流程。
 
+## 已知限制
 
-## 风险与待办
-- 安全：未完成第三方审计，生产使用前需自评。
-- 互操作：需要持续补充跨语言向量与边界测试。
-- 文档：示例与 API 需长期保持同步。
+- JavaScript 运行时无法保证严格常量时间和可靠内存清除。
+- 缺 CSPRNG 时默认 `warn` 会为旧受限环境降级；高安全部署应 strict 或注入平台安全源。
+- 跨语言库只验证文档声明的 fixture 范围，不能推导全部 API 互操作。
 
-## Known Limitations
-| 项目 | 说明 |
-|:--|:--|
-| ZUC-256 | 尚未实现（仅 ZUC-128）。 |
-| 流式状态 | SM4/ZUC 不提供内建流式状态机，分块需自行管理。 |
-| 密钥格式 | 暂不提供 PEM/DER 导入导出封装。 |
-
-
-## License
-Apache License 2.0
+- [实现状态](/summaries/IMPLEMENTATION_SUMMARY)
+- [安全状态](/summaries/SECURITY-SUMMARY)

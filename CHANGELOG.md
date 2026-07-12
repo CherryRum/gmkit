@@ -64,6 +64,20 @@
 
 ### Documentation
 
+- Reworked all existing public documentation pages instead of deleting the
+  Go, Python, Rust, Hutool, international-algorithm, performance, and
+  maintenance pages. Each page now states its implementation source,
+  protocol boundary, version scope, and reproducible verification command.
+- Added executable release examples for the built gmkitx package, Web Crypto
+  AES-GCM/RSA-OAEP, Go gmsm, Python gmssl, RustCrypto SM3/SM4, and
+  Hutool/Bouncy Castle. Added a Java documentation test that compiles the
+  current fluent GMKit Java API examples.
+- Added documentation link/API audits and wired the checks, external-language
+  toolchains, example tests, and VuePress build into the docs workflow.
+- Removed unsupported or unverifiable claims from the docs, including a
+  non-existent GMKit Java SHA module, stale JavaBean accessors, floating CDN
+  versions, unqualified performance numbers, and ordinary SM3/SHA password
+  storage advice.
 - Corrected the README and VuePress docs support matrix: TypeScript supports SM2, SM3, SM4, ZUC-128, and SHA; it does not support SM9.
 - Documented the SM2 public-key, C1C3C2/C1C2C3, ASN.1 DER ciphertext, raw/DER signature, and default userId boundaries.
 - Documented SM4 mode, padding, IV/nonce, tag length, and AAD requirements for ECB/CBC/CTR/CFB/OFB/GCM/CCM.

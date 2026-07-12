@@ -10,7 +10,9 @@
   "scripts": {
     "dev": "vuepress dev .",
     "build": "vuepress build .",
-    "clean": "rm -rf .vuepress/.cache .vuepress/.temp"
+    "clean": "node scripts/clean.mjs",
+    "check": "node scripts/check-docs.mjs",
+    "test:examples": "node scripts/test-examples.mjs"
   },
   "devDependencies": {
     "@vuepress/bundler-vite": "^2.0.0-rc.26",

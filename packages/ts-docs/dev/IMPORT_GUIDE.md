@@ -1,201 +1,94 @@
 ---
-title: 导入方式指南
+title: 导入与分发方式
 icon: download
 order: 2
-author: mumu
-date: 2025-11-23
-category:
-  - 开发指南
-  - 使用方法
-tag:
-  - 导入
-  - ES Module
-  - CommonJS
-  - Tree-shaking
+category: [开发指南]
+tag: [ESM, CommonJS, IIFE, Tree-shaking]
 ---
 
-# GMKitX 导入方式示例
+# 导入与分发方式
 
-::: tip
-提示：本章要点
+GMKitX 从同一个公共入口输出 ESM、CommonJS、IIFE 和类型声明。新项目优先具名 ESM 导入；无算法前缀旧名只为兼容保留。
 
-- 1. 算法模块导入（推荐）
-- 2. 具名函数导入
-- 3. 命名空间导入
-- 4. CommonJS 导入
-- 5. UMD（浏览器直接引入）
-:::
+## ESM 具名导入
 
-
-GMKitX 支持多种灵活的导入方式，满足不同场景的需求。
-
-## 1. 算法模块导入（推荐）
-
-这是最推荐的导入方式，可以清晰地组织代码，并且支持 tree-shaking。
-
-```typescript
-import { sm2, sm3, sm4, zuc } from 'gmkitx';
-
-// 使用 SM2
-const keyPair = sm2.generateKeyPair();
-const encrypted = sm2.encrypt(keyPair.publicKey, 'Hello');
-const decrypted = sm2.decrypt(keyPair.privateKey, encrypted);
-
-// 使用 SM3
-const hash = sm3.digest('Hello, World!');
-const mac = sm3.hmac('secret', 'data');
-
-// 使用 SM4
-const key = '0123456789abcdeffedcba9876543210';
-const cipher = sm4.encrypt(key, 'Hello', { mode: 'ecb', padding: 'pkcs7' });
-const plain = sm4.decrypt(key, cipher, { mode: 'ecb', padding: 'pkcs7' });
-
-// 使用 ZUC
-const zucKey = '00112233445566778899aabbccddeeff';
-const zucIv = 'ffeeddccbbaa99887766554433221100';
-const zucCipher = zuc.encrypt(zucKey, zucIv, 'Hello');
-const zucPlain = zuc.decrypt(zucKey, zucIv, zucCipher);
-```
-
-## 2. 具名函数导入
-
-这种方式导入特定的函数，适合只需要使用少量功能的场景。
-
-```typescript
-import { 
-  sm2GenerateKeyPair, 
-  sm2Encrypt, 
-  sm2Decrypt,
-  sm3Digest,
-  sm3Hmac,
-  sm4Encrypt,
-  sm4Decrypt,
-  zucEncrypt,
-  zucDecrypt,
+```ts
+import {
   CipherMode,
-  PaddingMode
+  sm2GenerateKeyPair,
+  sm3Digest,
+  sm4Decrypt,
+  sm4Encrypt,
 } from 'gmkitx';
 
-// 直接使用函数
-const keyPair = sm2GenerateKeyPair();
-const encrypted = sm2Encrypt(keyPair.publicKey, 'Hello');
-const hash = sm3Digest('Hello');
-const cipher = sm4Encrypt(key, 'Hello', { 
-  mode: CipherMode.ECB, 
-  padding: PaddingMode.PKCS7 
-});
+const keys = sm2GenerateKeyPair();
+const hash = sm3Digest('abc');
+const key = '0123456789abcdeffedcba9876543210';
+const iv = '000102030405060708090a0b0c0d0e0f';
+const result = sm4Encrypt(key, 'message', { mode: CipherMode.CBC, iv });
+const plain = sm4Decrypt(key, result, { mode: CipherMode.CBC, iv });
 ```
 
-## 3. 命名空间导入
+`sm4Encrypt` 始终返回 `SM4CipherResult`，密文是 `result.ciphertext`；GCM/CCM 还返回 `result.tag`。把整个 result 传给 `sm4Decrypt` 可以保留标签信息。
 
-适合需要在运行时动态选择算法的场景。
+## 算法命名空间
 
-```typescript
-import * as gmkitx from 'gmkitx';
+```ts
+import { sha, sm2, sm3, sm4, zuc } from 'gmkitx';
 
-// 通过命名空间访问
-const keyPair = gmkitx.sm2.generateKeyPair();
-const hash = gmkitx.sm3.digest('Hello');
-const cipher = gmkitx.sm4.encrypt(key, 'Hello', { mode: 'ecb' });
-const zucCipher = gmkitx.zuc.encrypt(zucKey, zucIv, 'Hello');
-
-// 也可以访问具名导出
-const hash2 = gmkitx.sm3Digest('Hello');
-const encrypted = gmkitx.sm2Encrypt(keyPair.publicKey, 'Hello');
+const keys = sm2.generateKeyPair();
+const sm3Hex = sm3.digest('message');
+const sha256Hex = sha.sha256('message');
 ```
 
-## 4. CommonJS 导入
+命名空间是顶层导出对象，不是独立 package subpath；当前 `exports` 只开放 `gmkitx` 和 `gmkitx/package.json`，不要写 `import ... from 'gmkitx/sm2'`。
 
-在 Node.js 环境中使用 require 导入。
+## CommonJS
 
-```javascript
-// 导入算法模块
-const { sm2, sm3, sm4, zuc } = require('gmkitx');
-
-const keyPair = sm2.generateKeyPair();
-const hash = sm3.digest('Hello');
-
-// 或者导入具名函数
+```js
 const { sm3Digest, sm4Encrypt } = require('gmkitx');
-const hash2 = sm3Digest('Hello');
+
+const hash = sm3Digest('abc');
+if (hash !== '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0') {
+  throw new Error(`SM3 vector mismatch: ${hash}`);
+}
 ```
 
-## 5. UMD（浏览器直接引入）
+## 动态导入
+
+```ts
+async function digestOnDemand(input: string) {
+  const { sm3Digest } = await import('gmkitx');
+  return sm3Digest(input);
+}
+```
+
+## 浏览器 IIFE
+
+生产页面固定精确版本，不使用浮动 `latest`：
 
 ```html
-<script src="https://unpkg.com/gmkitx@latest/dist/index.global.js"></script>
+<script src="https://unpkg.com/gmkitx@0.10.0-preview.1/dist/index.global.js"></script>
 <script>
-  // GMKit 会被注册为全局变量
-  
-  // 方式 1: 使用算法模块
-  const keyPair = GMKit.sm2.generateKeyPair();
-  const hash = GMKit.sm3.digest('Hello, World!');
-  
-  // 方式 2: 使用具名函数
-  const hash2 = GMKit.sm3Digest('Hello');
-  const encrypted = GMKit.sm2Encrypt(keyPair.publicKey, 'Hello');
+  const actual = GMKit.sm3Digest('abc');
+  const expected = '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0';
+  if (actual !== expected) throw new Error(`SM3 vector mismatch: ${actual}`);
 </script>
 ```
 
-## 6. 动态导入
+发布前 IIFE 全局名与文件路径由 `tsup.config.ts` 和 pack 审计确认。CDN 加载还应使用 CSP/SRI 与可信供应链策略；预发布版本不应作为长期生产依赖。
 
-适合代码分割和按需加载的场景。
+## 兼容旧名
 
-```typescript
-// 只在需要时加载 SM2
-async function useSM2() {
-  const { sm2 } = await import('gmkitx');
-  const keyPair = sm2.generateKeyPair();
-  return keyPair;
-}
+`generateKeyPair`、`sign`、`verify`、`digest`、`hmac` 等旧名继续导出并标记 deprecated。升级不会因这些入口被删除而直接中断；新代码使用 `sm2GenerateKeyPair`、`sm2Sign`、`sm3Digest` 等明确名称。
 
-// 按需加载特定功能
-async function hashData(data: string) {
-  const { sm3Digest } = await import('gmkitx');
-  return sm3Digest(data);
-}
+## 验证分发格式
+
+```bash
+npm run build -w packages/ts
+npm run audit:pack -w packages/ts
+node packages/ts-docs/examples/node/gmkit-release.mjs
 ```
 
-## 模块结构说明
-
-### sm2 模块
-包含所有 SM2 椭圆曲线密码算法相关的函数和类：
-- `generateKeyPair()` - 生成密钥对
-- `getPublicKeyFromPrivateKey()` - 从私钥派生公钥
-- `encrypt()` / `decrypt()` - 加密/解密
-- `sign()` / `verify()` - 签名/验签
-- `keyExchange()` - 密钥交换
-- `SM2` - SM2 类（面向对象 API）
-
-### sm3 模块
-包含所有 SM3 哈希算法相关的函数和类：
-- `digest()` - 计算哈希摘要
-- `hmac()` - 计算 HMAC
-- `SM3` - SM3 类（面向对象 API）
-
-### sm4 模块
-包含所有 SM4 分组密码算法相关的函数和类：
-- `encrypt()` / `decrypt()` - 加密/解密
-- `SM4` - SM4 类（面向对象 API）
-
-### zuc 模块
-包含所有 ZUC 流密码算法相关的函数：
-- `encrypt()` / `decrypt()` - 加密/解密
-- `getKeystream()` - 生成密钥流
-- `eea3()` - 兼容的 word-aligned EEA3 密钥流入口；标准消息加密使用 `eea3Encrypt()`
-- `eia3()` - EIA3 完整性算法
-- `ZUCState` - ZUC 状态类
-
-## 注意事项
-
-::: warning
-注意：以下内容涉及安全性、互操作或易错点，建议上线前逐条核对。
-:::
-
-| 项目 | 说明 |
-|:--|:--|
-| tree-shaking | 使用 ES6 模块导入（`import`）可以实现 tree-shaking，只打包实际使用的代码。 |
-| 依赖关系 | SM2 内部使用 SM3 进行哈希计算；导入 SM2 时会自动包含所需的 SM3 功能；各个模块可以独立使用 |
-| 类型支持 | 所有导入方式都提供完整的 TypeScript 类型定义。 |
-| 向后兼容 | 现有的具名函数导入方式完全兼容，不会破坏现有代码。 |
-
+- [公开 API 清单](/dev/API-SURFACE.zh-CN)
+- [发布流程](/dev/PUBLISHING)
