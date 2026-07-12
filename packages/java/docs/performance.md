@@ -38,25 +38,25 @@ mvn -pl gmkit-benchmarks -am -DskipTests package
 运行全部基准：
 
 ```bash
-java -jar gmkit-benchmarks/target/gmkit-benchmarks-0.10.0-preview.1.jar
+java -jar packages/java/gmkit-benchmarks/target/gmkit-benchmarks-<version>.jar
 ```
 
 只看吞吐量：
 
 ```bash
-java -jar gmkit-benchmarks/target/gmkit-benchmarks-0.10.0-preview.1.jar ".*SM3.*" -bm thrpt -tu s -wi 3 -i 5 -f 1
+java -jar packages/java/gmkit-benchmarks/target/gmkit-benchmarks-<version>.jar ".*SM3.*" -bm thrpt -tu s -wi 3 -i 5 -f 1
 ```
 
 只看平均耗时：
 
 ```bash
-java -jar gmkit-benchmarks/target/gmkit-benchmarks-0.10.0-preview.1.jar ".*SM2.*" -bm avgt -tu us -wi 3 -i 5 -f 1
+java -jar packages/java/gmkit-benchmarks/target/gmkit-benchmarks-<version>.jar ".*SM2.*" -bm avgt -tu us -wi 3 -i 5 -f 1
 ```
 
 附带分配与 GC 指标：
 
 ```bash
-java -jar gmkit-benchmarks/target/gmkit-benchmarks-0.10.0-preview.1.jar ".*SM4.*" -bm avgt -tu us -prof gc -wi 3 -i 5 -f 1
+java -jar packages/java/gmkit-benchmarks/target/gmkit-benchmarks-<version>.jar ".*SM4.*" -bm avgt -tu us -prof gc -wi 3 -i 5 -f 1
 ```
 
 ## 结果记录建议
@@ -65,3 +65,5 @@ java -jar gmkit-benchmarks/target/gmkit-benchmarks-0.10.0-preview.1.jar ".*SM4.*
 - 保持相同的 `-wi/-i/-f` 参数，避免不同轮次不可比
 - PR 或发布前至少记录一次 `SM2 / SM3 / SM4` 三类核心路径结果
 - 如果只做 API 文档或错误语义调整，理论上不应出现明显吞吐下降；若有下降，应回看编码、数组复制和 Provider 初始化路径
+
+`<version>` 取自 `packages/java/pom.xml`。基准结果必须同时记录 commit、JDK、操作系统、CPU、JVM 参数和完整 JMH 输出；不同机器或共享 runner 的绝对值不能直接用于回归结论。

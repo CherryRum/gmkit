@@ -1,256 +1,136 @@
 ---
-title: 架构设计
+title: Monorepo 架构与模块边界
 icon: sitemap
 order: 1
-author: mumu
-date: 2025-11-23
-category:
-  - 开发指南
-  - 架构
-tag:
-  - 架构
-  - 设计模式
-  - 代码组织
+category: [开发指南, 架构]
+tag: [Monorepo, TypeScript, Java, 模块边界]
 ---
 
-# GMKitX 架构文档
+# Monorepo 架构与模块边界
 
-::: tip
-提示：本章要点
+GMKit 在同一仓库维护 TypeScript、Java、文档和 Studio 应用。两个语言实现共享协议向量和发布规则，但各自拥有独立的公共 API、依赖和发布产物。本页说明当前代码结构和依赖方向，不把规划中的能力描述成现有功能。
 
-- 概述
-- 目录结构
-- 设计原则
-- 核心模块说明
-- 使用示例
-:::
+## 仓库结构
 
-
-## 概述
-
-GMKitX 采用模块化、可扩展的架构设计，便于后续功能扩展和维护。
-
-## 目录结构
-
-```
+```text
 gmkit/
-├── src/                      # 源代码目录
-│   ├── crypto/              # 密码算法实现（按算法分类）
-│   │   ├── sm2/            # SM2 椭圆曲线算法
-│   │   │   ├── index.ts    # SM2 主要功能实现
-│   │   │   ├── curve.ts    # 椭圆曲线参数和工具
-│   │   │   └── class.ts    # SM2 面向对象 API
-│   │   ├── sm3/            # SM3 哈希算法
-│   │   │   ├── index.ts    # SM3 主要功能实现
-│   │   │   └── class.ts    # SM3 面向对象 API
-│   │   ├── sm4/            # SM4 分组密码算法
-│   │   │   ├── index.ts    # SM4 主要功能实现
-│   │   │   └── class.ts    # SM4 面向对象 API
-│   │   ├── zuc/            # ZUC 流密码算法
-│   │   │   ├── index.ts    # ZUC 主要功能实现
-│   │   │   ├── core.ts     # ZUC 核心状态机
-│   │   │   └── class.ts    # ZUC 面向对象 API
-│   │   └── sha/            # SHA 系列哈希算法
-│   │       ├── index.ts    # SHA 主要功能实现
-│   │       └── class.ts    # SHA 面向对象 API
-│   ├── core/               # 核心工具模块
-│   │   ├── utils.ts        # 通用工具函数
-│   │   └── asn1.ts         # ASN.1 编解码
-│   ├── types/              # 类型定义
-│   │   └── constants.ts    # 常量定义
-│   └── index.ts            # 主入口文件
-├── apps/
-│   └── gmkit-studio/        # GMKit Studio V4 Vue3 产品原型
 ├── packages/
-│   └── ts-docs/             # 文档站点
-├── test/                    # 测试文件
-├── dist/                    # 构建输出（gitignored）
-└── package.json            # 包配置
+│   ├── ts/                 # npm 包 gmkitx
+│   ├── java/               # Maven 多模块工程
+│   └── ts-docs/            # VuePress 文档与可执行示例
+├── apps/
+│   └── gmkit-studio/       # GMKit Studio Vue3 应用
+├── vectors/                # Java/TypeScript 共享互操作数据
+├── scripts/                # 仓库级验证和 native 构建脚本
+├── .github/workflows/      # CI、parity、文档和发布工作流
+├── package.json            # npm workspace 与统一命令
+└── package-lock.json       # workspace 唯一依赖锁文件
 ```
 
-## 设计原则
+`packages/ts` 和 `packages/java` 是可发布算法实现；`packages/ts-docs`、`apps/gmkit-studio` 和仓库脚本不进入 npm 或 Maven 主包。根级 `vectors` 是测试协议，不是运行时依赖。
 
-### 1. 模块化设计
+## TypeScript 包
 
-每个算法都有独立的目录，包含：
-| 项目 | 说明 |
-|:--|:--|
-| index.ts | 函数式 API 实现 |
-| class.ts | 面向对象 API 实现 |
-| 其他文件 | 算法特定的工具和参数 |
-
-
-### 2. 分层架构
-
-| 项目 | 说明 |
-|:--|:--|
-| crypto/ | 密码算法层 - 实现具体的加密算法 |
-| core/ | 核心工具层 - 提供通用功能支持 |
-| types/ | 类型定义层 - 统一的类型和常量 |
-| index.ts | 导出层 - 统一的对外接口 |
-
-
-### 3. 可扩展性
-
-新增算法只需：
-1. 在 `crypto/` 下创建新目录
-2. 实现函数式和面向对象 API
-3. 在 `index.ts` 中导出
-
-### 4. 双 API 支持
-
-| 项目 | 说明 |
-|:--|:--|
-| 函数式 API | 适合简单场景和函数式编程 |
-| 面向对象 API | 适合需要状态管理的复杂场景 |
-
-
-## 核心模块说明
-
-### crypto/sm2/
-
-SM2 椭圆曲线公钥密码算法实现。
-
-**主要功能**:
-- 密钥对生成
-- 公钥加密 / 私钥解密
-- 数字签名 / 签名验证
-
-**特点**:
-- 基于 @noble/curves 实现椭圆曲线运算
-- 支持自定义曲线参数
-- 完整的中文注释
-
-### crypto/sm3/
-
-SM3 密码哈希算法实现。
-
-**主要功能**:
-- 消息摘要计算
-- HMAC 实现
-
-**特点**:
-- 纯 TypeScript 实现
-- 高性能的位操作
-- 详细的中文注释
-
-### crypto/sm4/
-
-SM4 分组密码算法实现。
-
-**主要功能**:
-- ECB/CBC/CTR/CFB/OFB/GCM 模式加解密
-- 多种填充模式支持
-
-**特点**:
-- 完整的 S盒实现
-- 支持多种工作模式
-- 清晰的中文注释
-
-### crypto/zuc/
-
-ZUC 流密码算法实现。
-
-**主要功能**:
-- ZUC-128 加解密
-- 密钥流生成
-- EEA3/EIA3 辅助函数
-
-### crypto/sha/
-
-SHA 系列哈希算法实现（基于 @noble/hashes）。
-
-**主要功能**:
-- SHA-1 / SHA-256 / SHA-384 / SHA-512
-- HMAC-SHA
-
-### core/
-
-核心工具模块，提供通用功能。
-
-**包含**:
-- `utils.ts`: 字节转换、XOR 运算等
-- `asn1.ts`: ASN.1 编解码工具
-
-### types/
-
-类型定义和常量。
-
-**包含**:
-- 密码模式常量
-- 填充模式常量  
-- SM2 密文模式
-- OID 定义
-
-## 使用示例
-
-### 函数式 API
-
-```typescript
-import { sm3Digest, sm4Encrypt, sm2GenerateKeyPair } from 'gmkitx';
-
-// SM3 哈希
-const hash = sm3Digest('Hello, World!');
-
-// SM4 加密
-const key = '0123456789abcdeffedcba9876543210';
-const encrypted = sm4Encrypt(key, 'secret message');
-
-// SM2 密钥生成
-const keyPair = sm2GenerateKeyPair();
+```text
+packages/ts/
+├── src/
+│   ├── crypto/
+│   │   ├── sm2/            # 加解密、签名、密钥交换和公钥格式
+│   │   ├── sm3/            # 摘要、HMAC 和增量状态
+│   │   ├── sm4/            # 分组模式与 GCM/CCM
+│   │   ├── zuc/            # ZUC-128、EEA3 和 EIA3
+│   │   └── sha/            # SHA/HMAC 适配
+│   ├── core/               # 编码、随机源和 ASN.1 工具
+│   ├── types/              # 公共常量与类型
+│   └── index.ts            # 唯一包入口
+├── test/                   # 单测、标准向量、负向和互操作测试
+├── bench/                  # Vitest benchmark 场景
+└── dist/                   # ESM、CJS、IIFE 和类型声明
 ```
 
-### 面向对象 API
+### 依赖方向
 
-```typescript
-import { SM2, SM3, SM4, CipherMode } from 'gmkitx';
-
-// SM3 哈希
-const sm3 = new SM3();
-sm3.update('Hello');
-sm3.update(' World!');
-const hash = sm3.digest();
-
-// SM4 加密
-const key = '0123456789abcdeffedcba9876543210';
-const iv = 'fedcba98765432100123456789abcdef';
-const sm4 = new SM4(key, { mode: CipherMode.CBC, iv });
-const encrypted = sm4.encrypt('secret message');
-
-// SM2 签名
-const sm2 = SM2.generateKeyPair();
-const signature = sm2.sign('message');
-const isValid = sm2.verify('message', signature);
+```mermaid
+flowchart LR
+  Entry["src/index.ts"] --> Algorithms["crypto/*"]
+  Entry --> Core["core/*"]
+  Entry --> Types["types/*"]
+  Algorithms --> Core
+  Algorithms --> Types
+  SM2["crypto/sm2"] --> Curves["@noble/curves"]
+  SHA["crypto/sha"] --> Hashes["@noble/hashes"]
 ```
 
-## 未来扩展计划
+- `src/index.ts` 决定 npm 公共导出面。业务代码不应导入未由包 `exports` 开放的内部路径。
+- 算法层可以依赖 `core` 和 `types`；公共工具层不得反向依赖算法模块。
+- SM2 曲线运算委托给 `@noble/curves`，SHA/HMAC-SHA 委托给 `@noble/hashes`；SM3、SM4 和 ZUC 主流程位于本仓库。
+- 每个算法同时提供函数式入口和类入口，但两者必须共享实现和错误语义，不能形成两套算法代码。
 
-| 项目 | 说明 |
+### 一次调用的处理链
+
+1. 顶层具名导出或算法命名空间接收调用。
+2. `core/utils.ts` 按显式格式解析文本、hex、base64 或字节输入。
+3. 算法模块校验 key、IV/nonce、模式、长度和格式参数。
+4. 核心算法只处理确定的字节语义。
+5. 返回值按 `OutputFormat` 编码；AEAD 使用结构化的 `ciphertext` 与 `tag`。
+
+文本解密和二进制解密有意分开。`sm2DecryptBytes`、`sm4DecryptBytes`、`zucDecryptBytes` 不经过 UTF-8，避免任意字节被不可逆替换。
+
+## Java 工程
+
+| 模块 | 发布边界 |
 |:--|:--|
-| 更多国密算法 | SM9: 标识密码算法；ZUC-256: 更高安全级别的序列密码 |
-| 性能优化 | WebAssembly 加速；Web Worker 支持 |
-| 更多功能 | 密钥导出格式（PEM、DER）；更丰富的互操作向量与示例 |
+| `gmkit` | SM2、SM3、SM4、ZUC 和组合工具的 Java 主包 |
+| `gmkit-bom` | Maven 依赖版本对齐 |
+| `gmkit-sm9` | SM9 Java API 与 JNI 桥接，不包含平台二进制 |
+| `gmkit-sm9-native-*` | 按操作系统和架构拆分的 GmSSL runtime |
+| `gmkit-benchmarks` | JMH 基准，不是业务运行时依赖 |
 
-## 贡献指南
+Java 主包基于 Bouncy Castle `jdk15to18` 产物族并保持 Java 8 字节码/API 基线。SM9 必须由专门的 native CI 矩阵构建和强制测试；普通 Java 测试允许在没有 GmSSL/JNI 时跳过 native 用例。
 
-1. 遵循现有的目录结构
-2. 保持代码的模块化和可测试性
-3. 添加完整的中文注释
-4. 编写充分的单元测试
-5. 更新相关文档
+## 跨语言边界
 
-## 技术栈
+Java 和 TypeScript 不共享源码，也不承诺类名、参数对象或 ABI 相同。两端只在明确的协议字段上对齐：
 
-| 项目 | 说明 |
+| 算法 | 共享协议字段 |
 |:--|:--|
-| TypeScript | 类型安全的开发体验 |
-| tsup | 库打包 |
-| Vite | 文档与演示构建 |
-| Vitest | 测试框架 |
-| @noble/curves | 椭圆曲线库 |
-| @noble/hashes | 哈希库 |
+| SM2 | userId、C1 排列、公钥表示、raw/DER、输入输出编码 |
+| SM3 | 原始字节、UTF-8 约定和摘要编码 |
+| SM4 | mode、padding、IV/nonce、AAD、tag 和 tag 长度 |
+| ZUC | key、IV、COUNT、BEARER、DIRECTION 和消息 bit length |
 
+`vectors/interop.json` 由两端测试消费。带标准来源的 case 可作为外部固定向量证据；`project` case 只能证明两端在已固定参数下输出一致，不能用项目自身输出证明算法正确。
 
-## 许可证
+## 随机源与兼容层
 
-Apache 2.0
+密钥生成、SM2 加密和 SM2 签名通过统一随机源入口取随机数。默认策略为 `warn`，用于兼容缺少 Web Crypto 的旧小程序：运行时发出一次警告后使用非密码学降级源。安全敏感环境应启用 `configureRNG('strict')`，受限平台应通过 `setCustomRNG()` 注入平台 CSPRNG。
+
+无算法前缀的旧顶层名称仍在 `src/index.ts` 导出并标记 deprecated。兼容层只转发到推荐 API，不维护旧算法分支。SM2 的空 `userId` 同样保留历史回落语义；这类行为属于版本兼容协议，不能在小版本中静默改变。
+
+## 测试分层
+
+| 层级 | 主要证据 | 不能证明的内容 |
+|:--|:--|:--|
+| 单元与属性测试 | 边界、往返、状态转换、错误输入 | 全部协议组合正确 |
+| 外部标准向量 | 指定算法和指定参数的固定结果 | 未覆盖模式或部署安全 |
+| Java/TS parity | 共享载荷的跨语言一致性 | API/ABI 相同或独立正确性 |
+| 外部语言 fixture | 文档中的固定依赖示例可编译运行 | 外部库全部 API 可互操作 |
+| native CI | SM9 runtime 在目标平台可构建并执行 | 未列入矩阵的平台可用 |
+
+发布前命令和 CI 责任见[发布流程](/dev/PUBLISHING)，算法安全边界见[安全使用指南](/guide/security)。
+
+## 修改规则
+
+1. 新增公开 API 时更新 `src/index.ts`、类型测试、API 清单和 CHANGELOG。
+2. 修改确定性算法结果时同时提供外部证据，并运行完整 parity。
+3. 修改协议默认值时先判断是否破坏旧调用；兼容行为不能由“标准推荐”直接覆盖。
+4. 新增跨语言示例必须有锁定依赖和失败退出的 fixture，并进入 docs CI。
+5. 新增 SM9 平台必须同时提供 runtime artifact、native 构建和强制测试矩阵。
+
+## 构建产物
+
+TypeScript 发布 ESM、CommonJS、浏览器 IIFE 和 `.d.ts`；Java 发布主 JAR、BOM、SM9 API 与平台 runtime。文档站和 Studio 是独立应用，不应成为算法包的隐式运行时依赖。
+
+- [公开 API 清单](/dev/API-SURFACE.zh-CN)
+- [共享互操作向量](/dev/INTEROP_VECTORS)
+- [项目支持范围](/summaries/PROJECT_SUMMARY)

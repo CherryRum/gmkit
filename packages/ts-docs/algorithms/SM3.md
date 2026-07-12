@@ -44,7 +44,16 @@ if (actual !== '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0
 }
 ```
 
-调用 `digest()` 后实例完成当前摘要；是否可重用应以类类型和测试为准。最稳妥的模式是每个独立消息创建一个实例。
+调用 `digest()` 后实例会自动重置，可以继续 `update()` 计算下一条独立消息。自动重置属于当前公开行为；并发任务仍应各自创建实例，避免分块数据交叉写入同一状态。
+
+```ts
+const reusable = new SM3();
+const first = reusable.update('abc').digest();
+const second = reusable.update('abc').digest();
+if (first !== second) {
+  throw new Error('SM3 digest 后没有按约定重置状态');
+}
+```
 
 ## HMAC-SM3
 

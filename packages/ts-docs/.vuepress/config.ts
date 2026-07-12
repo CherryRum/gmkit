@@ -98,12 +98,12 @@ export default defineUserConfig({
         ],
       },
       {
-        text: '维护记录',
+        text: '项目参考',
         children: [
-          { text: '项目状态', link: '/summaries/PROJECT_SUMMARY' },
-          { text: '实现状态', link: '/summaries/IMPLEMENTATION_SUMMARY' },
-          { text: '安全状态', link: '/summaries/SECURITY-SUMMARY' },
-          { text: '标准迁移记录', link: '/summaries/STANDARD-MIGRATION-SUMMARY' },
+          { text: '支持范围', link: '/summaries/PROJECT_SUMMARY' },
+          { text: '验证模型', link: '/summaries/IMPLEMENTATION_SUMMARY' },
+          { text: '安全保证边界', link: '/summaries/SECURITY-SUMMARY' },
+          { text: 'SM2 兼容策略', link: '/summaries/STANDARD-MIGRATION-SUMMARY' },
         ],
       },
     ],
@@ -170,7 +170,7 @@ export default defineUserConfig({
       ],
       '/summaries/': [
         {
-          text: '维护记录',
+          text: '项目参考',
           children: [
             '/summaries/PROJECT_SUMMARY',
             '/summaries/IMPLEMENTATION_SUMMARY',
