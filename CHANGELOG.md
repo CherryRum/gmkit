@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.10.0-preview.1 - 2026-06-28
+## 0.10.0-preview.1 - Unreleased
 
 ### Monorepo merge
 
@@ -17,14 +17,9 @@
 - CI rebuilt into `ci.yml`, `parity.yml`, `sm9-native.yml`, `docs.yml`,
   `publish-ts.yml`, and `publish-java.yml` with monorepo `paths:` filters.
 - Release tag pattern updated: TS uses `ts-v*`, Java uses `java-v*`.
-- Replaced the old Vue demo app with a Vue3 + Vite GMKit Studio product
-  prototype under `apps/gmkit-studio/`, including real gmkitx-powered TS tools
-  and an explicit SM9 Java API / WASM runtime boundary.
-- Rebuilt GMKit Studio as the V5 tool-site UI: query-driven category navigation,
-  non-duplicated home tool grid, `/tools/:toolId` workbench routes, empty ad
-  rail placeholders, full V5 tool catalog, JSON worker workflow, and real
-  browser/dependency-backed runners for crypto, hash, data, encoding, time,
-  text, key/cert, and network tools.
+- Added the Vue3 + Vite GMKit Studio application under `apps/gmkit-studio/`.
+  Studio is versioned independently from the algorithm packages and is not
+  part of the npm or Maven release artifacts.
 - Added `vectors/interop.json` shared cross-language vectors, consumed by
   `packages/ts/test/interop-compliance.test.ts` and
   `cn.gmkit.InteropComplianceTest` (Maven test-resources mount + zero-dep
@@ -50,10 +45,6 @@
   from the corrected implementation (3 sm4-ecb-*, 3 sm4-cbc-*); both stacks
   now produce byte-identical output. `cn.gmkit.InteropComplianceTest`
   re-enabled — 16/16 dynamic tests pass (10 SM3 + 3 SM4 ECB + 3 SM4 CBC).
-
-### Known divergence (TODO — audit Section D, confirmed)
-
-- *(none — SM4 finding above resolved by GB/T 32907-2016 CK fix.)*
 
 ### Added
 
@@ -83,6 +74,11 @@
 - Documented SM4 mode, padding, IV/nonce, tag length, and AAD requirements for ECB/CBC/CTR/CFB/OFB/GCM/CCM.
 - Documented that ZUC fixed values in this repository are project alignment vectors unless explicitly marked as external standard vectors.
 - Added runnable self-test commands for build, type-check, unit tests, and a Node `dist` SM3 example.
+- Reworked the public documentation into release-oriented architecture,
+  support matrix, validation model, security-boundary, compatibility,
+  benchmark, distribution, and release pages. Documentation CI now checks
+  manifest versions, all TypeScript exports, fixture dependency versions,
+  vector structure, links, navigation, and executable ESM/CJS/IIFE examples.
 
 ### Fixed
 

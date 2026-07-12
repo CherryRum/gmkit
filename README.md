@@ -32,7 +32,7 @@ gmkit/
 
 ```bash
 npm ci
-npm run verify          # TS type-check/test/build + Java test + parity
+npm run verify          # TS type-check/test/build + Java reactor test + parity；不含 lint/pack/docs
 npm run test:ts
 npm run test:java
 npm run parity
@@ -62,9 +62,9 @@ SM9 Java native runtime 可在需要时本地构建：
 - `ci.yml`：TS 与普通 Java 测试；不强制 SM9 native。
 - `parity.yml`：运行共享 `vectors/interop.json` 互操作校验。
 - `sm9-native.yml`：在 Linux、macOS、Windows 上编译 GmSSL/JNI runtime 并强制运行 SM9 native 测试。
-- `docs.yml`：构建 VuePress 文档和 GMKit Studio Vue3 原型。
+- `docs.yml`：构建 TypeScript 包与 VuePress 文档，并执行 Node/Go/Python/Rust/Hutool 文档 fixture；不构建 Studio。
 - `publish-ts.yml`：`ts-v*` 标签发布 npm 包。
-- `publish-java.yml`：`java-v*` 标签发布 Maven artifacts，并在发布前构建各平台 `gmkit-sm9-native-*` runtime。
+- `publish-java.yml`：`java-v*` 标签验证 release、构建各平台 `gmkit-sm9-native-*` runtime，并在凭据完整时发布 Maven Central。
 
 ## 文档入口
 
@@ -72,6 +72,7 @@ SM9 Java native runtime 可在需要时本地构建：
 - [Java 包说明](packages/java/README.md)
 - [共享向量说明](vectors/README.md)
 - [API 稳定性策略](docs/API_STABILITY.md)
+- [VuePress 技术文档](packages/ts-docs/README.md)
 - [GMKit Studio V5 工具站](apps/gmkit-studio/README.md)
 
 ## 许可证

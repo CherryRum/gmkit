@@ -402,7 +402,7 @@ mvn -f packages/java/pom.xml -pl gmkit-benchmarks -am -DskipTests package
 JMH 基准已拆到独立模块 `gmkit-benchmarks`，用于固定 SM2、SM3、SM4 的吞吐与延迟指标；ZUC 基准尚未补入。
 
 ```bash
-java -jar packages/java/gmkit-benchmarks/target/gmkit-benchmarks-0.10.0-preview.1.jar ".*SM3.*" -bm thrpt -tu s -wi 3 -i 5 -f 1
+java -jar packages/java/gmkit-benchmarks/target/gmkit-benchmarks-<version>.jar ".*SM3.*" -bm thrpt -tu s -wi 3 -i 5 -f 1
 ```
 
 完整说明见 [docs/performance.md](docs/performance.md)。

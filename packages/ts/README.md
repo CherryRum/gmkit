@@ -171,20 +171,22 @@ const sha512Hash = sha.sha512('Hello World');
 通过 UMD 构建包，在 HTML 中直接使用全局变量 `GMKit`。
 
 ```html
-<script src="https://unpkg.com/gmkitx@latest/dist/index.global.js"></script>
+<script src="https://unpkg.com/gmkitx@<version>/dist/index.global.js"></script>
 <script>
-  const { sm3Digest, sm4Encrypt } = GMKit;
-  
-  console.log('SM3 Hash:', sm3Digest('Browser Test'));
+  const actual = GMKit.sm3Digest('abc');
+  const expected = '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0';
+  if (actual !== expected) throw new Error(`SM3 vector mismatch: ${actual}`);
 </script>
 ```
+
+将 `<version>` 替换为 npm 已发布的精确版本。不要在生产页面使用浮动 `latest`；预发布版本发布前，CDN URL 也不会存在。
 
 > 推荐使用带算法前缀的顶层名称，例如 `sm2Sign`、`sm3Digest`、`sm2GenerateKeyPair`。
 > 旧的 `sign`、`digest`、`generateKeyPair` 等裸名继续导出以保证升级兼容，但已标记 `@deprecated`；新代码请使用前缀函数或 `sm2` / `sm3` 命名空间。
 
 -----
 
-## 0.10.0-preview.1 预览版修订提示（安全与文档对齐）
+## 当前兼容与安全边界
 
 - `sm4Encrypt` 现在返回 `{ ciphertext, tag?, format }` 对象；`sm4Decrypt` 可直接接收该对象。
 - `zucKeystream(key, iv, length)` 的 `length` 改为 **字节数**；若需要按 32-bit word，使用 `zucKeystreamWords`。
@@ -230,8 +232,10 @@ sm3.update('part-1');
 sm3.update('part-2');
 
 const hex = sm3.digest(); // 默认 Hex
-const base64 = sm3.digest({ outputFormat: OutputFormat.BASE64 });
+const base64 = SM3.digest('part-1part-2', { outputFormat: OutputFormat.BASE64 });
 ```
+
+实例 `digest()` 完成后会重置状态，便于复用同一个对象处理下一条消息。若同一消息需要两种编码，应对摘要字节统一编码，或像上例一样重新摘要；不能把第二次 `digest()` 当成第一次结果的另一种格式。
 
 ### SM4（分组密码）
 - 支持 `ECB` | `CBC` | `CTR` | `CFB` | `OFB` | `GCM` | `CCM`，PKCS7/NoPadding 可选。
@@ -261,7 +265,7 @@ const ccmPlain = sm4Decrypt(key, ccm, { mode: CipherMode.CCM, iv: '0011223344556
 ```
 
 ### ZUC（祖冲之序列密码）
-- 覆盖 128-EEA3（机密性）与 128-EIA3（完整性）；流式密钥流可复用。
+- 覆盖 128-EEA3（机密性）与 128-EIA3（完整性）；同一 key/IV 生成的密钥流绝不能跨消息复用。
 - 当前仅实现 ZUC-128，key 与 iv 都必须是 16 字节；`zucEncrypt` / `zucDecrypt` 每次都从 IV 起始生成密钥流。
 - `zucDecrypt` 将结果按 UTF-8 解码为字符串；二进制数据使用 `zucDecryptBytes`。
 - `eea3` 是为旧调用方保留的 EEA3 密钥流入口；按 3GPP 位长度加密消息应使用 `eea3Encrypt`，完整性标签使用 `eia3`。
@@ -299,7 +303,7 @@ const hash = sha.sha256('Hello World');
 - Java/BouncyCastle 若使用 `SM4/CCM/NoPadding`，前端/Node 对应 `mode: CipherMode.CCM`；需显式对齐 nonce（7-13 字节）和 tag 长度。
 - SM2 签名格式要显式约定：Java 常见 DER，gmkitx 默认 raw。
 - Base64 密文解密支持自动识别；与 Java 等异构系统对接时建议显式传 `inputFormat: InputFormat.BASE64`（SM2 / SM4 / ZUC）。
-- 完整公开 API 清单与 Java 端实现映射见 [`docs/dev/API-SURFACE.zh-CN.md`](./docs/dev/API-SURFACE.zh-CN.md)。
+- 完整公开 API 清单与 Java 对照边界见 [`../ts-docs/dev/API-SURFACE.zh-CN.md`](../ts-docs/dev/API-SURFACE.zh-CN.md)。
 
 ## 编码与格式
 
@@ -318,7 +322,7 @@ const sm4Plain = sm4Decrypt(key, sm4Result, { mode: CipherMode.ECB, padding: Pad
 ## 小程序/受限环境提示
 
 - 若运行环境缺少 `TextEncoder/TextDecoder`，可使用 `setTextCodec` 注入自定义 UTF-8 编解码器。
-- 若运行环境缺少安全随机数，请使用 `setCustomRNG` 提供合规的随机源。
+- 默认 RNG 策略为 `warn`：缺少 CSPRNG 时会警告并使用不安全兼容降级。安全环境使用 `configureRNG('strict')`；受限平台通过 `setCustomRNG` 注入平台 CSPRNG。
 - 可通过 `getEnvReport()` 检查环境能力。
 
 -----
