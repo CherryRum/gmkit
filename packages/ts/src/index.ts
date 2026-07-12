@@ -10,8 +10,8 @@
  *   import { sm2, sm3, sm4, zuc, sha } from 'gmkitx'; // 算法模块
  *   import { sm2Encrypt, sm3Digest, sha256 } from 'gmkitx'; // 具名函数（推荐）
  *
- * 0.10 起不再导出 generateKeyPair / sign / digest 等无算法前缀旧名。
- * 请使用带算法前缀的具名函数，或使用 sm2 / sm3 等算法命名空间。
+ * generateKeyPair / sign / digest 等无算法前缀旧名继续兼容，但已标记弃用。
+ * 新代码请使用带算法前缀的具名函数，或使用 sm2 / sm3 等算法命名空间。
  */
 
 // ============================================================================
@@ -113,6 +113,37 @@ export const sha1 = shaFunctions.sha1;
 export const hmacSha256 = shaFunctions.hmacSha256;
 export const hmacSha384 = shaFunctions.hmacSha384;
 export const hmacSha512 = shaFunctions.hmacSha512;
+
+// ============================================================================
+// 弃用别名（无算法前缀的旧名）
+// ============================================================================
+
+/** @deprecated 请改用 {@link sm2GenerateKeyPair}。 */
+export const generateKeyPair = sm2GenerateKeyPair;
+
+/** @deprecated 请改用 {@link sm2GetPublicKeyFromPrivateKey}。 */
+export const getPublicKeyFromPrivateKey = sm2GetPublicKeyFromPrivateKey;
+
+/** @deprecated 请改用 {@link sm2CompressPublicKey}。 */
+export const compressPublicKey = sm2CompressPublicKey;
+
+/** @deprecated 请改用 {@link sm2DecompressPublicKey}。 */
+export const decompressPublicKey = sm2DecompressPublicKey;
+
+/** @deprecated 请改用 {@link sm2Sign}。 */
+export const sign = sm2Sign;
+
+/** @deprecated 请改用 {@link sm2Verify}。 */
+export const verify = sm2Verify;
+
+/** @deprecated 请改用 {@link sm2KeyExchange}。 */
+export const keyExchange = sm2KeyExchange;
+
+/** @deprecated 请改用 {@link sm3Digest}。 */
+export const digest = sm3Digest;
+
+/** @deprecated 请改用 {@link sm3Hmac}。 */
+export const hmac = sm3Hmac;
 
 // ============================================================================
 // 类型与对象式入口（每个算法重新导出对应 class）
@@ -260,4 +291,14 @@ export default {
   hmacSha256,
   hmacSha384,
   hmacSha512,
+  // 旧版调用继续可用，类型提示会引导新代码迁移到带算法前缀的名称。
+  generateKeyPair,
+  getPublicKeyFromPrivateKey,
+  compressPublicKey,
+  decompressPublicKey,
+  sign,
+  verify,
+  keyExchange,
+  digest,
+  hmac,
 };

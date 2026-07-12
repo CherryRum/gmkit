@@ -349,6 +349,15 @@ describe('SM2 国密算法测试', () => {
       expect(isValid).toBe(true);
     });
 
+    it('空 userId 应该继续使用默认用户 ID', () => {
+      const keyPair = generateKeyPair();
+      const data = 'empty user id compatibility';
+      const signature = sign(keyPair.privateKey, data, { userId: '' });
+
+      expect(verify(keyPair.publicKey, data, signature, { userId: DEFAULT_USER_ID })).toBe(true);
+      expect(verify(keyPair.publicKey, data, signature, { userId: '' })).toBe(true);
+    });
+
     it('应该支持跳过 Z 值计算选项', () => {
       const keyPair = generateKeyPair();
       const data = 'Hello, SM2!';

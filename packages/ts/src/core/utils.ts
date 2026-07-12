@@ -463,8 +463,10 @@ export function autoDecodeString(str: string): Uint8Array {
 
 
 export type RNGPolicy = 'strict' | 'warn' | 'allow';
-let rngPolicy: RNGPolicy = 'strict';
+// 默认保持旧版兼容：缺少 CSPRNG 时明确警告，但不让小程序等受限运行时直接崩溃。
+let rngPolicy: RNGPolicy = 'warn';
 let customRNG: ((len: number) => Uint8Array) | null = null;
+let unsafeFallbackWarningShown = false;
 // 配置函数
 export function configureRNG(policy: RNGPolicy) {
   rngPolicy = policy;
@@ -511,10 +513,29 @@ function tryWebCrypto(len: number): Uint8Array | null {
   return null;
 }
 
-function unsafeFallbackRandom(len: number): Uint8Array {
-  console.warn(
-    '[gmkit][RNG] WARNING: using unsafe fallback RNG. This is NOT cryptographically secure!'
-  );
+/**
+ * 兼容旧版 Node.js/CJS 环境。ESM 和浏览器中没有 require 时会直接跳过。
+ */
+function tryNodeCrypto(len: number): Uint8Array | null {
+  try {
+    const processObj = (globalThis as any).process;
+    if (processObj?.versions?.node && typeof require !== 'undefined') {
+      const { randomBytes } = require('node:crypto');
+      if (typeof randomBytes === 'function') {
+        return new Uint8Array(randomBytes(len));
+      }
+    }
+  } catch (_) {}
+  return null;
+}
+
+function unsafeFallbackRandom(len: number, warn: boolean): Uint8Array {
+  if (warn && !unsafeFallbackWarningShown) {
+    console.warn(
+      '[gmkit][RNG] WARNING: no CSPRNG is available; using a compatibility fallback that is NOT cryptographically secure. Inject one with setCustomRNG(), or use configureRNG(\'strict\') to reject this environment.'
+    );
+    unsafeFallbackWarningShown = true;
+  }
   const out = new Uint8Array(len);
   let seed = (Date.now() ^ (Math.random() * 0xffffffff)) >>> 0;
   let i = 0;
@@ -536,13 +557,14 @@ function unsafeFallbackRandom(len: number): Uint8Array {
  * 生成随机字节的跨平台函数。
  *
  * 优先级（从高到低）:
- * 1. Web Crypto API (crypto.getRandomValues) - 密码学安全的随机数生成器
+ * 1. setCustomRNG 显式注入 - 供小程序宿主接入平台 CSPRNG，也可用于测试 fixture
+ * 2. Web Crypto API (crypto.getRandomValues) - 密码学安全的随机数生成器
  *    - 浏览器环境：window.crypto.getRandomValues
  *    - Node.js 15+：globalThis.crypto.getRandomValues
  *    - 这是最安全的方式，使用操作系统提供的 CSPRNG
  *
- * 2. setCustomRNG 显式注入 - 仅用于测试 fixture 或宿主自行接入 CSPRNG
- * 3. allow 策略下的非安全 fallback - 只为旧调用保留，不会在 strict/warn 下启用
+ * 3. Node.js crypto.randomBytes - 兼容没有 globalThis.crypto 的旧版 Node.js/CJS
+ * 4. 非安全 fallback - warn（默认）会提示一次，allow 静默兼容，strict 直接拒绝
  */
 export function getRandomBytes(len: number = 32): Uint8Array {
   if (len <= 0) throw new Error('Invalid length for random bytes');
@@ -552,10 +574,13 @@ export function getRandomBytes(len: number = 32): Uint8Array {
   // WebCrypto
   const webCryptoRes = tryWebCrypto(len);
   if (webCryptoRes) return webCryptoRes;
-  if (rngPolicy !== 'allow') {
+  // Node.js CJS fallback
+  const nodeCryptoRes = tryNodeCrypto(len);
+  if (nodeCryptoRes) return nodeCryptoRes;
+  if (rngPolicy === 'strict') {
     throw new Error('[gmkit][RNG] No cryptographically secure random generator available.');
   }
-  return unsafeFallbackRandom(len);
+  return unsafeFallbackRandom(len, rngPolicy === 'warn');
 }
 
 export type EnvReport = {

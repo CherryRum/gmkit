@@ -597,9 +597,17 @@ export interface SM4DecryptOptions extends SM4Options {
   tagFormat?: InputFormatType;
 }
 
+let implicitEcbWarningShown = false;
+
 function normalizeCipherMode(mode?: CipherModeType): CipherModeType {
   if (mode === undefined) {
-    throw new Error('SM4 mode is required; use CipherMode.ECB explicitly for legacy ECB');
+    if (!implicitEcbWarningShown) {
+      console.warn(
+        '[gmkit][SM4] mode was omitted; using legacy ECB compatibility mode. Pass CipherMode.ECB explicitly, or prefer an IV-based mode for new code.'
+      );
+      implicitEcbWarningShown = true;
+    }
+    return CipherMode.ECB;
   }
   if (!Object.values(CipherMode).includes(mode)) {
     throw new Error(`Unsupported cipher mode: ${String(mode)}`);

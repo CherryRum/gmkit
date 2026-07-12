@@ -10,10 +10,10 @@
   and cross-language vectors under `vectors/`.
 - TypeScript npm package name remains `gmkitx`; Java Maven coordinates
   remain `cn.gmkit:gmkit:0.10.0-preview.1`.
-- Removed deprecated TypeScript top-level compatibility aliases such as
-  `generateKeyPair`, `sign`, `verify`, `digest`, and `hmac`. Use
-  `sm2GenerateKeyPair`, `sm2Sign`, `sm2Verify`, `sm3Digest`, `sm3Hmac`, or
-  the `sm2` / `sm3` namespaces instead.
+- Kept deprecated TypeScript top-level compatibility aliases such as
+  `generateKeyPair`, `sign`, `verify`, `digest`, and `hmac` so existing
+  consumers can upgrade safely. New code should use `sm2GenerateKeyPair`,
+  `sm2Sign`, `sm2Verify`, `sm3Digest`, `sm3Hmac`, or the algorithm namespaces.
 - CI rebuilt into `ci.yml`, `parity.yml`, `sm9-native.yml`, `docs.yml`,
   `publish-ts.yml`, and `publish-java.yml` with monorepo `paths:` filters.
 - Release tag pattern updated: TS uses `ts-v*`, Java uses `java-v*`.
@@ -71,7 +71,10 @@
 
 ### Compatibility
 
-- Deprecated TypeScript top-level compatibility aliases were removed during
-  the 0.x monorepo cleanup. Downstream code should use prefixed functions or
-  algorithm namespaces.
+- Deprecated TypeScript top-level compatibility aliases remain available.
+  Downstream code should migrate to prefixed functions or algorithm namespaces
+  without requiring a flag-day upgrade.
+- Empty SM2 `userId` values continue to select `DEFAULT_USER_ID`. RNG defaults
+  to warning-and-fallback compatibility in runtimes without CSPRNG; strict
+  consumers can opt into `configureRNG('strict')`.
 - SM9 remains unsupported in TypeScript; no C, WASM, or native wrapper was added.

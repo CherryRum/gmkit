@@ -179,8 +179,8 @@ const sha512Hash = sha.sha512('Hello World');
 </script>
 ```
 
-> 顶层函数式 API 仅导出带算法前缀的名称，例如 `sm2Sign`、`sm3Digest`、`sm2GenerateKeyPair`。
-> 旧的 `sign`、`digest`、`generateKeyPair` 等裸名已从顶层入口移除；迁移时请使用前缀函数或 `sm2` / `sm3` 命名空间。
+> 推荐使用带算法前缀的顶层名称，例如 `sm2Sign`、`sm3Digest`、`sm2GenerateKeyPair`。
+> 旧的 `sign`、`digest`、`generateKeyPair` 等裸名继续导出以保证升级兼容，但已标记 `@deprecated`；新代码请使用前缀函数或 `sm2` / `sm3` 命名空间。
 
 -----
 

@@ -8,19 +8,19 @@ these rules to minimize churn for users who depend on the pre-1.0 surface.
 - **Stable** — public APIs documented in `packages/ts/README.md` and
   `packages/java/README.md`.
   No breaking change without a major-version bump (1.x onwards).
-- **Removed** — no longer exported from the public barrel. Use the replacement
-  listed below.
+- **Deprecated** — still exported for runtime and source compatibility, but new
+  code should use the documented replacement.
 - **Internal** — not exported from public barrel; may change at any time
   without notice. Source code internals.
 
-## TypeScript (`gmkitx`) — Removed compatibility aliases
+## TypeScript (`gmkitx`) — Deprecated compatibility aliases
 
 The following un-prefixed aliases were the original 0.1-0.8 API. They were
-removed from the top-level barrel during the monorepo cleanup because the 0.x
-line allows breaking changes. Use the `sm2*` / `sm3*` prefixed functions or the
-`sm2` / `sm3` namespaces instead.
+restored to the top-level barrel so existing consumers can upgrade without a
+runtime failure. They remain deprecated; use the `sm2*` / `sm3*` prefixed
+functions or the `sm2` / `sm3` namespaces in new code.
 
-| Removed alias                  | Replace with                          |
+| Deprecated alias               | Prefer                                |
 | ------------------------------ | ------------------------------------- |
 | `generateKeyPair`              | `sm2GenerateKeyPair`                  |
 | `getPublicKeyFromPrivateKey`   | `sm2GetPublicKeyFromPrivateKey`       |
@@ -34,6 +34,12 @@ line allows breaking changes. Use the `sm2*` / `sm3*` prefixed functions or the
 
 The algorithm namespaces remain stable: `sm2.generateKeyPair`, `sm2.sign`,
 `sm2.verify`, `sm3.digest`, and `sm3.hmac` are still supported.
+
+SM2 treats an omitted or empty `userId` as `DEFAULT_USER_ID` for compatibility.
+RNG policy defaults to `warn`: environments without a CSPRNG keep running with
+a one-time security warning. Applications that must fail closed should call
+`configureRNG('strict')`; constrained hosts should inject a platform CSPRNG
+through `setCustomRNG()` whenever one is available.
 
 ## Java (`cn.gmkit:gmkit`) — Stability commitment
 

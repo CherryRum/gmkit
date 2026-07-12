@@ -1,5 +1,12 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { setCustomRNG, clearCustomRNG, hasCustomRNG, getRandomBytes } from '../src';
+import {
+  setCustomRNG,
+  clearCustomRNG,
+  hasCustomRNG,
+  getRandomBytes,
+  sm2GenerateKeyPair,
+  sm2Sign,
+} from '../src';
 
 describe('audit-C #3: custom RNG guards', () => {
   afterEach(() => {
@@ -25,5 +32,14 @@ describe('audit-C #3: custom RNG guards', () => {
     const buf = getRandomBytes(8);
     expect(buf).toBeInstanceOf(Uint8Array);
     expect(buf.length).toBe(8);
+  });
+
+  it('SM2 签名在自定义 RNG 持续返回非法标量时应该有限失败', () => {
+    const keyPair = sm2GenerateKeyPair();
+    setCustomRNG((n) => new Uint8Array(n));
+
+    expect(() => sm2Sign(keyPair.privateKey, 'message')).toThrow(
+      'Failed to generate a valid SM2 scalar'
+    );
   });
 });

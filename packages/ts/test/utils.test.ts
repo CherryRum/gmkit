@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   hexToBytes,
   bytesToHex,
@@ -163,20 +163,68 @@ describe('工具函数测试', () => {
   });
 
   describe('RNG 策略', () => {
-    it('默认策略应该在缺少 CSPRNG 时抛错', () => {
+    it('warn 策略在缺少 CSPRNG 时应该提示并兼容降级', () => {
       const originalCrypto = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+      const originalRequire = Object.getOwnPropertyDescriptor(globalThis, 'require');
+      const originalProcess = Object.getOwnPropertyDescriptor(globalThis, 'process');
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       Object.defineProperty(globalThis, 'crypto', {
+        configurable: true,
+        value: undefined,
+      });
+      Object.defineProperty(globalThis, 'require', {
+        configurable: true,
+        value: undefined,
+      });
+      Object.defineProperty(globalThis, 'process', {
         configurable: true,
         value: undefined,
       });
 
       try {
-        expect(() => getRandomBytes(16)).toThrow('No cryptographically secure random generator');
+        configureRNG('warn');
+        expect(getRandomBytes(16)).toHaveLength(16);
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('NOT cryptographically secure'));
       } finally {
         if (originalCrypto) {
           Object.defineProperty(globalThis, 'crypto', originalCrypto);
+        } else {
+          Reflect.deleteProperty(globalThis, 'crypto');
         }
+        if (originalRequire) {
+          Object.defineProperty(globalThis, 'require', originalRequire);
+        } else {
+          Reflect.deleteProperty(globalThis, 'require');
+        }
+        if (originalProcess) {
+          Object.defineProperty(globalThis, 'process', originalProcess);
+        } else {
+          Reflect.deleteProperty(globalThis, 'process');
+        }
+        warn.mockRestore();
+        configureRNG('warn');
+      }
+    });
+
+    it('strict 策略在缺少 CSPRNG 时仍应该抛错', () => {
+      const originalCrypto = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+      const originalRequire = Object.getOwnPropertyDescriptor(globalThis, 'require');
+      const originalProcess = Object.getOwnPropertyDescriptor(globalThis, 'process');
+      Object.defineProperty(globalThis, 'crypto', { configurable: true, value: undefined });
+      Object.defineProperty(globalThis, 'require', { configurable: true, value: undefined });
+      Object.defineProperty(globalThis, 'process', { configurable: true, value: undefined });
+
+      try {
         configureRNG('strict');
+        expect(() => getRandomBytes(16)).toThrow('No cryptographically secure random generator');
+      } finally {
+        if (originalCrypto) Object.defineProperty(globalThis, 'crypto', originalCrypto);
+        else Reflect.deleteProperty(globalThis, 'crypto');
+        if (originalRequire) Object.defineProperty(globalThis, 'require', originalRequire);
+        else Reflect.deleteProperty(globalThis, 'require');
+        if (originalProcess) Object.defineProperty(globalThis, 'process', originalProcess);
+        else Reflect.deleteProperty(globalThis, 'process');
+        configureRNG('warn');
       }
     });
   });

@@ -151,8 +151,8 @@ const decrypted = sm2Decrypt(privateKey, ciphertext);
 console.log(decrypted === plaintext); // true
 ```
 
-> 顶层函数式 API 仅导出 `sm2GenerateKeyPair`、`sm2Sign`、`sm2Verify`、`sm2KeyExchange` 等带前缀名称。
-> 旧的 `generateKeyPair`、`sign`、`verify`、`keyExchange` 已从顶层入口移除；对象式入口 `SM2` 与命名空间 `sm2` 不受影响。
+> 顶层函数式 API 推荐使用 `sm2GenerateKeyPair`、`sm2Sign`、`sm2Verify`、`sm2KeyExchange` 等带前缀名称。
+> 旧的 `generateKeyPair`、`sign`、`verify`、`keyExchange` 仍保留为弃用别名，已有项目升级不会因导出缺失而中断。
 
 ### 密文模式
 

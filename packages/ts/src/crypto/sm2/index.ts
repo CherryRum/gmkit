@@ -638,13 +638,16 @@ function bigIntTo32Bytes(value: bigint): Uint8Array {
   return hexToBytes(mod(value).toString(16).padStart(64, '0'));
 }
 
+const MAX_RANDOM_SCALAR_ATTEMPTS = 128;
+
 function randomScalar(): bigint {
-  while (true) {
+  for (let attempt = 0; attempt < MAX_RANDOM_SCALAR_ATTEMPTS; attempt++) {
     const k = bytesToBigIntBE(getRandomBytes(32));
     if (k > 0n && k < SM2_N) {
       return k;
     }
   }
+  throw new Error('Failed to generate a valid SM2 scalar');
 }
 
 function sm2PointX(point: ReturnType<typeof sm2.Point.BASE.multiply>): bigint {
@@ -660,7 +663,7 @@ function sm2SignDigest(e: Uint8Array, privateKeyBytes: Uint8Array): Uint8Array {
   const eInt = bytesToBigIntBE(e);
   const onePlusDInv = modInverse(1n + d);
 
-  while (true) {
+  for (let attempt = 0; attempt < MAX_RANDOM_SCALAR_ATTEMPTS; attempt++) {
     const k = randomScalar();
     const x1 = sm2PointX(sm2.Point.BASE.multiply(k));
     const r = mod(eInt + x1);
@@ -680,6 +683,7 @@ function sm2SignDigest(e: Uint8Array, privateKeyBytes: Uint8Array): Uint8Array {
     signature.set(bigIntTo32Bytes(s), 32);
     return signature;
   }
+  throw new Error('Failed to generate a valid SM2 signature');
 }
 
 function sm2VerifyDigest(e: Uint8Array, publicKeyHex: string, r: bigint, s: bigint): boolean {
@@ -1118,7 +1122,7 @@ export function sign(
 ): string {
   // 自动识别并规范化私钥输入
   const cleanPrivateKey = normalizePrivateKeyInput(privateKey);
-  const userId = options?.userId ?? DEFAULT_USER_ID;
+  const userId = options?.userId || DEFAULT_USER_ID;
   const signatureFormat = normalizeSM2SignatureFormat(options?.signatureFormat);
   const outputFormat = normalizeSM2OutputFormat(options?.outputFormat);
   const skipZ = options?.skipZComputation || false;
@@ -1180,7 +1184,7 @@ export function verify(
   try {
     // 自动识别并规范化公钥输入
     const cleanPublicKey = normalizePublicKeyInput(publicKey);
-    const userId = options?.userId ?? DEFAULT_USER_ID;
+    const userId = options?.userId || DEFAULT_USER_ID;
     const signatureFormat = normalizeSM2SignatureInputFormat(options?.signatureFormat);
     const inputFormat = options?.inputFormat;
     const skipZ = options?.skipZComputation || false;
@@ -1394,11 +1398,11 @@ export function keyExchange(params: SM2KeyExchangeParams): SM2KeyExchangeResult 
   const selfPublicKey = params.publicKey
     ? normalizePublicKeyInput(params.publicKey)
     : getPublicKeyFromPrivateKey(selfPrivateKey);
-  const selfUserId = params.userId ?? DEFAULT_USER_ID;
+  const selfUserId = params.userId || DEFAULT_USER_ID;
 
   const peerPublicKey = normalizePublicKeyInput(params.peerPublicKey);
   const peerTempPublicKey = normalizePublicKeyInput(params.peerTempPublicKey);
-  const peerUserId = params.peerUserId ?? DEFAULT_USER_ID;
+  const peerUserId = params.peerUserId || DEFAULT_USER_ID;
 
   const keyLength = params.keyLength || 16;
   const isInitiator = params.isInitiator;

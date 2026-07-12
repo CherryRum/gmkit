@@ -95,8 +95,9 @@ describe('SM4 分组密码测试', () => {
   });
 
   describe('密钥验证', () => {
-    it('缺少模式时应该拒绝隐式 ECB', () => {
-      expect(() => encrypt(key, 'data')).toThrow('SM4 mode is required');
+    it('缺少模式时应该保持旧版 ECB 兼容行为', () => {
+      const encrypted = encrypt(key, 'data');
+      expect(decrypt(key, encrypted)).toBe('data');
     });
 
     it('应该拒绝无效的密钥长度', () => {

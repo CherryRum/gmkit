@@ -157,7 +157,7 @@ describe('模块导入方式测试', () => {
       expect(hash).toHaveLength(64);
     });
 
-    it('默认导出应该只包含推荐前缀名，不包含旧兼容裸名', async () => {
+    it('默认导出和具名导出应该继续包含旧兼容裸名', async () => {
       const mod = await import('../src/index');
       const gmkit = mod.default;
 
@@ -166,15 +166,15 @@ describe('模块导入方式测试', () => {
       expect(gmkit.sm3Digest).toBe(mod.sm3Digest);
       expect(gmkit.sm3Hmac).toBe(mod.sm3Hmac);
 
-      expect(gmkit).not.toHaveProperty('generateKeyPair');
-      expect(gmkit).not.toHaveProperty('getPublicKeyFromPrivateKey');
-      expect(gmkit).not.toHaveProperty('compressPublicKey');
-      expect(gmkit).not.toHaveProperty('decompressPublicKey');
-      expect(gmkit).not.toHaveProperty('sign');
-      expect(gmkit).not.toHaveProperty('verify');
-      expect(gmkit).not.toHaveProperty('keyExchange');
-      expect(gmkit).not.toHaveProperty('digest');
-      expect(gmkit).not.toHaveProperty('hmac');
+      expect(gmkit.generateKeyPair).toBe(mod.generateKeyPair);
+      expect(gmkit.getPublicKeyFromPrivateKey).toBe(mod.getPublicKeyFromPrivateKey);
+      expect(gmkit.compressPublicKey).toBe(mod.compressPublicKey);
+      expect(gmkit.decompressPublicKey).toBe(mod.decompressPublicKey);
+      expect(gmkit.sign).toBe(mod.sign);
+      expect(gmkit.verify).toBe(mod.verify);
+      expect(gmkit.keyExchange).toBe(mod.keyExchange);
+      expect(gmkit.digest).toBe(mod.digest);
+      expect(gmkit.hmac).toBe(mod.hmac);
     });
   });
 });
