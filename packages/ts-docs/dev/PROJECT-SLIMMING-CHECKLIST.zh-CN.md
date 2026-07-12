@@ -1,55 +1,67 @@
 ---
-title: 发布精简与内容审计清单
+title: 发布内容审计
 icon: checklist
 order: 10
-category: [开发指南, 发布维护]
-tag: [npm pack, 文档审计]
+category: [开发指南, 发布]
+tag: [npm pack, 文档审计, 供应链]
 ---
 
-# 发布精简与内容审计清单
+# 发布内容审计
 
-本页不是一次性内部删除清单，而是每次 npm/文档发布前可重复执行的维护记录。目标是控制发布包内容和文档准确性，不通过删除有价值页面规避验证。
+本页是每次 TypeScript 与文档发布前可重复执行的检查表。目标是验证产物最小、内容准确和示例可复现，而不是通过删除有价值页面降低维护成本。
 
-## 自动检查
+## 自动门禁
 
 ```bash
+npm run type-check -w packages/ts
+npm test -w packages/ts
+npm run lint -w packages/ts
+npm run build -w packages/ts
+npm run audit:pack -w packages/ts
+npm run parity
 npm run docs:check
 npm run docs:test-examples
 npm run docs:build
-npm run audit:pack -w packages/ts
 ```
 
-| 检查 | 失败含义 |
+| 门禁 | 主要失败含义 |
 |:--|:--|
-| `docs:check` | 站内链接、导航、仓库引用或核心 API 文档不一致 |
-| `docs:test-examples` | Node/Go/Python/Rust/Hutool 示例无法运行或向量不符 |
-| `docs:build` | VuePress 配置、Markdown 或主题构建失败 |
-| `audit:pack` | npm tarball 超出体积/文件策略 |
-
-## 人工检查
-
-- 每个算法页说明 key、IV/nonce、模式、填充、输入输出编码和错误语义。
-- 随机算法示例验证往返/验签，不比较随机字面值。
-- 外部库写明精确版本、实现来源和验证范围，不包装成 gmkitx API。
-- 性能结论有环境、命令和原始结果，不发布“典型值”。
-- 文档没有真实密钥、token、内部 endpoint、个人目录或构建缓存。
-- 旧 API 若仍为兼容面，文档标为 deprecated 而不是假装已删除。
+| type-check/lint | 公共类型或源码约束被破坏 |
+| 单测/parity | 算法、边界或跨语言协议回归 |
+| build | ESM/CJS/IIFE/类型产物失败或出现未知警告 |
+| pack 审计 | tarball 文件、体积或 source map 策略异常 |
+| docs check | 链接、导航、API、版本或 fixture 依赖声明漂移 |
+| docs examples | Node/Go/Python/Rust/Hutool 示例不能从固定依赖运行 |
+| docs build | VuePress 配置、Markdown 或客户端渲染构建失败 |
 
 ## npm tarball
 
-`packages/ts/package.json#files` 应只允许：
+当前白名单为：
 
 ```text
 dist/
 README.md
 LICENSE
+package.json
 ```
 
-通过 `npm run audit:pack -w packages/ts` 查看实际清单。不要只依赖 `.npmignore`，`files` 白名单是发布边界。
+`package.json` 由 npm 自动包含。`audit:pack` 使用 `npm pack --json --dry-run` 检查真实清单、压缩/解压体积和 source map，而不是只相信 `.npmignore`。
 
-## 版本发布最小结论
+人工确认 tarball 不包含：测试、benchmark、文档源码、Studio、构建缓存、真实密钥、token、内部 endpoint、个人目录或临时日志。
 
-只有以下检查全部成功后才创建 `ts-v*` 标签：TS 类型/测试/lint/build、pack 审计、Java/TS parity、docs check/build，以及本次修改涉及的外部语言 fixture。失败项不能以“示例页不重要”为理由跳过。
+## 文档内容
 
-- [TypeScript 发布流程](/dev/PUBLISHING)
-- [项目状态](/summaries/PROJECT_SUMMARY)
+- 每个算法页明确 key、IV/nonce、模式、填充、编码和错误语义。
+- 随机算法示例检查往返/验签与篡改拒绝，不固化一次随机输出。
+- 外部语言页面锁定依赖版本，并有 CI 可执行 fixture。
+- 项目向量与外部标准向量明确区分，不用自身输出自证正确性。
+- 性能结论附环境、commit、命令和完整结果，不发布无法复现的“典型值”。
+- 兼容 API、空 userId 和 RNG 默认策略与当前代码一致。
+- SM9 只在 Java/native 边界描述，不出现 TypeScript 假实现。
+
+## 发布结论
+
+只有所有适用门禁成功、工作区和 tag 版本核对完成后才创建 `ts-v*` 标签。任何失败都必须修复或形成公开、可评估的阻断说明，不能以“只是示例”“只是文档”跳过。
+
+- [TypeScript 发布与验收](/dev/PUBLISHING)
+- [验证模型与证据](/summaries/IMPLEMENTATION_SUMMARY)

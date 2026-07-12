@@ -57,6 +57,16 @@ function publicExportNames(source) {
   return [...names].sort();
 }
 
+function requireMatch(content, pattern, label) {
+  const value = content.match(pattern)?.[1];
+  if (!value) failures.push(`无法从 ${label} 读取版本`);
+  return value;
+}
+
+function requireDocumentedVersion(document, version, label) {
+  if (version && !document.includes(version)) failures.push(`${label} 未声明清单版本 ${version}`);
+}
+
 function linkCandidates(source, link) {
   const cleaned = stripQueryAndHash(link);
   const base = cleaned.startsWith('/')
@@ -64,12 +74,25 @@ function linkCandidates(source, link) {
     : path.resolve(path.dirname(source), cleaned);
   // `.zh-CN` 是页面名的一部分，不是 Markdown 扩展名；只有明确的文件后缀才直接读取。
   if (/\.(?:md|png|jpe?g|gif|svg|webp|pdf|zip)$/i.test(base)) return [base];
-  return [`${base}.md`, path.join(base, 'README.md')];
+  return [base, `${base}.md`, path.join(base, 'README.md')];
 }
 
 const markdownFiles = await walk(docsRoot);
 const config = await readFile(configPath, 'utf8');
 const failures = [];
+
+async function checkLocalLinks(file, content, relative) {
+  const prose = stripFencedCode(content);
+  const links = prose.matchAll(/\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g);
+  for (const [, link] of links) {
+    if (/^(?:https?:|mailto:|#)/.test(link)) continue;
+    const candidates = linkCandidates(file, link);
+    const exists = await Promise.all(candidates.map(async (candidate) => {
+      try { return (await stat(candidate)).isFile(); } catch { return false; }
+    }));
+    if (!exists.some(Boolean)) failures.push(`${relative}: 站内链接不存在 ${link}`);
+  }
+}
 
 for (const file of markdownFiles) {
   const relative = path.relative(repoRoot, file).replaceAll('\\', '/');
@@ -89,19 +112,12 @@ for (const file of markdownFiles) {
     'github.com/CherryRum/gmkit',
     'gmkits/gmkit-java',
     'test/vectors/interop.json',
+    'gmkitx@latest',
   ]) {
     if (content.includes(forbidden)) failures.push(`${relative}: 包含过期引用 ${forbidden}`);
   }
 
-  const links = prose.matchAll(/\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g);
-  for (const [, link] of links) {
-    if (/^(?:https?:|mailto:|#)/.test(link)) continue;
-    const candidates = linkCandidates(file, link);
-    const exists = await Promise.all(candidates.map(async (candidate) => {
-      try { return (await stat(candidate)).isFile(); } catch { return false; }
-    }));
-    if (!exists.some(Boolean)) failures.push(`${relative}: 站内链接不存在 ${link}`);
-  }
+  await checkLocalLinks(file, content, relative);
 
   const route = routeFor(file);
   if (route !== '/' && !config.includes(`'${route}'`)) {
@@ -109,10 +125,63 @@ for (const file of markdownFiles) {
   }
 }
 
+// 包 README 和根级发布文档不属于 VuePress 路由，但其中的相对链接同样会展示给使用者。
+for (const relative of [
+  'README.md',
+  'packages/ts/README.md',
+  'packages/java/README.md',
+  'vectors/README.md',
+  'docs/API_STABILITY.md',
+]) {
+  const file = path.join(repoRoot, relative);
+  await checkLocalLinks(file, await readFile(file, 'utf8'), relative);
+}
+
 const apiDoc = await readFile(path.join(docsRoot, 'dev', 'API-SURFACE.zh-CN.md'), 'utf8');
 const publicEntry = await readFile(path.join(repoRoot, 'packages', 'ts', 'src', 'index.ts'), 'utf8');
 for (const name of publicExportNames(publicEntry)) {
   if (!apiDoc.includes(`\`${name}\``)) failures.push(`API-SURFACE.zh-CN.md 缺少公开 API: ${name}`);
+}
+
+// 正式发布文档中的版本必须来自构建清单，避免升级后保留可运行但过期的样例。
+const rootPackage = JSON.parse(await readFile(path.join(repoRoot, 'package.json'), 'utf8'));
+const tsPackage = JSON.parse(await readFile(path.join(repoRoot, 'packages', 'ts', 'package.json'), 'utf8'));
+const docsPackage = JSON.parse(await readFile(path.join(docsRoot, 'package.json'), 'utf8'));
+if (rootPackage.version !== tsPackage.version || rootPackage.version !== docsPackage.version) {
+  failures.push(`workspace 版本不一致: root=${rootPackage.version}, ts=${tsPackage.version}, docs=${docsPackage.version}`);
+}
+
+const javaPom = await readFile(path.join(repoRoot, 'packages', 'java', 'pom.xml'), 'utf8');
+const javaVersion = requireMatch(javaPom, /<artifactId>gmkit-parent<\/artifactId>\s*<version>([^<]+)<\/version>/, 'packages/java/pom.xml');
+const javaGuide = await readFile(path.join(docsRoot, 'dev', 'JAVA-LIBRARY.zh-CN.md'), 'utf8');
+requireDocumentedVersion(javaGuide, javaVersion, 'JAVA-LIBRARY.zh-CN.md');
+
+const goMod = await readFile(path.join(docsRoot, 'examples', 'go', 'go.mod'), 'utf8');
+const goGmsmVersion = requireMatch(goMod, /github\.com\/emmansun\/gmsm\s+(v[^\s]+)/, 'examples/go/go.mod');
+const goGuide = await readFile(path.join(docsRoot, 'dev', 'GO-INTEGRATION.zh-CN.md'), 'utf8');
+requireDocumentedVersion(goGuide, goGmsmVersion, 'GO-INTEGRATION.zh-CN.md');
+
+const requirements = await readFile(path.join(docsRoot, 'examples', 'python', 'requirements.txt'), 'utf8');
+const pythonGmsslVersion = requireMatch(requirements, /^gmssl==([^\s]+)$/m, 'examples/python/requirements.txt');
+const pythonGuide = await readFile(path.join(docsRoot, 'dev', 'PYTHON-INTEGRATION.zh-CN.md'), 'utf8');
+requireDocumentedVersion(pythonGuide, pythonGmsslVersion, 'PYTHON-INTEGRATION.zh-CN.md');
+
+const cargoToml = await readFile(path.join(docsRoot, 'examples', 'rust', 'Cargo.toml'), 'utf8');
+const rustGuide = await readFile(path.join(docsRoot, 'dev', 'RUST-INTEGRATION.zh-CN.md'), 'utf8');
+for (const crate of ['sm3', 'sm4']) {
+  const version = requireMatch(cargoToml, new RegExp(`^${crate}\\s*=\\s*"([^"]+)"$`, 'm'), `examples/rust/Cargo.toml ${crate}`);
+  requireDocumentedVersion(rustGuide, version, `RUST-INTEGRATION.zh-CN.md ${crate}`);
+}
+
+const hutoolPom = await readFile(path.join(docsRoot, 'examples', 'hutool', 'pom.xml'), 'utf8');
+const hutoolGuide = await readFile(path.join(docsRoot, 'dev', 'JAVA-INTEGRATION.zh-CN.md'), 'utf8');
+for (const artifact of ['hutool-crypto', 'bcprov-jdk15to18']) {
+  const version = requireMatch(
+    hutoolPom,
+    new RegExp(`<artifactId>${artifact}<\\/artifactId>\\s*<version>([^<]+)<\\/version>`),
+    `examples/hutool/pom.xml ${artifact}`,
+  );
+  requireDocumentedVersion(hutoolGuide, version, `JAVA-INTEGRATION.zh-CN.md ${artifact}`);
 }
 
 const vectors = JSON.parse(await readFile(path.join(repoRoot, 'vectors', 'interop.json'), 'utf8'));

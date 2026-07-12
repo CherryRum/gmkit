@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+import { readFile } from 'node:fs/promises';
+import vm from 'node:vm';
 
 const gmkit = await import('../../../ts/dist/index.js');
+const require = createRequire(import.meta.url);
 const {
   CipherMode,
   InputFormat,
@@ -43,6 +47,10 @@ assert.deepEqual(sm2DecryptBytes(keys.privateKey, sm2Cipher, {
   mode: SM2CipherMode.C1C3C2,
   inputFormat: InputFormat.BASE64,
 }), binary);
+
+// 未指定解密 mode 时保留旧版自动探测：先尝试 C1C3C2，再尝试 C1C2C3。
+const c1c2c3Cipher = sm2Encrypt(keys.publicKey, binary, { mode: SM2CipherMode.C1C2C3 });
+assert.deepEqual(sm2DecryptBytes(keys.privateKey, c1c2c3Cipher), binary);
 const signature = sm2Sign(keys.privateKey, binary, { userId: 'gmkit-release-v1', signatureFormat: 'der' });
 assert.equal(sm2Verify(keys.publicKey, binary, signature, { userId: 'gmkit-release-v1', signatureFormat: 'der' }), true);
 assert.equal(sm2Verify(keys.publicKey, Uint8Array.of(1), signature, { userId: 'gmkit-release-v1', signatureFormat: 'der' }), false);
@@ -56,8 +64,14 @@ const gcmOptions = { mode: CipherMode.GCM, iv: '000102030405060708090a0b', aad: 
 const sm4Cipher = sm4Encrypt(sm4Key, binary, gcmOptions);
 assert.deepEqual(sm4DecryptBytes(sm4Key, sm4Cipher, gcmOptions), binary);
 assert.throws(() => sm4DecryptBytes(sm4Key, { ...sm4Cipher, tag: '00'.repeat(16) }, gcmOptions), /Authentication tag/);
+assert.throws(
+  () => sm4DecryptBytes(sm4Key, sm4Cipher, { ...gcmOptions, aad: 'modified' }),
+  /Authentication tag/,
+);
 
 assert.equal(zucKeystream('00'.repeat(16), '00'.repeat(16), 8), '27bede74018082da');
+const partialByteCipher = eea3Encrypt('00'.repeat(16), 0, 0, 0, Uint8Array.of(0xff), 5);
+assert.equal(Number.parseInt(partialByteCipher, 16) & 0b111, 0, 'EEA3 未使用的末尾低位必须清零');
 assert.equal(eia3('000102030405060708090a0b0c0d0e0f', 0x01234567, 0x0a, 0, hexToBytes('5bad724710ba1c56'), 64), '1b3d0f74');
 assert.equal(
   eea3Encrypt(
@@ -96,5 +110,21 @@ const legacyAliases = {
 for (const [legacyName, replacement] of Object.entries(legacyAliases)) {
   assert.equal(gmkit[legacyName], replacement, `兼容导出映射错误: ${legacyName}`);
 }
+
+// 发布包同时声明 ESM、CommonJS 和 IIFE，三种产物都必须执行同一个固定向量。
+const commonjs = require('../../../ts/dist/index.cjs');
+assert.equal(commonjs.sm3Digest('abc'), sm3Digest('abc'));
+assert.equal(commonjs.default.sm3Digest, commonjs.sm3Digest);
+
+const iifeContext = vm.createContext({
+  console,
+  crypto: globalThis.crypto,
+  TextDecoder,
+  TextEncoder,
+});
+const iifeSource = await readFile(new URL('../../../ts/dist/index.global.js', import.meta.url), 'utf8');
+vm.runInContext(iifeSource, iifeContext, { filename: 'index.global.js' });
+assert.equal(iifeContext.GMKit.sm3Digest('abc'), sm3Digest('abc'));
+assert.equal(iifeContext.GMKit.default.sm3Digest, iifeContext.GMKit.sm3Digest);
 
 console.log('GMKitX release API example passed');
