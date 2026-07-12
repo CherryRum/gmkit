@@ -65,8 +65,34 @@ public final class ZUCUtil {
         return ZUC.eea3(keyHex, count, bearer, direction, bitLength);
     }
 
+    public static byte[] eea3Encrypt(
+        String keyHex,
+        int count,
+        int bearer,
+        int direction,
+        byte[] message,
+        int bitLength
+    ) {
+        return ZUC.eea3Encrypt(keyHex, count, bearer, direction, message, bitLength);
+    }
+
+    public static byte[] eea3Encrypt(String keyHex, int count, int bearer, int direction, byte[] message) {
+        return ZUC.eea3Encrypt(keyHex, count, bearer, direction, message);
+    }
+
     public static String eia3(String keyHex, int count, int bearer, int direction, byte[] message) {
         return ZUC.eia3(keyHex, count, bearer, direction, message);
+    }
+
+    public static String eia3(
+        String keyHex,
+        int count,
+        int bearer,
+        int direction,
+        byte[] message,
+        int bitLength
+    ) {
+        return ZUC.eia3(keyHex, count, bearer, direction, message, bitLength);
     }
 
     public static String eia3(String keyHex, int count, int bearer, int direction, String message) {

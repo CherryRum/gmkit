@@ -285,7 +285,52 @@
       "direction": 1,
       "input": "中文 + emoji 😊 + English + 123",
       "expected": {
-        "macHex": "71493e99"
+        "macHex": "09f9b184"
+      }
+    },
+    {
+      "id": "zuc-eea3-3gpp-800-bit",
+      "algo": "ZUC",
+      "op": "eea3-encrypt",
+      "source": "3GPP TS 35.221 test set 2",
+      "keyHex": "e5bd3ea0eb55ade866c6ac58bd54302a",
+      "count": 354339,
+      "bearer": 24,
+      "direction": 1,
+      "bitLength": 800,
+      "inputHex": "14a8ef693d678507bbe7270a7f67ff5006c3525b9807e467c4e56000ba338f5d429559036751822246c80d3b38f07f4be2d8ff5805f5132229bde93bbbdcaf382bf1ee972fbf9977bada8945847a2a6c9ad34a667554e04d1f7fa2c33241bd8f01ba220d",
+      "expected": {
+        "cipherHex": "131d43e0dea1be5c5a1bfd971d852cbf712d7b4f57961fea3208afa8bca433f456ad09c7417e58bc69cf8866d1353f74865e80781d202dfb3ecff7fcbc3b190fe82a204ed0e350fc0f6f2613b2f2bca6df5a473a57a4a00d985ebad880d6f23864a07b01"
+      }
+    },
+    {
+      "id": "zuc-eia3-3gpp-64-bit",
+      "algo": "ZUC",
+      "op": "eia3",
+      "source": "3GPP TS 35.222",
+      "keyHex": "000102030405060708090a0b0c0d0e0f",
+      "count": 19088743,
+      "bearer": 10,
+      "direction": 0,
+      "bitLength": 64,
+      "inputHex": "5bad724710ba1c56",
+      "expected": {
+        "macHex": "1b3d0f74"
+      }
+    },
+    {
+      "id": "zuc-eia3-3gpp-direction-one",
+      "algo": "ZUC",
+      "op": "eia3",
+      "source": "3GPP TS 35.222",
+      "keyHex": "c9e6cec4607c72db000aefa88385ab0a",
+      "count": 2839566810,
+      "bearer": 10,
+      "direction": 1,
+      "bitLength": 480,
+      "inputHex": "983b41d47d780c9e1ad11d7eb70391b1de0b35da2dc62f83e7b78d6306ca0ea07e941b7be91348f9fcb170e2217fecd97f9f68adb16e5d7d21e569d2",
+      "expected": {
+        "macHex": "395c1192"
       }
     },
     {

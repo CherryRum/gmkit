@@ -1,8 +1,10 @@
 import {
   encrypt as encryptFunc,
   decrypt as decryptFunc,
+  decryptBytes as decryptBytesFunc,
   getKeystream as getKeystreamFunc,
   eea3 as eea3Func,
+  eea3Encrypt as eea3EncryptFunc,
   eia3 as eia3Func,
   type ZUCDecryptOptions,
   type ZUCOptions,
@@ -110,6 +112,11 @@ export class ZUC {
     return decryptFunc(this.key, this.iv, ciphertext, options);
   }
 
+  /** 解密任意二进制密文，不经过 UTF-8 解码。 */
+  decryptBytes(ciphertext: string | Uint8Array, options?: ZUCDecryptOptions): Uint8Array {
+    return decryptBytesFunc(this.key, this.iv, ciphertext, options);
+  }
+
   /**
    * 生成 ZUC 密钥流
    * @param length - 需要生成的字节长度
@@ -154,6 +161,18 @@ export class ZUC {
     bitLength?: number
   ): string {
     return eia3Func(key, count, bearer, direction, message, bitLength);
+  }
+
+  /** 按消息比特长度执行标准 EEA3 加密。 */
+  static eea3Encrypt(
+    key: string | Uint8Array,
+    count: number,
+    bearer: number,
+    direction: number,
+    message: string | Uint8Array,
+    bitLength?: number
+  ): string {
+    return eea3EncryptFunc(key, count, bearer, direction, message, bitLength);
   }
 
   /**

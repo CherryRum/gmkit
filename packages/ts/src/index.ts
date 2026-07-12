@@ -100,9 +100,11 @@ export const sm4Decrypt = sm4Functions.decrypt;
 
 export const zucEncrypt = zucFunctions.encrypt;
 export const zucDecrypt = zucFunctions.decrypt;
+export const zucDecryptBytes = zucFunctions.decryptBytes;
 export const zucKeystream = zucFunctions.getKeystream;
 export const zucKeystreamWords = zucFunctions.getKeystreamWords;
 export const eea3 = zucFunctions.eea3;
+export const eea3Encrypt = zucFunctions.eea3Encrypt;
 export const eia3 = zucFunctions.eia3;
 export const zucGenerateKeystream = zucFunctions.generateKeystream;
 
@@ -279,10 +281,12 @@ export default {
   sm4Decrypt,
   zucEncrypt,
   zucDecrypt,
+  zucDecryptBytes,
   zucKeystream,
   zucKeystreamWords,
   zucGenerateKeystream,
   eea3,
+  eea3Encrypt,
   eia3,
   sha256,
   sha384,

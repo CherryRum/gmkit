@@ -2,12 +2,15 @@ import { describe, it, expect } from 'vitest';
 import {
   zucEncrypt,
   zucDecrypt,
+  zucDecryptBytes,
   zucKeystream,
   zucKeystreamWords,
   eea3,
+  eea3Encrypt,
   eia3,
   zucGenerateKeystream,
 } from '../src/index';
+import { hexToBytes } from '../src/core/utils';
 
 describe('ZUC 流密码测试', () => {
   describe('基本加密和解密', () => {
@@ -141,12 +144,71 @@ describe('ZUC 流密码测试', () => {
       const key = '00112233445566778899aabbccddeeff';
 
       expect(eea3(key, 0x398a59b4, 0x15, 1, 96)).toBe('ace6d69c177966fcc92ef61c');
-      expect(eia3(key, 0x398a59b4, 0x15, 1, '中文 + emoji 😊 + English + 123')).toBe('71493e99');
+      expect(eia3(key, 0x398a59b4, 0x15, 1, '中文 + emoji 😊 + English + 123')).toBe('09f9b184');
     });
 
     it('should match the official EIA3 1-bit vector', () => {
       const key = '00000000000000000000000000000000';
       expect(eia3(key, 0, 0, 0, new Uint8Array([0]), 1)).toBe('c8a9595e');
+    });
+
+    it('should match the 3GPP EEA3 800-bit vector', () => {
+      const message = hexToBytes(
+        '14a8ef693d678507bbe7270a7f67ff5006c3525b9807e467c4e56000ba338f5d' +
+        '429559036751822246c80d3b38f07f4be2d8ff5805f5132229bde93bbbdcaf38' +
+        '2bf1ee972fbf9977bada8945847a2a6c9ad34a667554e04d1f7fa2c33241bd8f' +
+        '01ba220d'
+      );
+
+      expect(eea3Encrypt('e5bd3ea0eb55ade866c6ac58bd54302a', 0x00056823, 0x18, 1, message, 800)).toBe(
+        '131d43e0dea1be5c5a1bfd971d852cbf712d7b4f57961fea3208afa8bca433f' +
+        '456ad09c7417e58bc69cf8866d1353f74865e80781d202dfb3ecff7fcbc3b190' +
+        'fe82a204ed0e350fc0f6f2613b2f2bca6df5a473a57a4a00d985ebad880d6f2' +
+        '3864a07b01'
+      );
+    });
+
+    it('should match EIA3 vectors across word boundaries and direction bits', () => {
+      expect(eia3(
+        '000102030405060708090a0b0c0d0e0f',
+        0x01234567,
+        0x0a,
+        0,
+        hexToBytes('5bad724710ba1c56'),
+        64
+      )).toBe('1b3d0f74');
+
+      expect(eia3(
+        'c9e6cec4607c72db000aefa88385ab0a',
+        0xa94059da,
+        0x0a,
+        1,
+        hexToBytes(
+          '983b41d47d780c9e1ad11d7eb70391b1de0b35da2dc62f83e7b78d6306ca0ea0' +
+          '7e941b7be91348f9fcb170e2217fecd97f9f68adb16e5d7d21e569d2'
+        ),
+        480
+      )).toBe('395c1192');
+    });
+
+    it('should preserve arbitrary binary plaintext through decryptBytes', () => {
+      const key = '00112233445566778899aabbccddeeff';
+      const iv = 'ffeeddccbbaa99887766554433221100';
+      const plaintext = hexToBytes('00ff800041c328');
+      const ciphertext = zucEncrypt(key, iv, plaintext);
+
+      expect(zucDecryptBytes(key, iv, ciphertext)).toEqual(plaintext);
+    });
+
+    it('should reject truncated hex parameters and invalid lengths', () => {
+      expect(() => zucKeystream('0000000000000000000000000000000', '0'.repeat(32), 1)).toThrow(
+        'exactly 32 hexadecimal characters'
+      );
+      expect(() => zucKeystream('0'.repeat(32), '0'.repeat(32), -1)).toThrow('non-negative safe integer');
+      expect(() => eea3('0'.repeat(32), -1, 0, 0, 32)).toThrow('unsigned 32-bit integer');
+      expect(() => eia3('0'.repeat(32), 0, 0, 0, new Uint8Array([0]), 9)).toThrow(
+        'must not exceed message length'
+      );
     });
   });
 

@@ -97,13 +97,22 @@ export function decrypt(
   ciphertext: BytesLike,
   options?: ZUCDecryptOptions
 ): string {
+  return bytesToString(decryptBytes(key, iv, ciphertext, options));
+}
+
+/** 解密为原始字节；文本 API 无法无损表示任意二进制数据。 */
+export function decryptBytes(
+  key: BytesLike,
+  iv: BytesLike,
+  ciphertext: BytesLike,
+  options?: ZUCDecryptOptions
+): Uint8Array {
   const ciphertextBytes = ciphertext instanceof Uint8Array
     ? ciphertext
     : options?.inputFormat
       ? decodeInput(ciphertext, options.inputFormat)
       : autoDecodeString(ciphertext);
-  const resultBytes = processBytes(key, iv, ciphertextBytes);
-  return bytesToString(resultBytes);
+  return processBytes(key, iv, ciphertextBytes);
 }
 
 /**
@@ -142,6 +151,7 @@ export function getKeystream(
   iv: BytesLike,
   length: number
 ): string {
+  requireLength(length, 'ZUC keystream byte length');
   const words = Math.ceil(length / 4);
   const hex = getKeystreamWords(key, iv, words);
   return hex.slice(0, length * 2);
@@ -164,11 +174,36 @@ export function eea3(
   direction: number,
   length: number
 ): string {
-  const iv = makeEeaEiaIv(count, bearer, direction);
+  requireLength(length, 'EEA3 bit length');
+  const iv = makeEea3Iv(count, bearer, direction);
 
   // 生成密钥流
   const numWords = Math.ceil(length / 32);
   return getKeystreamWords(key, iv, numWords);
+}
+
+/**
+ * 按 3GPP EEA3 规范加密消息。旧 {@link eea3} 继续返回字对齐密钥流以保持兼容。
+ */
+export function eea3Encrypt(
+  key: BytesLike,
+  count: number,
+  bearer: number,
+  direction: number,
+  message: string | Uint8Array,
+  bitLength?: number
+): string {
+  const messageBytes = typeof message === 'string' ? stringToBytes(message) : message;
+  const messageBitLength = bitLength ?? messageBytes.length * 8;
+  requireMessageBitLength(messageBitLength, messageBytes.length, 'EEA3');
+
+  const outputLength = Math.ceil(messageBitLength / 8);
+  const output = processBytes(key, makeEea3Iv(count, bearer, direction), messageBytes.subarray(0, outputLength));
+  const unusedBits = outputLength * 8 - messageBitLength;
+  if (unusedBits > 0 && outputLength > 0) {
+    output[outputLength - 1] &= (0xff << unusedBits) & 0xff;
+  }
+  return bytesToHex(output);
 }
 
 /**
@@ -190,14 +225,12 @@ export function eia3(
 ): string {
   const messageBytes = typeof message === 'string' ? stringToBytes(message) : message;
   const messageBitLength = bitLength ?? messageBytes.length * 8;
-  if (!Number.isInteger(messageBitLength) || messageBitLength < 0 || messageBitLength > messageBytes.length * 8) {
-    throw new Error('Invalid EIA3 bit length');
-  }
+  requireMessageBitLength(messageBitLength, messageBytes.length, 'EIA3');
 
-  const iv = makeEeaEiaIv(count, bearer, direction);
+  const iv = makeEia3Iv(count, bearer, direction);
 
-  // 生成密钥流
-  const numWords = Math.ceil((messageBitLength + 96) / 32);
+  // 标准算法需要消息末尾字和最后一个 MAC 密钥字，共追加 64 比特。
+  const numWords = Math.ceil((messageBitLength + 64) / 32);
   const keystream = generateKeystream(key, iv, numWords);
 
   let t = 0 >>> 0;
@@ -208,13 +241,16 @@ export function eia3(
   }
 
   t = (t ^ getWord(keystream, messageBitLength)) >>> 0;
-  const mac = (t ^ keystream[Math.floor(messageBitLength / 32) + 2]) >>> 0;
+  const mac = (t ^ keystream[numWords - 1]) >>> 0;
 
   // 以 8 个十六进制字符（32 位）返回结果
   return (mac >>> 0).toString(16).padStart(8, '0');
 }
 
-function makeEeaEiaIv(count: number, bearer: number, direction: number): Uint8Array {
+function validateEeaEiaParameters(count: number, bearer: number, direction: number): void {
+  if (!Number.isInteger(count) || count < 0 || count > 0xffffffff) {
+    throw new Error('Invalid count: must be an unsigned 32-bit integer');
+  }
   if (!Number.isInteger(bearer) || bearer < 0 || bearer > 0x1f) {
     throw new Error('Invalid bearer: must be a 5-bit integer');
   }
@@ -222,7 +258,10 @@ function makeEeaEiaIv(count: number, bearer: number, direction: number): Uint8Ar
     throw new Error('Invalid direction: must be 0 or 1');
   }
 
-  // 3GPP EEA3/EIA3 IV: COUNT || BEARER||DIRECTION||0^26 重复两次。
+}
+
+function makeEea3Iv(count: number, bearer: number, direction: number): Uint8Array {
+  validateEeaEiaParameters(count, bearer, direction);
   const iv = new Uint8Array(16);
   iv[0] = (count >>> 24) & 0xFF;
   iv[1] = (count >>> 16) & 0xFF;
@@ -235,6 +274,39 @@ function makeEeaEiaIv(count: number, bearer: number, direction: number): Uint8Ar
   iv[11] = iv[3];
   iv[12] = iv[4];
   return iv;
+}
+
+function makeEia3Iv(count: number, bearer: number, direction: number): Uint8Array {
+  validateEeaEiaParameters(count, bearer, direction);
+  const iv = new Uint8Array(16);
+  iv[0] = (count >>> 24) & 0xff;
+  iv[1] = (count >>> 16) & 0xff;
+  iv[2] = (count >>> 8) & 0xff;
+  iv[3] = count & 0xff;
+  iv[4] = (bearer & 0x1f) << 3;
+  // EIA3 的方向位位于后半段两个字节的最高位，不能复用 EEA3 IV。
+  iv[8] = iv[0] ^ (direction << 7);
+  iv[9] = iv[1];
+  iv[10] = iv[2];
+  iv[11] = iv[3];
+  iv[12] = iv[4];
+  iv[13] = iv[5];
+  iv[14] = iv[6] ^ (direction << 7);
+  iv[15] = iv[7];
+  return iv;
+}
+
+function requireLength(length: number, label: string): void {
+  if (!Number.isSafeInteger(length) || length < 0) {
+    throw new Error(`${label} must be a non-negative safe integer`);
+  }
+}
+
+function requireMessageBitLength(bitLength: number, byteLength: number, algorithm: string): void {
+  requireLength(bitLength, `${algorithm} bit length`);
+  if (bitLength > byteLength * 8) {
+    throw new Error(`${algorithm} bit length must not exceed message length`);
+  }
 }
 
 function getMessageBit(message: Uint8Array, bitPosition: number): number {

@@ -9,8 +9,10 @@ import {
   decrypt as zucDecrypt,
   getKeystream as zucKeystream,
   eea3,
+  eea3Encrypt,
   eia3,
 } from '../src/crypto/zuc';
+import { hexToBytes } from '../src/core/utils';
 import {
   generateKeyPair,
   encrypt as sm2Encrypt,
@@ -183,8 +185,21 @@ describe('互操作性和标准测试向量', () => {
           return;
         }
 
+        if (testCase.op === 'eea3-encrypt') {
+          expect(eea3Encrypt(
+            key,
+            testCase.count,
+            testCase.bearer,
+            testCase.direction,
+            hexToBytes(testCase.inputHex),
+            testCase.bitLength
+          )).toBe(testCase.expected.cipherHex);
+          return;
+        }
+
         if (testCase.op === 'eia3') {
-          expect(eia3(key, testCase.count, testCase.bearer, testCase.direction, testCase.input))
+          const input = testCase.inputHex ? hexToBytes(testCase.inputHex) : testCase.input;
+          expect(eia3(key, testCase.count, testCase.bearer, testCase.direction, input, testCase.bitLength))
             .toBe(testCase.expected.macHex);
           return;
         }

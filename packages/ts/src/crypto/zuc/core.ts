@@ -289,8 +289,11 @@ export function generateKeystream(
   iv: string | Uint8Array,
   length: number
 ): Uint32Array {
-  const keyBytes = typeof key === 'string' ? hexToBytes(key) : key;
-  const ivBytes = typeof iv === 'string' ? hexToBytes(iv) : iv;
+  if (!Number.isSafeInteger(length) || length < 0) {
+    throw new Error('ZUC keystream length must be a non-negative safe integer');
+  }
+  const keyBytes = decodeZucParameter(key, 'key');
+  const ivBytes = decodeZucParameter(iv, 'IV');
 
   const state = new ZUCState();
   state.initialize(keyBytes, ivBytes);
@@ -314,8 +317,8 @@ export function processBytes(
   iv: string | Uint8Array,
   data: string | Uint8Array,
 ): Uint8Array {
-  const keyBytes = typeof key === 'string' ? hexToBytes(key) : key;
-  const ivBytes = typeof iv === 'string' ? hexToBytes(iv) : iv;
+  const keyBytes = decodeZucParameter(key, 'key');
+  const ivBytes = decodeZucParameter(iv, 'IV');
   const dataBytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
 
   const state = new ZUCState();
@@ -344,6 +347,23 @@ export function processBytes(
   }
 
   return output;
+}
+
+/** 字符串密钥和 IV 必须是完整的 128 位十六进制，避免奇数长度被隐式补齐。 */
+function decodeZucParameter(value: string | Uint8Array, label: 'key' | 'IV'): Uint8Array {
+  if (value instanceof Uint8Array) {
+    if (value.length !== 16) {
+      throw new Error(`${label === 'key' ? 'Key' : 'IV'} must be 16 bytes for ZUC-128`);
+    }
+    return value;
+  }
+
+  const normalized = value.startsWith('0x') || value.startsWith('0X') ? value.slice(2) : value;
+  if (!/^[0-9a-fA-F]{32}$/.test(normalized)) {
+    const displayLabel = label === 'key' ? 'Key' : 'IV';
+    throw new Error(`${displayLabel} must be 16 bytes for ZUC-128 (exactly 32 hexadecimal characters)`);
+  }
+  return hexToBytes(normalized);
 }
 
 /**

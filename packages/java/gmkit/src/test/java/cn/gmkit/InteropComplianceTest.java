@@ -105,13 +105,34 @@ class InteropComplianceTest {
                             intValue(v.get("bitLength"))));
                     return;
                 }
-                if ("eia3".equals(op)) {
-                    assertEquals(expectedHex(v, "macHex"), ZUC.eia3(
+                if ("eea3-encrypt".equals(op)) {
+                    assertEquals(expectedHex(v, "cipherHex"), HexCodec.encode(ZUC.eea3Encrypt(
                             keyHex,
                             intValue(v.get("count")),
                             intValue(v.get("bearer")),
                             intValue(v.get("direction")),
-                            (String) v.get("input")));
+                            HexCodec.decodeStrict((String) v.get("inputHex"), "EEA3 message"),
+                            intValue(v.get("bitLength")))));
+                    return;
+                }
+                if ("eia3".equals(op)) {
+                    Object inputHex = v.get("inputHex");
+                    if (inputHex instanceof String) {
+                        assertEquals(expectedHex(v, "macHex"), ZUC.eia3(
+                                keyHex,
+                                intValue(v.get("count")),
+                                intValue(v.get("bearer")),
+                                intValue(v.get("direction")),
+                                HexCodec.decodeStrict((String) inputHex, "EIA3 message"),
+                                intValue(v.get("bitLength"))));
+                    } else {
+                        assertEquals(expectedHex(v, "macHex"), ZUC.eia3(
+                                keyHex,
+                                intValue(v.get("count")),
+                                intValue(v.get("bearer")),
+                                intValue(v.get("direction")),
+                                (String) v.get("input")));
+                    }
                 }
             }));
         }

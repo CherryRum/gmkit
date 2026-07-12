@@ -7,6 +7,8 @@ import cn.gmkit.core.HexCodec;
 import cn.gmkit.core.Messages;
 import cn.gmkit.core.Texts;
 
+import java.util.Arrays;
+
 /**
  * ZUC-128 stream cipher utilities.
  * <p>
@@ -225,9 +227,48 @@ public final class ZUC {
         requireBearer(bearer);
         requireDirection(direction);
         requireNonNegative(bitLength, "ZUC EEA3 bit length");
-        byte[] iv = eeaEiaIv(count, bearer, direction);
+        byte[] iv = eea3Iv(count, bearer, direction);
         int words = (bitLength + 31) / 32;
         return HexCodec.encode(wordsToBytes(keystreamWords(decodeKey(keyHex), iv, words)));
+    }
+
+    /**
+     * 按 3GPP EEA3 规范加密消息；旧 {@link #eea3} 继续返回字对齐密钥流以保持兼容。
+     *
+     * @param keyHex    32 位十六进制字符密钥
+     * @param count     32 位计数器
+     * @param bearer    5 位承载标识
+     * @param direction 方向位，0 或 1
+     * @param message   待加密消息
+     * @param bitLength 有效消息比特数
+     * @return 密文字节，末字节未使用的低位清零
+     */
+    public static byte[] eea3Encrypt(
+        String keyHex,
+        int count,
+        int bearer,
+        int direction,
+        byte[] message,
+        int bitLength
+    ) {
+        requireBearer(bearer);
+        requireDirection(direction);
+        byte[] messageBytes = Bytes.requireNonNull(message, "ZUC EEA3 message");
+        requireBitLength(bitLength, messageBytes.length, "ZUC EEA3 bit length");
+
+        int outputLength = (bitLength + 7) / 8;
+        byte[] input = Arrays.copyOf(messageBytes, outputLength);
+        byte[] output = process(decodeKey(keyHex), eea3Iv(count, bearer, direction), input, "ZUC EEA3 message");
+        int unusedBits = outputLength * 8 - bitLength;
+        if (unusedBits > 0 && outputLength > 0) {
+            output[outputLength - 1] &= (byte) (0xff << unusedBits);
+        }
+        return output;
+    }
+
+    public static byte[] eea3Encrypt(String keyHex, int count, int bearer, int direction, byte[] message) {
+        byte[] messageBytes = Bytes.requireNonNull(message, "ZUC EEA3 message");
+        return eea3Encrypt(keyHex, count, bearer, direction, messageBytes, messageBytes.length * 8);
     }
 
     /**
@@ -266,9 +307,10 @@ public final class ZUC {
                 "ZUC EIA3 bit length 不能超过消息比特长度",
                 "ZUC EIA3 bit length must not exceed message length in bits"));
         }
-        byte[] iv = eeaEiaIv(count, bearer, direction);
+        byte[] iv = eia3Iv(count, bearer, direction);
 
-        int[] keystream = keystreamWords(decodeKey(keyHex), iv, (bitLength + 96 + 31) / 32);
+        int wordCount = (bitLength + 64 + 31) / 32;
+        int[] keystream = keystreamWords(decodeKey(keyHex), iv, wordCount);
         int t = 0;
         for (int i = 0; i < bitLength; i++) {
             if (getMessageBit(messageBytes, i) == 1) {
@@ -276,7 +318,7 @@ public final class ZUC {
             }
         }
         t ^= getWord(keystream, bitLength);
-        int mac = t ^ keystream[bitLength / 32 + 2];
+        int mac = t ^ keystream[wordCount - 1];
         return String.format("%08x", mac);
     }
 
@@ -367,20 +409,48 @@ public final class ZUC {
         return output;
     }
 
-    private static byte[] eeaEiaIv(int count, int bearer, int direction) {
+    private static byte[] eea3Iv(int count, int bearer, int direction) {
         byte[] iv = new byte[IV_LENGTH];
         iv[0] = (byte) (count >>> 24);
         iv[1] = (byte) (count >>> 16);
         iv[2] = (byte) (count >>> 8);
         iv[3] = (byte) count;
         iv[4] = (byte) ((((bearer & 0x1f) << 3) | ((direction & 0x1) << 2)) & 0xff);
-        // 3GPP EEA3/EIA3 IV: COUNT || BEARER||DIRECTION||0^26 重复两次。
+        // EEA3 IV 将 COUNT || BEARER || DIRECTION || 0^26 重复两次。
         iv[8] = iv[0];
         iv[9] = iv[1];
         iv[10] = iv[2];
         iv[11] = iv[3];
         iv[12] = iv[4];
         return iv;
+    }
+
+    private static byte[] eia3Iv(int count, int bearer, int direction) {
+        byte[] iv = new byte[IV_LENGTH];
+        iv[0] = (byte) (count >>> 24);
+        iv[1] = (byte) (count >>> 16);
+        iv[2] = (byte) (count >>> 8);
+        iv[3] = (byte) count;
+        iv[4] = (byte) ((bearer & 0x1f) << 3);
+        // EIA3 的方向位位于后半段两个字节的最高位，不能复用 EEA3 IV。
+        iv[8] = (byte) (iv[0] ^ (direction << 7));
+        iv[9] = iv[1];
+        iv[10] = iv[2];
+        iv[11] = iv[3];
+        iv[12] = iv[4];
+        iv[13] = iv[5];
+        iv[14] = (byte) (iv[6] ^ (direction << 7));
+        iv[15] = iv[7];
+        return iv;
+    }
+
+    private static void requireBitLength(int bitLength, int byteLength, String label) {
+        requireNonNegative(bitLength, label);
+        if ((long) bitLength > (long) byteLength * 8L) {
+            throw new GmkitException(Messages.bilingual(
+                label + " 不能超过消息比特长度",
+                label + " must not exceed message length in bits"));
+        }
     }
 
     private static int getMessageBit(byte[] message, int bitPosition) {
