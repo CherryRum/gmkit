@@ -463,7 +463,7 @@ export function autoDecodeString(str: string): Uint8Array {
 
 
 export type RNGPolicy = 'strict' | 'warn' | 'allow';
-let rngPolicy: RNGPolicy = 'warn';
+let rngPolicy: RNGPolicy = 'strict';
 let customRNG: ((len: number) => Uint8Array) | null = null;
 // 配置函数
 export function configureRNG(policy: RNGPolicy) {
@@ -511,21 +511,6 @@ function tryWebCrypto(len: number): Uint8Array | null {
   return null;
 }
 
-/**
- * Node.js RNG（动态 require，避免 bundler 报错）
- */
-function tryNodeCrypto(len: number): Uint8Array | null {
-  try {
-    if (typeof require !== 'undefined') {
-      const { randomBytes } = require('node:crypto');
-      if (typeof randomBytes === 'function') {
-        return new Uint8Array(randomBytes(len));
-      }
-    }
-  } catch (_) {}
-  return null;
-}
-
 function unsafeFallbackRandom(len: number): Uint8Array {
   console.warn(
     '[gmkit][RNG] WARNING: using unsafe fallback RNG. This is NOT cryptographically secure!'
@@ -548,8 +533,7 @@ function unsafeFallbackRandom(len: number): Uint8Array {
   return out;
 }
 /**
- * 生成随机字节的跨平台函数
- * 优雅地处理 Node.js 和浏览器环境，提供三重回退机制
+ * 生成随机字节的跨平台函数。
  *
  * 优先级（从高到低）:
  * 1. Web Crypto API (crypto.getRandomValues) - 密码学安全的随机数生成器
@@ -557,24 +541,8 @@ function unsafeFallbackRandom(len: number): Uint8Array {
  *    - Node.js 15+：globalThis.crypto.getRandomValues
  *    - 这是最安全的方式，使用操作系统提供的 CSPRNG
  *
- * 2. Node.js Crypto Module (crypto.randomBytes) - 密码学安全的随机数生成器
- *    - 同样使用操作系统提供的 CSPRNG
- *    - 为旧版本 Node.js 提供安全的随机数
- *
- * 3. 时间戳 + Math.random() - 应急回退方案
- *    -  警告：这不是密码学安全的！
- *    - 不应在生产环境中使用,我提醒了你！
- *    - 会在控制台输出警告信息！
- *
- * 设计理念：
- * - 优先使用最安全的随机数源
- * - 在不可用时自动降级到次优方案
- * - 确保在各种环境（浏览器、Node.js、小程序）中都能正常工作
- * - 通过警告信息提醒开发者当前使用的随机数源质量
- *
- * 在 Node.js 环境中，通过 test/setup.ts 中的 polyfill 提供 crypto.getRandomValues
- * 在浏览器环境中，直接使用 Web Crypto API
- * 在微信小程序等环境中，可能需要自行实现回退方案
+ * 2. setCustomRNG 显式注入 - 仅用于测试 fixture 或宿主自行接入 CSPRNG
+ * 3. allow 策略下的非安全 fallback - 只为旧调用保留，不会在 strict/warn 下启用
  */
 export function getRandomBytes(len: number = 32): Uint8Array {
   if (len <= 0) throw new Error('Invalid length for random bytes');
@@ -584,11 +552,7 @@ export function getRandomBytes(len: number = 32): Uint8Array {
   // WebCrypto
   const webCryptoRes = tryWebCrypto(len);
   if (webCryptoRes) return webCryptoRes;
-  // NodeCrypto
-  const nodeCryptoRes = tryNodeCrypto(len);
-  if (nodeCryptoRes) return nodeCryptoRes;
-  // Unsafe fallback
-  if (rngPolicy === 'strict') {
+  if (rngPolicy !== 'allow') {
     throw new Error('[gmkit][RNG] No cryptographically secure random generator available.');
   }
   return unsafeFallbackRandom(len);

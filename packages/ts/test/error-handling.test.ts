@@ -240,7 +240,7 @@ describe('错误处理和输入验证测试', () => {
       });
 
       it('应该拒绝非十六进制密钥', () => {
-        expect(() => sm4Encrypt('ghijklmnopqrstuv' + 'wxyz012345678901', 'data')).toThrow();
+        expect(() => sm4Encrypt('ghijklmnopqrstuv' + 'wxyz012345678901', 'data', { mode: CipherMode.ECB })).toThrow();
       });
     });
 

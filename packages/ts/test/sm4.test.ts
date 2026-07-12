@@ -95,10 +95,14 @@ describe('SM4 分组密码测试', () => {
   });
 
   describe('密钥验证', () => {
+    it('缺少模式时应该拒绝隐式 ECB', () => {
+      expect(() => encrypt(key, 'data')).toThrow('SM4 mode is required');
+    });
+
     it('应该拒绝无效的密钥长度', () => {
       const plaintext = 'Hello';
       const shortKey = '0123456789abcdef'; // too short
-      expect(() => encrypt(shortKey, plaintext)).toThrow('SM4 key must be 16 bytes');
+      expect(() => encrypt(shortKey, plaintext, { mode: CipherMode.ECB })).toThrow('SM4 key must be 16 bytes');
     });
   });
 

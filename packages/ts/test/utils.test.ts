@@ -9,6 +9,8 @@ import {
   normalizeInput,
   xor,
   rotl,
+  configureRNG,
+  getRandomBytes,
 } from '../src/core/utils';
 
 describe('工具函数测试', () => {
@@ -157,6 +159,25 @@ describe('工具函数测试', () => {
       const value = 0b10000000000000000000000000000000;
       const result = rotl(value, 1);
       expect(result).toBe(0b00000000000000000000000000000001);
+    });
+  });
+
+  describe('RNG 策略', () => {
+    it('默认策略应该在缺少 CSPRNG 时抛错', () => {
+      const originalCrypto = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+      Object.defineProperty(globalThis, 'crypto', {
+        configurable: true,
+        value: undefined,
+      });
+
+      try {
+        expect(() => getRandomBytes(16)).toThrow('No cryptographically secure random generator');
+      } finally {
+        if (originalCrypto) {
+          Object.defineProperty(globalThis, 'crypto', originalCrypto);
+        }
+        configureRNG('strict');
+      }
     });
   });
 });

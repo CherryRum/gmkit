@@ -18,35 +18,36 @@ describe('输出格式一致性测试 (Output Format Consistency Tests)', () => 
   describe('SM4 输出格式', () => {
     const key = '0123456789abcdeffedcba9876543210';
     const plaintext = 'Hello, SM4!';
+    const ecbOptions = { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 };
 
     it('应该支持 hex 格式输出（默认）', () => {
-      const encrypted = sm4Encrypt(key, plaintext);
+      const encrypted = sm4Encrypt(key, plaintext, ecbOptions);
       expect(typeof encrypted).toBe('object');
       expect(encrypted.ciphertext).toMatch(/^[0-9a-f]+$/);
     });
 
     it('应该支持 base64 格式输出', () => {
-      const encrypted = sm4Encrypt(key, plaintext, { outputFormat: OutputFormat.BASE64 });
+      const encrypted = sm4Encrypt(key, plaintext, { ...ecbOptions, outputFormat: OutputFormat.BASE64 });
       expect(typeof encrypted).toBe('object');
       expect(encrypted.ciphertext).toMatch(/^[A-Za-z0-9+/]+=*$/);
       expect(encrypted.ciphertext).not.toMatch(/^[0-9a-f]+$/);
     });
 
     it('应该能够解密 hex 格式的密文', () => {
-      const encrypted = sm4Encrypt(key, plaintext);
-      const decrypted = sm4Decrypt(key, encrypted);
+      const encrypted = sm4Encrypt(key, plaintext, ecbOptions);
+      const decrypted = sm4Decrypt(key, encrypted, ecbOptions);
       expect(decrypted).toBe(plaintext);
     });
 
     it('应该能够解密 base64 格式的密文', () => {
-      const encrypted = sm4Encrypt(key, plaintext, { outputFormat: OutputFormat.BASE64 });
-      const decrypted = sm4Decrypt(key, encrypted);
+      const encrypted = sm4Encrypt(key, plaintext, { ...ecbOptions, outputFormat: OutputFormat.BASE64 });
+      const decrypted = sm4Decrypt(key, encrypted, ecbOptions);
       expect(decrypted).toBe(plaintext);
     });
 
     it('应该能够自动识别 base64 字符串密文', () => {
-      const encrypted = sm4Encrypt(key, plaintext, { outputFormat: OutputFormat.BASE64 });
-      const decrypted = sm4Decrypt(key, encrypted.ciphertext);
+      const encrypted = sm4Encrypt(key, plaintext, { ...ecbOptions, outputFormat: OutputFormat.BASE64 });
+      const decrypted = sm4Decrypt(key, encrypted.ciphertext, ecbOptions);
       expect(decrypted).toBe(plaintext);
     });
 

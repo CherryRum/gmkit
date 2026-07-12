@@ -599,7 +599,7 @@ export interface SM4DecryptOptions extends SM4Options {
 
 function normalizeCipherMode(mode?: CipherModeType): CipherModeType {
   if (mode === undefined) {
-    return CipherMode.ECB;
+    throw new Error('SM4 mode is required; use CipherMode.ECB explicitly for legacy ECB');
   }
   if (!Object.values(CipherMode).includes(mode)) {
     throw new Error(`Unsupported cipher mode: ${String(mode)}`);
