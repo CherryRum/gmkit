@@ -150,9 +150,10 @@ export class ZUC {
     count: number,
     bearer: number,
     direction: number,
-    message: string | Uint8Array
+    message: string | Uint8Array,
+    bitLength?: number
   ): string {
-    return eia3Func(key, count, bearer, direction, message);
+    return eia3Func(key, count, bearer, direction, message, bitLength);
   }
 
   /**

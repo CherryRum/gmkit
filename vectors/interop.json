@@ -273,7 +273,7 @@
       "direction": 1,
       "bitLength": 96,
       "expected": {
-        "hex": "87613336c451fb0b94374bad"
+        "hex": "ace6d69c177966fcc92ef61c"
       }
     },
     {
@@ -285,7 +285,7 @@
       "direction": 1,
       "input": "中文 + emoji 😊 + English + 123",
       "expected": {
-        "macHex": "576ad924"
+        "macHex": "71493e99"
       }
     },
     {

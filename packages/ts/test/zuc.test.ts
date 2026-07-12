@@ -140,8 +140,13 @@ describe('ZUC 流密码测试', () => {
     it('should match the project EEA3/EIA3 vectors', () => {
       const key = '00112233445566778899aabbccddeeff';
 
-      expect(eea3(key, 0x398a59b4, 0x15, 1, 96)).toBe('87613336c451fb0b94374bad');
-      expect(eia3(key, 0x398a59b4, 0x15, 1, '中文 + emoji 😊 + English + 123')).toBe('576ad924');
+      expect(eea3(key, 0x398a59b4, 0x15, 1, 96)).toBe('ace6d69c177966fcc92ef61c');
+      expect(eia3(key, 0x398a59b4, 0x15, 1, '中文 + emoji 😊 + English + 123')).toBe('71493e99');
+    });
+
+    it('should match the official EIA3 1-bit vector', () => {
+      const key = '00000000000000000000000000000000';
+      expect(eia3(key, 0, 0, 0, new Uint8Array([0]), 1)).toBe('c8a9595e');
     });
   });
 

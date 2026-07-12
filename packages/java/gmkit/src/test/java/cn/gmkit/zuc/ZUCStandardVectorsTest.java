@@ -62,8 +62,15 @@ class ZUCStandardVectorsTest {
 
     @Test
     void eea3AndEia3ShouldMatchTypeScriptProjectVectors() {
-        assertEquals("87613336c451fb0b94374bad", ZUC.eea3(KEY_HEX, 0x398a59b4, 0x15, 1, 96));
-        assertEquals("576ad924", ZUC.eia3(KEY_HEX, 0x398a59b4, 0x15, 1, "中文 + emoji 😊 + English + 123"));
+        assertEquals("ace6d69c177966fcc92ef61c", ZUC.eea3(KEY_HEX, 0x398a59b4, 0x15, 1, 96));
+        assertEquals("71493e99", ZUC.eia3(KEY_HEX, 0x398a59b4, 0x15, 1, "中文 + emoji 😊 + English + 123"));
+    }
+
+    @Test
+    void eia3ShouldMatchOfficialOneBitVector() {
+        assertEquals(
+            "c8a9595e",
+            ZUC.eia3("00000000000000000000000000000000", 0, 0, 0, new byte[] {0}, 1));
     }
 
     @Test

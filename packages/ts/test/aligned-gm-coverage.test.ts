@@ -212,8 +212,8 @@ describe('Java/TypeScript aligned GM coverage', () => {
         .toBe('27bede74018082da');
       expect(zucKeystream(ZUC_KEY, ZUC_IV, 32))
         .toBe('deeb81e388e6bbad1c44b2bbf56776644a80953ad9005380ec8d392fb3a1548b');
-      expect(eea3(ZUC_KEY, 0x398a59b4, 0x15, 1, 96)).toBe('87613336c451fb0b94374bad');
-      expect(eia3(ZUC_KEY, 0x398a59b4, 0x15, 1, '中文 + emoji 😊 + English + 123')).toBe('576ad924');
+      expect(eea3(ZUC_KEY, 0x398a59b4, 0x15, 1, 96)).toBe('ace6d69c177966fcc92ef61c');
+      expect(eia3(ZUC_KEY, 0x398a59b4, 0x15, 1, '中文 + emoji 😊 + English + 123')).toBe('71493e99');
     });
 
     it('rejects invalid ZUC key, IV, and hex ciphertext inputs', () => {

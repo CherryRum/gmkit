@@ -225,12 +225,7 @@ public final class ZUC {
         requireBearer(bearer);
         requireDirection(direction);
         requireNonNegative(bitLength, "ZUC EEA3 bit length");
-        byte[] iv = new byte[IV_LENGTH];
-        iv[0] = (byte) (count >>> 24);
-        iv[1] = (byte) (count >>> 16);
-        iv[2] = (byte) (count >>> 8);
-        iv[3] = (byte) count;
-        iv[4] = (byte) (((bearer << 3) | (direction << 2)) & 0xff);
+        byte[] iv = eeaEiaIv(count, bearer, direction);
         int words = (bitLength + 31) / 32;
         return HexCodec.encode(wordsToBytes(keystreamWords(decodeKey(keyHex), iv, words)));
     }
@@ -246,41 +241,42 @@ public final class ZUC {
      * @return 8-character hexadecimal MAC
      */
     public static String eia3(String keyHex, int count, int bearer, int direction, byte[] message) {
+        byte[] messageBytes = Bytes.requireNonNull(message, "ZUC EIA3 message");
+        return eia3(keyHex, count, bearer, direction, messageBytes, messageBytes.length * 8);
+    }
+
+    /**
+     * Generate the standard EIA3 MAC value for a bit-length message prefix.
+     *
+     * @param keyHex    32-hex-character key
+     * @param count     32-bit counter
+     * @param bearer    5-bit bearer identifier, 0 to 31
+     * @param direction direction bit, 0 or 1
+     * @param message   message bytes
+     * @param bitLength authenticated bit length, may stop inside the final byte
+     * @return 8-character hexadecimal MAC
+     */
+    public static String eia3(String keyHex, int count, int bearer, int direction, byte[] message, int bitLength) {
         requireBearer(bearer);
         requireDirection(direction);
         byte[] messageBytes = Bytes.requireNonNull(message, "ZUC EIA3 message");
-        int bitLength = messageBytes.length * 8;
-        byte[] iv = new byte[IV_LENGTH];
-        byte[] countAndBearer = {
-            (byte) (count >>> 24),
-            (byte) (count >>> 16),
-            (byte) (count >>> 8),
-            (byte) count,
-            (byte) ((((bearer & 0x1f) << 3) | ((direction & 0x1) << 2)) & 0xff)
-        };
-        iv[0] = countAndBearer[0];
-        iv[1] = countAndBearer[1];
-        iv[2] = countAndBearer[2];
-        iv[3] = countAndBearer[3];
-        iv[4] = countAndBearer[4];
-        iv[8] = countAndBearer[0];
-        iv[9] = countAndBearer[1];
-        iv[10] = countAndBearer[2];
-        iv[11] = countAndBearer[3];
-        iv[12] = countAndBearer[4];
+        requireNonNegative(bitLength, "ZUC EIA3 bit length");
+        if (bitLength > messageBytes.length * 8) {
+            throw new GmkitException(Messages.bilingual(
+                "ZUC EIA3 bit length 不能超过消息比特长度",
+                "ZUC EIA3 bit length must not exceed message length in bits"));
+        }
+        byte[] iv = eeaEiaIv(count, bearer, direction);
 
-        int[] keystream = keystreamWords(decodeKey(keyHex), iv, (bitLength + 64 + 31) / 32);
+        int[] keystream = keystreamWords(decodeKey(keyHex), iv, (bitLength + 96 + 31) / 32);
         int t = 0;
-        for (int i = 0; i < messageBytes.length; i++) {
-            int wordIndex = (i * 8) / 32;
-            int shift = 24 - ((i * 8) % 32);
-            int keyByte = (keystream[wordIndex] >>> shift) & 0xff;
-            t ^= (messageBytes[i] & 0xff) ^ keyByte;
+        for (int i = 0; i < bitLength; i++) {
+            if (getMessageBit(messageBytes, i) == 1) {
+                t ^= getWord(keystream, i);
+            }
         }
-        if (getBit(keystream, bitLength)) {
-            t ^= bitLength;
-        }
-        int mac = t ^ keystream[bitLength / 32];
+        t ^= getWord(keystream, bitLength);
+        int mac = t ^ keystream[bitLength / 32 + 2];
         return String.format("%08x", mac);
     }
 
@@ -371,10 +367,33 @@ public final class ZUC {
         return output;
     }
 
-    private static boolean getBit(int[] keystream, int bitPosition) {
+    private static byte[] eeaEiaIv(int count, int bearer, int direction) {
+        byte[] iv = new byte[IV_LENGTH];
+        iv[0] = (byte) (count >>> 24);
+        iv[1] = (byte) (count >>> 16);
+        iv[2] = (byte) (count >>> 8);
+        iv[3] = (byte) count;
+        iv[4] = (byte) ((((bearer & 0x1f) << 3) | ((direction & 0x1) << 2)) & 0xff);
+        // 3GPP EEA3/EIA3 IV: COUNT || BEARER||DIRECTION||0^26 重复两次。
+        iv[8] = iv[0];
+        iv[9] = iv[1];
+        iv[10] = iv[2];
+        iv[11] = iv[3];
+        iv[12] = iv[4];
+        return iv;
+    }
+
+    private static int getMessageBit(byte[] message, int bitPosition) {
+        return (message[bitPosition / 8] >>> (7 - (bitPosition % 8))) & 1;
+    }
+
+    private static int getWord(int[] keystream, int bitPosition) {
         int wordIndex = bitPosition / 32;
-        int bitIndex = 31 - (bitPosition % 32);
-        return ((keystream[wordIndex] >>> bitIndex) & 1) == 1;
+        int bitOffset = bitPosition % 32;
+        if (bitOffset == 0) {
+            return keystream[wordIndex];
+        }
+        return (keystream[wordIndex] << bitOffset) | (keystream[wordIndex + 1] >>> (32 - bitOffset));
     }
 
     private static final class State {

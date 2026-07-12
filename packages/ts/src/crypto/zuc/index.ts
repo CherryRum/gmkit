@@ -164,14 +164,7 @@ export function eea3(
   direction: number,
   length: number
 ): string {
-  // 按照 EEA3 规范构造 IV，使用单次缓冲区分配
-  const iv = new Uint8Array(16);
-  iv[0] = (count >>> 24) & 0xFF;
-  iv[1] = (count >>> 16) & 0xFF;
-  iv[2] = (count >>> 8) & 0xFF;
-  iv[3] = count & 0xFF;
-  iv[4] = ((bearer << 3) | (direction << 2)) & 0xFF;
-  // iv[5-15] 默认即为 0
+  const iv = makeEeaEiaIv(count, bearer, direction);
 
   // 生成密钥流
   const numWords = Math.ceil(length / 32);
@@ -192,77 +185,69 @@ export function eia3(
   count: number,
   bearer: number,
   direction: number,
-  message: string | Uint8Array
+  message: string | Uint8Array,
+  bitLength?: number
 ): string {
   const messageBytes = typeof message === 'string' ? stringToBytes(message) : message;
-  const bitLength = messageBytes.length * 8;
+  const messageBitLength = bitLength ?? messageBytes.length * 8;
+  if (!Number.isInteger(messageBitLength) || messageBitLength < 0 || messageBitLength > messageBytes.length * 8) {
+    throw new Error('Invalid EIA3 bit length');
+  }
 
-  // 按照 EIA3 规范构造 IV，使用单次缓冲区分配
-  const iv = new Uint8Array(16);
-  const countAndBearer = [
-    (count >>> 24) & 0xFF,
-    (count >>> 16) & 0xFF,
-    (count >>> 8) & 0xFF,
-    count & 0xFF,
-    (((bearer & 0x1F) << 3) | ((direction & 0x1) << 2)) & 0xFF
-  ];
-
-  iv[0] = countAndBearer[0];
-  iv[1] = countAndBearer[1];
-  iv[2] = countAndBearer[2];
-  iv[3] = countAndBearer[3];
-  iv[4] = countAndBearer[4];
-  // iv[5-7] 默认即为 0
-  iv[8] = countAndBearer[0];
-  iv[9] = countAndBearer[1];
-  iv[10] = countAndBearer[2];
-  iv[11] = countAndBearer[3];
-  iv[12] = countAndBearer[4];
-  // iv[13-15] 默认即为 0
+  const iv = makeEeaEiaIv(count, bearer, direction);
 
   // 生成密钥流
-  const numWords = Math.ceil((bitLength + 64) / 32);
+  const numWords = Math.ceil((messageBitLength + 96) / 32);
   const keystream = generateKeystream(key, iv, numWords);
 
-  // 计算 MAC，采用更高效的异或运算方式
-  let t = 0;
-  const l = bitLength;
-
-  // 遍历消息字节
-  for (let i = 0; i < messageBytes.length; i++) {
-    const wordIndex = Math.floor((i * 8) / 32);
-    const shift = 24 - ((i * 8) % 32);
-    const keyByte = (keystream[wordIndex] >>> shift) & 0xFF;
-    t ^= messageBytes[i] ^ keyByte;
+  let t = 0 >>> 0;
+  for (let i = 0; i < messageBitLength; i++) {
+    if (getMessageBit(messageBytes, i) === 1) {
+      t = (t ^ getWord(keystream, i)) >>> 0;
+    }
   }
 
-  // 处理长度比特
-  const bitSet = getBitFromKeystream(keystream, bitLength);
-  if (bitSet) {
-    t ^= l >>> 0;
-  }
-
-  // 最终与密钥流进行一次异或
-  const finalZ = keystream[Math.floor(bitLength / 32)];
-  const mac = (t ^ finalZ) >>> 0;
+  t = (t ^ getWord(keystream, messageBitLength)) >>> 0;
+  const mac = (t ^ keystream[Math.floor(messageBitLength / 32) + 2]) >>> 0;
 
   // 以 8 个十六进制字符（32 位）返回结果
   return (mac >>> 0).toString(16).padStart(8, '0');
 }
 
-/**
- * 从密钥流中获取指定位置的比特
- * 
- * 用于 EIA3 完整性算法中的比特级操作。
- * 
- * @param keystream - 密钥流（32 位字数组）
- * @param bitPosition - 比特位置（0 索引）
- * @returns 指定位置的比特值（true 或 false）
- */
-function getBitFromKeystream(keystream: Uint32Array, bitPosition: number): boolean {
+function makeEeaEiaIv(count: number, bearer: number, direction: number): Uint8Array {
+  if (!Number.isInteger(bearer) || bearer < 0 || bearer > 0x1f) {
+    throw new Error('Invalid bearer: must be a 5-bit integer');
+  }
+  if (direction !== 0 && direction !== 1) {
+    throw new Error('Invalid direction: must be 0 or 1');
+  }
+
+  // 3GPP EEA3/EIA3 IV: COUNT || BEARER||DIRECTION||0^26 重复两次。
+  const iv = new Uint8Array(16);
+  iv[0] = (count >>> 24) & 0xFF;
+  iv[1] = (count >>> 16) & 0xFF;
+  iv[2] = (count >>> 8) & 0xFF;
+  iv[3] = count & 0xFF;
+  iv[4] = (((bearer & 0x1F) << 3) | ((direction & 0x1) << 2)) & 0xFF;
+  iv[8] = iv[0];
+  iv[9] = iv[1];
+  iv[10] = iv[2];
+  iv[11] = iv[3];
+  iv[12] = iv[4];
+  return iv;
+}
+
+function getMessageBit(message: Uint8Array, bitPosition: number): number {
+  return (message[Math.floor(bitPosition / 8)] >>> (7 - (bitPosition % 8))) & 1;
+}
+
+function getWord(keystream: Uint32Array, bitPosition: number): number {
   const wordIndex = Math.floor(bitPosition / 32);
-  const bitIndex = 31 - (bitPosition % 32);
-  return ((keystream[wordIndex] >>> bitIndex) & 1) === 1;
+  const bitOffset = bitPosition % 32;
+  if (bitOffset === 0) {
+    return keystream[wordIndex] >>> 0;
+  }
+  return ((keystream[wordIndex] << bitOffset) | (keystream[wordIndex + 1] >>> (32 - bitOffset))) >>> 0;
 }
 
 // 导出底层组件以供高级场景使用
