@@ -320,7 +320,10 @@ export function encodeSignature(r: string | Uint8Array, s: string | Uint8Array):
  * @throws 如果签名格式无效则抛出异常
  */
 export function decodeSignature(signature: Uint8Array): { r: string; s: string } {
-  const { elements } = decodeSequence(signature);
+  const { elements, bytesRead } = decodeSequence(signature);
+  if (bytesRead !== signature.length) {
+    throw new Error('Invalid signature: trailing data after DER sequence');
+  }
 
   if (elements.length !== 2) {
     throw new Error('Invalid signature: expected 2 elements (r, s)');

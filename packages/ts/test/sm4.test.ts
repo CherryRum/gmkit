@@ -1,9 +1,58 @@
 import { describe, it, expect } from 'vitest';
-import { encrypt, decrypt } from '../src/crypto/sm4';
+import { encrypt, decrypt, decryptBytes } from '../src/crypto/sm4';
+import { hexToBytes } from '../src/core/utils';
 import { CipherMode, PaddingMode } from '../src/types/constants';
 
 describe('SM4 分组密码测试', () => {
   const key = '0123456789abcdeffedcba9876543210'; // 128-bit key
+
+  describe('Bouncy Castle 差分向量', () => {
+    const iv = '000102030405060708090a0b0c0d0e0f';
+    const plaintext = hexToBytes('00112233445566778899aabbccddeeff102030405060708090a0b0c0d0e0f000');
+
+    it.each([
+      [CipherMode.CTR, '0689be5279f30edaa2145d392d7517957f273d0b10c38c814a31a32551e05d1a'],
+      [CipherMode.CFB, '0689be5279f30edaa2145d392d751795f2bea09ebfa5646f1fd54174c3e52b5d'],
+      [CipherMode.OFB, '0689be5279f30edaa2145d392d751795e3cf720ce7e32afdf1ff5c540dc31820'],
+    ])('%s 模式应匹配 Bouncy Castle 输出', (mode, expected) => {
+      const result = encrypt(key, plaintext, { mode, iv, padding: PaddingMode.NONE });
+      expect(result.ciphertext).toBe(expected);
+      expect(decryptBytes(key, result, { mode, iv, padding: PaddingMode.NONE })).toEqual(plaintext);
+    });
+
+    it('GCM 应匹配 Bouncy Castle 的密文和标签', () => {
+      const result = encrypt(key, plaintext, {
+        mode: CipherMode.GCM,
+        iv: '000102030405060708090a0b',
+        aad: hexToBytes('a1a2a3a4a5'),
+      });
+      expect(result).toEqual({
+        ciphertext: '55303aa2f5e4cf68ec192910178188aa98d919ed1031ce3fd61419ef400de37b',
+        tag: 'e1fc34aeb1fc2cc1fd4dff35500763eb',
+        format: 'hex',
+      });
+    });
+
+    it('CCM 应匹配 Bouncy Castle 的密文和标签', () => {
+      const result = encrypt(key, plaintext, {
+        mode: CipherMode.CCM,
+        iv: '00112233445566778899aabb',
+        aad: hexToBytes('a1a2a3a4a5'),
+        tagLength: 12,
+      });
+      expect(result).toEqual({
+        ciphertext: '257356b9c53ddf366101dda6c6fc781ba563684a023b6320b950188eb6e0c0bd',
+        tag: '5b90d0072b9352c59d7b1623',
+        format: 'hex',
+      });
+    });
+
+    it('任意二进制明文应无损解密', () => {
+      const binary = hexToBytes('00ff800041c328');
+      const result = encrypt(key, binary, { mode: CipherMode.CTR, iv });
+      expect(decryptBytes(key, result, { mode: CipherMode.CTR, iv })).toEqual(binary);
+    });
+  });
 
   describe('ECB 模式', () => {
     it('应该能够使用 ECB 模式加密和解密', () => {

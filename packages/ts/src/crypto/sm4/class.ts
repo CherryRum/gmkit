@@ -1,6 +1,7 @@
 import {
   encrypt as encryptFunc,
   decrypt as decryptFunc,
+  decryptBytes as decryptBytesFunc,
   type SM4Options as FuncSM4Options,
   type SM4DecryptOptions as FuncSM4DecryptOptions,
   type SM4CipherResult,
@@ -134,6 +135,17 @@ export class SM4 {
       ...options,
     };
     return decryptFunc(this.key, encryptedData, mergedOptions);
+  }
+
+  /** 解密任意二进制明文，不经过 UTF-8 解码。 */
+  decryptBytes(encryptedData: BytesLike | SM4CipherResult, options?: Partial<FuncSM4DecryptOptions>): Uint8Array {
+    const mergedOptions: FuncSM4DecryptOptions = {
+      mode: this.mode,
+      padding: this.padding,
+      iv: this.iv,
+      ...options,
+    };
+    return decryptBytesFunc(this.key, encryptedData, mergedOptions);
   }
 
   /**

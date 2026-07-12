@@ -170,6 +170,74 @@ function cf(v: number[], b: Uint8Array): number[] {
 }
 
 /**
+ * SM3 增量状态机。每次更新立即压缩完整的 64 字节分组，只保留最后一个不足分组，
+ * 因而内存占用与总输入长度无关。
+ */
+export class SM3HashState {
+  private state = [...IV];
+  private buffer = new Uint8Array(64);
+  private buffered = 0;
+  private byteLength = 0n;
+  private finished = false;
+
+  update(data: string | Uint8Array): this {
+    if (this.finished) throw new Error('SM3 hash state is finalized; call reset() before update()');
+    const input = normalizeInput(data);
+    this.byteLength += BigInt(input.length);
+    let offset = 0;
+
+    if (this.buffered > 0) {
+      const take = Math.min(64 - this.buffered, input.length);
+      this.buffer.set(input.subarray(0, take), this.buffered);
+      this.buffered += take;
+      offset += take;
+      if (this.buffered === 64) {
+        this.state = cf(this.state, this.buffer);
+        this.buffered = 0;
+      }
+    }
+    while (offset + 64 <= input.length) {
+      this.state = cf(this.state, input.subarray(offset, offset + 64));
+      offset += 64;
+    }
+    if (offset < input.length) {
+      this.buffered = input.length - offset;
+      this.buffer.set(input.subarray(offset), 0);
+    }
+    return this;
+  }
+
+  digestBytes(): Uint8Array {
+    if (this.finished) throw new Error('SM3 hash state is already finalized');
+    this.finished = true;
+    const finalLength = this.buffered < 56 ? 64 : 128;
+    const finalBlocks = new Uint8Array(finalLength);
+    finalBlocks.set(this.buffer.subarray(0, this.buffered));
+    finalBlocks[this.buffered] = 0x80;
+    const bitLength = this.byteLength * 8n;
+    for (let i = 0; i < 8; i++) {
+      finalBlocks[finalLength - 1 - i] = Number((bitLength >> BigInt(i * 8)) & 0xffn);
+    }
+    for (let offset = 0; offset < finalBlocks.length; offset += 64) {
+      this.state = cf(this.state, finalBlocks.subarray(offset, offset + 64));
+    }
+    const output = new Uint8Array(32);
+    const view = new DataView(output.buffer);
+    for (let i = 0; i < 8; i++) view.setUint32(i * 4, this.state[i], false);
+    return output;
+  }
+
+  reset(): this {
+    this.state = [...IV];
+    this.buffer.fill(0);
+    this.buffered = 0;
+    this.byteLength = 0n;
+    this.finished = false;
+    return this;
+  }
+}
+
+/**
  * SM3 哈希选项
  */
 export interface SM3Options {

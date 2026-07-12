@@ -88,6 +88,7 @@ export const sm2CompressPublicKey = sm2Functions.compressPublicKey;
 export const sm2DecompressPublicKey = sm2Functions.decompressPublicKey;
 export const sm2Encrypt = sm2Functions.encrypt;
 export const sm2Decrypt = sm2Functions.decrypt;
+export const sm2DecryptBytes = sm2Functions.decryptBytes;
 export const sm2Sign = sm2Functions.sign;
 export const sm2Verify = sm2Functions.verify;
 export const sm2KeyExchange = sm2Functions.keyExchange;
@@ -97,6 +98,7 @@ export const sm3Hmac = sm3Functions.hmac;
 
 export const sm4Encrypt = sm4Functions.encrypt;
 export const sm4Decrypt = sm4Functions.decrypt;
+export const sm4DecryptBytes = sm4Functions.decryptBytes;
 
 export const zucEncrypt = zucFunctions.encrypt;
 export const zucDecrypt = zucFunctions.decrypt;
@@ -272,6 +274,7 @@ export default {
   sm2DecompressPublicKey,
   sm2Encrypt,
   sm2Decrypt,
+  sm2DecryptBytes,
   sm2Sign,
   sm2Verify,
   sm2KeyExchange,
@@ -279,6 +282,7 @@ export default {
   sm3Hmac,
   sm4Encrypt,
   sm4Decrypt,
+  sm4DecryptBytes,
   zucEncrypt,
   zucDecrypt,
   zucDecryptBytes,

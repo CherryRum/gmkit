@@ -12,6 +12,11 @@ import { SHA256, SHA384, SHA512, SHA1 } from '../src/crypto/sha/class';
 import { OutputFormat } from '../src/types/constants';
 
 describe('SHA 哈希算法', () => {
+  it('应该拒绝未知输出格式', () => {
+    expect(() => sha256('abc', { outputFormat: 'utf8' as any })).toThrow('Invalid output format');
+    expect(() => new SHA256('utf8' as any)).toThrow('Invalid output format');
+  });
+
   describe('SHA-256', () => {
     it('应该正确计算 SHA-256 哈希（hex 格式）', () => {
       const hash = sha256('Hello, World!');

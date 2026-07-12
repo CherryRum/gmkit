@@ -6,6 +6,7 @@ import {
   decompressPublicKey,
   encrypt,
   decrypt,
+  decryptBytes,
   sign,
   verify,
   keyExchange,
@@ -46,6 +47,51 @@ describe('SM2 国密算法测试', () => {
       const keyPair1 = generateKeyPair();
       const keyPair2 = generateKeyPair();
       expect(keyPair1.privateKey).not.toBe(keyPair2.privateKey);
+    });
+  });
+
+  describe('安全边界', () => {
+    it('二进制明文应通过 decryptBytes 无损往返', () => {
+      const keyPair = generateKeyPair();
+      const plaintext = new Uint8Array([0x00, 0xff, 0x80, 0x41, 0xc3, 0x28]);
+      const ciphertext = encrypt(keyPair.publicKey, plaintext);
+
+      expect(decryptBytes(keyPair.privateKey, ciphertext)).toEqual(plaintext);
+    });
+
+    it('超出 ENTL 16 位范围的 userId 应被拒绝', () => {
+      const keyPair = generateKeyPair();
+      expect(() => sign(keyPair.privateKey, 'message', { userId: 'a'.repeat(8192) })).toThrow(
+        'shorter than 8192 bytes'
+      );
+    });
+
+    it('不支持的自定义曲线参数不得被静默忽略', () => {
+      const keyPair = generateKeyPair();
+      expect(() => sign(keyPair.privateKey, 'message', { curveParams: { a: '01' } })).toThrow(
+        'Custom SM2 curve parameters are not supported'
+      );
+    });
+
+    it('密钥交换应校验密钥长度和公私钥一致性', () => {
+      const self = generateKeyPair();
+      const peer = generateKeyPair();
+      const peerTemp = generateKeyPair();
+      expect(() => keyExchange({
+        privateKey: self.privateKey,
+        publicKey: peer.publicKey,
+        peerPublicKey: peer.publicKey,
+        peerTempPublicKey: peerTemp.publicKey,
+        isInitiator: true,
+      })).toThrow('does not match');
+      expect(() => keyExchange({
+        privateKey: self.privateKey,
+        publicKey: self.publicKey,
+        peerPublicKey: peer.publicKey,
+        peerTempPublicKey: peerTemp.publicKey,
+        isInitiator: true,
+        keyLength: 0,
+      })).toThrow('positive safe integer');
     });
   });
 

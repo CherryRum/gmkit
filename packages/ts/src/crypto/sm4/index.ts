@@ -1018,6 +1018,15 @@ export function decrypt(
   encryptedData: BytesLike | SM4CipherResult,
   options?: SM4DecryptOptions
 ): string {
+  return bytesToString(decryptBytes(key, encryptedData, options));
+}
+
+/** 解密为原始字节；使用文本入口会对结果执行 UTF-8 解码。 */
+export function decryptBytes(
+  key: BytesLike,
+  encryptedData: BytesLike | SM4CipherResult,
+  options?: SM4DecryptOptions
+): Uint8Array {
   const mode = normalizeCipherMode(options?.mode);
   const padding = normalizePaddingMode(options?.padding);
   const inputFormat = normalizeInputFormat(options?.inputFormat, 'input format');
@@ -1301,5 +1310,5 @@ export function decrypt(
     // 当 padding 设为 'none' 时无需去除填充
   }
 
-  return bytesToString(unpadded);
+  return unpadded;
 }

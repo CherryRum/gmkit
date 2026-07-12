@@ -5,8 +5,10 @@
 import {
   generateKeyPair as generateKeyPairFunc,
   getPublicKeyFromPrivateKey as getPublicKeyFromPrivateKeyFunc,
+  decompressPublicKey as decompressPublicKeyFunc,
   encrypt as encryptFunc,
   decrypt as decryptFunc,
+  decryptBytes as decryptBytesFunc,
   sign as signFunc,
   verify as verifyFunc,
   keyExchange as keyExchangeFunc,
@@ -54,6 +56,12 @@ export class SM2 {
    * @param curveParams - 可选的自定义椭圆曲线参数
    */
   constructor(keyPair?: Partial<KeyPair>, curveParams?: SM2CurveParams) {
+    if (keyPair?.privateKey && keyPair.publicKey) {
+      const expectedPublicKey = getPublicKeyFromPrivateKeyFunc(keyPair.privateKey);
+      if (!sm2PublicKeysEqual(expectedPublicKey, keyPair.publicKey)) {
+        throw new Error('SM2 公钥与私钥不匹配');
+      }
+    }
     this.publicKey = keyPair?.publicKey;
     this.privateKey = keyPair?.privateKey;
     this.curveParams = curveParams;
@@ -134,6 +142,12 @@ export class SM2 {
   decrypt(encryptedData: BytesLike, options?: SM2DecryptOptions): string {
     const privateKey = this.getPrivateKey();
     return decryptFunc(privateKey, encryptedData, options);
+  }
+
+  /** 解密任意二进制明文，不经过 UTF-8 解码。 */
+  decryptBytes(encryptedData: BytesLike, options?: SM2DecryptOptions): Uint8Array {
+    const privateKey = this.getPrivateKey();
+    return decryptBytesFunc(privateKey, encryptedData, options);
   }
 
   /**
@@ -226,4 +240,8 @@ export class SM2 {
       keyLength: options?.keyLength,
     });
   }
+}
+
+function sm2PublicKeysEqual(left: string, right: string): boolean {
+  return decompressPublicKeyFunc(left) === decompressPublicKeyFunc(right);
 }

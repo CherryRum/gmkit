@@ -57,6 +57,12 @@ describe('SM3 哈希算法测试', () => {
       expect(result).toMatch(/^[0-9a-f]{64}$/);
     });
 
+    it('应该匹配 Java Bouncy Castle HMAC-SM3 固定向量', () => {
+      expect(hmac('secret-key', 'hmac-payload')).toBe(
+        'b57fb50bbc8ad6f9b11129cf1ec67cf0c658f0d4b597ae3f05a64eaa4a22d312'
+      );
+    });
+
     it('应该能够接受 Uint8Array 密钥和数据', () => {
       const key = new Uint8Array([0x6b, 0x65, 0x79]); // "key"
       const data = new Uint8Array([0x64, 0x61, 0x74, 0x61]); // "data"
@@ -88,6 +94,20 @@ describe('SM3 哈希算法测试', () => {
   });
 
   describe('SM3 类', () => {
+    it('跨越多个分组的增量结果应与一次性摘要一致', () => {
+      const chunks = ['a'.repeat(31), 'b'.repeat(80), 'c'.repeat(7), 'd'.repeat(130)];
+      const state = new SM3();
+      chunks.forEach((chunk) => state.update(chunk));
+
+      expect(state.digest()).toBe(digest(chunks.join('')));
+      state.update('abc');
+      expect(state.digest()).toBe(digest('abc'));
+    });
+
+    it('无效输出格式应被拒绝', () => {
+      expect(() => new SM3('utf8' as any)).toThrow('Invalid output format');
+      expect(() => new SM3().setOutputFormat('utf8' as any)).toThrow('Invalid output format');
+    });
     it('应该支持设置输出格式', () => {
       const sm3 = new SM3(OutputFormat.BASE64);
       sm3.update('abc');

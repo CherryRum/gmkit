@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { decodeInteger, encodeInteger } from '../src/core/asn1';
+import { decodeInteger, decodeSignature, encodeInteger, encodeSignature } from '../src/core/asn1';
 
 describe('audit-C #1: ASN.1 INTEGER canonical DER', () => {
+  it('rejects trailing bytes after a signature sequence', () => {
+    const valid = encodeSignature(new Uint8Array([1]), new Uint8Array([2]));
+    const trailing = new Uint8Array(valid.length + 1);
+    trailing.set(valid);
+    expect(() => decodeSignature(trailing)).toThrow('trailing data');
+  });
   it('accepts canonical encoding of zero (02 01 00)', () => {
     const { value } = decodeInteger(new Uint8Array([0x02, 0x01, 0x00]));
     expect(value.length).toBe(1);

@@ -20,6 +20,7 @@ abstract class SHABase {
   protected outputFormat: OutputFormatType;
 
   protected constructor(hasher: any, outputFormat: OutputFormatType = OutputFormat.HEX) {
+    assertOutputFormat(outputFormat);
     this.hasher = hasher.create();
     this.outputFormat = outputFormat;
   }
@@ -59,6 +60,7 @@ abstract class SHABase {
    * @param format - 输出格式
    */
   setOutputFormat(format: OutputFormatType): void {
+    assertOutputFormat(format);
     this.outputFormat = format;
   }
 
@@ -75,6 +77,12 @@ abstract class SHABase {
    * 用于 reset() 方法中创建新的哈希器实例
    */
   protected abstract getHasherConstructor(): any;
+}
+
+function assertOutputFormat(format: OutputFormatType): void {
+  if (format !== OutputFormat.HEX && format !== OutputFormat.BASE64) {
+    throw new Error('Invalid output format: must be hex or base64');
+  }
 }
 
 /**

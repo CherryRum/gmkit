@@ -1,4 +1,5 @@
-import { digest as digestFunc, hmac as hmacFunc, type SM3Options } from './index';
+import { digest as digestFunc, hmac as hmacFunc, SM3HashState, type SM3Options } from './index';
+import { bytesToBase64, bytesToHex } from '../../core/utils';
 import { OutputFormat, type OutputFormatType } from '../../types/constants';
 
 /**
@@ -23,8 +24,8 @@ import { OutputFormat, type OutputFormatType } from '../../types/constants';
  * ```
  */
 export class SM3 {
-  /** 缓存的数据块（用于增量哈希） */
-  private data: Uint8Array[] = [];
+  /** 完整分组会立即压缩，内部最多缓存 63 字节尾块。 */
+  private state = new SM3HashState();
   /** 输出格式（hex 或 base64） */
   private outputFormat: OutputFormatType = OutputFormat.HEX;
 
@@ -34,7 +35,7 @@ export class SM3 {
    */
   constructor(outputFormat?: OutputFormatType) {
     if (outputFormat) {
-      this.outputFormat = outputFormat;
+      this.setOutputFormat(outputFormat);
     }
   }
 
@@ -65,8 +66,7 @@ export class SM3 {
    * @returns 当前实例（便于链式调用）
    */
   update(data: string | Uint8Array): this {
-    const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
-    this.data.push(bytes);
+    this.state.update(data);
     return this;
   }
 
@@ -77,20 +77,11 @@ export class SM3 {
    * @returns 哈希摘要
    */
   digest(options?: SM3Options): string {
-    // 拼接所有数据块
-    const totalLength = this.data.reduce((sum, chunk) => sum + chunk.length, 0);
-    const combined = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const chunk of this.data) {
-      combined.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    // 计算哈希后清空数据
-    this.data = [];
-
     const outputFormat = options?.outputFormat || this.outputFormat;
-    return digestFunc(combined, { outputFormat });
+    assertOutputFormat(outputFormat);
+    const hash = this.state.digestBytes();
+    this.state.reset();
+    return outputFormat === OutputFormat.BASE64 ? bytesToBase64(hash) : bytesToHex(hash);
   }
 
   /**
@@ -98,7 +89,7 @@ export class SM3 {
    * @returns 当前实例（便于链式调用）
    */
   reset(): this {
-    this.data = [];
+    this.state.reset();
     return this;
   }
 
@@ -107,6 +98,7 @@ export class SM3 {
    * @param format - 输出格式
    */
   setOutputFormat(format: OutputFormatType): void {
+    assertOutputFormat(format);
     this.outputFormat = format;
   }
 
@@ -115,5 +107,11 @@ export class SM3 {
    */
   getOutputFormat(): OutputFormatType {
     return this.outputFormat;
+  }
+}
+
+function assertOutputFormat(format: OutputFormatType): void {
+  if (format !== OutputFormat.HEX && format !== OutputFormat.BASE64) {
+    throw new Error('Invalid output format: must be hex or base64');
   }
 }

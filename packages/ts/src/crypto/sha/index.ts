@@ -40,6 +40,9 @@ export interface SHAOptions {
  * @returns 格式化后的字符串
  */
 function formatOutput(bytes: Uint8Array, format: OutputFormatType = OutputFormat.HEX): string {
+  if (format !== OutputFormat.HEX && format !== OutputFormat.BASE64) {
+    throw new Error('Invalid output format: must be hex or base64');
+  }
   return format === OutputFormat.BASE64 ? bytesToBase64(bytes) : bytesToHex(bytes);
 }
 

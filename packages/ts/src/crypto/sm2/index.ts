@@ -283,7 +283,7 @@ function prepareDecrypt(privateKey: string, c1Point: any, c2Length: number) {
 function tryVerifyAndDecrypt(
   x2: Uint8Array, y2: Uint8Array, t: Uint8Array,
   c2: Uint8Array, c3: Uint8Array
-): string | null {
+): Uint8Array | null {
   // 计算 M' = C2 ^ t
   const plainBytes = new Uint8Array(c2.length);
   for (let i = 0; i < c2.length; i++) {
@@ -298,7 +298,7 @@ function tryVerifyAndDecrypt(
   const c3VerifyHex = sm3Digest(c3VerifyInput);
   const c3Verify = hexToBytes(c3VerifyHex);
   if (constantTimeEqual(c3, c3Verify)) {
-    return bytesToString(plainBytes);
+    return plainBytes;
   }
   return null;
 }
@@ -329,6 +329,29 @@ export function decrypt(
   encryptedData: BytesLike,
   options?: SM2DecryptOptions
 ): string {
+  return bytesToString(decryptBytes(privateKey, encryptedData, options));
+}
+
+/**
+ * 当前底层曲线对象固定为标准 SM2 曲线。为保留旧类型兼容，只允许调用方重复声明
+ * 标准参数；传入其他曲线时明确拒绝，避免产生“配置已生效”的错误安全假设。
+ */
+function requireStandardCurveParams(curveParams?: SM2CurveParams): void {
+  if (!curveParams) return;
+  for (const key of ['p', 'a', 'b', 'Gx', 'Gy', 'n'] as const) {
+    const value = curveParams[key];
+    if (value !== undefined && value.toLowerCase().replace(/^0x/, '') !== SM2_CURVE_PARAMS[key].toLowerCase()) {
+      throw new Error('Custom SM2 curve parameters are not supported');
+    }
+  }
+}
+
+/** 解密为原始字节；二进制协议不应经过 UTF-8 字符串转换。 */
+export function decryptBytes(
+  privateKey: BytesLike,
+  encryptedData: BytesLike,
+  options?: SM2DecryptOptions
+): Uint8Array {
   const cleanPrivateKey = normalizePrivateKeyInput(privateKey);
   const requestedMode = options?.mode === undefined ? undefined : normalizeSM2CipherMode(options.mode);
   const cipherBytes = encryptedData instanceof Uint8Array
@@ -397,91 +420,26 @@ export function decrypt(
  * @param cipherBytes - ASN.1 编码的密文
  * @returns 解密后的数据（UTF-8 字符串）
  */
-function decryptAsn1(privateKey: string, cipherBytes: Uint8Array): string {
-  // 解析 ASN.1 SEQUENCE
-  if (cipherBytes[0] !== 0x30) {
-    throw new Error('Invalid ASN.1 ciphertext: expected SEQUENCE tag');
-  }
+function decryptAsn1(privateKey: string, cipherBytes: Uint8Array): Uint8Array {
+  const sequence = readDerElement(cipherBytes, 0, 0x30, 'SEQUENCE');
+  if (sequence.end !== cipherBytes.length) throw new Error('Invalid ASN.1 ciphertext: trailing data');
 
-  // 跳过 SEQUENCE 标签和长度
-  let offset = 1;
-  let length = cipherBytes[offset];
-  if (length & 0x80) {
-    const numBytes = length & 0x7f;
-    length = 0;
-    for (let i = 0; i < numBytes; i++) {
-      offset++;
-      length = (length << 8) | cipherBytes[offset];
-    }
+  let offset = sequence.contentStart;
+  const xElement = readDerElement(cipherBytes, offset, 0x02, 'INTEGER tag for x');
+  const xClean = readPositiveDerInteger(cipherBytes, xElement, 'x');
+  offset = xElement.end;
+  const yElement = readDerElement(cipherBytes, offset, 0x02, 'INTEGER tag for y');
+  const yClean = readPositiveDerInteger(cipherBytes, yElement, 'y');
+  offset = yElement.end;
+  const hashElement = readDerElement(cipherBytes, offset, 0x04, 'OCTET STRING tag for hash');
+  const c3 = cipherBytes.slice(hashElement.contentStart, hashElement.end);
+  if (c3.length !== 32) throw new Error('Invalid ASN.1 ciphertext: C3 must be 32 bytes');
+  offset = hashElement.end;
+  const cipherElement = readDerElement(cipherBytes, offset, 0x04, 'OCTET STRING tag for cipher');
+  const c2 = cipherBytes.slice(cipherElement.contentStart, cipherElement.end);
+  if (cipherElement.end !== sequence.end) {
+    throw new Error('Invalid ASN.1 ciphertext: unexpected element or trailing data');
   }
-  offset++;
-
-  // 读取 x 坐标（INTEGER）
-  if (cipherBytes[offset] !== 0x02) {
-    throw new Error('Invalid ASN.1 ciphertext: expected INTEGER tag for x');
-  }
-  offset++;
-  let xLen = cipherBytes[offset++];
-  if (xLen & 0x80) {
-    const numBytes = xLen & 0x7f;
-    xLen = 0;
-    for (let i = 0; i < numBytes; i++) {
-      xLen = (xLen << 8) | cipherBytes[offset++];
-    }
-  }
-  const x = cipherBytes.slice(offset, offset + xLen);
-  offset += xLen;
-
-  // 读取 y 坐标（INTEGER）
-  if (cipherBytes[offset] !== 0x02) {
-    throw new Error('Invalid ASN.1 ciphertext: expected INTEGER tag for y');
-  }
-  offset++;
-  let yLen = cipherBytes[offset++];
-  if (yLen & 0x80) {
-    const numBytes = yLen & 0x7f;
-    yLen = 0;
-    for (let i = 0; i < numBytes; i++) {
-      yLen = (yLen << 8) | cipherBytes[offset++];
-    }
-  }
-  const y = cipherBytes.slice(offset, offset + yLen);
-  offset += yLen;
-
-  // 读取 hash/C3（OCTET STRING）
-  if (cipherBytes[offset] !== 0x04) {
-    throw new Error('Invalid ASN.1 ciphertext: expected OCTET STRING tag for hash');
-  }
-  offset++;
-  let hashLen = cipherBytes[offset++];
-  if (hashLen & 0x80) {
-    const numBytes = hashLen & 0x7f;
-    hashLen = 0;
-    for (let i = 0; i < numBytes; i++) {
-      hashLen = (hashLen << 8) | cipherBytes[offset++];
-    }
-  }
-  const c3 = cipherBytes.slice(offset, offset + hashLen);
-  offset += hashLen;
-
-  // 读取 cipher/C2（OCTET STRING）
-  if (cipherBytes[offset] !== 0x04) {
-    throw new Error('Invalid ASN.1 ciphertext: expected OCTET STRING tag for cipher');
-  }
-  offset++;
-  let cipherLen = cipherBytes[offset++];
-  if (cipherLen & 0x80) {
-    const numBytes = cipherLen & 0x7f;
-    cipherLen = 0;
-    for (let i = 0; i < numBytes; i++) {
-      cipherLen = (cipherLen << 8) | cipherBytes[offset++];
-    }
-  }
-  const c2 = cipherBytes.slice(offset, offset + cipherLen);
-
-  // 移除 x, y 的前导零（ASN.1 INTEGER 编码可能有前导零）
-  const xClean = x[0] === 0 ? x.slice(1) : x;
-  const yClean = y[0] === 0 ? y.slice(1) : y;
 
   // 构造 C1 点（非压缩格式）
   const c1Bytes = new Uint8Array(65);
@@ -501,6 +459,51 @@ function decryptAsn1(privateKey: string, cipherBytes: Uint8Array): string {
   return decryptCore(privateKey, c1Point, c2, c3);
 }
 
+interface DerElement {
+  contentStart: number;
+  end: number;
+}
+
+/** 只接受 DER 最小长度编码，避免 BER 宽松解析产生歧义。 */
+function readDerElement(data: Uint8Array, offset: number, expectedTag: number, label: string): DerElement {
+  if (offset >= data.length || data[offset] !== expectedTag) {
+    throw new Error(`Invalid ASN.1 ciphertext: expected ${label}`);
+  }
+  if (offset + 1 >= data.length) throw new Error('Invalid ASN.1 ciphertext: truncated length');
+  const firstLength = data[offset + 1];
+  let length = 0;
+  let lengthBytes = 1;
+  if (firstLength < 0x80) {
+    length = firstLength;
+  } else {
+    const count = firstLength & 0x7f;
+    if (count === 0 || count > 4 || offset + 2 + count > data.length) {
+      throw new Error('Invalid ASN.1 ciphertext: invalid length encoding');
+    }
+    if (data[offset + 2] === 0) throw new Error('Invalid ASN.1 ciphertext: non-minimal length');
+    lengthBytes += count;
+    for (let i = 0; i < count; i++) length = length * 256 + data[offset + 2 + i];
+    if (length < 0x80) throw new Error('Invalid ASN.1 ciphertext: non-minimal length');
+  }
+  const contentStart = offset + 1 + lengthBytes;
+  const end = contentStart + length;
+  if (!Number.isSafeInteger(end) || end > data.length) {
+    throw new Error('Invalid ASN.1 ciphertext: truncated value');
+  }
+  return {contentStart, end};
+}
+
+function readPositiveDerInteger(data: Uint8Array, element: DerElement, label: string): Uint8Array {
+  let value = data.slice(element.contentStart, element.end);
+  if (value.length === 0) throw new Error(`Invalid ASN.1 ciphertext: empty ${label} coordinate`);
+  if ((value[0] & 0x80) !== 0) throw new Error(`Invalid ASN.1 ciphertext: negative ${label} coordinate`);
+  if (value.length > 1 && value[0] === 0) {
+    if ((value[1] & 0x80) === 0) throw new Error(`Invalid ASN.1 ciphertext: non-canonical ${label} coordinate`);
+    value = value.slice(1);
+  }
+  return value;
+}
+
 /**
  * SM2 解密核心逻辑
  *
@@ -515,7 +518,7 @@ function decryptCore(
   c1Point: any,
   c2: Uint8Array,
   c3: Uint8Array
-): string {
+): Uint8Array {
   // 计算 [dB]C1
   const privateKeyBigInt = BigInt('0x' + privateKey);
   const s = c1Point.multiply(privateKeyBigInt);
@@ -551,7 +554,7 @@ function decryptCore(
   }
 
   // 将字节转换为 UTF-8 字符串
-  return bytesToString(plainBytes);
+  return plainBytes;
 }
 
 /**
@@ -560,6 +563,9 @@ function decryptCore(
  */
 function computeZ(userId: string, publicKey: string): Uint8Array {
   const userIdBytes = normalizeInput(userId);
+  if (userIdBytes.length >= 8192) {
+    throw new Error('SM2 userId must be shorter than 8192 bytes (ENTL is 16-bit)');
+  }
   const entl = new Uint8Array(2);
   const bitLength = userIdBytes.length * 8;
   entl[0] = (bitLength >> 8) & 0xff;
@@ -1120,6 +1126,7 @@ export function sign(
   data: string | Uint8Array,
   options?: SignOptions
 ): string {
+  requireStandardCurveParams(options?.curveParams);
   // 自动识别并规范化私钥输入
   const cleanPrivateKey = normalizePrivateKeyInput(privateKey);
   const userId = options?.userId || DEFAULT_USER_ID;
@@ -1182,6 +1189,7 @@ export function verify(
   options?: VerifyOptions
 ): boolean {
   try {
+    requireStandardCurveParams(options?.curveParams);
     // 自动识别并规范化公钥输入
     const cleanPublicKey = normalizePublicKeyInput(publicKey);
     const userId = options?.userId || DEFAULT_USER_ID;
@@ -1398,13 +1406,21 @@ export function keyExchange(params: SM2KeyExchangeParams): SM2KeyExchangeResult 
   const selfPublicKey = params.publicKey
     ? normalizePublicKeyInput(params.publicKey)
     : getPublicKeyFromPrivateKey(selfPrivateKey);
+  if (params.publicKey && !sm2.Point.fromHex(selfPublicKey).equals(
+    sm2.Point.fromHex(getPublicKeyFromPrivateKey(selfPrivateKey))
+  )) {
+    throw new Error('SM2 public key does not match the supplied private key');
+  }
   const selfUserId = params.userId || DEFAULT_USER_ID;
 
   const peerPublicKey = normalizePublicKeyInput(params.peerPublicKey);
   const peerTempPublicKey = normalizePublicKeyInput(params.peerTempPublicKey);
   const peerUserId = params.peerUserId || DEFAULT_USER_ID;
 
-  const keyLength = params.keyLength || 16;
+  const keyLength = params.keyLength ?? 16;
+  if (!Number.isSafeInteger(keyLength) || keyLength <= 0) {
+    throw new Error('SM2 key exchange keyLength must be a positive safe integer');
+  }
   const isInitiator = params.isInitiator;
 
   // 生成或使用提供的临时密钥对
