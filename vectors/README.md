@@ -16,9 +16,16 @@ Java 测试通过 Maven test resources 将根级 `vectors/` 挂载到 classpath�
 ## 向量规则
 
 - `source: "project"` 表示项目回归向量，只用于 GMKit Java/TS 对齐。
-- 标准向量必须写明标准来源，例如 `GM/T 0004-2012`。
+- 标准向量必须写明标准来源，例如 `GM/T 0004-2012`、`3GPP TS 35.221` 或 `3GPP TS 35.222`。
 - SM2 加密和未固定随机数的签名不比较完整字面值，只验证解密或验签性质。
 - 新增字段应向后兼容；字段重命名或删除必须同步更新 Java、TypeScript 测试和 CHANGELOG。
+
+## ZUC 字段约定
+
+- `count` 是传给 API 的无符号 32-bit 整数值，JSON 以十进制数保存，不按宿主机端序解释。
+- `op: "eea3"` 对应为兼容保留的 word-aligned EEA3 密钥流入口。
+- `op: "eea3-encrypt"` 对应 3GPP TS 35.221 标准消息加密。
+- `op: "eia3"` 对应 3GPP TS 35.222 的 32-bit MAC-I；`bitLength` 可表示非整字节消息。
 
 ## 本地校验
 

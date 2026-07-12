@@ -82,14 +82,15 @@ Bouncy Castle 同时存在 `jdk15on` / `jdk15to18` / `jdk18on` 三个产物族�
 
 ## 两套入口的约定
 
-每个算法都同时提供两种入口，按场景挑：
+SM2/SM3/SM4 同时提供实例式与静态工具入口；ZUC 当前是静态入口类，按场景挑：
 
 | 入口风格 | 示例 | 适合 |
 |---|---|---|
-| 实例式 `XxxX` | `new SM3()`, `new ZUC()`, `new SHA256()` | 需要复用上下文、流式 update、注入到框架中 |
+| 实例式 `XxxX` | `new SM3()`, `new SHA256()` | 需要复用上下文、流式 update、注入到框架中 |
 | 静态聚合 `XxxUtil` | `SM3Util.digestHex(...)` | 一次性调用、像工具方法一样使用 |
+| ZUC 静态入口 | `ZUC.encrypt(...)`, `ZUCUtil.encrypt(...)` | ZUC-128、EEA3/EIA3 一次性运算 |
 
-两套入口是**等价**的：`XxxUtil` 内部就是创建并复用 `XxxX` 实例。
+对提供两套入口的算法，两者语义等价；ZUC 不提供公开构造器或增量状态对象。
 推荐在 Spring Bean / 长生命周期对象里持有实例式，在脚本场景里
 用 `XxxUtil`。
 
@@ -97,7 +98,7 @@ Bouncy Castle 同时存在 `jdk15on` / `jdk15to18` / `jdk18on` 三个产物族�
 
 ::: code-tabs#sm2-quick
 
-@tab Java（实例式）
+@tab Java（ZUC 静态入口）
 
 ```java
 import cn.gmkit.sm2.SM2;
@@ -155,10 +156,10 @@ const ok = sm2Verify(publicKey, '重要消息', sig);
 :::
 
 ::: tip userId
-两端的默认 `userId` 都是 `"1234567812345678"`。需要严格对齐
-GM/T 0009-2023（即 `userId = ""`）时，Java 端通过
-`SM2SignOptions.builder().userId("").build()` 显式传入，TS 端通过
-`{ userId: '' }` 显式传入。
+两端的默认 `userId` 都是 `"1234567812345678"`。TypeScript 为保持旧版兼容，
+省略值和空字符串都会回落到这个默认值；Java 是否允许真实空 ID 取决于其
+`SM2SignOptions`。跨语言对接时应优先约定同一个非空 `userId`，并用固定向量验证，
+不要把 TS 的 `{ userId: '' }` 当成真实空 ID。
 :::
 
 ## SM3
@@ -264,16 +265,17 @@ Java 端 `encrypt` 返回 `SM4CipherResult`，里面同时携带 `ciphertext`、
 ```java
 import cn.gmkit.zuc.ZUC;
 
-ZUC zuc = new ZUC();
+// 通用流加密（与 gmkitx zucEncrypt 字节级一致）
+byte[] cipher = ZUC.encrypt(key16, iv16, plaintext);
 
-// 流式加密（与 gmkitx zuc.encrypt 字节级一致）
-byte[] cipher = zuc.process(key16, iv16, plaintext);
+// 兼容入口：返回 word-aligned EEA3 密钥流
+String keystream = ZUC.eea3(ckHex, count, bearer, direction, bitLength);
 
-// EEA3：返回 ceil(bitLength / 32) 个 32-bit 字
-int[] keystream = zuc.eea3(ck, count, bearer, direction, bitLength);
+// 标准 EEA3：直接按 bitLength 加密消息
+byte[] encrypted = ZUC.eea3Encrypt(ckHex, count, bearer, direction, message, bitLength);
 
-// EIA3：返回 32-bit MAC
-int mac = zuc.eia3(ik, count, bearer, direction, message);
+// EIA3：返回 8 个十六进制字符表示的 32-bit MAC
+String mac = ZUC.eia3(ikHex, count, bearer, direction, message);
 ```
 
 @tab Java（静态）
@@ -281,26 +283,28 @@ int mac = zuc.eia3(ik, count, bearer, direction, message);
 ```java
 import cn.gmkit.zuc.ZUCUtil;
 
-byte[] cipher  = ZUCUtil.process(key16, iv16, plaintext);
-int[] keystream = ZUCUtil.eea3(ck, count, bearer, direction, bitLength);
-int   mac       = ZUCUtil.eia3(ik, count, bearer, direction, message);
+byte[] cipher  = ZUCUtil.encrypt(key16, iv16, plaintext);
+String keystream = ZUCUtil.eea3(ckHex, count, bearer, direction, bitLength);
+byte[] encrypted = ZUCUtil.eea3Encrypt(ckHex, count, bearer, direction, message, bitLength);
+String mac       = ZUCUtil.eia3(ikHex, count, bearer, direction, message);
 ```
 
 @tab TypeScript（对照）
 
 ```typescript
-import { zucEncrypt, eea3, eia3 } from 'gmkitx';
+import { zucEncrypt, eea3, eea3Encrypt, eia3 } from 'gmkitx';
 
 const cipher    = zucEncrypt(key16, iv16, plaintext);
-const keystream = eea3(ck, count, bearer, direction, bitLength); // hex
+const keystream = eea3(ck, count, bearer, direction, bitLength); // 兼容密钥流，hex
+const encrypted = eea3Encrypt(ck, count, bearer, direction, message, bitLength);
 const mac       = eia3(ik, count, bearer, direction, message);   // hex
 ```
 
 :::
 
 ::: tip 标准对齐
-两端均通过 GM/T 0001-2012、3GPP TS 35.221 三组标准向量；
-EEA3 keystream 与 EIA3 MAC 字节级完全一致。具体细节见
+两端均通过 ZUC-128 密钥流向量，以及 3GPP TS 35.221/35.222 的关键
+EEA3/EIA3 固定向量。具体细节见
 [ZUC 算法](/algorithms/ZUC)。
 :::
 

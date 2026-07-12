@@ -41,7 +41,7 @@ tag:
 
 | 分类 | 导出 |
 |:--|:--|
-| 函数 | `sm2GenerateKeyPair`, `sm2GetPublicKeyFromPrivateKey`, `sm2CompressPublicKey`, `sm2DecompressPublicKey`, `sm2Encrypt`, `sm2Decrypt`, `sm2Sign`, `sm2Verify`, `sm2KeyExchange` |
+| 函数 | `sm2GenerateKeyPair`, `sm2GetPublicKeyFromPrivateKey`, `sm2CompressPublicKey`, `sm2DecompressPublicKey`, `sm2Encrypt`, `sm2Decrypt`, `sm2DecryptBytes`, `sm2Sign`, `sm2Verify`, `sm2KeyExchange` |
 | 类 | `SM2` |
 | 类型 | `KeyPair`, `SignOptions`, `VerifyOptions`, `SM2CurveParams`, `SM2KeyExchangeParams`, `SM2KeyExchangeResult`, `SM2EncryptOptions`, `SM2DecryptOptions`, `SM2SignatureFormat`, `SM2SignatureInputFormat` |
 
@@ -57,7 +57,7 @@ tag:
 
 | 分类 | 导出 |
 |:--|:--|
-| 函数 | `sm4Encrypt`, `sm4Decrypt` |
+| 函数 | `sm4Encrypt`, `sm4Decrypt`, `sm4DecryptBytes` |
 | 类 | `SM4` |
 | 类型 | `SM4Options`, `SM4DecryptOptions`, `SM4CipherResult`, `SM4GCMResult`, `SM4CCMResult`, `SM4AEADResult` |
 
@@ -65,7 +65,7 @@ tag:
 
 | 分类 | 导出 |
 |:--|:--|
-| 函数 | `zucEncrypt`, `zucDecrypt`, `zucKeystream`, `zucKeystreamWords`, `eea3`, `eia3`, `zucGenerateKeystream` |
+| 函数 | `zucEncrypt`, `zucDecrypt`, `zucDecryptBytes`, `zucKeystream`, `zucKeystreamWords`, `eea3`, `eea3Encrypt`, `eia3`, `zucGenerateKeystream` |
 | 类 / 状态 | `ZUC`, `ZUCState` |
 | 类型 | `ZUCOptions`, `ZUCDecryptOptions` |
 
@@ -107,14 +107,14 @@ tag:
 
 - `sm2`, `sm3`, `sm4`, `zuc`, `sha`
 - `sm2GenerateKeyPair`, `sm2GetPublicKeyFromPrivateKey`, `sm2CompressPublicKey`, `sm2DecompressPublicKey`
-- `sm2Encrypt`, `sm2Decrypt`, `sm2Sign`, `sm2Verify`, `sm2KeyExchange`
+- `sm2Encrypt`, `sm2Decrypt`, `sm2DecryptBytes`, `sm2Sign`, `sm2Verify`, `sm2KeyExchange`
 - `sm3Digest`, `sm3Hmac`
-- `sm4Encrypt`, `sm4Decrypt`
-- `zucEncrypt`, `zucDecrypt`, `zucKeystream`, `zucKeystreamWords`, `zucGenerateKeystream`, `eea3`, `eia3`
+- `sm4Encrypt`, `sm4Decrypt`, `sm4DecryptBytes`
+- `zucEncrypt`, `zucDecrypt`, `zucDecryptBytes`, `zucKeystream`, `zucKeystreamWords`, `zucGenerateKeystream`, `eea3`, `eea3Encrypt`, `eia3`
 - `sha256`, `sha384`, `sha512`, `sha1`
 - `hmacSha256`, `hmacSha384`, `hmacSha512`
 
-默认导出不再包含 `generateKeyPair`、`getPublicKeyFromPrivateKey`、`compressPublicKey`、`decompressPublicKey`、`sign`、`verify`、`keyExchange`、`digest`、`hmac` 等无算法前缀旧名。
+默认导出继续包含 `generateKeyPair`、`getPublicKeyFromPrivateKey`、`compressPublicKey`、`decompressPublicKey`、`sign`、`verify`、`keyExchange`、`digest`、`hmac` 等已弃用旧名，以保证 UMD/CDN 和旧项目运行时兼容。新代码应使用带算法前缀的函数或命名空间。
 
 ## Java 端建议优先实现顺序
 
@@ -148,7 +148,7 @@ tag:
 | SM4 | `mode`, `padding`, `iv/nonce`, `aad`, `tagLength`, 密文编码 |
 | ZUC | `key`, `iv`, 输出编码, `length` 语义是字节还是 word |
 | 文本 | UTF-8，不混用本地编码 |
-| RNG | 必须使用 CSPRNG，不接受 `Math.random()` 级别实现 |
+| RNG | 默认策略为 `warn`：无 CSPRNG 时警告并兼容降级；安全敏感应用应注入 CSPRNG 或启用 `configureRNG('strict')` |
 
 ## 0.10.0-preview.1 安全边界
 

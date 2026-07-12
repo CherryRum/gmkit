@@ -21,7 +21,7 @@ GMKit 是一个基于 BouncyCastle 的国密算法工具库，提供 SM2、SM3�
 | SM2 | 椭圆曲线公钥密码算法 | `cn.gmkit.sm2.SM2` |
 | SM3 | 密码杂凑算法     | `cn.gmkit.sm3.SM3` |
 | SM4 | 分组密码算法     | `cn.gmkit.sm4.SM4` |
-| ZUC | ZUC-128 序列密码算法、EEA3/EIA3 兼容接口 | `cn.gmkit.zuc.ZUC` |
+| ZUC | ZUC-128 密钥流、标准 EEA3 消息加密、EIA3 MAC；保留旧 EEA3 密钥流入口 | `cn.gmkit.zuc.ZUC` |
 | SM9 | 标识密码算法（签名/验签、IBE 加解密） | `cn.gmkit.sm9.SM9`（独立模块 `gmkit-sm9`，JNI 桥接 GmSSL） |
 
 > SM2/SM3/SM4 为纯 Java（BouncyCastle）实现，ZUC 为主包内纯 Java 实现；SM9 通过 JNI 桥接 GmSSL native 实现，
@@ -118,11 +118,29 @@ String ivHex = "ffeeddccbbaa99887766554433221100";
 String ciphertext = ZUC.encryptHex(keyHex, ivHex, "中文 + emoji 😊");
 String plaintext = ZUC.decryptHexToUtf8(keyHex, ivHex, ciphertext);
 String keystream = ZUC.keystreamHex(keyHex, ivHex, 32);
-String eea3 = ZUC.eea3(keyHex, 0x398a59b4, 0x15, 1, 96);
+String eea3Keystream = ZUC.eea3(keyHex, 0x398a59b4, 0x15, 1, 96);
 String mac = ZUC.eia3(keyHex, 0x398a59b4, 0x15, 1, "payload");
 ```
 
-说明：当前 ZUC 只实现 ZUC-128，key 与 iv 均为 16 字节；ZUC 加密本身不提供完整性保护，通用业务数据建议优先使用 SM4-GCM/CCM。
+说明：当前 ZUC 只实现 ZUC-128，key 与 iv 均为 16 字节。旧 `eea3(...)` 为兼容入口，只返回按 32-bit word 对齐的密钥流；标准消息加密使用 `eea3Encrypt(...)`，完整性标签使用 `eia3(...)`。ZUC 通用加密本身不提供完整性保护，业务数据建议优先使用 SM4-GCM/CCM。
+
+3GPP TS 35.222 固定向量可直接验证：
+
+```java
+import cn.gmkit.core.HexCodec;
+import cn.gmkit.zuc.ZUC;
+
+String mac = ZUC.eia3(
+    "000102030405060708090a0b0c0d0e0f",
+    0x01234567,
+    0x0a,
+    0,
+    HexCodec.decodeStrict("5bad724710ba1c56", "EIA3 message"),
+    64);
+if (!"1b3d0f74".equals(mac)) {
+    throw new IllegalStateException("EIA3 vector mismatch: " + mac);
+}
+```
 
 ### 静态工具式
 
@@ -326,7 +344,7 @@ packages/java/gmkit-sm9-native-{平台}/src/main/resources/native/{平台}/
 ```
 
 构建前请准备 Git、CMake、JDK、Maven 和当前平台可用的 C 编译器；Windows 需要 Visual Studio C++ Build Tools。
-CI 的 `sm9-native.yml` 使用同一个脚本在 Linux、macOS、Windows 上构建并强制跑 native 测试，Java 发布流程也会先
+CI 的 `sm9-native.yml` 在 Linux、macOS、Windows 上构建并强制跑 native 测试，Java 发布流程也会先
 构建这些 runtime 模块再发布 Maven artifacts。
 
 如果你已经有自行构建的 native 库，也可以跳过 runtime artifact，使用
@@ -395,6 +413,7 @@ java -jar packages/java/gmkit-benchmarks/target/gmkit-benchmarks-0.10.0-preview.
 
 普通 Java CI 不要求 native runtime；没有可用 GmSSL/JNI 时，SM9 native 相关测试会通过 assumptions 跳过。
 `sm9-native.yml` 是专门的强制 native 作业，会在 Linux、macOS、Windows 上编译 GmSSL/JNI runtime 后运行 SM9 模块的全部功能测试。
+因此普通本地发布前检查无需准备 JNI/GmSSL；SM9 平台交付由 GitHub Actions 的专用矩阵负责阻断验证。
 
 ## 许可证
 

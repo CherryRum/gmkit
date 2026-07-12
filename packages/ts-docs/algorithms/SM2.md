@@ -133,7 +133,7 @@ String sig    = sm2.signHex(kp.getPrivateKeyHex(), "重要消息", SM2SignOption
 
 SM2 支持非对称加密，使用公钥加密、私钥解密。
 
-> 文本默认按 UTF-8 处理；如需加密二进制数据，请传入 `Uint8Array`。
+> 文本默认按 UTF-8 处理；如需加密二进制数据，请传入 `Uint8Array`，并使用 `sm2DecryptBytes` 解密，避免把任意字节强制转成 UTF-8。
 
 ### 基本用法
 
@@ -148,7 +148,9 @@ const ciphertext = sm2Encrypt(publicKey, plaintext);
 
 // 解密
 const decrypted = sm2Decrypt(privateKey, ciphertext);
-console.log(decrypted === plaintext); // true
+if (decrypted !== plaintext) {
+  throw new Error(`SM2 round-trip mismatch: ${decrypted}`);
+}
 ```
 
 > 顶层函数式 API 推荐使用 `sm2GenerateKeyPair`、`sm2Sign`、`sm2Verify`、`sm2KeyExchange` 等带前缀名称。
@@ -176,7 +178,7 @@ $$
 | 加密输出 | C1 当前输出为非压缩点；密文整体可按 `C1C3C2` 或 `C1C2C3` 排列 |
 | 解密输入 | 支持 raw `C1C3C2` / `C1C2C3` 与 ASN.1 DER；未显式指定 mode 时先尝试 `C1C3C2` |
 | 签名格式 | 默认 raw `r || s`，可指定 DER；验签可使用 `auto` |
-| 用户 ID | 默认 `1234567812345678`；如需对齐 GM/T 0009-2023 推荐值，请显式传 `userId: ''` |
+| 用户 ID | 默认 `1234567812345678`；为兼容旧版，省略值和空字符串都会回落到该默认值 |
 
 ```typescript
 import { sm2Encrypt, SM2CipherMode } from 'gmkitx';
@@ -238,7 +240,7 @@ console.log('签名有效:', isValid);
 
 ### 带用户 ID 的签名
 
-SM2 签名支持用户标识符（User ID）。GM/T 0009-2023 推荐使用空字符串，GMKitX 为向后兼容保留默认值。  
+SM2 签名支持用户标识符（User ID）。GMKitX 为向后兼容保留 `DEFAULT_USER_ID`，省略值和空字符串都会选择该默认值。
 签名内部会先计算用户绑定的 Z 值（基于 userId 与公钥参数），避免身份与签名脱钩。
 
 ```typescript
@@ -257,7 +259,7 @@ const isValid = sm2Verify(publicKey, message, signature, {
 });
 ```
 
-> **注意**: 如果不指定 userId，将使用默认值 `DEFAULT_USER_ID = '1234567812345678'`。如需严格对齐 GM/T 0009-2023，请显式传入 `userId: ''`。
+> **注意**: 不指定 `userId` 或传入空字符串都会使用 `DEFAULT_USER_ID = '1234567812345678'`。当前 API 不能用空字符串表达“真实空 ID”；需要身份绑定时请传非空值，并保证签名、验签两端一致。
 
 ### 签名格式
 
@@ -316,7 +318,9 @@ const resultA = sm2KeyExchange({
   isInitiator: true
 });
 
-console.log(resultA.sharedKey === resultB.sharedKey); // true
+if (resultA.sharedKey !== resultB.sharedKey) {
+  throw new Error('SM2 key exchange mismatch');
+}
 ```
 
 ## 面向对象 API
@@ -362,6 +366,7 @@ const publicKey = sm2.getPublicKey();
 |------|------|--------|
 | `sm2Encrypt(publicKey, plaintext, options?)` | SM2 加密 | `string` |
 | `sm2Decrypt(privateKey, ciphertext, options?)` | SM2 解密 | `string` |
+| `sm2DecryptBytes(privateKey, ciphertext, options?)` | SM2 解密为原始字节 | `Uint8Array` |
 
 ### 签名验签
 
@@ -378,24 +383,9 @@ const publicKey = sm2.getPublicKey();
 
 ## 高级用法
 
-### 自定义曲线参数
+### 曲线参数边界
 
-虽然通常使用标准 SM2 曲线，但也支持自定义曲线参数：
-
-```typescript
-import { SM2 } from 'gmkitx';
-
-const customParams = {
-  p: 'FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFF',
-  a: 'FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFC',
-  b: '28E9FA9E9D9F5E344D5A9E4BCF6509A7F39789F515AB8F92DDBCBD414D940E93',
-  Gx: '32C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7',
-  Gy: 'BC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0',
-  n: 'FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFF7203DF6B21C6052B53BBF40939D54123'
-};
-
-// 使用自定义曲线参数（不推荐，除非有特殊需求）
-```
+类型中保留 `curveParams` 是为了兼容旧调用代码；当前实现只接受标准 SM2 曲线。传入不同曲线参数会明确报错，不会静默忽略，也不会切换为任意椭圆曲线实现。
 
 ### 批量操作
 
@@ -419,7 +409,7 @@ const results = messages.map((msg, i) =>
 3. **公钥格式**: 
    - 非压缩格式: 04 开头，130 位十六进制（65 字节）
    - 压缩格式: 02 或 03 开头，66 位十六进制（33 字节）
-4. **用户 ID**: 签名/验签必须使用相同 userId；GM/T 0009-2023 推荐 `''`，库默认仍为 `DEFAULT_USER_ID`
+4. **用户 ID**: 签名/验签必须使用相同 userId；省略值和空字符串均使用 `DEFAULT_USER_ID`
 5. **密文模式**: C1C3C2 与 C1C2C3 必须一致；必要时显式指定模式
 6. **编码格式**: 输出为 hex/base64，解密端需匹配或使用自动识别
 7. **ASN.1 密文**: 如密文以 `0x30` 开头，按 ASN.1 解析；与 Java/OpenSSL 互操作时常见

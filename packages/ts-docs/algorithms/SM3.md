@@ -138,7 +138,7 @@ SM3 支持多种输出格式：
 ```typescript
 import { sm3Digest, OutputFormat } from 'gmkitx';
 
-const hash = sm3Digest('Hello', {
+const hash = sm3Digest('abc', {
   outputFormat: OutputFormat.HEX
 });
 // 输出: "66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0"
@@ -147,7 +147,7 @@ const hash = sm3Digest('Hello', {
 ### Base64 输出
 
 ```typescript
-const hash = sm3Digest('Hello', {
+const hash = sm3Digest('abc', {
   outputFormat: OutputFormat.BASE64
 });
 // 输出: "Zsfw9GLu7dnR8tRr3BDk4kFnxIdc8veiKX2gK49LqOA="
@@ -507,10 +507,15 @@ A: SM3 和 SHA-256 都输出 256 位哈希值，但：
 A: 可以使用官方测试向量验证：
 ```typescript
 // GM/T 0004-2012 标准测试向量
-const testVector = 'abc';
-const expectedHash = '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0';
-const actualHash = sm3Digest(testVector);
-console.log(actualHash === expectedHash); // true
+import { sm3Digest } from 'gmkitx';
+
+const expectedHash =
+  '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0';
+const actualHash = sm3Digest('abc');
+
+if (actualHash !== expectedHash) {
+  throw new Error(`SM3 vector mismatch: ${actualHash}`);
+}
 ```
 
 ### Q: 可以用 SM3 加密数据吗？

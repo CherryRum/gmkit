@@ -744,7 +744,8 @@ export interface SignOptions {
    * 用于将签名与特定用户绑定。不同的用户 ID 会产生不同的 Z 值，
    * 从而产生不同的签名。
    *
-   * 如需符合 GMT 0009-2023 最新标准，可显式传入 userId: ''
+   * 兼容约定：省略值或空字符串都会回落到 DEFAULT_USER_ID。
+   * 如需自定义身份，请传入非空字符串，并确保验签端使用相同值。
    */
   userId?: string;
 
@@ -811,7 +812,8 @@ export interface VerifyOptions {
    *
    * ⚠️ 重要：签名和验签必须使用相同的 userId，否则验签会失败
    *
-   * 如需符合 GMT 0009-2023 最新标准，可显式传入 userId: ''
+   * 兼容约定：省略值或空字符串都会回落到 DEFAULT_USER_ID。
+   * 如需自定义身份，请传入非空字符串，并确保签名端使用相同值。
    */
   userId?: string;
 
@@ -1278,7 +1280,7 @@ export interface SM2KeyExchangeParams {
    * 己方用户 ID
    *
    * 默认：'1234567812345678'（DEFAULT_USER_ID，保持向后兼容）
-   * GMT 0009-2023 推荐使用空字符串 ''
+   * 省略值或空字符串均回落到 DEFAULT_USER_ID
    */
   userId?: string;
 
@@ -1301,7 +1303,7 @@ export interface SM2KeyExchangeParams {
    * 对方用户 ID
    *
    * 默认：'1234567812345678'（DEFAULT_USER_ID，保持向后兼容）
-   * GMT 0009-2023 推荐使用空字符串 ''
+   * 省略值或空字符串均回落到 DEFAULT_USER_ID
    */
   peerUserId?: string;
 

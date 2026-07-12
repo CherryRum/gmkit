@@ -1,765 +1,117 @@
 ---
-title: GMKitX 跨语言对照向量
+title: GMKit 跨语言互操作向量
 icon: link
 order: 99
 ---
 
-# 跨语言对接（SM2 → SM3 → SM4）
+# GMKit 跨语言互操作向量
 
-::: tip
-提示：本章要点
+根目录 `vectors/interop.json` 是 Java 与 TypeScript 共享的协议数据。它用于验证密文、摘要、MAC 和格式边界，不表示两端具有相同 API 或 ABI。
 
-- 文件与约定
-- 验证流程
-- SM2
-- SM3
-- SM4
-:::
+## 自动化消费方
 
+| 实现 | 测试 |
+|:--|:--|
+| TypeScript | `packages/ts/test/interop-compliance.test.ts` |
+| Java | `packages/java/gmkit/src/test/java/cn/gmkit/InteropComplianceTest.java` |
 
-面向 Hutool/Java 以及后续 Go、Python 等实现的互通校验。固定输入、密钥、IV、公私钥在 `test/vectors/interop.json`，便于一次生成、多端共用。
+```bash
+# 两端共享向量
+npm run parity
 
-## 文件与约定
-- `test/vectors/interop.json`：标准向量；SM3/SM4 已填确定性期望值，SM2 以「解密=原文 / 验签成功」判定。
-- `defaults` 提供示例密钥（开发验证用，非生产）。
-- 字符串默认 UTF-8，二进制字段小写 hex。
+# 单独验证
+npm test -w packages/ts -- interop-compliance
+mvn -f packages/java/pom.xml -B -ntp -pl gmkit -Dtest=InteropComplianceTest test
+```
 
-## 验证流程
-1. 读取同一 JSON。
-2. 按 `algo/op` 调用：SM2（encrypt/sign）、SM3（digest/HMAC 可扩展）、SM4（encrypt/decrypt）。
-3. SM2 不比对密文字面与签名字面，只看解密或 `verify`。
-4. 新增语言或库：保持字段语义一致，追加用例即可。
+## 向量分类
 
-## SM2
+- 没有 `source` 或写明 `source: "project"` 的值是项目回归向量，用于 Java/TS 字节级对齐。
+- 写明标准来源的值才是外部固定向量。当前 ZUC 包含 3GPP TS 35.221 EEA3 和 TS 35.222 EIA3 关键向量。
+- SM2 加密和签名含随机数。未固定随机源时不比较完整密文或签名字面值，只验证解密结果、验签结果及篡改拒绝。
+- 字符串统一使用 UTF-8，二进制字段使用小写 hex。
 
-::: code-tabs#sm2
-@tab TypeScript (gmkitx)
+## 字段边界
+
+| 算法 | 必须固定的字段 |
+|:--|:--|
+| SM2 | `mode`、userId、raw/DER、hex/base64、公钥表示 |
+| SM3 | UTF-8/原始字节输入与 hex/base64 输出 |
+| SM4 | `mode`、`padding`、key、IV/nonce、AAD、tag 长度 |
+| ZUC | key、IV、COUNT、BEARER、DIRECTION、`bitLength`，以及 `eea3`/`eea3-encrypt` 操作语义 |
+
+ZUC 的 `count` 在 JSON 中以十进制数保存，含义是 API 接收的 32-bit 整数，不是按宿主机端序解释的四字节数组。
+
+## TypeScript 固定断言
+
+`sm4Encrypt` 返回对象，比较固定密文时必须读取 `result.ciphertext`：
+
 ```ts
 import {
-  sm2Encrypt, sm2Decrypt, sm2Sign, sm2Verify, SM2CipherMode
+  CipherMode,
+  PaddingMode,
+  eia3,
+  hexToBytes,
+  sm3Digest,
+  sm4Encrypt,
 } from 'gmkitx';
-import fs from 'node:fs';
 
-const vec = JSON.parse(fs.readFileSync('vectors/interop.json', 'utf8'));
+const sm3 = sm3Digest('abc');
+if (sm3 !== '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0') {
+  throw new Error(`SM3 vector mismatch: ${sm3}`);
+}
 
-for (const c of vec.cases.filter((v: any) => v.algo === 'SM2')) {
-  const pub = c.publicKeyHex ?? vec.defaults.sm2PublicKeyHex;
-  const pri = c.privateKeyHex ?? vec.defaults.sm2PrivateKeyHex;
+const sm4 = sm4Encrypt(
+  '0123456789abcdeffedcba9876543210',
+  hexToBytes('0123456789abcdeffedcba9876543210'),
+  { mode: CipherMode.ECB, padding: PaddingMode.NONE },
+);
+if (sm4.ciphertext !== '681edf34d206965e86b3e94f536e4246') {
+  throw new Error(`SM4 vector mismatch: ${sm4.ciphertext}`);
+}
 
-  if (c.op === 'encrypt') {
-    const cipher = sm2Encrypt(pub, c.input, { mode: SM2CipherMode[c.mode] });
-    const plain = sm2Decrypt(pri, cipher, { mode: SM2CipherMode[c.mode] });
-    console.assert(plain === c.input, c.id);
-  }
-  if (c.op === 'sign') {
-    const sig = sm2Sign(pri, c.input);
-    const ok = sm2Verify(pub, c.input, sig);
-    console.assert(ok === true, c.id);
-  }
+const mac = eia3(
+  '000102030405060708090a0b0c0d0e0f',
+  0x01234567,
+  0x0a,
+  0,
+  hexToBytes('5bad724710ba1c56'),
+  64,
+);
+if (mac !== '1b3d0f74') {
+  throw new Error(`EIA3 vector mismatch: ${mac}`);
 }
 ```
 
-@tab Java (Hutool)
+这里使用 `throw` 而不是只打印结果或调用 `console.assert`，以便样例在不符合预期时以非零状态退出。
+
+## Java 固定断言
+
 ```java
-import cn.hutool.crypto.SmUtil;
-import cn.hutool.core.util.HexUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.bouncycastle.crypto.engines.SM2Engine;
-import java.nio.file.Paths;
-import java.util.Map;
+import cn.gmkit.core.HexCodec;
+import cn.gmkit.sm3.SM3Util;
+import cn.gmkit.zuc.ZUC;
 
-record Case(String id, String algo, String op, String mode,
-            String input, String publicKeyHex, String privateKeyHex,
-            Map<String, String> expected) {}
+String sm3 = SM3Util.digestHex("abc");
+if (!"66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0".equals(sm3)) {
+    throw new IllegalStateException("SM3 vector mismatch: " + sm3);
+}
 
-public class SM2Interop {
-  public static void main(String[] args) throws Exception {
-    var root = new ObjectMapper().readTree(Paths.get("test/vectors/interop.json").toFile());
-    var defaults = root.get("defaults");
-    for (var node : root.get("cases")) {
-      var c = new ObjectMapper().convertValue(node, Case.class);
-      if (!"SM2".equals(c.algo())) continue;
-      var pri = HexUtil.decodeHex(c.privateKeyHex() != null ? c.privateKeyHex() : defaults.get("sm2PrivateKeyHex").asText());
-      var pub = HexUtil.decodeHex(c.publicKeyHex() != null ? c.publicKeyHex() : defaults.get("sm2PublicKeyHex").asText());
-      var sm2 = SmUtil.sm2(pri, pub);
-      switch (c.op()) {
-        case "encrypt" -> {
-          var mode = c.mode().equals("C1C2C3") ? SM2Engine.Mode.C1C2C3 : SM2Engine.Mode.C1C3C2;
-          sm2.setMode(mode);
-          var cipher = sm2.encryptHex(c.input());
-          var back = sm2.decryptStr(cipher);
-          assert back.equals(c.input()) : c.id();
-        }
-        case "sign" -> {
-          var sig = sm2.signHex(c.input());
-          assert sm2.verifyHex(c.input(), sig) : c.id();
-        }
-      }
-    }
-  }
+String mac = ZUC.eia3(
+    "000102030405060708090a0b0c0d0e0f",
+    0x01234567,
+    0x0a,
+    0,
+    HexCodec.decodeStrict("5bad724710ba1c56", "EIA3 message"),
+    64);
+if (!"1b3d0f74".equals(mac)) {
+    throw new IllegalStateException("EIA3 vector mismatch: " + mac);
 }
 ```
 
-@tab Go (gmsm)
-```go
-package main
-
-import (
-  "crypto/rand"
-  "encoding/hex"
-  "encoding/json"
-  "fmt"
-  "os"
-
-  "github.com/emmansun/gmsm/sm2"
-)
-
-type Defaults struct {
-  Sm2PublicKeyHex  string `json:"sm2PublicKeyHex"`
-  Sm2PrivateKeyHex string `json:"sm2PrivateKeyHex"`
-}
-
-type Case struct {
-  ID            string `json:"id"`
-  Algo          string `json:"algo"`
-  Op            string `json:"op"`
-  Mode          string `json:"mode"`
-  Input         string `json:"input"`
-  PublicKeyHex  string `json:"publicKeyHex"`
-  PrivateKeyHex string `json:"privateKeyHex"`
-}
-
-type Vectors struct {
-  Defaults Defaults `json:"defaults"`
-  Cases    []Case  `json:"cases"`
-}
-
-func main() {
-  // 读取测试向量
-  data, _ := os.ReadFile("test/vectors/interop.json")
-  var vec Vectors
-  json.Unmarshal(data, &vec)
-
-  for _, c := range vec.Cases {
-    if c.Algo != "SM2" {
-      continue
-    }
-    priHex := c.PrivateKeyHex
-    if priHex == "" {
-      priHex = vec.Defaults.Sm2PrivateKeyHex
-    }
-    pubHex := c.PublicKeyHex
-    if pubHex == "" {
-      pubHex = vec.Defaults.Sm2PublicKeyHex
-    }
-    priBytes, _ := hex.DecodeString(priHex)
-    priv, err := sm2.NewPrivateKey(priBytes)
-    if err != nil {
-      panic(err)
-    }
-    pubBytes, _ := hex.DecodeString(pubHex)
-    if len(pubBytes) == 64 {
-      pubBytes = append([]byte{0x04}, pubBytes...)
-    }
-    pub, err := sm2.NewPublicKey(pubBytes)
-    if err != nil {
-      panic(err)
-    }
-
-    if c.Op == "encrypt" {
-      // 按向量指定的密文模式加解密
-      splicing := sm2.C1C3C2
-      if c.Mode == "C1C2C3" {
-        splicing = sm2.C1C2C3
-      }
-      opts := sm2.NewPlainEncrypterOpts(sm2.MarshalUncompressed, splicing)
-      cipher, err := sm2.Encrypt(rand.Reader, pub, []byte(c.Input), opts)
-      if err != nil {
-        panic(err)
-      }
-      var plain []byte
-      if splicing == sm2.C1C3C2 {
-        plain, err = sm2.Decrypt(priv, cipher)
-      } else {
-        plain, err = priv.Decrypt(rand.Reader, cipher, sm2.NewPlainDecrypterOpts(splicing))
-      }
-      if err != nil {
-        panic(err)
-      }
-      fmt.Println(c.ID, string(plain) == c.Input)
-    }
-    if c.Op == "sign" {
-      // 默认 uid = 1234567812345678
-      sig, _ := priv.Sign(rand.Reader, []byte(c.Input), sm2.DefaultSM2SignerOpts)
-      ok := sm2.VerifyASN1WithSM2(pub, nil, []byte(c.Input), sig)
-      fmt.Println(c.ID, ok)
-    }
-  }
-}
-```
-
-@tab Python (gmssl)
-```python
-import json
-from gmssl import sm2
-
-with open("test/vectors/interop.json", "r", encoding="utf-8") as f:
-    vec = json.load(f)
-
-for c in vec["cases"]:
-    if c["algo"] != "SM2":
-        continue
-    public_key = c.get("publicKeyHex") or vec["defaults"]["sm2PublicKeyHex"]
-    private_key = c.get("privateKeyHex") or vec["defaults"]["sm2PrivateKeyHex"]
-    # mode=1 为 C1C3C2，mode=0 为 C1C2C3
-    mode = 1 if c.get("mode") == "C1C3C2" else 0
-    sm2_crypt = sm2.CryptSM2(private_key=private_key, public_key=public_key, mode=mode)
-
-    if c["op"] == "encrypt":
-        cipher = sm2_crypt.encrypt(c["input"].encode("utf-8"))
-        plain = sm2_crypt.decrypt(cipher).decode("utf-8")
-        print(c["id"], plain == c["input"])
-    if c["op"] == "sign":
-        msg = c["input"].encode("utf-8")
-        # 默认 userId=1234567812345678
-        sig = sm2_crypt.sign_with_sm3(msg)
-        ok = sm2_crypt.verify_with_sm3(sig, msg)
-        print(c["id"], ok)
-```
-
-@tab Rust (libsm)
-```rust
-use serde::Deserialize;
-use std::fs;
-
-use hex;
-use libsm::sm2::encrypt::{DecryptCtx, EncryptCtx};
-use libsm::sm2::signature::SigCtx;
-
-#[derive(Debug, Deserialize)]
-struct Defaults {
-    sm2PublicKeyHex: String,
-    sm2PrivateKeyHex: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct Case {
-    id: String,
-    algo: String,
-    op: String,
-    mode: Option<String>,
-    input: String,
-    publicKeyHex: Option<String>,
-    privateKeyHex: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-struct Vectors {
-    defaults: Defaults,
-    cases: Vec<Case>,
-}
-
-fn c1c2c3_to_c1c3c2(cipher: &[u8]) -> Vec<u8> {
-    let c1_len = 65;
-    let c3_len = 32;
-    let c2_len = cipher.len() - c1_len - c3_len;
-    let c1 = &cipher[..c1_len];
-    let c2 = &cipher[c1_len..c1_len + c2_len];
-    let c3 = &cipher[c1_len + c2_len..];
-    [c1, c3, c2].concat()
-}
-
-fn c1c3c2_to_c1c2c3(cipher: &[u8]) -> Vec<u8> {
-    let c1_len = 65;
-    let c3_len = 32;
-    let c2_len = cipher.len() - c1_len - c3_len;
-    let c1 = &cipher[..c1_len];
-    let c3 = &cipher[c1_len..c1_len + c3_len];
-    let c2 = &cipher[c1_len + c3_len..];
-    [c1, c2, c3].concat()
-}
-
-fn main() {
-    let data = fs::read_to_string("test/vectors/interop.json").unwrap();
-    let vec: Vectors = serde_json::from_str(&data).unwrap();
-    let sig_ctx = SigCtx::new();
-
-    for c in vec.cases {
-        if c.algo != "SM2" {
-            continue;
-        }
-        let pri_hex = c.privateKeyHex.as_deref().unwrap_or(&vec.defaults.sm2PrivateKeyHex);
-        let pub_hex = c.publicKeyHex.as_deref().unwrap_or(&vec.defaults.sm2PublicKeyHex);
-        let pri_bytes = hex::decode(pri_hex).unwrap();
-        let pub_bytes = hex::decode(pub_hex).unwrap();
-        let sk = sig_ctx.load_seckey(&pri_bytes).unwrap();
-        let pk = sig_ctx.load_pubkey(&pub_bytes).unwrap();
-
-        if c.op == "encrypt" {
-            let input = c.input.as_bytes();
-            let encrypt_ctx = EncryptCtx::new(input.len(), pk.clone());
-            let cipher_c1c2c3 = encrypt_ctx.encrypt(input).unwrap();
-            let cipher_for_mode = if c.mode.as_deref() == Some("C1C3C2") {
-                c1c2c3_to_c1c3c2(&cipher_c1c2c3)
-            } else {
-                cipher_c1c2c3.clone()
-            };
-            let cipher_for_decrypt = if c.mode.as_deref() == Some("C1C3C2") {
-                c1c3c2_to_c1c2c3(&cipher_for_mode)
-            } else {
-                cipher_for_mode
-            };
-            let decrypt_ctx = DecryptCtx::new(input.len(), sk.clone());
-            let plain = decrypt_ctx.decrypt(&cipher_for_decrypt).unwrap();
-            println!("{} {}", c.id, plain == input);
-        }
-        if c.op == "sign" {
-            let msg = c.input.as_bytes();
-            let signature = sig_ctx.sign(msg, &sk, &pk);
-            let ok = sig_ctx.verify(msg, &pk, &signature);
-            println!("{} {}", c.id, ok);
-        }
-    }
-}
-```
-:::
-
-## SM3
-
-::: code-tabs#sm3
-@tab TypeScript (gmkitx)
-```ts
-import { sm3Digest, sm3Hmac } from 'gmkitx';
-import fs from 'node:fs';
-
-const vec = JSON.parse(fs.readFileSync('vectors/interop.json', 'utf8'));
-
-for (const c of vec.cases.filter((v: any) => v.algo === 'SM3')) {
-  const out = sm3Digest(c.input);
-  console.assert(out === c.expected.hex, c.id);
-}
-// 如需 HMAC，可参照 sm3Hmac(key, data) 并扩展 JSON
-```
-
-@tab Java (Hutool)
-```java
-import cn.hutool.crypto.SmUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.nio.file.Paths;
-
-public class SM3Interop {
-  public static void main(String[] args) throws Exception {
-    var root = new ObjectMapper().readTree(Paths.get("test/vectors/interop.json").toFile());
-    for (var node : root.get("cases")) {
-      if (!"SM3".equals(node.get("algo").asText())) continue;
-      var input = node.get("input").asText();
-      var expected = node.get("expected").get("hex").asText();
-      var out = SmUtil.sm3().digestHex(input);
-      assert out.equals(expected) : node.get("id").asText();
-    }
-  }
-}
-```
-
-@tab Go (gmsm)
-```go
-package main
-
-import (
-  "encoding/hex"
-  "encoding/json"
-  "os"
-
-  "github.com/emmansun/gmsm/sm3"
-)
-
-type Case struct {
-  ID      string `json:"id"`
-  Algo    string `json:"algo"`
-  Input   string `json:"input"`
-  Expected struct {
-    Hex string `json:"hex"`
-  } `json:"expected"`
-}
-
-type Vectors struct {
-  Cases []Case `json:"cases"`
-}
-
-func main() {
-  data, _ := os.ReadFile("test/vectors/interop.json")
-  var vec Vectors
-  json.Unmarshal(data, &vec)
-
-  for _, c := range vec.Cases {
-    if c.Algo != "SM3" {
-      continue
-    }
-    // 计算 SM3 摘要并比对向量
-    sum := sm3.Sum([]byte(c.Input))
-    if hex.EncodeToString(sum[:]) != c.Expected.Hex {
-      panic(c.ID)
-    }
-  }
-}
-```
-
-@tab Python (gmssl)
-```python
-import json
-from gmssl import sm3, func
-
-with open("test/vectors/interop.json", "r", encoding="utf-8") as f:
-    vec = json.load(f)
-
-for c in vec["cases"]:
-    if c["algo"] != "SM3":
-        continue
-    # gmssl 的 sm3_hash 需要字节列表
-    out = sm3.sm3_hash(func.bytes_to_list(c["input"].encode("utf-8")))
-    assert out == c["expected"]["hex"], c["id"]
-```
-
-@tab Rust (libsm)
-```rust
-use serde::Deserialize;
-use std::fs;
-
-use hex;
-use libsm::sm3::hash::Sm3Hash;
-
-#[derive(Debug, Deserialize)]
-struct Case {
-    id: String,
-    algo: String,
-    input: String,
-    expected: Expected,
-}
-
-#[derive(Debug, Deserialize)]
-struct Expected {
-    hex: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct Vectors {
-    cases: Vec<Case>,
-}
-
-fn main() {
-    let data = fs::read_to_string("test/vectors/interop.json").unwrap();
-    let vec: Vectors = serde_json::from_str(&data).unwrap();
-
-    for c in vec.cases {
-        if c.algo != "SM3" {
-            continue;
-        }
-        let mut hasher = Sm3Hash::new(c.input.as_bytes());
-        let hash = hasher.get_hash();
-        assert_eq!(hex::encode(hash), c.expected.hex, "{}", c.id);
-    }
-}
-```
-:::
-
-## SM4
-
-::: code-tabs#sm4
-@tab TypeScript (gmkitx)
-```ts
-import { sm4Encrypt, sm4Decrypt, CipherMode, PaddingMode } from 'gmkitx';
-import fs from 'node:fs';
-
-const vec = JSON.parse(fs.readFileSync('vectors/interop.json', 'utf8'));
-
-for (const c of vec.cases.filter((v: any) => v.algo === 'SM4')) {
-  const key = c.keyHex ?? vec.defaults.sm4KeyHex;
-  const opt = {
-    mode: CipherMode[c.mode],
-    padding: PaddingMode[c.padding],
-    iv: c.ivHex,
-  };
-  const cipher = sm4Encrypt(key, c.input, opt);
-  if (c.expected?.cipherHex) console.assert(cipher === c.expected.cipherHex, c.id);
-  const plain = sm4Decrypt(key, cipher, opt);
-  console.assert(plain === c.input, `${c.id}-decrypt`);
-}
-```
-
-@tab Java (Hutool)
-```java
-import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
-import cn.hutool.crypto.symmetric.SymmetricCrypto;
-import cn.hutool.crypto.Mode;
-import cn.hutool.crypto.Padding;
-import cn.hutool.core.util.HexUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.nio.file.Paths;
-
-public class SM4Interop {
-  public static void main(String[] args) throws Exception {
-    var mapper = new ObjectMapper();
-    var root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
-    for (var node : root.get("cases")) {
-      if (!"SM4".equals(node.get("algo").asText())) continue;
-      var key = HexUtil.decodeHex(node.has("keyHex") ? node.get("keyHex").asText() : root.get("defaults").get("sm4KeyHex").asText());
-      var iv = node.has("ivHex") ? HexUtil.decodeHex(node.get("ivHex").asText()) : null;
-      var mode = Mode.valueOf(node.get("mode").asText());
-      var padding = node.get("padding").asText().equals("PKCS7") ? Padding.PKCS5Padding : Padding.valueOf(node.get("padding").asText());
-      var sm4 = new SymmetricCrypto(mode, padding, SymmetricAlgorithm.SM4.getValue(), key, iv);
-      var cipher = sm4.encryptHex(node.get("input").asText());
-      if (node.get("expected").has("cipherHex")) {
-        assert cipher.equals(node.get("expected").get("cipherHex").asText()) : node.get("id").asText();
-      }
-      var plain = sm4.decryptStr(cipher);
-      assert plain.equals(node.get("input").asText()) : node.get("id").asText() + "-decrypt";
-    }
-  }
-}
-```
-
-@tab Go (gmsm)
-```go
-package main
-
-import (
-  "crypto/cipher"
-  "encoding/hex"
-  "encoding/json"
-  "os"
-
-  gmsmCipher "github.com/emmansun/gmsm/cipher"
-  "github.com/emmansun/gmsm/padding"
-  "github.com/emmansun/gmsm/sm4"
-)
-
-type Defaults struct {
-  Sm4KeyHex string `json:"sm4KeyHex"`
-  Sm4IvHex  string `json:"sm4IvHex"`
-}
-
-type Case struct {
-  ID      string         `json:"id"`
-  Algo    string         `json:"algo"`
-  Mode    string         `json:"mode"`
-  Padding string         `json:"padding"`
-  Input   string         `json:"input"`
-  KeyHex  string         `json:"keyHex"`
-  IvHex   string         `json:"ivHex"`
-  Expected map[string]any `json:"expected"`
-}
-
-type Vectors struct {
-  Defaults Defaults `json:"defaults"`
-  Cases    []Case   `json:"cases"`
-}
-
-func main() {
-  data, _ := os.ReadFile("test/vectors/interop.json")
-  var vec Vectors
-  json.Unmarshal(data, &vec)
-
-  for _, c := range vec.Cases {
-    if c.Algo != "SM4" {
-      continue
-    }
-    keyHex := c.KeyHex
-    if keyHex == "" {
-      keyHex = vec.Defaults.Sm4KeyHex
-    }
-    key, _ := hex.DecodeString(keyHex)
-    block, err := sm4.NewCipher(key)
-    if err != nil {
-      panic(err)
-    }
-
-    // gmsm 提供 ECB + PKCS7 填充工具
-    pkcs7 := padding.NewPKCS7Padding(sm4.BlockSize)
-    data := []byte(c.Input)
-    if c.Padding == "PKCS7" {
-      data = pkcs7.Pad(data)
-    }
-
-    var cipherText []byte
-    if c.Mode == "ECB" {
-      cipherText = make([]byte, len(data))
-      gmsmCipher.NewECBEncrypter(block).CryptBlocks(cipherText, data)
-    } else if c.Mode == "CBC" {
-      ivHex := c.IvHex
-      if ivHex == "" {
-        ivHex = vec.Defaults.Sm4IvHex
-      }
-      iv, _ := hex.DecodeString(ivHex)
-      cipherText = make([]byte, len(data))
-      cipher.NewCBCEncrypter(block, iv).CryptBlocks(cipherText, data)
-    }
-
-    if exp, ok := c.Expected["cipherHex"].(string); ok && hex.EncodeToString(cipherText) != exp {
-      panic(c.ID)
-    }
-
-    var plainPadded []byte
-    if c.Mode == "ECB" {
-      plainPadded = make([]byte, len(cipherText))
-      gmsmCipher.NewECBDecrypter(block).CryptBlocks(plainPadded, cipherText)
-    } else {
-      ivHex := c.IvHex
-      if ivHex == "" {
-        ivHex = vec.Defaults.Sm4IvHex
-      }
-      iv, _ := hex.DecodeString(ivHex)
-      plainPadded = make([]byte, len(cipherText))
-      cipher.NewCBCDecrypter(block, iv).CryptBlocks(plainPadded, cipherText)
-    }
-    if c.Padding == "PKCS7" {
-      plainPadded, err = pkcs7.Unpad(plainPadded)
-      if err != nil {
-        panic(err)
-      }
-    }
-    if string(plainPadded) != c.Input {
-      panic(c.ID)
-    }
-  }
-}
-```
-
-@tab Python (gmssl)
-```python
-import json
-from gmssl import sm4
-
-with open("test/vectors/interop.json", "r", encoding="utf-8") as f:
-    vec = json.load(f)
-
-for c in vec["cases"]:
-    if c["algo"] != "SM4":
-        continue
-    key_hex = c.get("keyHex") or vec["defaults"]["sm4KeyHex"]
-    iv_hex = c.get("ivHex") or vec["defaults"]["sm4IvHex"]
-    mode = c.get("mode")
-    padding = c.get("padding")
-
-    key = bytes.fromhex(key_hex)
-    iv = bytes.fromhex(iv_hex) if mode == "CBC" else None
-    # gmssl 内置 PKCS7 填充
-    padding_mode = sm4.PKCS7 if padding == "PKCS7" else sm4.NoPadding
-    sm4_crypt = sm4.CryptSM4(padding_mode=padding_mode)
-    sm4_crypt.set_key(key, sm4.SM4_ENCRYPT)
-
-    if mode == "ECB":
-        cipher = sm4_crypt.crypt_ecb(c["input"].encode("utf-8"))
-    else:
-        cipher = sm4_crypt.crypt_cbc(iv, c["input"].encode("utf-8"))
-
-    if "cipherHex" in c["expected"]:
-        assert cipher.hex() == c["expected"]["cipherHex"], c["id"]
-
-    sm4_crypt.set_key(key, sm4.SM4_DECRYPT)
-    if mode == "ECB":
-        plain = sm4_crypt.crypt_ecb(cipher)
-    else:
-        plain = sm4_crypt.crypt_cbc(iv, cipher)
-    assert plain.decode("utf-8") == c["input"], c["id"]
-```
-
-@tab Rust (libsm)
-```rust
-use serde::Deserialize;
-use std::fs;
-
-use hex;
-use libsm::sm4::cipher::Sm4Cipher;
-use libsm::sm4::cipher_mode::{CipherMode, Sm4CipherMode};
-
-#[derive(Debug, Deserialize)]
-struct Defaults {
-    sm4KeyHex: String,
-    sm4IvHex: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct Case {
-    id: String,
-    algo: String,
-    mode: String,
-    padding: String,
-    input: String,
-    keyHex: Option<String>,
-    ivHex: Option<String>,
-    expected: serde_json::Value,
-}
-
-#[derive(Debug, Deserialize)]
-struct Vectors {
-    defaults: Defaults,
-    cases: Vec<Case>,
-}
-
-fn pkcs7_pad(data: &[u8]) -> Vec<u8> {
-    let pad = 16 - (data.len() % 16);
-    let mut out = data.to_vec();
-    out.extend(std::iter::repeat(pad as u8).take(pad));
-    out
-}
-
-fn pkcs7_unpad(data: &[u8]) -> Vec<u8> {
-    let pad = *data.last().unwrap() as usize;
-    data[..data.len() - pad].to_vec()
-}
-
-fn main() {
-    let data = fs::read_to_string("test/vectors/interop.json").unwrap();
-    let vec: Vectors = serde_json::from_str(&data).unwrap();
-
-    for c in vec.cases {
-        if c.algo != "SM4" {
-            continue;
-        }
-        let key_hex = c.keyHex.as_deref().unwrap_or(&vec.defaults.sm4KeyHex);
-        let key = hex::decode(key_hex).unwrap();
-
-        // ECB 手动 PKCS7，CBC 内部自动 PKCS7
-        let (ciphertext, plain) = if c.mode == "ECB" {
-            let cipher = Sm4Cipher::new(&key).unwrap();
-            let padded = if c.padding == "PKCS7" {
-                pkcs7_pad(c.input.as_bytes())
-            } else {
-                c.input.as_bytes().to_vec()
-            };
-            let mut ct = Vec::new();
-            for block in padded.chunks(16) {
-                let enc = cipher.encrypt(block).unwrap();
-                ct.extend_from_slice(&enc);
-            }
-            let mut pt = Vec::new();
-            for block in ct.chunks(16) {
-                let dec = cipher.decrypt(block).unwrap();
-                pt.extend_from_slice(&dec);
-            }
-            let pt = if c.padding == "PKCS7" { pkcs7_unpad(&pt) } else { pt };
-            (ct, pt)
-        } else {
-            let iv_hex = c.ivHex.as_deref().unwrap_or(&vec.defaults.sm4IvHex);
-            let iv = hex::decode(iv_hex).unwrap();
-            let cipher = Sm4CipherMode::new(&key, CipherMode::Cbc).unwrap();
-            let ct = cipher.encrypt(&[], c.input.as_bytes(), &iv).unwrap();
-            let pt = cipher.decrypt(&[], &ct, &iv).unwrap();
-            (ct, pt)
-        };
-
-        if let Some(expected_hex) = c.expected.get("cipherHex").and_then(|v| v.as_str()) {
-            assert_eq!(hex::encode(&ciphertext), expected_hex, "{}", c.id);
-        }
-        assert_eq!(plain, c.input.as_bytes(), "{}", c.id);
-    }
-}
-```
-:::
-
-## 复用与扩展
-- 新增语言/库：保持字段语义一致，直接在 JSON 追加用例，代码 tabs 的占位处补上实现。
-- 想覆盖 CTR/OFB/CFB/GCM：先确认各实现计数器/IV/AAD 规则一致，再写入期望值。
-- 如需可重复密文/签名（测试场景）：可在本地固定随机源，但请在用例备注中说明；生产环境不建议。 
-
-
+## 修改规则
+
+1. 增加标准向量时填写准确 `source`。
+2. 字段新增保持向后兼容；重命名或删除必须同步修改 Java、TypeScript 测试和 CHANGELOG。
+3. 任何确定性期望值变更都应先由外部标准或独立成熟实现复核，不能只用本项目实现自证。
+4. 提交前同时运行 `npm run parity` 和两端完整测试。

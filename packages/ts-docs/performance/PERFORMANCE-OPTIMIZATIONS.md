@@ -83,22 +83,19 @@ const keyPair = sm2GenerateKeyPair(true);
 - 压缩格式：需要椭圆曲线点解压，增加计算开销
 - 权衡：如果存储/传输是瓶颈，压缩格式可节省 49% 空间
 
-### 3. 用户 ID 优化
-
-#### GM/T 0009-2023 推荐使用空字符串
+### 3. 用户 ID 兼容边界
 
 ```typescript
-// ✅ GM/T 0009-2023 推荐：空字符串，略微提升性能
-const signature = sm2Sign(privateKey, data, { userId: '' });
-
-// ✅ 向后兼容：使用默认值（性能差异极小）
+// 省略值和空字符串都会使用 DEFAULT_USER_ID
 const signature = sm2Sign(privateKey, data);
+
+// 需要身份绑定时，签名端和验签端使用相同的非空 ID
+const signatureForService = sm2Sign(privateKey, data, {
+  userId: 'example-service-v1'
+});
 ```
 
-**性能影响**：
-- 空字符串：Z 值计算输入更短，约 1-2% 性能提升
-- 默认值 '1234567812345678'：增加 16 字节输入
-- 实际影响：可忽略不计，主要取决于兼容性需求
+`userId` 是协议和身份绑定字段，不应为了微小性能差异而修改。当前版本不能通过空字符串选择真实空 ID。
 
 ### 4. 常量时间操作
 
@@ -226,7 +223,6 @@ generateKeyPair (compressed):   1.2-1.5ms
 ### SM2 签名
 ```
 sign (userId='1234567812345678'): 1.2ms
-sign (userId=''):                 1.18ms (+1.7% faster)
 sign (skipZ=true):                1.0ms (+16.7% faster, not recommended)
 ```
 
@@ -334,7 +330,7 @@ self.onmessage = (e) => {
 1. **使用 GM/T 0009-2023 推荐的默认值**
    - 密文模式：C1C3C2（显式指定）
    - 公钥格式：非压缩（默认）
-   - 用户 ID：空字符串（新项目）
+   - 用户 ID：双方显式约定非空值，或共同使用 `DEFAULT_USER_ID`
 
 2. **批量操作时复用实例**
    ```typescript

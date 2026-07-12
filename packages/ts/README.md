@@ -36,8 +36,8 @@
 | SM2 | 密钥生成、加解密、签名/验签、密钥交换 | `C1C3C2` 默认，可选 `C1C2C3`；签名支持 `raw` / `der` / `auto`；输入输出支持 hex/base64 | SM2 加密有随机性，测试不固定完整密文；大数据建议 SM2 + SM4 混合加密 |
 | SM3 | 摘要、HMAC、流式更新 | hex/base64 输出 | 无认证加密语义，仅用于摘要/MAC 组合 |
 | SM4 | `ECB` / `CBC` / `CTR` / `CFB` / `OFB` / `GCM` / `CCM` | `PKCS7` / `ZERO` / `NONE`；AEAD 返回 `ciphertext` + `tag` | `ECB` 不建议保护敏感数据；AEAD 必须保存并校验 tag |
-| ZUC | ZUC-128 密钥流、加解密、EEA3/EIA3 兼容接口 | key/iv 均为 16 字节；密钥流长度按字节，`zucKeystreamWords` 按 32-bit word | 不支持 ZUC-256；ZUC 加密不自带完整性保护 |
-| SHA | SHA-1/224/256/384/512 摘要 | hex/base64 输出 | SHA-1 仅用于兼容旧系统 |
+| ZUC | ZUC-128 密钥流、标准 EEA3 消息加密、EIA3 MAC；保留旧密钥流入口 | key/iv 均为 16 字节；密钥流长度按字节，`zucKeystreamWords` 按 32-bit word | 不支持 ZUC-256；ZUC 加密不自带完整性保护 |
+| SHA | SHA-1/256/384/512 摘要 | hex/base64 输出 | SHA-1 仅用于兼容旧系统；当前不提供 SHA-224 |
 | SM9 | 不支持 | 无 | TypeScript 侧没有 SM9，也不包装 native/WASM；如需 SM9，请使用 Java 侧 `gmkit-sm9` JNI/GmSSL 模块 |
 
 测试中的 ZUC、SM3、SM4 固定值是本项目 Java / TypeScript 两端对齐使用的项目向量；没有标注为外部标准向量的值，不应被当作标准测试向量来源。
@@ -188,9 +188,9 @@ const sha512Hash = sha.sha512('Hello World');
 
 - `sm4Encrypt` 现在返回 `{ ciphertext, tag?, format }` 对象；`sm4Decrypt` 可直接接收该对象。
 - `zucKeystream(key, iv, length)` 的 `length` 改为 **字节数**；若需要按 32-bit word，使用 `zucKeystreamWords`。
-- `sm2Encrypt` 的模式参数改为选项对象：`sm2Encrypt(pub, data, { mode })`。
+- `sm2Encrypt` 的模式参数改为选项对象：`sm2Encrypt(pub, data, { mode })`；二进制解密使用 `sm2DecryptBytes`。
 - `sm2Sign / sm2Verify / signatureToXml` 支持 `signatureFormat: 'raw' | 'der' | 'auto'`；DER 输入请显式标注。
-- Base64 密文解密支持自动识别；跨语言互操作时建议显式指定 `inputFormat: InputFormat.BASE64`（SM2 / SM4 / ZUC）。
+- Base64 密文解密支持自动识别；跨语言互操作时建议显式指定 `inputFormat: InputFormat.BASE64`（SM2 / SM4 / ZUC）。二进制明文分别使用 `sm2DecryptBytes`、`sm4DecryptBytes`、`zucDecryptBytes`，避免 UTF-8 解码破坏数据。
 - 安全修复：SM2 现在会拒绝非法 `mode` / `signatureFormat`；SM4 现在会拒绝奇数长度的 hex key/iv，并严格校验 GCM 标签长度。
 
 -----
@@ -263,14 +263,16 @@ const ccmPlain = sm4Decrypt(key, ccm, { mode: CipherMode.CCM, iv: '0011223344556
 ### ZUC（祖冲之序列密码）
 - 覆盖 128-EEA3（机密性）与 128-EIA3（完整性）；流式密钥流可复用。
 - 当前仅实现 ZUC-128，key 与 iv 都必须是 16 字节；`zucEncrypt` / `zucDecrypt` 每次都从 IV 起始生成密钥流。
-- `zucDecrypt` 将结果按 UTF-8 解码为字符串；二进制数据请使用 `zucKeystream` 后自行 XOR，或使用字节工具处理。
+- `zucDecrypt` 将结果按 UTF-8 解码为字符串；二进制数据使用 `zucDecryptBytes`。
+- `eea3` 是为旧调用方保留的 EEA3 密钥流入口；按 3GPP 位长度加密消息应使用 `eea3Encrypt`，完整性标签使用 `eia3`。
 
 ```ts
-import { zucEncrypt, zucKeystream, zucKeystreamWords } from 'gmkitx';
+import { zucEncrypt, zucDecryptBytes, zucKeystream, zucKeystreamWords } from 'gmkitx';
 
 const cipher = zucEncrypt(key, iv, 'Hello ZUC');
 const keystream = zucKeystream(key, iv, 32); // 32 bytes keystream
 const wordStream = zucKeystreamWords(key, iv, 8); // 8 words
+const binaryPlain = zucDecryptBytes(key, iv, cipher); // Uint8Array
 ```
 
 ### SHA（国际标准摘要）

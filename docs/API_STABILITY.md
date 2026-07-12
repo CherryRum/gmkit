@@ -35,6 +35,11 @@ functions or the `sm2` / `sm3` namespaces in new code.
 The algorithm namespaces remain stable: `sm2.generateKeyPair`, `sm2.sign`,
 `sm2.verify`, `sm3.digest`, and `sm3.hmac` are still supported.
 
+The binary decryption APIs `sm2DecryptBytes`, `sm4DecryptBytes`, and
+`zucDecryptBytes` are stable additions. `eea3Encrypt` is the stable standard
+EEA3 message-encryption entry point; the older `eea3` key-stream API remains
+available for compatibility.
+
 SM2 treats an omitted or empty `userId` as `DEFAULT_USER_ID` for compatibility.
 RNG policy defaults to `warn`: environments without a CSPRNG keep running with
 a one-time security warning. Applications that must fail closed should call

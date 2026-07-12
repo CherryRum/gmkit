@@ -466,7 +466,7 @@ class InteropTest:
                 print(f"✗ {case['id']} failed")
 
 # 运行测试
-test = InteropTest('test/vectors/interop.json')
+test = InteropTest('vectors/interop.json')
 test.run_tests()
 ```
 

@@ -32,6 +32,12 @@
 
 ### Fixed
 
+- Corrected ZUC EEA3/EIA3 to the 3GPP TS 35.221/35.222 IV layouts, key-stream sizing, final MAC word, non-byte-aligned masking, and parameter validation. Added `eea3Encrypt` while retaining the older `eea3` key-stream API.
+- Added binary-safe `sm2DecryptBytes`, `sm4DecryptBytes`, and `zucDecryptBytes` APIs so arbitrary plaintext bytes are not forced through UTF-8 decoding.
+- Hardened SM2 DER ciphertext parsing, userId ENTL bounds, standard-curve enforcement, key-pair consistency checks, and key-exchange length validation without changing the empty-userId compatibility fallback.
+- Replaced SM3 chunk accumulation with a true incremental compression state and added fixed HMAC-SM3 verification.
+- Added Bouncy Castle differential vectors for SM4 CTR/CFB/OFB/GCM/CCM and runtime validation for unsupported SHA output formats.
+
 - **TS SM4 CK table — GB/T 32907-2016 conformance fix** (audit-iter8-D).
   The `CK[i]` constant generation in `packages/ts/src/crypto/sm4/index.ts` omitted
   the standard's required `×7 mod 256` multiplier, producing wrong round
@@ -54,7 +60,7 @@
 - Added `test/aligned-gm-coverage.test.ts` to align TypeScript SM2, SM3, SM4, and ZUC behavior with the Java-side test口径 where the same algorithms are supported.
 - Added Unicode coverage for Chinese text, emoji, mixed Unicode, newlines, tabs, surrounding spaces, symbols, long text, and binary `Uint8Array` payloads.
 - Added stricter ZUC project vectors for key stream bytes, key stream words, UTF-8 payload encryption, Base64 ciphertext, binary payloads, EEA3, and EIA3.
-- Extended `test/interop-compliance.test.ts` and `test/vectors/interop.json` with strict SM4 ciphertext assertions and shared ZUC/SM3 project vectors.
+- Extended `packages/ts/test/interop-compliance.test.ts` and `vectors/interop.json` with strict SM4 ciphertext assertions and shared ZUC/SM3 project vectors.
 
 ### Documentation
 

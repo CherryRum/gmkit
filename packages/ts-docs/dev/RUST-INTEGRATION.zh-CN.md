@@ -440,7 +440,7 @@ fn c1c3c2_to_c1c2c3(cipher: &[u8]) -> Vec<u8> {
 
 fn main() {
     // 读取测试向量
-    let data = fs::read_to_string("test/vectors/interop.json")
+    let data = fs::read_to_string("vectors/interop.json")
         .expect("Unable to read file");
     let vectors: TestVectors = serde_json::from_str(&data)
         .expect("Unable to parse JSON");

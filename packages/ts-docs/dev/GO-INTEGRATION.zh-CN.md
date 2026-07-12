@@ -479,7 +479,7 @@ type TestVectors struct {
 
 func main() {
     // 读取测试向量文件
-    data, err := os.ReadFile("test/vectors/interop.json")
+    data, err := os.ReadFile("vectors/interop.json")
     if err != nil {
         panic(err)
     }

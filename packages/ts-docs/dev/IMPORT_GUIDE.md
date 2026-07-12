@@ -182,7 +182,7 @@ async function hashData(data: string) {
 包含所有 ZUC 流密码算法相关的函数：
 - `encrypt()` / `decrypt()` - 加密/解密
 - `getKeystream()` - 生成密钥流
-- `eea3()` - EEA3 加密算法
+- `eea3()` - 兼容的 word-aligned EEA3 密钥流入口；标准消息加密使用 `eea3Encrypt()`
 - `eia3()` - EIA3 完整性算法
 - `ZUCState` - ZUC 状态类
 

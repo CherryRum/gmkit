@@ -24,7 +24,7 @@ gmkit/
 | SM2 | 支持     | 支持         | 加解密、签名/验签、密钥交换；跨语言需固定 userId、密文模式和签名格式                             |
 | SM3 | 支持     | 支持         | 摘要与 HMAC                                                           |
 | SM4 | 支持     | 支持         | ECB/CBC/CTR/CFB/OFB/GCM/CCM，AEAD 需传递 tag/AAD                       |
-| ZUC | 支持     | 支持         | ZUC-128、EEA3、EIA3；不支持 ZUC-256                                      |
+| ZUC | 支持     | 支持         | ZUC-128、标准 EEA3 消息加密、EIA3 MAC；保留旧密钥流入口，不支持 ZUC-256             |
 | SM9 | 支持     | 不支持        | 仅 Java 侧通过 `gmkit-sm9` + `gmkit-sm9-native-*` JNI/GmSSL runtime 交付 |
 | SHA | JDK 自带 | 支持         | TS 包提供 SHA-1/256/384/512 与 HMAC；SHA-1 仅用于兼容旧系统                     |
 
@@ -49,14 +49,13 @@ mvn -f packages/java/pom.xml -B -ntp test
 mvn -f packages/java/pom.xml -B -ntp -Prelease "-Dgpg.skip=true" -DskipTests verify
 ```
 
-SM9 Java native runtime 构建：
+SM9 Java native runtime 可在需要时本地构建：
 
 ```powershell
 ./scripts/sm9-native.ps1 -Platform current -Stage -PackageRuntime -Test
 ```
 
-该脚本会拉取 GmSSL、构建 JNI 桥接库、把 `gmkitsm9` 与 `gmssl` native 资源填充到对应 `gmkit-sm9-native-*`
-模块，并用 `-Dgmkit.sm9.requireNative=true` 强制跑 SM9 native 测试。Windows 需要 CMake 和 Visual Studio C++ Build Tools。
+普通本地验收不要求 GmSSL/JNI。正式发布由 `sm9-native.yml` 在 GitHub Actions 的 Linux、macOS、Windows 矩阵中构建 runtime，并用 `-Dgmkit.sm9.requireNative=true` 强制测试；本地脚本仅用于维护者调试。
 
 ## CI 与发布标签
 

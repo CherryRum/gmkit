@@ -57,6 +57,22 @@ SM4 是国密对称分组密码算法，块长与密钥长度均为 128 位。
 
 ## 快速开始
 
+### GB/T 32907-2016 固定向量
+
+```ts
+import { CipherMode, PaddingMode, hexToBytes, sm4Encrypt } from 'gmkitx';
+
+const result = sm4Encrypt(
+  '0123456789abcdeffedcba9876543210',
+  hexToBytes('0123456789abcdeffedcba9876543210'),
+  { mode: CipherMode.ECB, padding: PaddingMode.NONE },
+);
+
+if (result.ciphertext !== '681edf34d206965e86b3e94f536e4246') {
+  throw new Error(`SM4 vector mismatch: ${result.ciphertext}`);
+}
+```
+
 ### 基本加密解密
 
 ```typescript
@@ -71,7 +87,9 @@ const ciphertext = sm4Encrypt(key, plaintext);
 
 // 解密
 const decrypted = sm4Decrypt(key, ciphertext);
-console.log(decrypted === plaintext); // true
+if (decrypted !== plaintext) {
+  throw new Error(`SM4 round-trip mismatch: ${decrypted}`);
+}
 ```
 
 ### 使用命名空间
@@ -323,6 +341,8 @@ SM4 的块大小为 16 字节，实际应使用 PKCS7。
 
 ### Zero 填充
 
+`ZERO` 解密会移除末尾的 `0x00` 字节，因此无法无歧义恢复本来就以零字节结尾的二进制明文。需要保留尾零时使用 `NONE`（自行保证块对齐）、带长度字段的协议，或 PKCS7。
+
 ```typescript
 const ciphertext = sm4Encrypt(key, plaintext, {
   mode: CipherMode.CBC,
@@ -437,6 +457,7 @@ const plain2 = sm4.decrypt(aead, { aad: 'request-meta' });
 |------|------|--------|
 | `sm4Encrypt(key, plaintext, options?)` | SM4 加密 | `SM4CipherResult` |
 | `sm4Decrypt(key, ciphertext, options?)` | SM4 解密 | `string` |
+| `sm4DecryptBytes(key, ciphertext, options?)` | SM4 解密为原始字节 | `Uint8Array` |
 
 ### 类 API
 

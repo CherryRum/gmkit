@@ -454,7 +454,7 @@ import java.nio.file.Paths;
 public class SM2Interop {
   public static void main(String[] args) throws Exception {
     ObjectMapper mapper = new ObjectMapper();
-    JsonNode root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
+    JsonNode root = mapper.readTree(Paths.get("vectors/interop.json").toFile());
     JsonNode defaults = root.get("defaults");
 
     for (JsonNode node : root.get("cases")) {
@@ -529,7 +529,7 @@ public class SM2KonaInterop {
 
   public static void main(String[] args) throws Exception {
     ObjectMapper mapper = new ObjectMapper();
-    JsonNode root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
+    JsonNode root = mapper.readTree(Paths.get("vectors/interop.json").toFile());
     JsonNode defaults = root.get("defaults");
     KeyFactory kf = KeyFactory.getInstance("SM2", "KonaCrypto");
 
@@ -606,7 +606,7 @@ public class SM2BCInterop {
 
   public static void main(String[] args) throws Exception {
     ObjectMapper mapper = new ObjectMapper();
-    JsonNode root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
+    JsonNode root = mapper.readTree(Paths.get("vectors/interop.json").toFile());
     JsonNode defaults = root.get("defaults");
     org.bouncycastle.asn1.x9.X9ECParameters curve = GMNamedCurves.getByName("sm2p256v1");
     ECDomainParameters domain = new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN());
@@ -699,7 +699,7 @@ import java.nio.file.Paths;
 public class SM3Interop {
   public static void main(String[] args) throws Exception {
     ObjectMapper mapper = new ObjectMapper();
-    JsonNode root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
+    JsonNode root = mapper.readTree(Paths.get("vectors/interop.json").toFile());
     for (JsonNode node : root.get("cases")) {
       if (!"SM3".equals(node.get("algo").asText())) continue;
       // 每次重新创建 SM3 实例，避免状态串扰
@@ -739,7 +739,7 @@ public class SM3KonaInterop {
 
   public static void main(String[] args) throws Exception {
     ObjectMapper mapper = new ObjectMapper();
-    JsonNode root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
+    JsonNode root = mapper.readTree(Paths.get("vectors/interop.json").toFile());
     for (JsonNode node : root.get("cases")) {
       if (!"SM3".equals(node.get("algo").asText())) continue;
       String expected = node.get("expected").get("hex").asText();
@@ -767,7 +767,7 @@ import java.nio.file.Paths;
 public class SM3BCInterop {
   public static void main(String[] args) throws Exception {
     ObjectMapper mapper = new ObjectMapper();
-    JsonNode root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
+    JsonNode root = mapper.readTree(Paths.get("vectors/interop.json").toFile());
     for (JsonNode node : root.get("cases")) {
       if (!"SM3".equals(node.get("algo").asText())) continue;
       String expected = node.get("expected").get("hex").asText();
@@ -847,7 +847,7 @@ import java.nio.file.Paths;
 public class SM4Interop {
   public static void main(String[] args) throws Exception {
     ObjectMapper mapper = new ObjectMapper();
-    JsonNode root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
+    JsonNode root = mapper.readTree(Paths.get("vectors/interop.json").toFile());
     for (JsonNode node : root.get("cases")) {
       if (!"SM4".equals(node.get("algo").asText())) continue;
 
@@ -911,7 +911,7 @@ public class SM4KonaInterop {
 
   public static void main(String[] args) throws Exception {
     ObjectMapper mapper = new ObjectMapper();
-    JsonNode root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
+    JsonNode root = mapper.readTree(Paths.get("vectors/interop.json").toFile());
     for (JsonNode node : root.get("cases")) {
       if (!"SM4".equals(node.get("algo").asText())) continue;
       String mode = node.get("mode").asText();
@@ -978,7 +978,7 @@ public class SM4BCInterop {
 
   public static void main(String[] args) throws Exception {
     ObjectMapper mapper = new ObjectMapper();
-    JsonNode root = mapper.readTree(Paths.get("test/vectors/interop.json").toFile());
+    JsonNode root = mapper.readTree(Paths.get("vectors/interop.json").toFile());
     for (JsonNode node : root.get("cases")) {
       if (!"SM4".equals(node.get("algo").asText())) continue;
       byte[] key = Hex.decode(node.has("keyHex") ? node.get("keyHex").asText() : root.get("defaults").get("sm4KeyHex").asText());
@@ -1022,6 +1022,6 @@ public class SM4BCInterop {
 ## 扩展指引
 
 - 本页展示 Java 与 gmkitx 的对接方案；其他语言对接请参考对应的语言指南。
-- 所有语言对接均使用统一的测试向量 `test/vectors/interop.json`，确保跨语言互操作性。
+- 所有语言对接均使用统一的测试向量 `vectors/interop.json`，确保跨语言互操作性。
 - 如需切换 Java 库，保持密钥/IV/模式/编码约定不变，替换代码即可。
 - 扩展 CTR/OFB/CFB/GCM 或固定随机源的 SM2 用例时，先确认计数器/AAD/随机策略一致，再写入测试向量并在备注中标明。 

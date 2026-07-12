@@ -1,465 +1,69 @@
 ---
-title: GM/T 0009 标准合规性
+title: GM/T 0009 实现符合性
 icon: certificate
 order: 1
-author: mumu
-date: 2025-11-23
 category:
   - 标准与合规
-  - 国家标准
 tag:
   - GM/T-0009
-  - 标准
-  - 合规性
-  - 认证
+  - SM2
 ---
 
-# GM/T 0009 标准符合性说明
+# GM/T 0009 实现符合性
 
-本文档详细说明 GMKitX 对 GM/T 0009 标准的实现情况，以及从 GM/T 0009-2012 到 GM/T 0009-2023 的演进和兼容性考虑。
+本文说明 `gmkitx` 的 SM2 协议边界。它不是认证声明；发布行为以公开 API、测试和共享向量为准。
 
-## 标准概述
+## 当前实现
 
-### GM/T 0009-2012
+| 项目 | 当前行为 |
+|:--|:--|
+| 曲线 | 仅支持标准 SM2 曲线；类型兼容保留的 `curveParams` 不能切换到自定义曲线 |
+| 用户 ID | `DEFAULT_USER_ID = '1234567812345678'`；省略值和空字符串均回落到该值 |
+| ENTL | 按 UTF-8 字节长度计算，拒绝 8192 字节及以上的 userId，避免 16-bit ENTL 溢出 |
+| 密文排列 | 默认 `C1C3C2`，也支持 `C1C2C3` |
+| 公钥 | 接受非压缩 `04 || x || y` 和压缩 `02/03 || x` |
+| 密文 | 支持 raw C1C3C2/C1C2C3 和严格 ASN.1 DER 解析 |
+| 签名 | 默认 raw `r || s`，支持 DER；验签可显式使用 `auto` |
+| 二进制解密 | 使用 `sm2DecryptBytes`，不经过 UTF-8 转换 |
 
-**GM/T 0009-2012《SM2 密码算法使用规范》** 是中国国家密码管理局发布的 SM2 算法应用规范，规定了：
+## userId 兼容约定
 
-1. SM2 签名算法的实现细节
-2. 默认用户 ID 为 `'1234567812345678'`（16 字节）
-3. 密文格式的推荐使用方式
-4. 公钥格式的表示方法
+历史版本把空字符串当作“未提供”，大量调用方依赖这一行为。为避免旧签名和旧业务升级后改变语义，当前版本继续采用：
 
-### GM/T 0009-2023
-
-**GM/T 0009-2023《SM2 密码算法使用规范》** 是对 GM/T 0009-2012 的修订版本，主要更新包括：
-
-1. **默认用户 ID 变更**：推荐使用空字符串 `''` 作为默认用户标识
-2. **密文模式明确**：明确推荐使用 C1C3C2 模式作为标准密文格式
-3. **公钥格式规范**：明确推荐使用非压缩格式（04 前缀）作为标准公钥格式
-4. **安全性增强**：增强了对密钥长度和参数验证的安全建议
-5. **椭圆曲线参数**：继续使用 GM/T 0003-2012 定义的曲线参数，无变化
-
-## GMKitX 实现状态
-
-### 1. 默认用户 ID (User ID / ENTL)
-
-#### 标准要求
-
-- **GM/T 0009-2012**: 默认值为 `'1234567812345678'`（16 字节 ASCII）
-- **GM/T 0009-2023**: 推荐值为 `''`（空字符串）
-
-#### 实现选择
-
-```typescript
-// src/types/constants.ts
-export const DEFAULT_USER_ID = '1234567812345678';
+```ts
+options?.userId || DEFAULT_USER_ID
 ```
 
-**理由**：为保持向后兼容性，本库继续使用 `'1234567812345678'` 作为默认值。
+因此 `{ userId: '' }` **不是**真实空 ID，而是选择 `DEFAULT_USER_ID`。跨系统签名必须显式约定同一个非空 userId，或者双方都使用默认值。
 
-#### 使用建议
+```ts
+import { sm2GenerateKeyPair, sm2Sign, sm2Verify } from 'gmkitx';
 
-符合 GM/T 0009-2023 最新标准的用法：
+const { privateKey, publicKey } = sm2GenerateKeyPair();
+const userId = 'example-service-v1';
+const message = '可验证消息';
+const signature = sm2Sign(privateKey, message, { userId });
 
-```typescript
-import { sm2Sign, sm2Verify } from 'gmkitx';
-
-// 签名时显式指定空字符串 userId
-const signature = sm2Sign(privateKey, data, { userId: '' });
-
-// 验签时必须使用相同的 userId
-const isValid = sm2Verify(publicKey, data, signature, { userId: '' });
-```
-
-保持向后兼容的用法（默认）：
-
-```typescript
-import { sm2Sign, sm2Verify } from 'gmkitx';
-
-// 使用默认 userId '1234567812345678'
-const signature = sm2Sign(privateKey, data);
-const isValid = sm2Verify(publicKey, data, signature);
-```
-
-#### 技术说明
-
-用户 ID 用于计算 Z 值（用户标识值）：
-
-```
-Z = SM3(ENTL || ID || a || b || xG || yG || xA || yA)
-```
-
-其中：
-- `ENTL` = 用户 ID 的位长度（2 字节，大端序）
-- `ID` = 用户标识符
-- `a, b, xG, yG` = SM2 曲线参数
-- `xA, yA` = 用户公钥坐标
-
-签名时计算的消息摘要 `e = SM3(Z || M)`，因此不同的用户 ID 会产生不同的签名。
-
-**安全性影响**：
-- 使用空字符串作为默认 userId 可以减少一些计算开销
-- 使用固定的 userId 不影响签名的安全性，只要签名和验签使用相同的 userId
-- 自定义 userId 可以将签名与特定用户身份绑定，增强身份验证
-
-### 2. 密文模式 (Cipher Mode)
-
-#### 标准要求
-
-- **GM/T 0009-2012**: 未明确规定首选模式，C1C3C2 和 C1C2C3 都可使用
-- **GM/T 0009-2023**: 明确推荐使用 C1C3C2 模式
-
-#### 实现状态
-
-```typescript
-// 默认使用 C1C3C2 模式
-export const SM2CipherMode = {
-  C1C3C2: 'C1C3C2',  // 推荐，GM/T 0009-2023 标准
-  C1C2C3: 'C1C2C3',  // 兼容旧系统
-} as const;
-
-// 加密默认使用 C1C3C2
-export function encrypt(
-  publicKey: string,
-  data: string | Uint8Array,
-  mode: SM2CipherModeType = SM2CipherMode.C1C3C2
-): string;
-```
-
-**符合标准**：✅ 默认使用 GM/T 0009-2023 推荐的 C1C3C2 模式
-
-#### 密文格式说明
-
-SM2 密文由三部分组成：
-- **C1**: 椭圆曲线点（65 字节非压缩或 33 字节压缩）
-- **C2**: 加密后的明文
-- **C3**: SM3 哈希值（32 字节）
-
-两种模式的区别：
-- **C1C3C2**: `C1 || C3 || C2`（推荐）
-- **C1C2C3**: `C1 || C2 || C3`（兼容）
-
-#### 自动格式检测
-
-本库支持解密时自动检测密文格式：
-
-```typescript
-// 自动检测模式（推荐）
-const decrypted = sm2Decrypt(privateKey, encrypted);
-
-// 明确指定模式（性能更优）
-const decrypted = sm2Decrypt(privateKey, encrypted, { mode: SM2CipherMode.C1C3C2 });
-```
-
-检测规则：
-1. 首字节为 `0x30`: ASN.1 DER 编码格式
-2. 首字节为 `0x04`: C1 为非压缩点，默认尝试 C1C3C2
-3. 首字节为 `0x02/0x03`: C1 为压缩点，默认尝试 C1C3C2
-4. 如果 C1C3C2 解密失败，自动尝试 C1C2C3
-
-### 3. 公钥格式 (Public Key Format)
-
-#### 标准要求
-
-- **GM/T 0009-2012**: 未明确规定首选格式
-- **GM/T 0009-2023**: 明确推荐使用非压缩格式（04 前缀）
-
-#### 实现状态
-
-```typescript
-// 默认生成非压缩格式公钥
-export function generateKeyPair(compressed: boolean = false): KeyPair;
-
-// 从私钥派生公钥，默认非压缩格式
-export function getPublicKeyFromPrivateKey(
-  privateKey: string,
-  compressed: boolean = false
-): string;
-```
-
-**符合标准**：✅ 默认使用 GM/T 0009-2023 推荐的非压缩格式
-
-#### 格式说明
-
-**非压缩格式**（65 字节 = 130 十六进制字符）：
-```
-04 || x (32 bytes) || y (32 bytes)
-```
-
-**压缩格式**（33 字节 = 66 十六进制字符）：
-```
-02 || x (32 bytes)  // y 为偶数
-03 || x (32 bytes)  // y 为奇数
-```
-
-#### 格式转换支持
-
-```typescript
-import { sm2CompressPublicKey, sm2DecompressPublicKey } from 'gmkitx';
-
-// 压缩公钥
-const compressed = sm2CompressPublicKey(uncompressedKey);
-
-// 解压公钥
-const uncompressed = sm2DecompressPublicKey(compressedKey);
-```
-
-**优势对比**：
-- **非压缩格式**：无需额外计算，直接可用，标准推荐
-- **压缩格式**：节省约 49% 存储空间，适合资源受限环境
-
-### 4. 椭圆曲线参数
-
-#### 标准要求
-
-- **GM/T 0009-2012**: 使用 GM/T 0003-2012 定义的曲线参数
-- **GM/T 0009-2023**: 继续使用相同的曲线参数
-
-#### 实现状态
-
-```typescript
-// src/crypto/sm2/curve.ts
-export const SM2_CURVE_PARAMS = {
-  p: 'FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFF',
-  a: 'FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFC',
-  b: '28E9FA9E9D9F5E344D5A9E4BCF6509A7F39789F515AB8F92DDBCBD414D940E93',
-  Gx: '32C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7',
-  Gy: 'BC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0',
-  n: 'FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFF7203DF6B21C6052B53BBF40939D54123',
-  h: 1,
-} as const;
-```
-
-**符合标准**：✅ 完全符合 GM/T 0003-2012 和 GM/T 0009-2023
-
-### 5. 密钥派生函数 (KDF)
-
-#### 标准要求
-
-使用基于 SM3 的 KDF，定义在 GM/T 0003.1-2012：
-
-```
-KDF(Z, klen) = K1 || K2 || ... || Kt
-其中 Ki = SM3(Z || counter_i), counter_i 为 32 位大端整数
-```
-
-#### 实现状态
-
-```typescript
-// src/crypto/sm2/index.ts
-function kdf(z: Uint8Array, klen: number): Uint8Array {
-  const k = new Uint8Array(klen);
-  const input = new Uint8Array(z.length + 4);
-  input.set(z, 0);
-  
-  let offset = 0;
-  for (let i = 1; offset < klen; i++) {
-    // 32 位大端计数器
-    input[z.length] = (i >> 24) & 0xff;
-    input[z.length + 1] = (i >> 16) & 0xff;
-    input[z.length + 2] = (i >> 8) & 0xff;
-    input[z.length + 3] = i & 0xff;
-    
-    const hashHex = sm3Digest(input);
-    const hash = hexToBytes(hashHex);
-    
-    const toCopy = Math.min(hash.length, klen - offset);
-    k.set(hash.slice(0, toCopy), offset);
-    offset += toCopy;
-  }
-  
-  // 验证不全为零
-  if (k.every(byte => byte === 0)) {
-    throw new Error('KDF derived key is all zeros');
-  }
-  
-  return k;
+if (!sm2Verify(publicKey, message, signature, { userId })) {
+  throw new Error('SM2 signature verification failed');
 }
 ```
 
-**符合标准**：✅ 完全符合 GM/T 0003.1-2012 和 GM/T 0009-2023
+未来若需要表达真实空 ID，应增加显式新选项或新 API，不能修改现有空字符串回落语义。
 
-#### 优化措施
+## 互操作检查项
 
-1. **内存优化**：预分配输入缓冲区，避免重复分配
-2. **零值检测**：在复制过程中同时检测是否有非零字节
-3. **错误处理**：及时检测并报告无效的点乘结果
+1. 固定 `userId`，不要依赖对方库的默认值。
+2. 固定 `C1C3C2` 或 `C1C2C3`，不要把自动探测当成协议字段。
+3. 固定公钥表示、密文编码和签名格式。
+4. 二进制明文使用 `Uint8Array` 和 `sm2DecryptBytes`。
+5. 用真实公私钥做解密、验签和篡改拒绝测试；SM2 加密和签名含随机数，不能默认比较完整字面值。
 
-## 兼容性矩阵
+## 验证命令
 
-| 特性 | GM/T 0009-2012 | GM/T 0009-2023 | GMKitX 实现 | 兼容性 |
-|------|---------------|---------------|------------|--------|
-| 默认用户 ID | '1234567812345678' | '' | '1234567812345678' | 向后兼容，支持显式指定 |
-| 密文模式 | C1C3C2/C1C2C3 | C1C3C2（推荐） | C1C3C2（默认） | ✅ 符合最新标准 |
-| 公钥格式 | 压缩/非压缩 | 非压缩（推荐） | 非压缩（默认） | ✅ 符合最新标准 |
-| 椭圆曲线参数 | GM/T 0003-2012 | 相同 | 相同 | ✅ 完全符合 |
-| KDF 函数 | GM/T 0003.1-2012 | 相同 | 相同 | ✅ 完全符合 |
-| 签名格式 | Raw/DER | 两者皆可 | 两者皆可 | ✅ 完全符合 |
-
-## 迁移指南
-
-### 从 GM/T 0009-2012 迁移到 GM/T 0009-2023
-
-#### 1. 更新默认用户 ID（可选）
-
-如果要完全符合 GM/T 0009-2023，建议更新所有签名/验签代码：
-
-**之前（GM/T 0009-2012 风格）**：
-```typescript
-const signature = sm2Sign(privateKey, data);
-const isValid = sm2Verify(publicKey, data, signature);
+```bash
+npm test -w packages/ts -- sm2 interop-compliance
+mvn -f packages/java/pom.xml -B -ntp -pl gmkit test
 ```
 
-**之后（GM/T 0009-2023 风格）**：
-```typescript
-const signature = sm2Sign(privateKey, data, { userId: '' });
-const isValid = sm2Verify(publicKey, data, signature, { userId: '' });
-```
-
-**注意**：必须同时更新签名和验签代码，否则验签会失败！
-
-#### 2. 确认密文模式
-
-确保加密/解密使用 C1C3C2 模式：
-
-```typescript
-// 推荐：明确指定模式
-const encrypted = sm2Encrypt(publicKey, plaintext, { mode: SM2CipherMode.C1C3C2 });
-const decrypted = sm2Decrypt(privateKey, encrypted, { mode: SM2CipherMode.C1C3C2 });
-
-// 或使用默认值（已经是 C1C3C2）
-const encrypted = sm2Encrypt(publicKey, plaintext);
-const decrypted = sm2Decrypt(privateKey, encrypted);
-```
-
-#### 3. 确认公钥格式
-
-确保使用非压缩格式公钥：
-
-```typescript
-// 推荐：使用默认的非压缩格式
-const keyPair = sm2GenerateKeyPair(); // compressed = false（默认）
-
-// 如果已有压缩公钥，可以解压
-const uncompressedKey = sm2DecompressPublicKey(compressedKey);
-```
-
-### 向后兼容性保证
-
-GMKitX 通过以下机制确保向后兼容：
-
-1. **默认值保持不变**：DEFAULT_USER_ID 仍为 `'1234567812345678'`
-2. **支持两种密文模式**：C1C3C2 和 C1C2C3
-3. **支持两种公钥格式**：压缩和非压缩
-4. **自动格式检测**：解密和验签时自动识别格式
-5. **显式配置优先**：用户可以通过参数明确指定格式
-
-## 性能考虑
-
-### GM/T 0009-2023 的性能优化
-
-1. **空字符串用户 ID**
-   - 减少 Z 值计算的输入长度
-   - 可能带来轻微性能提升（以实测为准）
-
-2. **C1C3C2 密文模式**
-   - 对性能无影响
-   - 主要是顺序差异，不影响计算量
-
-3. **非压缩公钥格式**
-   - 无需椭圆曲线点解压计算
-   - 签名验签时可能略优（以实测为准）
-   - 存储和传输增加约 49% 开销
-
-### 性能差异说明（需实测）
-
-GM/T 0009-2023 的更新主要是推荐参数变化，整体性能影响通常很小。  
-请在目标平台自行基准测试，以避免误差。
-
-## 测试验证
-
-### 单元测试覆盖
-
-GMKitX 现有测试覆盖核心路径，包含：
-
-1. ✅ 默认用户 ID 和自定义用户 ID 的签名验签
-2. ✅ C1C3C2 和 C1C2C3 密文模式的加密解密
-3. ✅ 压缩和非压缩公钥格式的生成和转换
-4. ✅ ASN.1 DER 编码的签名格式转换
-5. ✅ 密钥交换协议的完整流程
-6. ✅ 边界条件和错误处理
-
-### 互操作性验证（建议）
-
-与外部实现对接时建议验证：
-
-1. OpenSSL 3.x（SM2 OID 正确）
-2. GmSSL
-3. 其他主流 SM2 实现
-
-## 常见问题
-
-### Q1: 是否必须更新到 GM/T 0009-2023？
-
-**答**：不是强制的。GM/T 0009-2023 是推荐标准，主要更新是默认值的调整。如果你的系统已经稳定运行，可以继续使用 GM/T 0009-2012 风格（本库默认兼容）。
-
-### Q2: 更新用户 ID 会导致现有签名失效吗？
-
-**答**：是的。如果改变用户 ID，所有使用旧用户 ID 的签名都需要重新生成。建议：
-- 新系统：使用空字符串 `''`
-- 已有系统：继续使用 `'1234567812345678'`
-- 迁移时：需要重新签名所有数据
-
-### Q3: C1C3C2 和 C1C2C3 可以互操作吗？
-
-**答**：不可以直接互操作。但本库的解密函数支持自动检测，可以自动处理两种格式。如果与其他系统集成，建议明确约定使用 C1C3C2 模式。
-
-### Q4: 压缩公钥是否安全？
-
-**答**：压缩公钥与非压缩公钥安全性完全相同，只是表示形式不同。压缩公钥通过椭圆曲线方程可以完整恢复出 y 坐标。选择哪种格式主要取决于：
-- 存储/传输受限：使用压缩格式
-- 性能优先：使用非压缩格式（无需解压计算）
-- 标准符合：GM/T 0009-2023 推荐非压缩格式
-
-### Q5: 如何确保与其他系统的互操作性？
-
-**答**：与其他系统集成时，建议明确约定：
-1. 用户 ID（空字符串或 '1234567812345678'）
-2. 密文模式（C1C3C2 或 C1C2C3）
-3. 公钥格式（压缩或非压缩）
-4. 签名格式（Raw 或 DER）
-
-本库支持所有这些选项，可以灵活适配各种系统。
-
-## 参考资料
-
-### 标准文档
-
-1. **GM/T 0003-2012** - SM2 椭圆曲线公钥密码算法
-2. **GM/T 0009-2012** - SM2 密码算法使用规范（已被替代）
-3. **GM/T 0009-2023** - SM2 密码算法使用规范（当前版本）
-4. **GM/T 0004-2012** - SM3 密码杂凑算法
-5. **GB/T 33560-2017** - 信息安全技术 密码应用标识规范
-
-### 相关链接
-
-- [GMKitX GitHub](https://github.com/gmkits/gmkit)
-- [GMKitX NPM](https://www.npmjs.com/package/gmkitx)
-- [中国商用密码标准](http://www.gmbz.org.cn/)
-
-## 版本历史
-
-- **v0.1.0**: 初始版本，基于 GM/T 0009-2012
-- **v0.9.3**: 文档与示例对齐，补充标准与互操作说明
-- **v0.10.0-preview.1**: 加强输入验证，拒绝非法模式、奇数长度 hex 与不合规标签长度
-- **当前版本** (v0.10.0-preview.1): 文档同步、协议边界收紧并保持向后兼容
-
-## 贡献
-
-欢迎提交问题和改进建议！如果发现任何标准符合性问题，请在 GitHub 上提出 issue。
-
-## 许可证
-
-Apache-2.0
-
-
+共享互操作数据位于仓库根目录 `vectors/interop.json`。
