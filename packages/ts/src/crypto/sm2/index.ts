@@ -16,6 +16,7 @@ import {
   decodeInput,
   autoDecodeString,
   encodeOutput,
+  getRandomBytes,
   type BytesLike,
 } from '../../core/utils';
 import {
@@ -601,6 +602,104 @@ function computeZ(userId: string, publicKey: string): Uint8Array {
   return hexToBytes(zHex);
 }
 
+const SM2_N = BigInt('0x' + SM2_CURVE_PARAMS.n);
+
+function mod(value: bigint, modulo: bigint = SM2_N): bigint {
+  const result = value % modulo;
+  return result >= 0n ? result : result + modulo;
+}
+
+function modInverse(value: bigint, modulo: bigint = SM2_N): bigint {
+  let a = mod(value, modulo);
+  let b = modulo;
+  let x = 0n;
+  let y = 1n;
+  let u = 1n;
+  let v = 0n;
+
+  while (a !== 0n) {
+    const q = b / a;
+    [x, u] = [u, x - q * u];
+    [y, v] = [v, y - q * v];
+    [b, a] = [a, b - q * a];
+  }
+
+  if (b !== 1n) {
+    throw new Error('Invalid scalar: inverse does not exist');
+  }
+  return mod(x, modulo);
+}
+
+function bytesToBigIntBE(bytes: Uint8Array): bigint {
+  return BigInt('0x' + bytesToHex(bytes));
+}
+
+function bigIntTo32Bytes(value: bigint): Uint8Array {
+  return hexToBytes(mod(value).toString(16).padStart(64, '0'));
+}
+
+function randomScalar(): bigint {
+  while (true) {
+    const k = bytesToBigIntBE(getRandomBytes(32));
+    if (k > 0n && k < SM2_N) {
+      return k;
+    }
+  }
+}
+
+function sm2PointX(point: ReturnType<typeof sm2.Point.BASE.multiply>): bigint {
+  return bytesToBigIntBE(point.toBytes(false).slice(1, 33));
+}
+
+function sm2SignDigest(e: Uint8Array, privateKeyBytes: Uint8Array): Uint8Array {
+  const d = bytesToBigIntBE(privateKeyBytes);
+  if (d <= 0n || d >= SM2_N) {
+    throw new Error('Invalid private key: scalar out of range');
+  }
+
+  const eInt = bytesToBigIntBE(e);
+  const onePlusDInv = modInverse(1n + d);
+
+  while (true) {
+    const k = randomScalar();
+    const x1 = sm2PointX(sm2.Point.BASE.multiply(k));
+    const r = mod(eInt + x1);
+
+    if (r === 0n || r + k === SM2_N) {
+      continue;
+    }
+
+    // SM2 签名不是 ECDSA：s = (1 + d)^-1 * (k - r*d) mod n。
+    const s = mod(onePlusDInv * (k - r * d));
+    if (s === 0n) {
+      continue;
+    }
+
+    const signature = new Uint8Array(64);
+    signature.set(bigIntTo32Bytes(r), 0);
+    signature.set(bigIntTo32Bytes(s), 32);
+    return signature;
+  }
+}
+
+function sm2VerifyDigest(e: Uint8Array, publicKeyHex: string, r: bigint, s: bigint): boolean {
+  if (r <= 0n || r >= SM2_N || s <= 0n || s >= SM2_N) {
+    return false;
+  }
+
+  const t = mod(r + s);
+  if (t === 0n) {
+    return false;
+  }
+
+  const publicPoint = sm2.Point.fromHex(publicKeyHex);
+  // 验签公式为 (x1, y1) = [s]G + [t]P，不能复用 ECDSA 的 u1/u2 公式。
+  const point = sm2.Point.BASE.multiply(s).add(publicPoint.multiply(t));
+  const x1 = sm2PointX(point);
+  const R = mod(bytesToBigIntBE(e) + x1);
+  return R === r;
+}
+
 /**
  * 签名选项
  *
@@ -1019,7 +1118,7 @@ export function sign(
 ): string {
   // 自动识别并规范化私钥输入
   const cleanPrivateKey = normalizePrivateKeyInput(privateKey);
-  const userId = options?.userId || DEFAULT_USER_ID;
+  const userId = options?.userId ?? DEFAULT_USER_ID;
   const signatureFormat = normalizeSM2SignatureFormat(options?.signatureFormat);
   const outputFormat = normalizeSM2OutputFormat(options?.outputFormat);
   const skipZ = options?.skipZComputation || false;
@@ -1051,8 +1150,7 @@ export function sign(
     e = hexToBytes(eHex);
   }
 
-  // prehash: false 因为我们已经计算了 SM3 哈希
-  const signatureBytes = sm2.sign(e, privateKeyBytes, {prehash: false});
+  const signatureBytes = sm2SignDigest(e, privateKeyBytes);
 
   // 根据选项返回 DER 编码或原始格式
   if (signatureFormat === 'der') {
@@ -1082,7 +1180,7 @@ export function verify(
   try {
     // 自动识别并规范化公钥输入
     const cleanPublicKey = normalizePublicKeyInput(publicKey);
-    const userId = options?.userId || DEFAULT_USER_ID;
+    const userId = options?.userId ?? DEFAULT_USER_ID;
     const signatureFormat = normalizeSM2SignatureInputFormat(options?.signatureFormat);
     const inputFormat = options?.inputFormat;
     const skipZ = options?.skipZComputation || false;
@@ -1139,18 +1237,7 @@ export function verify(
       s = bytesToHex(sigBytes.slice(32, 64));
     }
 
-    // 使用 @noble/curves 验证签名
-    const publicKeyBytes = hexToBytes(cleanPublicKey);
-
-    // 构造签名字节（compact 格式：r || s）
-    const rBytes = hexToBytes(r.padStart(64, '0'));
-    const sBytes = hexToBytes(s.padStart(64, '0'));
-    const signatureBytes = new Uint8Array(64);
-    signatureBytes.set(rBytes, 0);
-    signatureBytes.set(sBytes, 32);
-
-    // prehash: false 因为我们已经计算了 SM3 哈希
-    return sm2.verify(signatureBytes, e, publicKeyBytes, {prehash: false});
+    return sm2VerifyDigest(e, cleanPublicKey, BigInt('0x' + r), BigInt('0x' + s));
   } catch (error) {
     // 验证失败
     return false;
@@ -1307,11 +1394,11 @@ export function keyExchange(params: SM2KeyExchangeParams): SM2KeyExchangeResult 
   const selfPublicKey = params.publicKey
     ? normalizePublicKeyInput(params.publicKey)
     : getPublicKeyFromPrivateKey(selfPrivateKey);
-  const selfUserId = params.userId || DEFAULT_USER_ID;
+  const selfUserId = params.userId ?? DEFAULT_USER_ID;
 
   const peerPublicKey = normalizePublicKeyInput(params.peerPublicKey);
   const peerTempPublicKey = normalizePublicKeyInput(params.peerTempPublicKey);
-  const peerUserId = params.peerUserId || DEFAULT_USER_ID;
+  const peerUserId = params.peerUserId ?? DEFAULT_USER_ID;
 
   const keyLength = params.keyLength || 16;
   const isInitiator = params.isInitiator;
@@ -1409,26 +1496,32 @@ export function keyExchange(params: SM2KeyExchangeParams): SM2KeyExchangeResult 
   const xPeer = peerTempPublicKeyBytes.slice(1, 33);
   const yPeer = peerTempPublicKeyBytes.slice(33, 65);
 
-  // 构造内部哈希输入
-  // 发起方 A: xv || ZA || ZB || xRA || yRA || xRB || yRB
-  // 响应方 B: xv || ZB || ZA || xRB || yRB || xRA || yRA
+  // 确认标签始终按 A/B 协议视角拼接，响应方不能改成 self/peer 顺序。
+  // A = 发起方，B = 响应方：xv || ZA || ZB || xRA || yRA || xRB || yRB。
+  const zA = isInitiator ? selfZ : peerZ;
+  const zB = isInitiator ? peerZ : selfZ;
+  const xRA = isInitiator ? xSelf : xPeer;
+  const yRA = isInitiator ? ySelf : yPeer;
+  const xRB = isInitiator ? xPeer : xSelf;
+  const yRB = isInitiator ? yPeer : ySelf;
+
   const innerHashInput = new Uint8Array(
-    xv.length + selfZ.length + peerZ.length + xSelf.length + ySelf.length + xPeer.length + yPeer.length
+    xv.length + zA.length + zB.length + xRA.length + yRA.length + xRB.length + yRB.length
   );
   let offset = 0;
   innerHashInput.set(xv, offset);
   offset += xv.length;
-  innerHashInput.set(selfZ, offset);
-  offset += selfZ.length;
-  innerHashInput.set(peerZ, offset);
-  offset += peerZ.length;
-  innerHashInput.set(xSelf, offset);
-  offset += xSelf.length;
-  innerHashInput.set(ySelf, offset);
-  offset += ySelf.length;
-  innerHashInput.set(xPeer, offset);
-  offset += xPeer.length;
-  innerHashInput.set(yPeer, offset);
+  innerHashInput.set(zA, offset);
+  offset += zA.length;
+  innerHashInput.set(zB, offset);
+  offset += zB.length;
+  innerHashInput.set(xRA, offset);
+  offset += xRA.length;
+  innerHashInput.set(yRA, offset);
+  offset += yRA.length;
+  innerHashInput.set(xRB, offset);
+  offset += xRB.length;
+  innerHashInput.set(yRB, offset);
 
   const innerHash = sm3Digest(innerHashInput);
   const innerHashBytes = hexToBytes(innerHash);

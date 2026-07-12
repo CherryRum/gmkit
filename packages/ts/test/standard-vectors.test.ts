@@ -265,6 +265,21 @@ describe('SM2 标准测试向量', () => {
   });
 
   describe('签名验签测试向量', () => {
+    it('应该验证标准 SM2 raw 签名向量', () => {
+      const message = 'abc';
+      const publicKey =
+        '04609EA50E3212338AB9074492175300724BA2ACEC5DADAA26A0188CE426BE5769' +
+        '7D5C8ECDA528D93EA689D5F4975508694299129C1AE6B2D10B11E9BE0CEF8C1B';
+      const signature =
+        '44A6DDC9492AA9C16EA85FF4BC618F35AAF71D5599264E291AD3D4122FFE645B' +
+        '18148DF631C2F3125A347D4C37123005DC5333707CA9DF48FD47FB9CC267DC7E';
+
+      expect(verify(publicKey, message, signature, {
+        signatureFormat: 'raw',
+        userId: '1234567812345678',
+      })).toBe(true);
+    });
+
     it('应该能够对短消息进行签名和验签', () => {
       const keyPair = generateKeyPair();
       const message = 'Hello, SM2!';

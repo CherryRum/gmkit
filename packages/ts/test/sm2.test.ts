@@ -502,6 +502,10 @@ describe('SM2 国密算法测试', () => {
       expect(resultA.s2?.length).toBe(64);
       expect(resultB.s1?.length).toBe(64);
       expect(resultB.s2?.length).toBe(64);
+
+      // 确认标签必须从同一个 A/B 协议视角计算；双方本地重算值应一致。
+      expect(resultA.s1).toBe(resultB.s1);
+      expect(resultA.s2).toBe(resultB.s2);
     });
 
     it('应该支持自定义用户 ID', () => {
