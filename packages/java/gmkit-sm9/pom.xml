@@ -12,7 +12,7 @@
 
     <artifactId>gmkit-sm9</artifactId>
     <name>GMKit SM9</name>
-    <description>GMKit SM9 Java API，通过 JNI 桥接 GmSSL，native 二进制由独立平台模块提供</description>
+    <description>GMKit SM9 Java API，通过 JNI 桥接 GmSSL，并在单一 JAR 中提供多平台 native runtime</description>
 
     <dependencies>
         <dependency>

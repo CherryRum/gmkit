@@ -274,17 +274,6 @@
         </profile>
 
         <profile>
-            <id>native-modules</id>
-            <modules>
-                <module>gmkit-sm9-native-linux-x86_64</module>
-                <module>gmkit-sm9-native-linux-aarch64</module>
-                <module>gmkit-sm9-native-darwin-x86_64</module>
-                <module>gmkit-sm9-native-darwin-aarch64</module>
-                <module>gmkit-sm9-native-windows-x86_64</module>
-            </modules>
-        </profile>
-
-        <profile>
             <id>release</id>
             <build>
                 <plugins>

@@ -13,7 +13,7 @@
     <artifactId>gmkit-bom</artifactId>
     <packaging>pom</packaging>
     <name>GMKit BOM</name>
-    <description>GMKit Maven BOM，用于统一 gmkit、gmkit-sm9 与平台 native 模块版本</description>
+    <description>GMKit Maven BOM，用于统一 gmkit 与内置多平台 runtime 的 gmkit-sm9 版本</description>
 
     <dependencyManagement>
         <dependencies>
@@ -25,31 +25,6 @@
             <dependency>
                 <groupId>cn.gmkit</groupId>
                 <artifactId>gmkit-sm9</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>cn.gmkit</groupId>
-                <artifactId>gmkit-sm9-native-linux-x86_64</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>cn.gmkit</groupId>
-                <artifactId>gmkit-sm9-native-linux-aarch64</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>cn.gmkit</groupId>
-                <artifactId>gmkit-sm9-native-darwin-x86_64</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>cn.gmkit</groupId>
-                <artifactId>gmkit-sm9-native-darwin-aarch64</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>cn.gmkit</groupId>
-                <artifactId>gmkit-sm9-native-windows-x86_64</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

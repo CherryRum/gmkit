@@ -11,8 +11,8 @@
  * 单次加密明文上限为 {@value cn.gmkit.sm9.SM9EncMasterKey#MAX_PLAINTEXT_SIZE} 字节。
  *
  * <h2>平台与 native 库</h2>
- * 该模块依赖按平台分发的 native 库（{@code gmkitsm9} 及其依赖 {@code gmssl}），
- * 当当前操作系统 / CPU 架构无可用 native 库时，
+ * 该模块在同一个 JAR 中携带已验证平台的 native 库（{@code gmkitsm9} 及其依赖 {@code gmssl}），
+ * 加载器只会解压并加载当前操作系统 / CPU 架构对应的文件；无可用 native 库时，
  * {@link cn.gmkit.sm9.SM9#isAvailable()} 返回 {@code false}。
  */
 package cn.gmkit.sm9;

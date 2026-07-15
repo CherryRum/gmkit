@@ -29,17 +29,12 @@ function Require-Command {
 function Invoke-External {
     param(
         [string]$File,
-        [string[]]$Arguments,
-        [string]$WorkingDirectory = ''
+        [string[]]$Arguments
     )
 
     $display = "$File $($Arguments -join ' ')"
     Write-Host "==> $display"
-    if ($WorkingDirectory) {
-        & $File @Arguments 2>&1 | Write-Host
-    } else {
-        & $File @Arguments 2>&1 | Write-Host
-    }
+    & $File @Arguments 2>&1 | Write-Host
     if ($LASTEXITCODE -ne 0) {
         throw "命令失败：$display"
     }
@@ -74,35 +69,30 @@ function Get-NativeInfo {
     switch ($PlatformId) {
         'linux-x86_64' {
             return @{
-                Module = 'gmkit-sm9-native-linux-x86_64'
                 Bridge = 'libgmkitsm9.so'
                 Gmssl = 'libgmssl.so.3'
             }
         }
         'linux-aarch64' {
             return @{
-                Module = 'gmkit-sm9-native-linux-aarch64'
                 Bridge = 'libgmkitsm9.so'
                 Gmssl = 'libgmssl.so.3'
             }
         }
         'darwin-x86_64' {
             return @{
-                Module = 'gmkit-sm9-native-darwin-x86_64'
                 Bridge = 'libgmkitsm9.dylib'
                 Gmssl = 'libgmssl.3.dylib'
             }
         }
         'darwin-aarch64' {
             return @{
-                Module = 'gmkit-sm9-native-darwin-aarch64'
                 Bridge = 'libgmkitsm9.dylib'
                 Gmssl = 'libgmssl.3.dylib'
             }
         }
         'windows-x86_64' {
             return @{
-                Module = 'gmkit-sm9-native-windows-x86_64'
                 Bridge = 'gmkitsm9.dll'
                 Gmssl = 'gmssl.dll'
             }
@@ -295,11 +285,11 @@ Copy-Item -LiteralPath $bridgePath -Destination (Join-Path $runtimeDir $nativeIn
 Copy-Item -LiteralPath $gmsslPath -Destination (Join-Path $runtimeDir $nativeInfo.Gmssl) -Force
 
 if ($Stage) {
-    $stageDir = Join-Path $javaRoot "$($nativeInfo.Module)/src/main/resources/native/$platformId"
+    $stageDir = Join-Path $javaRoot "gmkit-sm9/src/main/resources/native/$platformId"
     New-Item -ItemType Directory -Force -Path $stageDir | Out-Null
     Copy-Item -LiteralPath (Join-Path $runtimeDir $nativeInfo.Bridge) -Destination (Join-Path $stageDir $nativeInfo.Bridge) -Force
     Copy-Item -LiteralPath (Join-Path $runtimeDir $nativeInfo.Gmssl) -Destination (Join-Path $stageDir $nativeInfo.Gmssl) -Force
-    Write-Host "==> 已填充 runtime 模块：$stageDir"
+    Write-Host "==> 已填充 gmkit-sm9 runtime：$stageDir"
 }
 
 if ($PackageRuntime) {
@@ -310,8 +300,8 @@ if ($PackageRuntime) {
         '-f', (Join-Path $javaRoot 'pom.xml'),
         '-B',
         '-ntp',
-        '-Pnative-modules,release',
-        '-pl', $nativeInfo.Module,
+        '-Prelease',
+        '-pl', 'gmkit-sm9',
         '-Dgpg.skip=true',
         '-DskipTests',
         'package'
