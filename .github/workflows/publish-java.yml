@@ -4,16 +4,19 @@ on:
   push:
     tags:
       - 'java-v*'
-      - 'v*'
   workflow_dispatch:
 
 permissions:
   contents: read
-  packages: write
+
+env:
+  GMSSL_COMMIT: d655c06b3a6b0fe8cff900f293bf0e5aac6eb0a2
 
 jobs:
   verify-release:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -26,20 +29,34 @@ jobs:
             packages/java/gmkit/pom.xml
             packages/java/gmkit-sm9/pom.xml
             packages/java/gmkit-bom/pom.xml
-      - name: Check tag version
-        if: startsWith(github.ref, 'refs/tags/java-v') || startsWith(github.ref, 'refs/tags/v')
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - id: version
+        name: Check release version
         shell: bash
         run: |
-          tag_name="${GITHUB_REF_NAME}"
-          tag_version="${tag_name#java-v}"
-          tag_version="${tag_version#v}"
           pom_version="$(mvn -f packages/java/pom.xml -q -DforceStdout help:evaluate -Dexpression=project.version)"
-          test "$tag_version" = "$pom_version"
-      - run: mvn -f packages/java/pom.xml -B -ntp -Prelease -Dgpg.skip=true -DskipTests verify
+          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            tag_version="${GITHUB_REF_NAME#java-v}"
+            test "$tag_version" = "$pom_version"
+          fi
+          echo "version=$pom_version" >> "$GITHUB_OUTPUT"
+      - run: npm ci
+      - name: Repair Rollup optional native package
+        run: npm install --no-save --package-lock=false @rollup/rollup-linux-x64-gnu@$(node -p "require('./node_modules/rollup/package.json').version")
+      - name: Java tests
+        run: mvn -f packages/java/pom.xml -B -ntp test
+      - name: Java and TypeScript parity
+        run: npm run parity
+      - name: Release artifacts
+        run: mvn -f packages/java/pom.xml -B -ntp -Prelease -Dgpg.skip=true -DskipTests verify
 
   build-native-runtimes:
-    if: startsWith(github.ref, 'refs/tags/java-v') || startsWith(github.ref, 'refs/tags/v')
     needs: verify-release
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -59,7 +76,6 @@ jobs:
           - os: windows-2022
             platform: windows-x86_64
             generator: 'Visual Studio 17 2022'
-    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -70,43 +86,30 @@ jobs:
           cache-dependency-path: |
             packages/java/pom.xml
             packages/java/gmkit-sm9/pom.xml
-      - name: Build SM9 native runtime
+      - name: Build and test SM9 native runtime
         shell: pwsh
         run: |
           $scriptArgs = @{
             Platform = '${{ matrix.platform }}'
-            GmsslRef = 'v3.1.1'
-            Stage = $true
+            GmsslRef = $env:GMSSL_COMMIT
             Test = $true
           }
           if ('${{ matrix.generator }}') {
             $scriptArgs.Generator = '${{ matrix.generator }}'
           }
           ./scripts/sm9-native.ps1 @scriptArgs
-      - name: Stage native runtime artifact
-        shell: pwsh
-        run: |
-          $platform = '${{ matrix.platform }}'
-          $module = switch ($platform) {
-            'linux-x86_64' { 'gmkit-sm9-native-linux-x86_64' }
-            'linux-aarch64' { 'gmkit-sm9-native-linux-aarch64' }
-            'darwin-x86_64' { 'gmkit-sm9-native-darwin-x86_64' }
-            'darwin-aarch64' { 'gmkit-sm9-native-darwin-aarch64' }
-            'windows-x86_64' { 'gmkit-sm9-native-windows-x86_64' }
-          }
-          $source = "packages/java/$module/src/main/resources/native/$platform"
-          $target = "native-artifacts/packages/java/$module/src/main/resources/native/$platform"
-          New-Item -ItemType Directory -Force -Path $target | Out-Null
-          Copy-Item -LiteralPath "$source" -Destination (Split-Path -Parent $target) -Recurse -Force
-      - name: Upload native runtime resources
+      - name: Upload native runtime
         uses: actions/upload-artifact@v4
         with:
           name: sm9-native-${{ matrix.platform }}
-          path: native-artifacts/**
+          path: packages/java/target/sm9-native/${{ matrix.platform }}/runtime/*
+          if-no-files-found: error
+          retention-days: 3
 
-  github-packages:
-    if: startsWith(github.ref, 'refs/tags/java-v') || startsWith(github.ref, 'refs/tags/v')
-    needs: build-native-runtimes
+  package-runtime:
+    needs:
+      - verify-release
+      - build-native-runtimes
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -115,47 +118,120 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: maven
-          server-id: github
-          server-username: GITHUB_ACTOR
-          server-password: GITHUB_TOKEN
           cache-dependency-path: |
             packages/java/pom.xml
             packages/java/gmkit/pom.xml
             packages/java/gmkit-sm9/pom.xml
             packages/java/gmkit-bom/pom.xml
-            packages/java/gmkit-sm9-native-*/pom.xml
-      - name: Download native runtime resources
-        uses: actions/download-artifact@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+      - uses: actions/download-artifact@v4
         with:
           pattern: sm9-native-*
           path: native-download
-          merge-multiple: true
-      - name: Restore native runtime resources
-        shell: pwsh
-        run: |
-          Get-ChildItem -Path native-download -Recurse -Directory -Filter 'gmkit-sm9-native-*' | ForEach-Object {
-            $module = $_.Name
-            $source = Join-Path $_.FullName 'src/main/resources/native'
-            $target = "packages/java/$module/src/main/resources/native"
-            if (Test-Path -LiteralPath $source) {
-              New-Item -ItemType Directory -Force -Path $target | Out-Null
-              Copy-Item -Path (Join-Path $source '*') -Destination $target -Recurse -Force
-            }
-          }
-      - name: Verify GitHub Packages deploy artifacts
+      - name: Assemble all-platform runtime
         run: >
-          mvn -f packages/java/pom.xml -B -ntp -Pnative-modules -DskipTests
-          -DaltDeploymentRepository=github::default::file://${{ runner.temp }}/github-packages-dry-run
+          node scripts/assemble-sm9-runtime.mjs
+          --input native-download
+          --output packages/java/gmkit-sm9/target/generated-resources/sm9-runtime
+          --gmssl-commit "$GMSSL_COMMIT"
+      - name: Build file-repository release
+        run: >
+          mvn -f packages/java/pom.xml -B -ntp
+          -Psm9-runtime-bundle,release
+          -Dgpg.skip=true -DskipTests
+          "-DaltDeploymentRepository=release::file://${{ runner.temp }}/maven-release"
           deploy
+      - name: Audit file-repository release
+        run: >
+          node scripts/audit-maven-release.mjs
+          --repository "${{ runner.temp }}/maven-release"
+          --version "${{ needs.verify-release.outputs.version }}"
+          --gmssl-commit "$GMSSL_COMMIT"
+      - name: Upload aggregate SM9 JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: gmkit-sm9-aggregate
+          path: packages/java/gmkit-sm9/target/gmkit-sm9-${{ needs.verify-release.outputs.version }}.jar
+          if-no-files-found: error
+          retention-days: 3
+      - name: Upload aggregate runtime resources
+        uses: actions/upload-artifact@v4
+        with:
+          name: sm9-runtime-bundle
+          path: packages/java/gmkit-sm9/target/generated-resources/sm9-runtime/**
+          if-no-files-found: error
+          retention-days: 3
 
-  maven-central:
-    if: startsWith(github.ref, 'refs/tags/java-v') || startsWith(github.ref, 'refs/tags/v')
-    needs: build-native-runtimes
-    runs-on: ubuntu-latest
-    env:
-      HAS_CENTRAL_SECRETS: ${{ secrets.CENTRAL_TOKEN_USERNAME != '' && secrets.CENTRAL_TOKEN_PASSWORD != '' && secrets.MAVEN_GPG_PRIVATE_KEY != '' && secrets.MAVEN_GPG_PASSPHRASE != '' }}
+  test-packaged-runtime:
+    needs: package-runtime
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x86_64
+          - os: ubuntu-24.04-arm
+            platform: linux-aarch64
+          - os: macos-15-intel
+            platform: darwin-x86_64
+          - os: macos-14
+            platform: darwin-aarch64
+          - os: windows-2022
+            platform: windows-x86_64
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: |
+            packages/java/pom.xml
+            packages/java/gmkit-sm9/pom.xml
+      - uses: actions/download-artifact@v4
+        with:
+          name: gmkit-sm9-aggregate
+          path: aggregate
+      - name: Compile packaged-runtime smoke test
+        run: mvn -f packages/java/pom.xml -B -ntp -pl gmkit-sm9 -DskipTests test-compile
+      - name: Test aggregate JAR
+        shell: pwsh
+        run: |
+          $jar = Get-ChildItem -LiteralPath aggregate -Filter 'gmkit-sm9-*.jar' | Select-Object -First 1
+          if (-not $jar) {
+            throw 'gmkit-sm9 aggregate JAR not found'
+          }
+          $testClasses = Resolve-Path 'packages/java/gmkit-sm9/target/test-classes'
+          $classpath = "$($jar.FullName)$([IO.Path]::PathSeparator)$testClasses"
+          & java '-Dgmkit.sm9.requireNative=true' -cp $classpath cn.gmkit.sm9.SM9PackagedRuntimeSmoke
+          if ($LASTEXITCODE -ne 0) {
+            throw 'gmkit-sm9 aggregate JAR smoke test failed'
+          }
+
+  maven-central:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/java-v')
+    needs:
+      - verify-release
+      - test-packaged-runtime
+    runs-on: ubuntu-latest
+    environment: maven-central
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require Maven Central credentials
+        shell: bash
+        env:
+          CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
+          CENTRAL_TOKEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
+          MAVEN_GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: |
+          test -n "$CENTRAL_TOKEN_USERNAME"
+          test -n "$CENTRAL_TOKEN_PASSWORD"
+          test -n "$MAVEN_GPG_PRIVATE_KEY"
+          test -n "$MAVEN_GPG_PASSPHRASE"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -171,32 +247,34 @@ jobs:
             packages/java/gmkit/pom.xml
             packages/java/gmkit-sm9/pom.xml
             packages/java/gmkit-bom/pom.xml
-            packages/java/gmkit-sm9-native-*/pom.xml
-      - name: Download native runtime resources
-        uses: actions/download-artifact@v4
+      - uses: actions/setup-node@v4
         with:
-          pattern: sm9-native-*
-          path: native-download
-          merge-multiple: true
-      - name: Restore native runtime resources
-        shell: pwsh
-        run: |
-          Get-ChildItem -Path native-download -Recurse -Directory -Filter 'gmkit-sm9-native-*' | ForEach-Object {
-            $module = $_.Name
-            $source = Join-Path $_.FullName 'src/main/resources/native'
-            $target = "packages/java/$module/src/main/resources/native"
-            if (Test-Path -LiteralPath $source) {
-              New-Item -ItemType Directory -Force -Path $target | Out-Null
-              Copy-Item -Path (Join-Path $source '*') -Destination $target -Recurse -Force
-            }
-          }
-      - name: Skip Maven Central publish without secrets
-        if: env.HAS_CENTRAL_SECRETS != 'true'
-        run: echo "Maven Central/GPG secrets are not configured; release verification passed, Maven Central publish skipped."
+          node-version: '24.x'
+      - uses: actions/download-artifact@v4
+        with:
+          name: sm9-runtime-bundle
+          path: packages/java/gmkit-sm9/target/generated-resources/sm9-runtime
+      - name: Audit signed release
+        env:
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: >
+          mvn -f packages/java/pom.xml -B -ntp
+          -Psm9-runtime-bundle,release -DskipTests
+          "-DaltDeploymentRepository=release::file://${{ runner.temp }}/signed-maven-release"
+          deploy
+      - name: Verify signed artifacts
+        run: >
+          node scripts/audit-maven-release.mjs
+          --repository "${{ runner.temp }}/signed-maven-release"
+          --version "${{ needs.verify-release.outputs.version }}"
+          --gmssl-commit "$GMSSL_COMMIT"
+          --require-signatures
       - name: Publish to Maven Central
-        if: env.HAS_CENTRAL_SECRETS == 'true'
         env:
           CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
           CENTRAL_TOKEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-        run: mvn -f packages/java/pom.xml -B -ntp -Pnative-modules,release -DskipTests deploy
+        run: >
+          mvn -f packages/java/pom.xml -B -ntp
+          -Psm9-runtime-bundle,release,central-publish
+          -DskipTests deploy

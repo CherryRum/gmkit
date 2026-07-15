@@ -4,14 +4,12 @@ on:
   push:
     paths:
       - 'packages/java/gmkit-sm9/**'
-      - 'packages/java/gmkit-sm9-native-*/**'
       - 'packages/java/pom.xml'
       - 'scripts/sm9-native.ps1'
       - '.github/workflows/sm9-native.yml'
   pull_request:
     paths:
       - 'packages/java/gmkit-sm9/**'
-      - 'packages/java/gmkit-sm9-native-*/**'
       - 'packages/java/pom.xml'
       - 'scripts/sm9-native.ps1'
       - '.github/workflows/sm9-native.yml'
@@ -25,7 +23,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GMSSL_REF: v3.1.1
+  GMSSL_REF: d655c06b3a6b0fe8cff900f293bf0e5aac6eb0a2
 
 jobs:
   native-test:

@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - 'ts-v*'
-      - 'v*'
   workflow_dispatch:
 
 permissions:
@@ -14,45 +13,37 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    env:
-      HAS_NPM_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: '24.x'
           cache: npm
           cache-dependency-path: package-lock.json
+      - name: Use trusted-publishing npm CLI
+        run: npm install --global npm@12.0.1
       - run: npm ci
       - name: Repair Rollup optional native package
         run: npm install --no-save --package-lock=false @rollup/rollup-linux-x64-gnu@$(node -p "require('./node_modules/rollup/package.json').version")
-      - name: Check tag version
-        if: startsWith(github.ref, 'refs/tags/ts-v') || startsWith(github.ref, 'refs/tags/v')
+      - name: Check release version
         shell: bash
         run: |
-          tag_name="${GITHUB_REF_NAME}"
-          tag_version="${tag_name#ts-v}"
-          tag_version="${tag_version#v}"
-          pkg_version="$(node -p 'require("./packages/ts/package.json").version')"
-          test "$tag_version" = "$pkg_version"
+          package_version="$(node -p 'require("./packages/ts/package.json").version')"
+          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            tag_version="${GITHUB_REF_NAME#ts-v}"
+            test "$tag_version" = "$package_version"
+          fi
       - run: npm run type-check -w packages/ts
       - run: npm test -w packages/ts
+      - run: npm run lint -w packages/ts
       - run: npm run build -w packages/ts
       - run: npm run audit:pack -w packages/ts
-      - name: Skip npm publish without token
-        if: (startsWith(github.ref, 'refs/tags/ts-v') || startsWith(github.ref, 'refs/tags/v')) && env.HAS_NPM_TOKEN != 'true'
-        run: echo "NPM_TOKEN is not configured; package verification passed, npm publish skipped."
-      - name: Publish to npm
-        if: (startsWith(github.ref, 'refs/tags/ts-v') || startsWith(github.ref, 'refs/tags/v')) && env.HAS_NPM_TOKEN == 'true'
+      - name: Publish with npm trusted publishing
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/ts-v')
         working-directory: packages/ts
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         shell: bash
         run: |
-          tag_name="${GITHUB_REF_NAME}"
-          tag_version="${tag_name#ts-v}"
-          tag_version="${tag_version#v}"
+          tag_version="${GITHUB_REF_NAME#ts-v}"
           npm_tag="latest"
           if [[ "$tag_version" == *-* ]]; then
             npm_tag="preview"

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { createHash } from 'node:crypto'
-import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, parse, resolve } from 'node:path'
 
 const platformFiles = Object.freeze({
@@ -42,6 +42,18 @@ async function sha256(file) {
   return createHash('sha256').update(await readFile(file)).digest('hex')
 }
 
+async function findSource(input, platform, file) {
+  // download-artifact 默认保留 artifact 名；同时兼容本地直接按平台分目录的输入。
+  const candidates = [
+    resolve(input, platform, file),
+    resolve(input, `sm9-native-${platform}`, file),
+  ]
+  for (const candidate of candidates) {
+    if ((await stat(candidate).catch(() => null))?.isFile()) return candidate
+  }
+  throw new Error(`缺少 native 构建产物：${platform}/${file}`)
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2))
   const input = resolve(required(args, 'input'))
@@ -56,7 +68,7 @@ async function main() {
   const hashes = []
   for (const [platform, files] of Object.entries(platformFiles)) {
     for (const file of files) {
-      const source = resolve(input, platform, file)
+      const source = await findSource(input, platform, file)
       const relative = `native/${platform}/${file}`
       const target = resolve(output, relative)
       await mkdir(dirname(target), { recursive: true })
