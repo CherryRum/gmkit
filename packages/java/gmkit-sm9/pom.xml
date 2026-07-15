@@ -23,6 +23,28 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>${project.build.directory}/generated-resources/sm9-runtime</directory>
+            </resource>
+            <resource>
+                <directory>${maven.multiModuleProjectDirectory}</directory>
+                <includes>
+                    <include>LICENSE</include>
+                </includes>
+                <targetPath>META-INF</targetPath>
+            </resource>
+            <resource>
+                <directory>${maven.multiModuleProjectDirectory}</directory>
+                <includes>
+                    <include>LICENSE</include>
+                </includes>
+                <targetPath>META-INF/licenses/gmssl</targetPath>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -136,6 +158,47 @@
                                 <goals>
                                     <goal>jar</goal>
                                 </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>sm9-runtime-bundle</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>require-complete-sm9-runtime-bundle</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <requireFilesExist>
+                                            <files>
+                                                <file>${project.build.directory}/generated-resources/sm9-runtime/native/linux-x86_64/libgmkitsm9.so</file>
+                                                <file>${project.build.directory}/generated-resources/sm9-runtime/native/linux-x86_64/libgmssl.so.3</file>
+                                                <file>${project.build.directory}/generated-resources/sm9-runtime/native/linux-aarch64/libgmkitsm9.so</file>
+                                                <file>${project.build.directory}/generated-resources/sm9-runtime/native/linux-aarch64/libgmssl.so.3</file>
+                                                <file>${project.build.directory}/generated-resources/sm9-runtime/native/darwin-x86_64/libgmkitsm9.dylib</file>
+                                                <file>${project.build.directory}/generated-resources/sm9-runtime/native/darwin-x86_64/libgmssl.3.dylib</file>
+                                                <file>${project.build.directory}/generated-resources/sm9-runtime/native/darwin-aarch64/libgmkitsm9.dylib</file>
+                                                <file>${project.build.directory}/generated-resources/sm9-runtime/native/darwin-aarch64/libgmssl.3.dylib</file>
+                                                <file>${project.build.directory}/generated-resources/sm9-runtime/native/windows-x86_64/gmkitsm9.dll</file>
+                                                <file>${project.build.directory}/generated-resources/sm9-runtime/native/windows-x86_64/gmssl.dll</file>
+                                                <file>${project.build.directory}/generated-resources/sm9-runtime/META-INF/gmkit/sm9-native.properties</file>
+                                                <file>${project.build.directory}/generated-resources/sm9-runtime/META-INF/gmkit/sm9-native.sha256</file>
+                                            </files>
+                                        </requireFilesExist>
+                                    </rules>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>

@@ -14,6 +14,11 @@
     <name>GMKit Benchmarks</name>
     <description>GMKit 的 JMH 性能基准模块</description>
 
+    <properties>
+        <!-- benchmark 是仓库内性能工具，不属于 Maven Central 的公共依赖面。 -->
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>cn.gmkit</groupId>

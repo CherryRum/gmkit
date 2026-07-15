@@ -10,7 +10,7 @@
     <packaging>pom</packaging>
 
     <name>GMKit Java</name>
-    <description>GMKit 构建父工程，聚合纯 Java 主包、SM9 API 与平台 native 分发模块</description>
+    <description>GMKit 构建父工程，聚合纯 Java 主包与内置多平台 runtime 的 SM9 模块</description>
     <url>https://gmkit.cn</url>
 
     <licenses>
@@ -63,7 +63,7 @@
         <maven.deploy.plugin.version>3.1.3</maven.deploy.plugin.version>
         <animal.sniffer.version>1.24</animal.sniffer.version>
         <flatten.maven.plugin.version>1.6.0</flatten.maven.plugin.version>
-        <central.publishing.plugin.version>0.10.0</central.publishing.plugin.version>
+        <central.publishing.plugin.version>0.11.0</central.publishing.plugin.version>
         <jacoco.maven.plugin.version>0.8.12</jacoco.maven.plugin.version>
     </properties>
 
@@ -296,6 +296,14 @@
                             </execution>
                         </executions>
                     </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>central-publish</id>
+            <build>
+                <plugins>
                     <plugin>
                         <groupId>org.sonatype.central</groupId>
                         <artifactId>central-publishing-maven-plugin</artifactId>
@@ -304,8 +312,7 @@
                             <publishingServerId>central</publishingServerId>
                             <autoPublish>true</autoPublish>
                             <waitUntil>published</waitUntil>
-                            <centralSnapshotsUrl>https://central.sonatype.com/repository/maven-snapshots/
-                            </centralSnapshotsUrl>
+                            <centralSnapshotsUrl>https://central.sonatype.com/repository/maven-snapshots/</centralSnapshotsUrl>
                             <deploymentName>${project.groupId}:${project.artifactId}:${project.version}</deploymentName>
                         </configuration>
                     </plugin>

@@ -1,7 +1,7 @@
 param(
     [ValidateSet('current', 'linux-x86_64', 'linux-aarch64', 'darwin-x86_64', 'darwin-aarch64', 'windows-x86_64')]
     [string]$Platform = 'current',
-    [string]$GmsslRef = $(if ($env:GMSSL_REF) { $env:GMSSL_REF } else { 'v3.1.1' }),
+    [string]$GmsslRef = $(if ($env:GMSSL_REF) { $env:GMSSL_REF } else { 'd655c06b3a6b0fe8cff900f293bf0e5aac6eb0a2' }),
     [string]$BuildRoot = '',
     [string]$Configuration = 'Release',
     [string]$Generator = '',
@@ -285,7 +285,8 @@ Copy-Item -LiteralPath $bridgePath -Destination (Join-Path $runtimeDir $nativeIn
 Copy-Item -LiteralPath $gmsslPath -Destination (Join-Path $runtimeDir $nativeInfo.Gmssl) -Force
 
 if ($Stage) {
-    $stageDir = Join-Path $javaRoot "gmkit-sm9/src/main/resources/native/$platformId"
+    # 二进制属于构建产物，写入 target 后由 Maven 作为生成资源打入 gmkit-sm9 JAR。
+    $stageDir = Join-Path $javaRoot "gmkit-sm9/target/generated-resources/sm9-runtime/native/$platformId"
     New-Item -ItemType Directory -Force -Path $stageDir | Out-Null
     Copy-Item -LiteralPath (Join-Path $runtimeDir $nativeInfo.Bridge) -Destination (Join-Path $stageDir $nativeInfo.Bridge) -Force
     Copy-Item -LiteralPath (Join-Path $runtimeDir $nativeInfo.Gmssl) -Destination (Join-Path $stageDir $nativeInfo.Gmssl) -Force

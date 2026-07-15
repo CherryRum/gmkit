@@ -1,0 +1,9 @@
+GMKit SM9
+Copyright 2026 GMKit Maintainers
+
+This product includes native binaries built from GmSSL v3.1.1:
+https://github.com/guanzhi/GmSSL
+
+GmSSL and GMKit are licensed under the Apache License, Version 2.0.
+The GmSSL license text is packaged at META-INF/licenses/gmssl/LICENSE.
+The exact source commit and native binary hashes are recorded under META-INF/gmkit/.
