@@ -28,7 +28,16 @@ try {
 let packInfo;
 try {
   const data = JSON.parse(stdout);
-  packInfo = data[0];
+  // npm 11 返回数组，npm 12 在 workspace 中返回以包名为键的对象。
+  const candidates = Array.isArray(data)
+    ? data
+    : data?.name
+      ? [data]
+      : Object.values(data ?? {});
+  if (candidates.length !== 1) {
+    throw new Error(`expected one package, received ${candidates.length}`);
+  }
+  [packInfo] = candidates;
 } catch (error) {
   console.error('[audit-pack-size] Failed to parse npm pack json output.');
   console.error(String(error));
