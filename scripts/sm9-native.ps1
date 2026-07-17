@@ -213,11 +213,12 @@ if ($Clean -and (Test-Path -LiteralPath $BuildRoot)) {
 New-Item -ItemType Directory -Force -Path $BuildRoot | Out-Null
 
 if (-not (Test-Path -LiteralPath $gmsslSource)) {
-    Invoke-External git @('clone', '--depth', '1', '--branch', $GmsslRef, 'https://github.com/guanzhi/GmSSL.git', $gmsslSource)
-} else {
-    Invoke-External git @('-C', $gmsslSource, 'fetch', '--depth', '1', 'origin', $GmsslRef)
-    Invoke-External git @('-C', $gmsslSource, 'checkout', 'FETCH_HEAD')
+    # `git clone --branch` 不接受 commit SHA；初始化后 fetch 可统一处理 SHA、tag 和 branch。
+    Invoke-External git @('init', $gmsslSource)
+    Invoke-External git @('-C', $gmsslSource, 'remote', 'add', 'origin', 'https://github.com/guanzhi/GmSSL.git')
 }
+Invoke-External git @('-C', $gmsslSource, 'fetch', '--depth', '1', 'origin', $GmsslRef)
+Invoke-External git @('-C', $gmsslSource, 'checkout', '--detach', 'FETCH_HEAD')
 
 $configureArgs = @(
     '-S', $gmsslSource,
