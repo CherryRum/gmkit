@@ -2,6 +2,8 @@
 
 GMKit 是一个 Java + TypeScript monorepo，维护 JVM 后端与前端/Node.js 侧的国密算法实现。项目目标不是让两个语言共享完全相同的 ABI，而是通过共享互操作向量和明确的协议边界，保证常用密文、签名、摘要和 MAC 能跨语言验证。
 
+当前 `0.x` 版本为公开测试版，允许在 CHANGELOG 和迁移说明明确记录后调整接口；进入 `1.x` 后才按正式稳定版本承诺兼容窗口。
+
 ## 仓库结构
 
 ```text
@@ -25,7 +27,7 @@ gmkit/
 | SM3 | 支持     | 支持         | 摘要与 HMAC                                                           |
 | SM4 | 支持     | 支持         | ECB/CBC/CTR/CFB/OFB/GCM/CCM，AEAD 需传递 tag/AAD                       |
 | ZUC | 支持     | 支持         | ZUC-128、标准 EEA3 消息加密、EIA3 MAC；保留旧密钥流入口，不支持 ZUC-256             |
-| SM9 | 支持     | 不支持        | 仅 Java 侧通过 `gmkit-sm9` + `gmkit-sm9-native-*` JNI/GmSSL runtime 交付 |
+| SM9 | 支持     | 不支持        | 仅 Java 侧提供；添加单一 `gmkit-sm9` 依赖即可使用内置 JNI/GmSSL runtime |
 | SHA | JDK 自带 | 支持         | TS 包提供 SHA-1/256/384/512 与 HMAC；SHA-1 仅用于兼容旧系统                     |
 
 ## 统一命令
@@ -55,16 +57,16 @@ SM9 Java native runtime 可在需要时本地构建：
 ./scripts/sm9-native.ps1 -Platform current -Stage -PackageRuntime -Test
 ```
 
-普通本地验收不要求 GmSSL/JNI。正式发布由 `sm9-native.yml` 在 GitHub Actions 的 Linux、macOS、Windows 矩阵中构建 runtime，并用 `-Dgmkit.sm9.requireNative=true` 强制测试；本地脚本仅用于维护者调试。
+普通本地验收不要求 GmSSL/JNI。`gmkit-sm9` JAR 同时携带五个平台的 runtime 文件，运行时只解压和加载当前平台。正式发布由 GitHub Actions 在 Linux、macOS、Windows 矩阵中构建并强制测试同一个聚合 JAR；本地脚本仅用于维护者调试。
 
 ## CI 与发布标签
 
 - `ci.yml`：TS 与普通 Java 测试；不强制 SM9 native。
 - `parity.yml`：运行共享 `vectors/interop.json` 互操作校验。
-- `sm9-native.yml`：在 Linux、macOS、Windows 上编译 GmSSL/JNI runtime 并强制运行 SM9 native 测试。
+- `sm9-native.yml`：在 Linux、macOS、Windows 上编译 GmSSL/JNI runtime，并强制运行当前平台的 SM9 native 测试。
 - `docs.yml`：构建 TypeScript 包与 VuePress 文档，并执行 Node/Go/Python/Rust/Hutool 文档 fixture；不构建 Studio。
-- `publish-ts.yml`：`ts-v*` 标签发布 npm 包。
-- `publish-java.yml`：`java-v*` 标签验证 release、构建各平台 `gmkit-sm9-native-*` runtime，并在凭据完整时发布 Maven Central。
+- `publish-ts.yml`：只接受 `ts-v*` 标签，通过 npm Trusted Publisher 和 GitHub OIDC 发布。
+- `publish-java.yml`：只接受 `java-v*` 标签，聚合五个平台 runtime、消费测试同一个 `gmkit-sm9` JAR，再发布 Maven Central。
 
 ## 文档入口
 

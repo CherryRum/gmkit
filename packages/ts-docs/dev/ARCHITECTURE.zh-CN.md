@@ -19,7 +19,7 @@ gmkit/
 │   ├── java/               # Maven 多模块工程
 │   └── ts-docs/            # VuePress 文档与可执行示例
 ├── apps/
-│   └── gmkit-studio/       # GMKit Studio Vue3 应用
+│   └── gmkit-studio/       # GMKit Studio V5 Vue3 工具站
 ├── vectors/                # Java/TypeScript 共享互操作数据
 ├── scripts/                # 仓库级验证和 native 构建脚本
 ├── .github/workflows/      # CI、parity、文档和发布工作流
@@ -82,8 +82,7 @@ flowchart LR
 |:--|:--|
 | `gmkit` | SM2、SM3、SM4、ZUC 和组合工具的 Java 主包 |
 | `gmkit-bom` | Maven 依赖版本对齐 |
-| `gmkit-sm9` | SM9 Java API 与 JNI 桥接，不包含平台二进制 |
-| `gmkit-sm9-native-*` | 按操作系统和架构拆分的 GmSSL runtime |
+| `gmkit-sm9` | SM9 Java API、JNI 桥接与五个平台 runtime；运行时只加载当前平台 |
 | `gmkit-benchmarks` | JMH 基准，不是业务运行时依赖 |
 
 Java 主包基于 Bouncy Castle `jdk15to18` 产物族并保持 Java 8 字节码/API 基线。SM9 必须由专门的 native CI 矩阵构建和强制测试；普通 Java 测试允许在没有 GmSSL/JNI 时跳过 native 用例。
@@ -125,11 +124,11 @@ Java 和 TypeScript 不共享源码，也不承诺类名、参数对象或 ABI �
 2. 修改确定性算法结果时同时提供外部证据，并运行完整 parity。
 3. 修改协议默认值时先判断是否破坏旧调用；兼容行为不能由“标准推荐”直接覆盖。
 4. 新增跨语言示例必须有锁定依赖和失败退出的 fixture，并进入 docs CI。
-5. 新增 SM9 平台必须同时提供 runtime artifact、native 构建和强制测试矩阵。
+5. 新增 SM9 平台必须补齐聚合 JAR 资源、来源与 SHA-256 清单、native 构建和强制消费测试矩阵。
 
 ## 构建产物
 
-TypeScript 发布 ESM、CommonJS、浏览器 IIFE 和 `.d.ts`；Java 发布主 JAR、BOM、SM9 API 与平台 runtime。文档站和 Studio 是独立应用，不应成为算法包的隐式运行时依赖。
+TypeScript 发布 ESM、CommonJS、浏览器 IIFE 和 `.d.ts`；Java Central 只发布 parent、BOM、主 JAR 和内置多平台 runtime 的 `gmkit-sm9`。文档站和 Studio 是独立应用，不应成为算法包的隐式运行时依赖。
 
 - [公开 API 清单](/dev/API-SURFACE.zh-CN)
 - [共享互操作向量](/dev/INTEROP_VECTORS)

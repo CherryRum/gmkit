@@ -1,6 +1,6 @@
 # API 稳定性与兼容策略
 
-GMKit 当前处于 `0.x`。语义化版本允许 `0.x` 发生破坏性变化，但项目不会把这一点当作静默破坏现有用户的理由。所有公开 API 变更都必须按本页分类、验证并记录。
+GMKit 当前处于公开测试阶段：`0.x` 允许发生有迁移说明的破坏性变化，`1.x` 才进入正式稳定版本线。项目不会把测试版身份当作静默破坏现有用户的理由；所有公开 API 变更都必须按本页分类、验证并记录。
 
 ## 稳定性分级
 
@@ -60,7 +60,7 @@ Java 公开 API 以发布 JAR 中的 `cn.gmkit` 公共类型和 `packages/java/R
 - `cn.gmkit.zuc.ZUC`、`ZUCUtil`
 - `cn.gmkit.core` 中公开的编码、模式、格式和异常类型
 
-`cn.gmkit.sm9` 依赖 JNI/GmSSL 和平台 runtime，其平台支持范围由 `sm9-native.yml` 的强制测试矩阵决定。`cn.gmkit.test` 只存在于测试源码，不属于发布 API。
+`cn.gmkit.sm9` 依赖 JNI/GmSSL；单一 `gmkit-sm9` JAR 内置已支持平台的 runtime，并只加载当前平台资源。其支持范围由 `sm9-native.yml` 和 Java 发布工作流的强制测试矩阵决定。`cn.gmkit.test` 只存在于测试源码，不属于发布 API。
 
 ## 共享协议数据
 

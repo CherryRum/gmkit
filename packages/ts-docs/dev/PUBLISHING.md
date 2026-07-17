@@ -8,7 +8,7 @@ tag: [npm, GitHub Actions, Provenance]
 
 # TypeScript 发布与验收
 
-TypeScript 包使用 `ts-v<package version>` 标签触发 `.github/workflows/publish-ts.yml`。工作流仍接受历史 `v*` 标签以兼容旧流程，新版本应只创建带 `ts-` 前缀的标签。
+TypeScript 包只使用 `ts-v<package version>` 标签触发 `.github/workflows/publish-ts.yml`；无语言前缀的 `v*` 和 Java 的 `java-v*` 都不会触发 npm 发布。
 
 ## 发布产物
 
@@ -60,10 +60,10 @@ tag workflow 会：
 
 1. 核对标签版本与 `packages/ts/package.json` 完全相等；
 2. 执行 type-check、单测、构建和 npm pack 审计；
-3. 有 `NPM_TOKEN` 时使用 provenance 发布；没有 token 时明确跳过发布；
+3. 通过 GitHub OIDC 和 npm Trusted Publisher 使用 provenance 发布；仓库不保存长期 npm 发布令牌；
 4. 预发布版本发布到 npm `preview` dist-tag，普通版本发布到 `latest`。
 
-完整本地门禁比 tag workflow 更广。不能因为 tag workflow 变绿就推断 parity、lint 和文档 fixture 已在该工作流中执行；它们由其他 CI 和发布前人工门禁负责。
+Trusted Publisher 未配置、OIDC 权限不足或发布失败时工作流直接失败，不会伪装成成功或跳过。完整本地门禁比 tag workflow 更广；不能因为 tag workflow 变绿就推断 parity 和文档 fixture 已在该工作流中执行，它们由其他 CI 和发布前人工门禁负责。
 
 ## 发布后验收
 

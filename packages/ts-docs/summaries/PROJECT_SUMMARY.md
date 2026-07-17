@@ -15,9 +15,8 @@ tag: [支持矩阵, TypeScript, Java]
 | 单元 | 使用场景 | 独立发布 | 不包含 |
 |:--|:--|:--|:--|
 | `gmkitx` | 浏览器、Node.js、受限 JavaScript 运行时 | npm | SM9、AES、RSA、native/WASM |
-| `cn.gmkit:gmkit` | JVM 后端和 Java 应用 | Maven | SM9 native 二进制、专用 SHA 模块 |
-| `gmkit-sm9` | Java SM9 API/JNI | Maven | 平台 runtime |
-| `gmkit-sm9-native-*` | SM9 平台运行库 | Maven | 通用算法 API |
+| `cn.gmkit:gmkit` | JVM 后端和 Java 应用 | Maven | SM9、native 二进制、专用 SHA 模块 |
+| `cn.gmkit:gmkit-sm9` | Java SM9 API/JNI 与五平台 runtime | Maven | SM2/SM3/SM4/ZUC 通用 API |
 | 技术文档 | API、协议边界和可执行示例 | GitHub Pages | 业务密钥管理方案 |
 | GMKit Studio | 独立工具站 | Web 应用 | 算法包发布承诺 |
 
@@ -31,7 +30,7 @@ tag: [支持矩阵, TypeScript, Java]
 | ZUC-128 | 支持 | 支持 | 通用密钥流、128-EEA3、128-EIA3 |
 | ZUC-256 | 不支持 | 不支持 | 不应从 ZUC-128 API 推断支持 |
 | SHA-1/2 | 支持 | 使用 JDK | SHA-1 只用于旧协议兼容 |
-| SM9 | 不支持 | Java/native | 依赖 GmSSL JNI 和平台 runtime |
+| SM9 | 不支持 | Java/native | 单一 `gmkit-sm9` JAR 内置 GmSSL/JNI 五平台 runtime |
 
 ## 运行环境
 

@@ -25,7 +25,7 @@ GMKit 是一个基于 BouncyCastle 的国密算法工具库，提供 SM2、SM3�
 | SM9 | 标识密码算法（签名/验签、IBE 加解密） | `cn.gmkit.sm9.SM9`（独立模块 `gmkit-sm9`，JNI 桥接 GmSSL） |
 
 > SM2/SM3/SM4 为纯 Java（BouncyCastle）实现，ZUC 为主包内纯 Java 实现；SM9 通过 JNI 桥接 GmSSL native 实现，
-> 需引入独立的 `gmkit-sm9` API 模块与对应平台的 `gmkit-sm9-native-*` runtime 模块，详见
+> 只需引入独立的 `gmkit-sm9` 模块，不需要再选择平台依赖，详见
 > [SM9 标识密码（JNI）](#sm9-标识密码jni)。
 
 ## Maven 引入
@@ -211,11 +211,11 @@ String plain = hybrid.decryptToUtf8(keyPair.privateKey(), payload);
 SM9 以独立模块 `gmkit-sm9` 提供 Java API，通过 JNI 桥接 [GmSSL](https://github.com/guanzhi/GmSSL) v3.1.1
 的 native 实现。与 GmSSL 一致，**仅支持签名/验签与基于身份的加密（IBE）加解密，不支持密钥交换**；
 单次加密明文上限为 **255 字节**，更大数据请采用混合加密（如用 SM4 加密数据、用 SM9 封装 SM4 密钥）。
-native 二进制不进入主包，按平台拆分为独立 runtime artifact，避免用户只用 SM2/SM3/SM4 时下载大型 native 库。
+native 二进制不进入 `gmkit` 主包，而是随独立的 `gmkit-sm9` JAR 一次性交付。未使用 SM9 的项目只依赖 `gmkit`，不会下载这些文件；使用 SM9 的项目只需增加一个依赖。
 
 ### Maven 引入
 
-推荐使用 BOM 统一版本，并只选择当前运行平台需要的 native runtime：
+推荐使用 BOM 统一版本。`gmkit-sm9` 已包含支持平台的 JNI 桥接库和 GmSSL 动态库：
 
 ```xml
 <dependencyManagement>
@@ -235,30 +235,10 @@ native 二进制不进入主包，按平台拆分为独立 runtime artifact，�
         <groupId>cn.gmkit</groupId>
         <artifactId>gmkit-sm9</artifactId>
     </dependency>
-
-    <!-- 按部署平台选择一个，例如 macOS Apple 芯片： -->
-    <dependency>
-        <groupId>cn.gmkit</groupId>
-        <artifactId>gmkit-sm9-native-darwin-aarch64</artifactId>
-        <scope>runtime</scope>
-    </dependency>
 </dependencies>
 ```
 
-也可以不引入平台 runtime 包，改用 `-Dgmkit.sm9.native.path=/abs/path/to/libgmkitsm9.so`
-显式指定本机桥接库路径。
-
-当前计划发布的平台 runtime artifact：
-
-| artifactId | 平台标识 |
-|------------|----------|
-| `gmkit-sm9-native-linux-x86_64` | `linux-x86_64` |
-| `gmkit-sm9-native-linux-aarch64` | `linux-aarch64` |
-| `gmkit-sm9-native-darwin-x86_64` | `darwin-x86_64` |
-| `gmkit-sm9-native-darwin-aarch64` | `darwin-aarch64` |
-| `gmkit-sm9-native-windows-x86_64` | `windows-x86_64` |
-
-不用 BOM 时需要分别写版本号：
+不用 BOM 时直接给 `gmkit-sm9` 指定版本：
 
 ```xml
 <dependency>
@@ -266,13 +246,11 @@ native 二进制不进入主包，按平台拆分为独立 runtime artifact，�
     <artifactId>gmkit-sm9</artifactId>
     <version>0.10.0-preview.1</version>
 </dependency>
-<dependency>
-    <groupId>cn.gmkit</groupId>
-    <artifactId>gmkit-sm9-native-darwin-aarch64</artifactId>
-    <version>0.10.0-preview.1</version>
-    <scope>runtime</scope>
-</dependency>
 ```
+
+对于自行编译的平台或特殊部署，可使用
+`-Dgmkit.sm9.native.path=/abs/path/to/libgmkitsm9.so`（Windows 为 `gmkitsm9.dll`）
+显式指定桥接库路径。桥接库同目录应放置匹配的 GmSSL 动态库。
 
 ### 签名 / 验签
 
@@ -321,16 +299,16 @@ try (SM9EncMasterKey master = SM9.generateEncMasterKey();
 native 库由 `cn.gmkit.sm9.SM9NativeLoader` 按 `os.name` / `os.arch` 自动选择并加载，
 加载顺序为：`-Dgmkit.sm9.native.path` 指定路径 → `java.library.path`（系统已安装）→
 JAR 内置 `native/{平台}/` 资源。当前平台无可用 native 库时，`SM9.isAvailable()` 返回 `false`。
-除上表列出的五类平台标识外，当前没有打包 runtime；这些平台需要自行编译并通过 `gmkit.sm9.native.path` 或 `java.library.path` 加载。
+JAR 中其他平台的文件不会被加载到内存。除上表列出的五类平台标识外，当前没有内置 runtime；这些平台需要自行编译并通过 `gmkit.sm9.native.path` 或 `java.library.path` 加载，否则会返回明确的不支持错误。
 
 ### SM9 native 构建
 
 仓库提供 `scripts/sm9-native.ps1` 做完整 native 构建闭环：拉取 GmSSL、构建 GmSSL 共享库、构建
-`gmkitsm9` JNI 桥接库、填充对应平台的 `gmkit-sm9-native-*` runtime 模块，并用
+`gmkitsm9` JNI 桥接库、把当前平台文件写入 `gmkit-sm9` 的生成资源目录，并用
 `-Dgmkit.sm9.requireNative=true` 强制运行 SM9 native 测试。
 
 ```powershell
-# 当前平台构建、填充 runtime 模块、打包并强制测试
+# 当前平台构建、写入 gmkit-sm9、打包并强制测试
 ./scripts/sm9-native.ps1 -Platform current -Stage -PackageRuntime -Test
 
 # 指定平台，例如 Windows x86_64
@@ -340,14 +318,13 @@ JAR 内置 `native/{平台}/` 资源。当前平台无可用 native 库时，`SM
 脚本产物位于 `packages/java/target/sm9-native/{平台}/runtime/`，并在 `-Stage` 时复制到：
 
 ```text
-packages/java/gmkit-sm9-native-{平台}/src/main/resources/native/{平台}/
+packages/java/gmkit-sm9/target/generated-resources/sm9-runtime/native/{平台}/
 ```
 
 构建前请准备 Git、CMake、JDK、Maven 和当前平台可用的 C 编译器；Windows 需要 Visual Studio C++ Build Tools。
-CI 的 `sm9-native.yml` 在 Linux、macOS、Windows 上构建并强制跑 native 测试，Java 发布流程也会先
-构建这些 runtime 模块再发布 Maven artifacts。
+CI 的 `sm9-native.yml` 在 Linux、macOS、Windows 上构建并强制跑 native 测试。Java 发布流程会收集五个平台文件，生成来源与 SHA-256 清单，组装单一 `gmkit-sm9` JAR，再由五个平台分别消费该 JAR。
 
-如果你已经有自行构建的 native 库，也可以跳过 runtime artifact，使用
+如果你已经有自行构建的 native 库，也可以覆盖 JAR 内置资源，使用
 `-Dgmkit.sm9.native.path=/abs/path/to/libgmkitsm9.so`（Windows 为 `gmkitsm9.dll`）
 显式指定桥接库路径。桥接库同目录应放置对应 GmSSL 动态库，例如 Windows 的 `gmssl.dll`。
 
@@ -379,9 +356,8 @@ byte[] decoded = ByteEncodings.decode(base64, InputFormat.BASE64, "payload");
 ```text
 packages/java/
 ├── gmkit/               # 主运行时模块（SM2/SM3/SM4/ZUC）
-├── gmkit-sm9/           # SM9 Java API 与 JNI C 源码
+├── gmkit-sm9/           # SM9 Java API、JNI C 源码与聚合多平台 runtime
 │   └── src/main/c/      # JNI C 源码与 CMakeLists.txt
-├── gmkit-sm9-native-*/  # SM9 平台 native runtime 分发模块
 ├── gmkit-benchmarks/    # JMH 性能基线模块
 │   └── src/
 ├── docs/

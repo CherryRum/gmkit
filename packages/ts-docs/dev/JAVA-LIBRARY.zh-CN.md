@@ -22,6 +22,18 @@ tag: [Java, GMKit Java, Bouncy Castle]
 
 最低 Java 8；主包使用 Bouncy Castle `jdk15to18` 产物族。不要与其他 BC 产物族混装。
 
+SM9 不在主包中。需要 SM9 时只添加一个依赖，无需按平台选择额外 artifact：
+
+```xml
+<dependency>
+  <groupId>cn.gmkit</groupId>
+  <artifactId>gmkit-sm9</artifactId>
+  <version>0.10.0-preview.1</version>
+</dependency>
+```
+
+该 JAR 内置 Linux x86_64/aarch64、macOS x86_64/aarch64 和 Windows x86_64 runtime，启动时只解压和加载当前平台。其他平台可自行编译，并用 `-Dgmkit.sm9.native.path=<bridge-path>` 指定 JNI 桥接库；TypeScript 包不提供 SM9。
+
 ## SM2 可运行示例
 
 ```java
