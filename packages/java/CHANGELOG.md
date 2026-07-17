@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.10.0-preview.1 - 2026-06-28
+## 0.10.0 - 2026-07-17
 
 ### Added
 
@@ -11,12 +11,21 @@
 - Strengthened SM4 tests with CBC/PKCS7 and GCM/NONE round trips over Unicode payloads, long text, AAD, and tag verification.
 - Strengthened SM9 tests for native-gated Unicode signing/verifying and IBE encryption/decryption, including wrong identity and tampered data coverage.
 
+### Changed
+
+- Consolidated the SM9 Java API, JNI bridge, and five supported platform runtimes into the single `cn.gmkit:gmkit-sm9` dependency.
+- Removed the unpublished `gmkit-sm9-native-*` modules and simplified the BOM to manage only `gmkit` and `gmkit-sm9`.
+- Kept the native loading order compatible: explicit `gmkit.sm9.native.path`, system library lookup, then the current platform resource from the aggregate JAR.
+- Added fixed GmSSL source metadata, Apache-2.0/GmSSL notices, and SHA-256 manifests for all ten packaged dynamic-library files.
+- Restricted Maven Central publication to `gmkit-parent`, `gmkit-bom`, `gmkit`, and `gmkit-sm9`; `gmkit-benchmarks` is excluded from deployment.
+- Rebuilt release CI to assemble one multi-platform SM9 JAR and consume-test that same JAR on Linux x86_64/aarch64, macOS x86_64/aarch64, and Windows x86_64 before publication.
+
 ### Documentation
 
 - Updated the README support matrix to include ZUC in the main Java runtime and to keep SM9 documented as an independent JNI/GmSSL module.
 - Documented SM2 public-key formats, `C1C3C2`/`C1C2C3`, DER/ASN.1 ciphertext helpers, raw/DER signatures, default userId, and empty-plaintext behavior.
 - Documented SM4 mode, padding, IV/nonce, tag length, and AAD requirements.
-- Documented the SM9 JNI/native loading order, packaged platform runtime artifacts, unsupported platforms, 255-byte single-encryption limit, and lack of SM9 key exchange support.
+- Documented the SM9 JNI/native loading order, single-dependency runtime packaging, unsupported platforms, 255-byte single-encryption limit, and lack of SM9 key exchange support.
 
 ### Fixed
 
@@ -26,5 +35,6 @@
 ### Compatibility
 
 - The main `gmkit` artifact now exposes new ZUC public APIs; no existing SM2/SM3/SM4 API was removed.
-- SM9 remains native-gated: when no supported native runtime or explicit native path is available, `SM9.isAvailable()` is false and native-dependent tests are skipped.
+- Applications that do not need SM9 still depend only on `gmkit`; applications that need SM9 add only `gmkit-sm9` and no platform-specific dependency.
+- SM9 remains native-gated: when no supported bundled runtime, system library, or explicit native path is available, `SM9.isAvailable()` is false and native-dependent tests are skipped.
 - ZUC fixed values are project alignment vectors shared with TypeScript tests unless separately identified as external standard vectors.

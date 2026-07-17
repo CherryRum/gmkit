@@ -34,7 +34,7 @@ GMKit 是一个基于 BouncyCastle 的国密算法工具库，提供 SM2、SM3�
 <dependency>
     <groupId>cn.gmkit</groupId>
     <artifactId>gmkit</artifactId>
-    <version>0.10.0-preview.1</version>
+    <version>0.10.0</version>
 </dependency>
 ```
 
@@ -223,7 +223,7 @@ native 二进制不进入 `gmkit` 主包，而是随独立的 `gmkit-sm9` JAR �
         <dependency>
             <groupId>cn.gmkit</groupId>
             <artifactId>gmkit-bom</artifactId>
-            <version>0.10.0-preview.1</version>
+            <version>0.10.0</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -244,7 +244,7 @@ native 二进制不进入 `gmkit` 主包，而是随独立的 `gmkit-sm9` JAR �
 <dependency>
     <groupId>cn.gmkit</groupId>
     <artifactId>gmkit-sm9</artifactId>
-    <version>0.10.0-preview.1</version>
+    <version>0.10.0</version>
 </dependency>
 ```
 

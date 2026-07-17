@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.10.0-preview.1 - Unreleased
+## 0.10.0 - 2026-07-17
 
 ### Monorepo merge
 
@@ -9,21 +9,39 @@
   `packages/java/`, docs under `packages/ts-docs/`, demo apps under `apps/`,
   and cross-language vectors under `vectors/`.
 - TypeScript npm package name remains `gmkitx`; Java Maven coordinates
-  remain `cn.gmkit:gmkit:0.10.0-preview.1`.
+  remain `cn.gmkit:gmkit:0.10.0`.
 - Kept deprecated TypeScript top-level compatibility aliases such as
   `generateKeyPair`, `sign`, `verify`, `digest`, and `hmac` so existing
   consumers can upgrade safely. New code should use `sm2GenerateKeyPair`,
   `sm2Sign`, `sm2Verify`, `sm3Digest`, `sm3Hmac`, or the algorithm namespaces.
 - CI rebuilt into `ci.yml`, `parity.yml`, `sm9-native.yml`, `docs.yml`,
   `publish-ts.yml`, and `publish-java.yml` with monorepo `paths:` filters.
-- Release tag pattern updated: TS uses `ts-v*`, Java uses `java-v*`.
+- Release tag pattern updated: TS only accepts `ts-v*`, Java only accepts
+  `java-v*`; unprefixed `v*` tags no longer publish either language.
 - Added the Vue3 + Vite GMKit Studio application under `apps/gmkit-studio/`.
-  Studio is versioned independently from the algorithm packages and is not
-  part of the npm or Maven release artifacts.
+  Studio is not part of the npm or Maven release artifacts.
 - Added `vectors/interop.json` shared cross-language vectors, consumed by
   `packages/ts/test/interop-compliance.test.ts` and
   `cn.gmkit.InteropComplianceTest` (Maven test-resources mount + zero-dep
   classpath loader `cn.gmkit.test.Vectors`).
+
+### Java SM9 packaging and release
+
+- Consolidated the Java SM9 API, JNI bridge, and Linux x86_64/aarch64,
+  macOS x86_64/aarch64, and Windows x86_64 runtimes into the single
+  `cn.gmkit:gmkit-sm9` dependency. Applications that do not use SM9 continue
+  to depend only on `cn.gmkit:gmkit` and do not download native files.
+- Removed the unpublished `gmkit-sm9-native-*` modules. `SM9NativeLoader`
+  still prefers an explicit `gmkit.sm9.native.path`, then system libraries,
+  then the current platform resource from the aggregate JAR.
+- Fixed the packaged GmSSL source commit and added license, NOTICE, platform,
+  filename, and SHA-256 manifests to the aggregate SM9 artifact.
+- Maven Central publishing now audits and deploys only `gmkit-parent`,
+  `gmkit-bom`, `gmkit`, and `gmkit-sm9`. The benchmark module is never
+  deployed.
+- Java release CI builds five native runtimes, assembles one SM9 JAR, and
+  consumes that same JAR on all five platforms before Central publishing.
+  npm publishing now uses Trusted Publisher with GitHub OIDC.
 
 ### Fixed
 
@@ -94,3 +112,5 @@
   to warning-and-fallback compatibility in runtimes without CSPRNG; strict
   consumers can opt into `configureRNG('strict')`.
 - SM9 remains unsupported in TypeScript; no C, WASM, or native wrapper was added.
+- `0.x` remains the public testing line. The project will enter the formal
+  stability line at `1.x`; testing status does not permit silent API removal.
