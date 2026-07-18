@@ -61,14 +61,44 @@ pwsh ./scripts/sm9-native.ps1 -Platform current -Stage -PackageRuntime -Test
 
 ## 发布凭据
 
-Maven Central 需要：
+正式发布 job 固定使用 GitHub Environment `maven-central`，并从该 Environment 读取以下四个 secret：
 
 - `CENTRAL_TOKEN_USERNAME`
 - `CENTRAL_TOKEN_PASSWORD`
 - `MAVEN_GPG_PRIVATE_KEY`
 - `MAVEN_GPG_PASSPHRASE`
 
-凭据只配置在 GitHub Actions secrets，不写入 POM、仓库脚本、测试输出或文档样例。
+其中 Central 用户名/密码必须使用 [Central Publishing Portal](https://central.sonatype.com/) 生成的 User Token，不能使用网站登录密码；GPG 私钥必须与 Maven 签名公钥匹配，并且能用所填 passphrase 非交互解锁。
+
+仓库管理员可用 GitHub CLI 创建 Environment：
+
+```powershell
+gh auth status
+gh api --method PUT repos/gmkits/gmkit/environments/maven-central
+```
+
+前三个单行 secret 可逐个执行命令并按提示输入。`gh` 只回显 secret 名称，不允许读回明文：
+
+```powershell
+gh secret set CENTRAL_TOKEN_USERNAME --env maven-central --repo gmkits/gmkit
+gh secret set CENTRAL_TOKEN_PASSWORD --env maven-central --repo gmkits/gmkit
+gh secret set MAVEN_GPG_PASSPHRASE --env maven-central --repo gmkits/gmkit
+```
+
+ASCII-armored 私钥是多行文本，应从文件通过标准输入写入，避免放进命令参数、PowerShell 历史或临时文件：
+
+```powershell
+Get-Content -Raw -LiteralPath C:\secure\gmkit-private-key.asc |
+    gh secret set MAVEN_GPG_PRIVATE_KEY --env maven-central --repo gmkits/gmkit
+```
+
+最后只核对名称和更新时间，不在日志中打印真实值：
+
+```powershell
+gh secret list --env maven-central --repo gmkits/gmkit
+```
+
+这四项必须配置为 Environment **secret**，不能配置成 Actions variable，因为 `publish-java.yml` 使用 `secrets.*` 读取。凭据不写入 POM、仓库脚本、测试输出或文档样例，也不要通过 issue、PR 或聊天消息传递。
 
 ## 本地 release 验证
 

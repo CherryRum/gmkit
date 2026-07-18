@@ -65,6 +65,28 @@ tag workflow 会：
 
 Trusted Publisher 未配置、OIDC 权限不足或发布失败时工作流直接失败，不会伪装成成功或跳过。完整本地门禁比 tag workflow 更广；不能因为 tag workflow 变绿就推断 parity 和文档 fixture 已在该工作流中执行，它们由其他 CI 和发布前人工门禁负责。
 
+## npm Trusted Publisher 配置
+
+首次使用 OIDC 发布前，需要由 `gmkitx` 包管理员在 npm 网站的 package settings 中新增 GitHub Actions Trusted Publisher。授权信息必须与工作流精确一致：
+
+| 配置项 | 值 |
+|:--|:--|
+| Provider | GitHub Actions |
+| Organization or user | `gmkits` |
+| Repository | `gmkit` |
+| Workflow filename | `publish-ts.yml` |
+| Environment | 留空 |
+
+Environment 留空是有意设计：当前 `.github/workflows/publish-ts.yml` 的 `publish` job 没有声明 GitHub Environment。如果以后给该 job 增加 Environment，npm 侧必须同步填写完全相同的名称。
+
+仓库不需要创建 `NPM_TOKEN` secret。工作流已声明 `id-token: write`，并固定安装支持 Trusted Publishing 的 npm 12；普通版本使用 `latest`，预发布版本使用 `preview`，最终执行：
+
+```bash
+npm publish --provenance --access public --tag "$npm_tag"
+```
+
+npm 的 Trusted Publisher 授权属于 npm 包的私有设置，`gh secret list` 和 npm 公共 registry 元数据都不能证明它已经配置。创建 `ts-v<version>` 标签前，维护者需要在 npm 网站确认上述记录存在；标签触发后再从发布详情确认 provenance 指向 `gmkits/gmkit` 与 `publish-ts.yml`。
+
 ## 发布后验收
 
 在空目录安装精确版本，不要先用浮动 `latest`：
