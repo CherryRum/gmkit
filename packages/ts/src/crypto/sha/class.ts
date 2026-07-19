@@ -43,6 +43,8 @@ abstract class SHABase {
    */
   digest(): string {
     const hash = this.hasher.digest();
+    // noble 的 digest() 会销毁当前实例；立即重建以兑现本类可复用的 API 约定。
+    this.hasher = this.getHasherConstructor().create();
     return this.outputFormat === OutputFormat.BASE64 ? bytesToBase64(hash) : bytesToHex(hash);
   }
 
@@ -110,7 +112,7 @@ export class SHA256 extends SHABase {
     super(nobleSha256, outputFormat);
   }
 
-  protected getHasherConstructor() {
+  protected getHasherConstructor(): any {
     return nobleSha256;
   }
 
@@ -141,7 +143,7 @@ export class SHA384 extends SHABase {
     super(nobleSha384, outputFormat);
   }
 
-  protected getHasherConstructor() {
+  protected getHasherConstructor(): any {
     return nobleSha384;
   }
 
@@ -172,7 +174,7 @@ export class SHA512 extends SHABase {
     super(nobleSha512, outputFormat);
   }
 
-  protected getHasherConstructor() {
+  protected getHasherConstructor(): any {
     return nobleSha512;
   }
 
@@ -205,7 +207,7 @@ export class SHA1 extends SHABase {
     super(nobleSha1, outputFormat);
   }
 
-  protected getHasherConstructor() {
+  protected getHasherConstructor(): any {
     return nobleSha1;
   }
 

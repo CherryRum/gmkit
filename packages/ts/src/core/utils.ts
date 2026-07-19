@@ -467,8 +467,12 @@ export type RNGPolicy = 'strict' | 'warn' | 'allow';
 let rngPolicy: RNGPolicy = 'warn';
 let customRNG: ((len: number) => Uint8Array) | null = null;
 let unsafeFallbackWarningShown = false;
-// 配置函数
-export function configureRNG(policy: RNGPolicy) {
+
+/** 配置缺少系统 CSPRNG 时的处理策略。 */
+export function configureRNG(policy: RNGPolicy): void {
+  if (policy !== 'strict' && policy !== 'warn' && policy !== 'allow') {
+    throw new Error("Invalid RNG policy: expected 'strict', 'warn', or 'allow'");
+  }
   rngPolicy = policy;
 }
 
@@ -479,7 +483,10 @@ export function setRNGPolicy(policy: RNGPolicy) {
   configureRNG(policy);
 }
 
-export function setCustomRNG(fn: (len: number) => Uint8Array) {
+export function setCustomRNG(fn: (len: number) => Uint8Array): void {
+  if (typeof fn !== 'function') {
+    throw new Error('Custom RNG must be a function');
+  }
   customRNG = fn;
 }
 
@@ -506,7 +513,11 @@ function tryWebCrypto(len: number): Uint8Array | null {
     const cryptoObj = (globalThis as any).crypto;
     if (cryptoObj?.getRandomValues) {
       const buf = new Uint8Array(len);
-      cryptoObj.getRandomValues(buf);
+      // Web Crypto 规定单次 getRandomValues 最多填充 65536 字节。
+      // 分块调用避免大请求触发 QuotaExceededError 后错误进入兼容随机源。
+      for (let offset = 0; offset < len; offset += 65536) {
+        cryptoObj.getRandomValues(buf.subarray(offset, Math.min(offset + 65536, len)));
+      }
       return buf;
     }
   } catch (_) {}
@@ -567,10 +578,21 @@ function unsafeFallbackRandom(len: number, warn: boolean): Uint8Array {
  * 4. 非安全 fallback - warn（默认）会提示一次，allow 静默兼容，strict 直接拒绝
  */
 export function getRandomBytes(len: number = 32): Uint8Array {
-  if (len <= 0) throw new Error('Invalid length for random bytes');
+  if (!Number.isSafeInteger(len) || len <= 0) {
+    throw new Error('Invalid length for random bytes: expected a positive safe integer');
+  }
 
-  // Custom RNG
-  if (customRNG) return customRNG(len);
+  // 自定义随机源属于宿主信任边界，必须验证返回类型和精确长度。
+  if (customRNG) {
+    const result = customRNG(len);
+    if (!(result instanceof Uint8Array)) {
+      throw new Error('Custom RNG must return a Uint8Array');
+    }
+    if (result.length !== len) {
+      throw new Error(`Custom RNG returned ${result.length} bytes; expected ${len}`);
+    }
+    return result;
+  }
   // WebCrypto
   const webCryptoRes = tryWebCrypto(len);
   if (webCryptoRes) return webCryptoRes;
@@ -615,10 +637,11 @@ export function getEnvReport(): EnvReport {
 }
 
 /**
- * 常量时间字节数组比较（防时序攻击）。
+ * 尽量避免按内容提前返回的字节数组比较。
  *
- * <p>用途：MAC / AEAD tag / HMAC / SM2 C3 哈希等需要恒定时间比较的场景。
- * 普通 `===` 或循环早返回会随首个不匹配位置变化执行时间，导致旁路。
+ * <p>用途：MAC / AEAD tag / HMAC / SM2 C3 哈希等敏感值比较。普通 `===`
+ * 或循环早返回会随首个不匹配位置变化执行时间。JavaScript/JIT 运行时不提供
+ * 严格恒时保证，本函数只避免显式按内容提前退出。
  *
  * <p>语义（与 Java {@code cn.gmkit.core.Bytes.constantTimeEquals} 对齐）：
  * <ul>

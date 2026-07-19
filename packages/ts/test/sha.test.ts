@@ -180,4 +180,25 @@ describe('SHA 哈希算法', () => {
       expect(hash).toBe('0a0a9f2a6772942557ab5355d76af442f8f65e01');
     });
   });
+
+  describe('流式实例复用', () => {
+    const algorithms = [
+      ['SHA256', SHA256],
+      ['SHA384', SHA384],
+      ['SHA512', SHA512],
+      ['SHA1', SHA1],
+    ] as const;
+
+    for (const [name, Hasher] of algorithms) {
+      it(`${name} digest 后应该自动重置并可继续使用`, () => {
+        const hasher = new Hasher();
+        hasher.update('abc');
+        const first = hasher.digest();
+
+        hasher.update('abc');
+        expect(hasher.digest()).toBe(first);
+        expect(hasher.digest()).toBe(Hasher.digest(''));
+      });
+    }
+  });
 });
