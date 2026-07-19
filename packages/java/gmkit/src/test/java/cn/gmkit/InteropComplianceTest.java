@@ -4,6 +4,9 @@ import cn.gmkit.core.HexCodec;
 import cn.gmkit.core.SM2CipherMode;
 import cn.gmkit.core.SM4CipherMode;
 import cn.gmkit.sm2.SM2;
+import cn.gmkit.sm2.SM2KeyExchangeOptions;
+import cn.gmkit.sm2.SM2KeyExchangeResult;
+import cn.gmkit.sm2.SM2Util;
 import cn.gmkit.sm3.SM3Util;
 import cn.gmkit.sm4.SM4Options;
 import cn.gmkit.sm4.SM4Util;
@@ -45,6 +48,7 @@ class InteropComplianceTest {
         Set<String> supported = new HashSet<>(Arrays.asList(
             "SM2/encrypt",
             "SM2/sign",
+            "SM2/key-exchange",
             "SM3/digest",
             "SM4/encrypt",
             "ZUC/keystream",
@@ -130,10 +134,10 @@ class InteropComplianceTest {
             }
             String id = requiredString(vector, "id");
             String op = requiredString(vector, "op");
-            String publicKeyHex = requiredString(vector, "publicKeyHex");
-            String privateKeyHex = requiredString(vector, "privateKeyHex");
-            String input = requiredString(vector, "input");
             if ("encrypt".equals(op)) {
+                String publicKeyHex = requiredString(vector, "publicKeyHex");
+                String privateKeyHex = requiredString(vector, "privateKeyHex");
+                String input = requiredString(vector, "input");
                 SM2CipherMode mode = SM2CipherMode.valueOf(requiredString(vector, "mode"));
                 String expectedPlain = expectedString(vector, "plain");
                 tests.add(dynamicTest(id, () -> {
@@ -145,6 +149,9 @@ class InteropComplianceTest {
                 continue;
             }
             if ("sign".equals(op)) {
+                String publicKeyHex = requiredString(vector, "publicKeyHex");
+                String privateKeyHex = requiredString(vector, "privateKeyHex");
+                String input = requiredString(vector, "input");
                 boolean expectedVerify = expectedBoolean(vector, "verify");
                 tests.add(dynamicTest(id, () -> {
                     SM2 sm2 = new SM2();
@@ -154,10 +161,62 @@ class InteropComplianceTest {
                 }));
                 continue;
             }
+            if ("key-exchange".equals(op)) {
+                tests.add(sm2KeyExchangeTest(id, vector));
+                continue;
+            }
             throw new IllegalStateException("不受支持的 SM2 共享向量操作: " + op + " (" + id + ")");
         }
         requireTests("SM2", tests);
         return tests;
+    }
+
+    private static DynamicTest sm2KeyExchangeTest(String id, Map<String, Object> vector) {
+        String staticPrivateA = requiredString(vector, "initiatorStaticPrivateKeyHex");
+        String ephemeralPrivateA = requiredString(vector, "initiatorEphemeralPrivateKeyHex");
+        String staticPrivateB = requiredString(vector, "responderStaticPrivateKeyHex");
+        String ephemeralPrivateB = requiredString(vector, "responderEphemeralPrivateKeyHex");
+        String idA = requiredString(vector, "initiatorId");
+        String idB = requiredString(vector, "responderId");
+        int keyLengthBytes = requiredInt(vector, "keyLengthBytes");
+        String expectedKey = expectedString(vector, "sharedKeyHex");
+        String expectedS1 = expectedString(vector, "s1Hex");
+        String expectedS2 = expectedString(vector, "s2Hex");
+        return dynamicTest(id, () -> {
+            String staticPublicA = SM2Util.getPublicKeyFromPrivateKey(staticPrivateA, false);
+            String ephemeralPublicA = SM2Util.getPublicKeyFromPrivateKey(ephemeralPrivateA, false);
+            String staticPublicB = SM2Util.getPublicKeyFromPrivateKey(staticPrivateB, false);
+            String ephemeralPublicB = SM2Util.getPublicKeyFromPrivateKey(ephemeralPrivateB, false);
+            SM2KeyExchangeResult responder = SM2Util.keyExchangeWithConfirmation(
+                staticPrivateB,
+                ephemeralPrivateB,
+                staticPublicA,
+                ephemeralPublicA,
+                SM2KeyExchangeOptions.builder()
+                    .initiator(false)
+                    .keyBits(keyLengthBytes * 8)
+                    .selfId(idB)
+                    .peerId(idA)
+                    .build());
+            SM2KeyExchangeResult initiator = SM2Util.keyExchangeWithConfirmation(
+                staticPrivateA,
+                ephemeralPrivateA,
+                staticPublicB,
+                ephemeralPublicB,
+                SM2KeyExchangeOptions.builder()
+                    .initiator(true)
+                    .keyBits(keyLengthBytes * 8)
+                    .selfId(idA)
+                    .peerId(idB)
+                    .confirmationTag(responder.s1())
+                    .build());
+
+            assertHexEquals(expectedKey, HexCodec.encode(responder.key()), "SM2 shared key mismatch: " + id);
+            assertHexEquals(expectedKey, HexCodec.encode(initiator.key()), "SM2 initiator key mismatch: " + id);
+            assertHexEquals(expectedS1, HexCodec.encode(responder.s1()), "SM2 S1 mismatch: " + id);
+            assertHexEquals(expectedS2, HexCodec.encode(responder.s2()), "SM2 responder S2 mismatch: " + id);
+            assertHexEquals(expectedS2, HexCodec.encode(initiator.s2()), "SM2 initiator S2 mismatch: " + id);
+        });
     }
 
     private static DynamicTest zucTest(String id, String op, Map<String, Object> vector,

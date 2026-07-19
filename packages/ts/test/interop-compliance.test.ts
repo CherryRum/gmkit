@@ -19,6 +19,8 @@ import {
   decrypt as sm2Decrypt,
   sign as sm2Sign,
   verify as sm2Verify,
+  getPublicKeyFromPrivateKey as sm2GetPublicKey,
+  keyExchange as sm2KeyExchange,
 } from '../src/crypto/sm2';
 import { CipherMode, InputFormat, OutputFormat, PaddingMode, SM2CipherMode } from '../src/types/constants';
 
@@ -46,6 +48,7 @@ describe('互操作性和标准测试向量', () => {
     const supported = new Set([
       'SM2/encrypt',
       'SM2/sign',
+      'SM2/key-exchange',
       'SM3/digest',
       'SM4/encrypt',
       'ZUC/keystream',
@@ -257,6 +260,41 @@ describe('互操作性和标准测试向量', () => {
           const signature = sm2Sign(testCase.privateKeyHex, testCase.input);
           expect(sm2Verify(testCase.publicKeyHex, testCase.input, signature))
             .toBe(testCase.expected.verify);
+          continue;
+        }
+        if (testCase.op === 'key-exchange') {
+          const publicKeyA = sm2GetPublicKey(testCase.initiatorStaticPrivateKeyHex);
+          const tempPublicKeyA = sm2GetPublicKey(testCase.initiatorEphemeralPrivateKeyHex);
+          const publicKeyB = sm2GetPublicKey(testCase.responderStaticPrivateKeyHex);
+          const tempPublicKeyB = sm2GetPublicKey(testCase.responderEphemeralPrivateKeyHex);
+          const resultA = sm2KeyExchange({
+            privateKey: testCase.initiatorStaticPrivateKeyHex,
+            publicKey: publicKeyA,
+            tempPrivateKey: testCase.initiatorEphemeralPrivateKeyHex,
+            peerPublicKey: publicKeyB,
+            peerTempPublicKey: tempPublicKeyB,
+            userId: testCase.initiatorId,
+            peerUserId: testCase.responderId,
+            isInitiator: true,
+            keyLength: testCase.keyLengthBytes,
+          });
+          const resultB = sm2KeyExchange({
+            privateKey: testCase.responderStaticPrivateKeyHex,
+            publicKey: publicKeyB,
+            tempPrivateKey: testCase.responderEphemeralPrivateKeyHex,
+            peerPublicKey: publicKeyA,
+            peerTempPublicKey: tempPublicKeyA,
+            userId: testCase.responderId,
+            peerUserId: testCase.initiatorId,
+            isInitiator: false,
+            keyLength: testCase.keyLengthBytes,
+          });
+          expect(resultA.sharedKey).toBe(testCase.expected.sharedKeyHex);
+          expect(resultB.sharedKey).toBe(testCase.expected.sharedKeyHex);
+          expect(resultA.s1).toBe(testCase.expected.s1Hex);
+          expect(resultB.s1).toBe(testCase.expected.s1Hex);
+          expect(resultA.s2).toBe(testCase.expected.s2Hex);
+          expect(resultB.s2).toBe(testCase.expected.s2Hex);
           continue;
         }
         throw new Error(`Unsupported SM2 vector op: ${testCase.op}`);

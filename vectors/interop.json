@@ -370,6 +370,23 @@
         "verify": true,
         "note": "Signature is nondeterministic; validate via verify=true."
       }
+    },
+    {
+      "id": "sm2-key-exchange-fixed",
+      "algo": "SM2",
+      "op": "key-exchange",
+      "initiatorStaticPrivateKeyHex": "0000000000000000000000000000000000000000000000000000000000000001",
+      "initiatorEphemeralPrivateKeyHex": "0000000000000000000000000000000000000000000000000000000000000002",
+      "responderStaticPrivateKeyHex": "0000000000000000000000000000000000000000000000000000000000000003",
+      "responderEphemeralPrivateKeyHex": "0000000000000000000000000000000000000000000000000000000000000004",
+      "initiatorId": "Alice-固定向量",
+      "responderId": "Bob-固定向量",
+      "keyLengthBytes": 32,
+      "expected": {
+        "sharedKeyHex": "858c9c6cd5541b4d9b8dc24c6cd43071e1262993b44988dd47bcb13d3949d66f",
+        "s1Hex": "bf0dd145fab696b9807bffdae5ddf4d1ab3f95269bae1a46daa979b8c2d7d01e",
+        "s2Hex": "32df7cf664c9be84f8344a774908aa61c07d9a451cbe204001cab893a52c0af1"
+      }
     }
   ]
 }

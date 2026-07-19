@@ -228,7 +228,7 @@ public final class ZUC {
         requireDirection(direction);
         requireNonNegative(bitLength, "ZUC EEA3 bit length");
         byte[] iv = eea3Iv(count, bearer, direction);
-        int words = (bitLength + 31) / 32;
+        int words = (int) (((long) bitLength + 31L) / 32L);
         return HexCodec.encode(wordsToBytes(keystreamWords(decodeKey(keyHex), iv, words)));
     }
 
@@ -256,7 +256,7 @@ public final class ZUC {
         byte[] messageBytes = Bytes.requireNonNull(message, "ZUC EEA3 message");
         requireBitLength(bitLength, messageBytes.length, "ZUC EEA3 bit length");
 
-        int outputLength = (bitLength + 7) / 8;
+        int outputLength = (int) (((long) bitLength + 7L) / 8L);
         byte[] input = Arrays.copyOf(messageBytes, outputLength);
         byte[] output = process(decodeKey(keyHex), eea3Iv(count, bearer, direction), input, "ZUC EEA3 message");
         int unusedBits = outputLength * 8 - bitLength;
@@ -268,7 +268,8 @@ public final class ZUC {
 
     public static byte[] eea3Encrypt(String keyHex, int count, int bearer, int direction, byte[] message) {
         byte[] messageBytes = Bytes.requireNonNull(message, "ZUC EEA3 message");
-        return eea3Encrypt(keyHex, count, bearer, direction, messageBytes, messageBytes.length * 8);
+        return eea3Encrypt(keyHex, count, bearer, direction, messageBytes,
+            fullBitLength(messageBytes.length, "ZUC EEA3 message"));
     }
 
     /**
@@ -283,7 +284,8 @@ public final class ZUC {
      */
     public static String eia3(String keyHex, int count, int bearer, int direction, byte[] message) {
         byte[] messageBytes = Bytes.requireNonNull(message, "ZUC EIA3 message");
-        return eia3(keyHex, count, bearer, direction, messageBytes, messageBytes.length * 8);
+        return eia3(keyHex, count, bearer, direction, messageBytes,
+            fullBitLength(messageBytes.length, "ZUC EIA3 message"));
     }
 
     /**
@@ -302,14 +304,14 @@ public final class ZUC {
         requireDirection(direction);
         byte[] messageBytes = Bytes.requireNonNull(message, "ZUC EIA3 message");
         requireNonNegative(bitLength, "ZUC EIA3 bit length");
-        if (bitLength > messageBytes.length * 8) {
+        if ((long) bitLength > (long) messageBytes.length * 8L) {
             throw new GmkitException(Messages.bilingual(
                 "ZUC EIA3 bit length 不能超过消息比特长度",
                 "ZUC EIA3 bit length must not exceed message length in bits"));
         }
         byte[] iv = eia3Iv(count, bearer, direction);
 
-        int wordCount = (bitLength + 64 + 31) / 32;
+        int wordCount = (int) (((long) bitLength + 64L + 31L) / 32L);
         int[] keystream = keystreamWords(decodeKey(keyHex), iv, wordCount);
         int t = 0;
         for (int i = 0; i < bitLength; i++) {
@@ -451,6 +453,16 @@ public final class ZUC {
                 label + " 不能超过消息比特长度",
                 label + " must not exceed message length in bits"));
         }
+    }
+
+    private static int fullBitLength(int byteLength, String label) {
+        long bitLength = (long) byteLength * 8L;
+        if (bitLength > Integer.MAX_VALUE) {
+            throw new GmkitException(Messages.bilingual(
+                label + " 太长，无法通过 int bitLength API 表示",
+                label + " is too long for the int bitLength API"));
+        }
+        return (int) bitLength;
     }
 
     private static int getMessageBit(byte[] message, int bitPosition) {

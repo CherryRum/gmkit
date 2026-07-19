@@ -1381,38 +1381,33 @@ export interface SM2KeyExchangeResult {
  *
  * @example
  * ```typescript
- * // 发起方 A
+ * // 双方先生成长期密钥对和本次会话的临时密钥对。
  * const keyPairA = generateKeyPair();
  * const keyPairB = generateKeyPair();
+ * const tempKeyPairA = generateKeyPair();
+ * const tempKeyPairB = generateKeyPair();
  *
- * // A 执行第一步，生成临时密钥
- * const resultA1 = keyExchange({
+ * const resultA = keyExchange({
  *   privateKey: keyPairA.privateKey,
  *   publicKey: keyPairA.publicKey,
  *   peerPublicKey: keyPairB.publicKey,
- *   peerTempPublicKey: '', // 暂时不知道 B 的临时公钥
+ *   tempPrivateKey: tempKeyPairA.privateKey,
+ *   peerTempPublicKey: tempKeyPairB.publicKey,
  *   isInitiator: true
  * });
  *
- * // B 收到 A 的临时公钥后，执行密钥交换
  * const resultB = keyExchange({
  *   privateKey: keyPairB.privateKey,
  *   publicKey: keyPairB.publicKey,
  *   peerPublicKey: keyPairA.publicKey,
- *   peerTempPublicKey: resultA1.tempPublicKey,
+ *   tempPrivateKey: tempKeyPairB.privateKey,
+ *   peerTempPublicKey: tempKeyPairA.publicKey,
  *   isInitiator: false
  * });
  *
- * // A 收到 B 的临时公钥后，完成密钥交换
- * const resultA2 = keyExchange({
- *   privateKey: keyPairA.privateKey,
- *   publicKey: keyPairA.publicKey,
- *   peerPublicKey: keyPairB.publicKey,
- *   peerTempPublicKey: resultB.tempPublicKey,
- *   isInitiator: true
- * });
- *
- * // 此时 resultA2.sharedKey === resultB.sharedKey
+ * if (resultA.sharedKey !== resultB.sharedKey) {
+ *   throw new Error('SM2 密钥交换结果不一致');
+ * }
  * ```
  */
 export function keyExchange(params: SM2KeyExchangeParams): SM2KeyExchangeResult {

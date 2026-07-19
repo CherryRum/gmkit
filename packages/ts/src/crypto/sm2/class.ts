@@ -201,17 +201,19 @@ export class SM2 {
    * ```typescript
    * const sm2A = SM2.generateKeyPair();
    * const sm2B = SM2.generateKeyPair();
+   * const tempA = SM2.generateKeyPair();
+   * const tempB = SM2.generateKeyPair();
    *
-   * // A 生成临时密钥
-   * const resultA1 = sm2A.keyExchange(sm2B.getPublicKey(), '', true);
+   * const resultA = sm2A.keyExchange(sm2B.getPublicKey(), tempB.getPublicKey(), true, {
+   *   tempPrivateKey: tempA.getPrivateKey()
+   * });
+   * const resultB = sm2B.keyExchange(sm2A.getPublicKey(), tempA.getPublicKey(), false, {
+   *   tempPrivateKey: tempB.getPrivateKey()
+   * });
    *
-   * // B 进行密钥交换
-   * const resultB = sm2B.keyExchange(sm2A.getPublicKey(), resultA1.tempPublicKey, false);
-   *
-   * // A 完成密钥交换
-   * const resultA2 = sm2A.keyExchange(sm2B.getPublicKey(), resultB.tempPublicKey, true);
-   * 
-   * // 此时 resultA2.sharedKey === resultB.sharedKey
+   * if (resultA.sharedKey !== resultB.sharedKey) {
+   *   throw new Error('SM2 密钥交换结果不一致');
+   * }
    * ```
    */
   keyExchange(
