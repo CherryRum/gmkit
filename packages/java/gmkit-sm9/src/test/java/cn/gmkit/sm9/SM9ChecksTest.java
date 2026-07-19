@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SM9ChecksTest {
 
@@ -48,5 +49,15 @@ class SM9ChecksTest {
         assertThrows(
             SM9Exception.class,
             () -> SM9Checks.utf8CString("before\0after", "password"));
+    }
+
+    @Test
+    void decryptShouldRejectCiphertextBeyondNativeLimitBeforeLoadingJni() {
+        SM9EncKey key = new SM9EncKey(1L, "recipient@example.com");
+        byte[] oversized = new byte[SM9EncKey.MAX_CIPHERTEXT_SIZE + 1];
+
+        SM9Exception error = assertThrows(SM9Exception.class, () -> key.decrypt(oversized));
+
+        assertTrue(error.getMessage().contains(String.valueOf(SM9EncKey.MAX_CIPHERTEXT_SIZE)));
     }
 }

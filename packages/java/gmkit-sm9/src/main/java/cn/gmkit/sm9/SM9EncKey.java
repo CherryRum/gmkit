@@ -9,6 +9,11 @@ package cn.gmkit.sm9;
  */
 public final class SM9EncKey implements AutoCloseable {
 
+    /**
+     * GmSSL 单次 SM9 解密接受的最大 DER 密文字节数。
+     */
+    public static final int MAX_CIPHERTEXT_SIZE = SM9NativeBridge.SM9_MAX_CIPHERTEXT_SIZE;
+
     private final String id;
 
     private long handle;
@@ -37,6 +42,9 @@ public final class SM9EncKey implements AutoCloseable {
      */
     public byte[] decrypt(byte[] ciphertext) {
         SM9Checks.requireNonEmpty(ciphertext, "ciphertext");
+        if (ciphertext.length > MAX_CIPHERTEXT_SIZE) {
+            throw new SM9Exception(SM9Messages.ciphertextTooLong(ciphertext.length, MAX_CIPHERTEXT_SIZE));
+        }
         String userId = SM9Checks.requireNonBlank(id, "id");
         byte[] plaintext = SM9NativeBridge.sm9Decrypt(handle(), SM9Checks.utf8Bytes(userId), ciphertext);
         if (plaintext == null) {

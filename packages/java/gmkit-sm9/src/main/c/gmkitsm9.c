@@ -54,8 +54,8 @@ static char *copy_c_string(JNIEnv *env, jbyteArray value, size_t *length)
 	return result;
 }
 
-/* 口令释放前清零，减少明文口令在 native 堆中的残留时间。 */
-static void secure_free(char *value, size_t length)
+/* 敏感缓冲区释放或离开栈帧前清零，volatile 防止编译器删除写入。 */
+static void secure_clear(void *value, size_t length)
 {
 	volatile unsigned char *cursor = (volatile unsigned char *)value;
 	if (value == NULL) {
@@ -64,6 +64,11 @@ static void secure_free(char *value, size_t length)
 	while (length-- > 0) {
 		*cursor++ = 0;
 	}
+}
+
+static void secure_free(char *value, size_t length)
+{
+	secure_clear(value, length);
 	free(value);
 }
 
@@ -848,6 +853,7 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9Decrypt(JNIEnv *env, jclass cls,
 	jbyte *in;
 	jsize inlen;
 	uint8_t out[SM9_MAX_PLAINTEXT_SIZE];
+	size_t required = 0;
 	size_t outlen = 0;
 	int ret;
 	jbyteArray result;
@@ -856,7 +862,7 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9Decrypt(JNIEnv *env, jclass cls,
 		return NULL;
 	}
 	inlen = (*env)->GetArrayLength(env, jin);
-	if (inlen <= 0) {
+	if (inlen <= 0 || inlen > SM9_MAX_CIPHERTEXT_SIZE) {
 		return NULL;
 	}
 	in = (*env)->GetByteArrayElements(env, jin, NULL);
@@ -873,17 +879,27 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9Decrypt(JNIEnv *env, jclass cls,
 		(*env)->ReleaseByteArrayElements(env, jin, in, JNI_ABORT);
 		return NULL;
 	}
+	/* GmSSL 支持 out=NULL 查询 C2 长度；先验证容量再写固定栈缓冲区。 */
 	ret = sm9_decrypt(key, (const char *)id, (size_t)idlen,
-		(const uint8_t *)in, (size_t)inlen, out, &outlen);
+		(const uint8_t *)in, (size_t)inlen, NULL, &required);
+	if (ret == 1 && required > 0 && required <= sizeof(out)) {
+		ret = sm9_decrypt(key, (const char *)id, (size_t)idlen,
+			(const uint8_t *)in, (size_t)inlen, out, &outlen);
+	} else {
+		ret = 0;
+	}
 	(*env)->ReleaseByteArrayElements(env, jid, id, JNI_ABORT);
 	(*env)->ReleaseByteArrayElements(env, jin, in, JNI_ABORT);
-	if (ret != 1) {
+	if (ret != 1 || outlen != required) {
+		secure_clear(out, sizeof(out));
 		return NULL;
 	}
 	result = (*env)->NewByteArray(env, (jsize)outlen);
 	if (result == NULL) {
+		secure_clear(out, sizeof(out));
 		return NULL;
 	}
 	(*env)->SetByteArrayRegion(env, result, 0, (jsize)outlen, (const jbyte *)out);
+	secure_clear(out, sizeof(out));
 	return result;
 }

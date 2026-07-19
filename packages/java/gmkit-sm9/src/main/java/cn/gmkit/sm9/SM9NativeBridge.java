@@ -29,6 +29,11 @@ final class SM9NativeBridge {
      */
     static final int SM9_MAX_PLAINTEXT_SIZE = 255;
 
+    /**
+     * SM9 DER 密文的最大字节数，与 GmSSL {@code SM9_MAX_CIPHERTEXT_SIZE} 一致。
+     */
+    static final int SM9_MAX_CIPHERTEXT_SIZE = 367;
+
     private static final boolean AVAILABLE;
 
     private static final Throwable LOAD_ERROR;

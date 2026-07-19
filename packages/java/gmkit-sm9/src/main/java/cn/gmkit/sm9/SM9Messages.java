@@ -30,6 +30,12 @@ final class SM9Messages {
                 + " exceeds the SM9 limit of " + max + " bytes, use hybrid encryption";
     }
 
+    static String ciphertextTooLong(int actual, int max) {
+        return "SM9 密文长度 " + actual + " 超过上限 " + max
+                + " 字节 / ciphertext length " + actual
+                + " exceeds the SM9 limit of " + max + " bytes";
+    }
+
     static String nativeUnavailable(Throwable cause) {
         String reason = cause == null ? "未知原因 / unknown" : String.valueOf(cause.getMessage());
         return "当前平台没有可用的 SM9 native 库 / no SM9 native library available for this platform: "
