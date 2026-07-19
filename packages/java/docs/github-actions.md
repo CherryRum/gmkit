@@ -53,7 +53,7 @@ pwsh ./scripts/sm9-native.ps1 -Platform current -Stage -PackageRuntime -Test
 gh workflow run release.yml --repo gmkits/gmkit --ref main -f target=java -f publish=true
 ```
 
-在 Actions 页面手动运行时，选择 `target=java` 并勾选 `publish`。不勾选时只核对版本、目标 tag 和发布工作流，不创建 tag，也不发布。Release 工作流使用仓库自带的短期 `GITHUB_TOKEN`，无需新增 PAT；它会显式 dispatch 发布工作流，因为 Actions 使用 `GITHUB_TOKEN` 推送的 tag 不会再次触发普通 push 工作流。
+在 Actions 页面手动运行时，选择 `target=java` 并勾选 `publish`。不勾选时只核对版本、目标 tag 和发布工作流，不创建 tag，也不发布。正式模式会先在 `maven-central` Environment 中检查四个 Central/GPG secret，缺少任意一项都在创建 tag 前失败。Release 工作流使用仓库自带的短期 `GITHUB_TOKEN`，无需新增 PAT；它会显式 dispatch 发布工作流，因为 Actions 使用 `GITHUB_TOKEN` 推送的 tag 不会再次触发普通 push 工作流。
 
 发布工作流按以下阶段执行：
 
