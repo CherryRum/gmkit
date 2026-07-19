@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
+  asn1ToXml,
   decodeInteger,
   decodeSequence,
   decodeSignature,
   encodeInteger,
+  encodeSequence,
   encodeSignature,
   rawToDer,
 } from '../src/core/asn1';
@@ -65,5 +67,24 @@ describe('ASN.1 INTEGER canonical DER', () => {
   it('rejects an element that crosses its containing sequence boundary', () => {
     const malformed = new Uint8Array([0x30, 0x03, 0x02, 0x02, 0x01, 0x00]);
     expect(() => decodeSequence(malformed)).toThrow('beyond sequence boundary');
+  });
+});
+
+describe('ASN.1 XML 边界', () => {
+  it('拒绝越过根输入或父 SEQUENCE 的截断元素', () => {
+    expect(() => asn1ToXml(new Uint8Array([0x04, 0x02, 0xaa])))
+      .toThrow('beyond its container boundary');
+    expect(() => asn1ToXml(new Uint8Array([0x30, 0x03, 0x04, 0x02, 0xaa])))
+      .toThrow('beyond its container boundary');
+  });
+
+  it('限制不可信输入的嵌套深度和初始缩进', () => {
+    let nested = new Uint8Array([0x05, 0x00]);
+    for (let i = 0; i < 65; i++) {
+      nested = encodeSequence(nested);
+    }
+
+    expect(() => asn1ToXml(nested)).toThrow('nesting depth exceeds 64');
+    expect(() => asn1ToXml(new Uint8Array([0x05, 0x00]), -1)).toThrow('indent must be an integer');
   });
 });

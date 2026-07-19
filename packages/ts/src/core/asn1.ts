@@ -397,6 +397,8 @@ export function derToRaw(derSignature: Uint8Array): string {
 
 // --- 调试/可视化工具 ---
 
+const MAX_XML_NESTING_DEPTH = 64;
+
 /**
  * 将 ASN.1 DER 数据转换为 XML 格式（用于调试和可视化）
  * @param data - DER 编码的数据
@@ -404,16 +406,27 @@ export function derToRaw(derSignature: Uint8Array): string {
  * @returns XML 格式的字符串
  */
 export function asn1ToXml(data: Uint8Array, indent: number = 0): string {
+  if (!Number.isSafeInteger(indent) || indent < 0 || indent > MAX_XML_NESTING_DEPTH) {
+    throw new Error(`ASN.1 XML indent must be an integer between 0 and ${MAX_XML_NESTING_DEPTH}`);
+  }
   const buffer: string[] = [];
 
-  function recurse(offset: number, level: number) {
-    if (offset >= data.length) return;
+  function recurse(offset: number, level: number, boundary: number, depth: number): number {
+    if (depth > MAX_XML_NESTING_DEPTH) {
+      throw new Error(`ASN.1 XML nesting depth exceeds ${MAX_XML_NESTING_DEPTH}`);
+    }
+    if (offset < 0 || offset + 1 >= boundary || boundary > data.length) {
+      throw new Error('Truncated ASN.1 element');
+    }
 
     const spaces = '  '.repeat(level);
     const tag = data[offset];
     const { length, bytesRead: lengthBytes } = decodeLength(data, offset + 1);
     const contentStart = offset + 1 + lengthBytes;
     const contentEnd = contentStart + length;
+    if (contentEnd > boundary || contentEnd > data.length) {
+      throw new Error('ASN.1 element extends beyond its container boundary');
+    }
 
     let tagName: string;
     switch (tag) {
@@ -433,11 +446,7 @@ export function asn1ToXml(data: Uint8Array, indent: number = 0): string {
       // 遍历 SEQUENCE 内部
       let subOffset = contentStart;
       while (subOffset < contentEnd) {
-        const subTagLenInfo = decodeLength(data, subOffset + 1);
-        // 递归调用前需要计算当前子元素的总长度，以便确定下一次循环的 offset
-        const nextOffset = subOffset + 1 + subTagLenInfo.bytesRead + subTagLenInfo.length;
-        recurse(subOffset, level + 1);
-        subOffset = nextOffset;
+        subOffset = recurse(subOffset, level + 1, contentEnd, depth + 1);
       }
       buffer.push(`${spaces}`); // Closing tag indentation
     } else {
@@ -452,15 +461,13 @@ export function asn1ToXml(data: Uint8Array, indent: number = 0): string {
     }
 
     buffer.push(`</${tagName}>\n`);
+    return contentEnd;
   }
 
-  // Start parsing from root
+  // 支持连续多个根 TLV，但每个元素都必须完整落在当前输入边界内。
   let rootOffset = 0;
-  while(rootOffset < data.length) {
-    const { length, bytesRead } = decodeLength(data, rootOffset + 1);
-    const fullLen = 1 + bytesRead + length;
-    recurse(rootOffset, indent);
-    rootOffset += fullLen;
+  while (rootOffset < data.length) {
+    rootOffset = recurse(rootOffset, indent, data.length, 0);
   }
 
   return buffer.join('');
