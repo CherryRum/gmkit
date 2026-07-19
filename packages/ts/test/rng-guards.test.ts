@@ -6,6 +6,8 @@ import {
   hasCustomRNG,
   getRandomBytes,
   sm2GenerateKeyPair,
+  sm2Encrypt,
+  sm2DecryptBytes,
   sm2Sign,
 } from '../src';
 
@@ -83,5 +85,23 @@ describe('audit-C #3: custom RNG guards', () => {
     expect(() => sm2Sign(keyPair.privateKey, 'message')).toThrow(
       'Failed to generate a valid SM2 scalar'
     );
+  });
+
+  it('SM2 加密在 KDF 全零时应重新生成临时标量', () => {
+    const privateKey = '228049e009de869baf9aba74f8f8c52e09cde1b52cafb0df7ab154ba4593743e';
+    const publicKey = '045647ebf2adcaf54f8102bea9a7ca8905794a3f2f29622593269bb55d72e0a140d'
+      + 'c81f3dce73bb609f8a056640db0e04c08e0bd8be79140702bbdb0206e95b7ac';
+    const seeds = [628, 629];
+    let calls = 0;
+
+    setCustomRNG((length) => {
+      const bytes = new Uint8Array(length);
+      new DataView(bytes.buffer).setUint32(length - 4, seeds[Math.min(calls++, seeds.length - 1)], false);
+      return bytes;
+    });
+
+    const ciphertext = sm2Encrypt(publicKey, Uint8Array.of(0x42));
+    expect(calls).toBe(2);
+    expect(sm2DecryptBytes(privateKey, ciphertext)).toEqual(Uint8Array.of(0x42));
   });
 });

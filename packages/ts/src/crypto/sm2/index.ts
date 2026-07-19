@@ -612,6 +612,13 @@ function computeZ(userId: string, publicKey: string): Uint8Array {
 const SM2_N = BigInt('0x' + SM2_CURVE_PARAMS.n);
 const MAX_SM2_SIGNING_PRIVATE_KEY = SM2_N - 1n;
 
+class KdfAllZeroError extends Error {
+  constructor() {
+    super('KDF derived key is all zeros');
+    this.name = 'KdfAllZeroError';
+  }
+}
+
 function mod(value: bigint, modulo: bigint = SM2_N): bigint {
   const result = value % modulo;
   return result >= 0n ? result : result + modulo;
@@ -1032,7 +1039,7 @@ function kdf(z: Uint8Array, klen: number): Uint8Array {
 
   // 验证派生的密钥不全为零
   if (!hasNonZero) {
-    throw new Error('KDF derived key is all zeros - invalid point multiplication result');
+    throw new KdfAllZeroError();
   }
 
   return k;
@@ -1067,64 +1074,58 @@ export function encrypt(
   // 自动识别并规范化公钥输入
   const cleanPublicKey = normalizePublicKeyInput(publicKey);
   const plainBytes = normalizeInput(data);
+  if (plainBytes.length === 0) {
+    throw new Error('SM2 plaintext must not be empty');
+  }
 
   // 解析公钥点
   const publicKeyPoint = sm2.Point.fromHex(cleanPublicKey);
 
-  // 生成随机数 k
-  const k = sm2.keygen().secretKey;
+  for (let attempt = 0; attempt < MAX_RANDOM_SCALAR_ATTEMPTS; attempt++) {
+    const k = sm2.keygen().secretKey;
+    const kScalar = bytesToBigIntBE(k);
+    const c1Bytes = sm2.Point.BASE.multiply(kScalar).toBytes(false);
+    const kPbBytes = publicKeyPoint.multiply(kScalar).toBytes(false);
+    const x2 = kPbBytes.slice(1, 33);
+    const y2 = kPbBytes.slice(33, 65);
 
-  // 计算 C1 = k·G（椭圆曲线点乘）
-  const c1Point = sm2.Point.BASE.multiply(BigInt('0x' + bytesToHex(k)));
-  const c1Bytes = c1Point.toBytes(false); // 非压缩格式
+    const kdfInput = new Uint8Array(x2.length + y2.length);
+    kdfInput.set(x2, 0);
+    kdfInput.set(y2, x2.length);
 
-  // 计算 S = h·Pb（其中 h=1）
-  // 计算 [k]PB
-  const kPbPoint = publicKeyPoint.multiply(BigInt('0x' + bytesToHex(k)));
-  const kPbBytes = kPbPoint.toBytes(false);
+    let t: Uint8Array;
+    try {
+      t = kdf(kdfInput, plainBytes.length);
+    } catch (error) {
+      // GM/T 0003.4 要求派生结果全零时重新选择临时标量 k，而不是返回失败密文。
+      if (error instanceof KdfAllZeroError) continue;
+      throw error;
+    }
 
-  // x2, y2 是 [k]PB 的坐标
-  const x2 = kPbBytes.slice(1, 33);
-  const y2 = kPbBytes.slice(33, 65);
+    const c2 = new Uint8Array(plainBytes.length);
+    for (let i = 0; i < plainBytes.length; i++) {
+      c2[i] = plainBytes[i] ^ t[i];
+    }
 
-  // 计算 t = KDF(x2 || y2, klen)
-  const kdfInput = new Uint8Array(x2.length + y2.length);
-  kdfInput.set(x2, 0);
-  kdfInput.set(y2, x2.length);
-  const t = kdf(kdfInput, plainBytes.length);
+    const c3Input = new Uint8Array(x2.length + plainBytes.length + y2.length);
+    c3Input.set(x2, 0);
+    c3Input.set(plainBytes, x2.length);
+    c3Input.set(y2, x2.length + plainBytes.length);
+    const c3 = hexToBytes(sm3Digest(c3Input));
 
-  // 计算 C2 = M ⊕ t
-  const c2 = new Uint8Array(plainBytes.length);
-  for (let i = 0; i < plainBytes.length; i++) {
-    c2[i] = plainBytes[i] ^ t[i];
+    const ciphertext = new Uint8Array(c1Bytes.length + c2.length + c3.length);
+    ciphertext.set(c1Bytes, 0);
+    if (mode === SM2CipherMode.C1C2C3) {
+      ciphertext.set(c2, c1Bytes.length);
+      ciphertext.set(c3, c1Bytes.length + c2.length);
+    } else {
+      ciphertext.set(c3, c1Bytes.length);
+      ciphertext.set(c2, c1Bytes.length + c3.length);
+    }
+    return encodeOutput(ciphertext, outputFormat);
   }
 
-  // 计算 C3 = SM3(x2 || M || y2)
-  const c3Input = new Uint8Array(x2.length + plainBytes.length + y2.length);
-  c3Input.set(x2, 0);
-  c3Input.set(plainBytes, x2.length);
-  c3Input.set(y2, x2.length + plainBytes.length);
-  const c3Hex = sm3Digest(c3Input);
-  const c3 = hexToBytes(c3Hex);
-
-  // 根据模式组合密文
-  let ciphertext: Uint8Array;
-  if (mode === SM2CipherMode.C1C2C3) {
-    // C1 || C2 || C3
-    ciphertext = new Uint8Array(c1Bytes.length + c2.length + c3.length);
-    ciphertext.set(c1Bytes, 0);
-    ciphertext.set(c2, c1Bytes.length);
-    ciphertext.set(c3, c1Bytes.length + c2.length);
-  } else {
-    // C1 || C3 || C2（默认）
-    ciphertext = new Uint8Array(c1Bytes.length + c3.length + c2.length);
-    ciphertext.set(c1Bytes, 0);
-    ciphertext.set(c3, c1Bytes.length);
-    ciphertext.set(c2, c1Bytes.length + c3.length);
-  }
-
-  // 根据输出格式返回结果
-  return encodeOutput(ciphertext, outputFormat);
+  throw new Error('Failed to generate an SM2 ciphertext with a non-zero KDF result');
 }
 
 

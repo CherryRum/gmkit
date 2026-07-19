@@ -44,31 +44,9 @@ describe('错误处理和输入验证测试', () => {
     });
 
     describe('数据验证', () => {
-      it('应该处理空字符串加密时可能失败（KDF问题）', () => {
+      it('应该明确拒绝空明文，不能用假绿测试掩盖 KDF 边界', () => {
         const keyPair = generateKeyPair();
-        // SM2加密空字符串时可能会因为KDF派生密钥全为零而失败
-        // 这是一个边界情况，重试几次直到成功
-        let success = false;
-        for (let i = 0; i < 5; i++) {
-          try {
-            const encrypted = sm2Encrypt(keyPair.publicKey, '');
-            const decrypted = sm2Decrypt(keyPair.privateKey, encrypted);
-            expect(decrypted).toBe('');
-            success = true;
-            break;
-          } catch (e) {
-            // 预期的KDF错误，重试
-            if ((e as Error).message.includes('KDF derived key is all zeros')) {
-              continue;
-            }
-            throw e;
-          }
-        }
-        // 至少应该能够在5次尝试中成功一次，或者识别到这是已知的限制
-        if (!success) {
-          // 这是SM2算法的一个已知边界情况
-          expect(true).toBe(true); // 标记为已知问题
-        }
+        expect(() => sm2Encrypt(keyPair.publicKey, '')).toThrow('SM2 plaintext must not be empty');
       });
 
       it('应该拒绝无效的密文格式', () => {
