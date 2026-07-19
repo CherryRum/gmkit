@@ -1,4 +1,5 @@
 import { execSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -48,6 +49,7 @@ const packedKB = packInfo.size / 1024;
 const unpackedKB = packInfo.unpackedSize / 1024;
 const files = [...packInfo.files].sort((a, b) => b.size - a.size);
 const mapFiles = files.filter((file) => file.path.endsWith('.map'));
+const packedPaths = new Set(files.map((file) => file.path.replace(/\\/g, '/')));
 
 console.log('[audit-pack-size] npm package preview');
 console.log(`- name: ${packInfo.name}@${packInfo.version}`);
@@ -61,6 +63,40 @@ for (const file of files.slice(0, 10)) {
 }
 
 const violations = [];
+const requiredFiles = [
+  'LICENSE',
+  'README.md',
+  'THIRD_PARTY_NOTICES.md',
+  'dist/index.cjs',
+  'dist/index.d.cts',
+  'dist/index.d.ts',
+  'dist/index.global.js',
+  'dist/index.js',
+  'package.json',
+];
+for (const requiredFile of requiredFiles) {
+  if (!packedPaths.has(requiredFile)) {
+    violations.push(`required package file is missing: ${requiredFile}`);
+  }
+}
+
+const manifest = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
+for (const dependency of ['@noble/curves', '@noble/hashes']) {
+  if (manifest.dependencies?.[dependency]) {
+    violations.push(`${dependency} must not be a runtime dependency because it is bundled into dist`);
+  }
+}
+
+for (const declarationFile of ['dist/index.d.ts', 'dist/index.d.cts']) {
+  const declarationPath = path.join(root, declarationFile);
+  if (packedPaths.has(declarationFile)) {
+    const declarations = readFileSync(declarationPath, 'utf8');
+    if (/\bfrom\s+['"]@noble\//.test(declarations) || /\bimport\(['"]@noble\//.test(declarations)) {
+      violations.push(`${declarationFile} leaks @noble types to package consumers`);
+    }
+  }
+}
+
 if (packedKB > maxPackedKB) {
   violations.push(`packed size ${packedKB.toFixed(2)} KB exceeds ${maxPackedKB} KB`);
 }

@@ -22,7 +22,8 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "sideEffects": false,
   "scripts": {
@@ -79,6 +80,8 @@
     "node": ">=18.0.0"
   },
   "devDependencies": {
+    "@noble/curves": "^2.0.1",
+    "@noble/hashes": "^2.0.1",
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
@@ -86,12 +89,6 @@
     "eslint": "^8.57.1",
     "tsup": "^8.5.1",
     "typescript": "^5.0.0",
-    "vite": "7.1.11",
-    "vite-plugin-dts": "^3.0.0",
     "vitest": "^1.0.0"
-  },
-  "dependencies": {
-    "@noble/curves": "^2.0.1",
-    "@noble/hashes": "^2.0.1"
   }
 }
