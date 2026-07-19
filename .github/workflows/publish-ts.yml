@@ -5,6 +5,12 @@ on:
     tags:
       - 'ts-v*'
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the selected ts-v* tag to npm
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -29,7 +35,9 @@ jobs:
         shell: bash
         run: |
           package_version="$(node -p 'require("./packages/ts/package.json").version')"
-          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+          if [[ "$GITHUB_EVENT_NAME" == "push" || "${{ inputs.publish }}" == "true" ]]; then
+            test "$GITHUB_REF_TYPE" = "tag"
+            [[ "$GITHUB_REF_NAME" == ts-v* ]]
             tag_version="${GITHUB_REF_NAME#ts-v}"
             test "$tag_version" = "$package_version"
           fi
@@ -39,7 +47,9 @@ jobs:
       - run: npm run build -w packages/ts
       - run: npm run audit:pack -w packages/ts
       - name: Publish with npm trusted publishing
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/ts-v')
+        if: >-
+          (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/ts-v')) ||
+          (github.event_name == 'workflow_dispatch' && inputs.publish)
         working-directory: packages/ts
         shell: bash
         run: |

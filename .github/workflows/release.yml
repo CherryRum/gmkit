@@ -1,0 +1,115 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Release target
+        required: true
+        type: choice
+        options:
+          - java
+          - typescript
+      publish:
+        description: Create the tag and start the publisher
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: release-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - if: inputs.target == 'java'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - if: inputs.target == 'typescript'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+      - id: release
+        name: Resolve release metadata
+        shell: bash
+        run: |
+          if [[ "${{ inputs.target }}" == "java" ]]; then
+            version="$(mvn -f packages/java/pom.xml -q -DforceStdout help:evaluate -Dexpression=project.version)"
+            tag="java-v${version}"
+            workflow="publish-java.yml"
+          else
+            version="$(node -p 'require("./packages/ts/package.json").version')"
+            tag="ts-v${version}"
+            workflow="publish-ts.yml"
+          fi
+
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Unsupported release version: $version" >&2
+            exit 1
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "workflow=$workflow" >> "$GITHUB_OUTPUT"
+      - name: Validate release source and tag
+        shell: bash
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          PUBLISH: ${{ inputs.publish }}
+        run: |
+          if [[ "$GITHUB_REF_TYPE" != "branch" || "$GITHUB_REF_NAME" != "$DEFAULT_BRANCH" ]]; then
+            echo "Release must be dispatched from the default branch: $DEFAULT_BRANCH" >&2
+            exit 1
+          fi
+
+          if git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+            if [[ "$PUBLISH" == "true" ]]; then
+              echo "Tag already exists: $RELEASE_TAG. Re-run its publisher instead of creating it again." >&2
+              exit 1
+            fi
+            echo "Tag already exists: $RELEASE_TAG"
+          fi
+
+          {
+            echo "### Release plan"
+            echo "- Target: ${{ inputs.target }}"
+            echo "- Version: ${{ steps.release.outputs.version }}"
+            echo "- Tag: $RELEASE_TAG"
+            echo "- Publisher: ${{ steps.release.outputs.workflow }}"
+            echo "- Publish: $PUBLISH"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Create annotated release tag
+        if: inputs.publish
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$RELEASE_TAG" -m "Release $RELEASE_TAG"
+          git push origin "refs/tags/$RELEASE_TAG"
+      - name: Start publisher
+        if: inputs.publish
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          WORKFLOW: ${{ steps.release.outputs.workflow }}
+        run: |
+          gh workflow run "$WORKFLOW" \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref "$RELEASE_TAG" \
+            -f publish=true
+          echo "Started $WORKFLOW for $RELEASE_TAG" >> "$GITHUB_STEP_SUMMARY"
