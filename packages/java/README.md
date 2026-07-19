@@ -211,6 +211,7 @@ String plain = hybrid.decryptToUtf8(keyPair.privateKey(), payload);
 SM9 以独立模块 `gmkit-sm9` 提供 Java API，通过 JNI 桥接 [GmSSL](https://github.com/guanzhi/GmSSL) v3.1.1
 的 native 实现。与 GmSSL 一致，**仅支持签名/验签与基于身份的加密（IBE）加解密，不支持密钥交换**；
 单次加密明文上限为 **255 字节**，更大数据请采用混合加密（如用 SM4 加密数据、用 SM9 封装 SM4 密钥）。
+解密入口仅接受不超过 **367 字节**的 GmSSL DER 密文，并在 Java/JNI 两层校验输出缓冲区边界；公开常量为 `SM9EncKey.MAX_CIPHERTEXT_SIZE`。
 native 二进制不进入 `gmkit` 主包，而是随独立的 `gmkit-sm9` JAR 一次性交付。未使用 SM9 的项目只依赖 `gmkit`，不会下载这些文件；使用 SM9 的项目只需增加一个依赖。
 
 SM9 用户标识按 Java `String` 的标准 UTF-8 字节精确传入 GmSSL。首尾空格属于身份的一部分并会保留；全空白 ID 会被拒绝。派生私钥、验签、加密和解密必须使用逐字节相同的 ID。

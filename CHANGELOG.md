@@ -54,6 +54,7 @@
 - Added a deterministic SM2 key-exchange vector whose shared key and S1/S2 confirmation tags are consumed by both TypeScript and Java/Bouncy Castle.
 - Passed SM9 identities across JNI as standard UTF-8 bytes with an explicit length instead of JNI Modified UTF-8 plus `strlen`; validation now preserves significant surrounding whitespace.
 - Passed SM9 PEM passwords and paths as explicit standard UTF-8 bytes, used wide-character file APIs on Windows, rejected embedded NUL, and cleared temporary native password buffers.
+- Bounded SM9 DER ciphertext before JNI decryption, queried GmSSL output length before writing the fixed plaintext buffer, and cleared native plaintext after returning it to Java.
 - Replaced SM3 chunk accumulation with a true incremental compression state and added fixed HMAC-SM3 verification.
 - Added matching TypeScript and Java/Bouncy Castle fixed outputs for SM4 CTR/CFB/OFB/GCM/CCM and runtime validation for unsupported SHA output formats.
 - Validated RNG policies and custom RNG output, split Web Crypto requests at the 65536-byte platform limit, and kept the default warning compatibility fallback plus opt-in strict mode.
@@ -62,6 +63,7 @@
 - Rejected malformed and non-canonical Base64 input, including invalid padding and non-zero pad bits, while retaining explicit unpadded decoding compatibility.
 - Rejected truncated or excessively nested ASN.1 input in the public XML visualization helper.
 - Updated the inlined Noble curve/hash implementation and the Vitest/Vite build chain; the complete npm workspace dependency graph now passes `npm audit` with zero known vulnerabilities.
+- Added real npm tarball install tests for ESM, CommonJS, browser IIFE, and deprecated compatibility aliases across the supported Node.js release matrix.
 
 - **TS SM4 CK table — GB/T 32907-2016 conformance fix**.
   The `CK[i]` constant generation in `packages/ts/src/crypto/sm4/index.ts` omitted

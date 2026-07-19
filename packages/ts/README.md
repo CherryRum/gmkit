@@ -362,6 +362,9 @@ node -e "import('./dist/index.js').then(({ sm3Digest }) => console.log(sm3Digest
 # 发布包体积审计（npm pack dry-run）
 npm run audit:pack
 
+# 真实打包、临时安装并验证 ESM/CJS/IIFE 与旧兼容别名
+npm run test:package
+
 # 文档静态资源体积审计
 npm run audit:docs:assets
 ```

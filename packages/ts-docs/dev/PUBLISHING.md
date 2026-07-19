@@ -43,7 +43,7 @@ npm run docs:test-examples
 npm run docs:build
 ```
 
-`npm run verify` 包含 TS 类型/测试/构建、Java 测试和 parity，但不包含 lint、pack 审计或文档门禁，因此后续命令不能省略。
+`npm run verify` 包含 TS 类型/测试/构建、Java 测试、parity，以及真实 tarball 的临时安装和 ESM/CJS/IIFE 消费测试；它仍不包含 lint、包体积/文件白名单审计或文档门禁，因此后续命令不能省略。
 `audit:pack` 还会检查 9 个必需文件、第三方声明、source map、包体积、运行时依赖和 `.d.ts` 类型泄漏；只看压缩包大小不足以判断制品正确。
 
 ## 自动创建标签并发布
@@ -62,8 +62,11 @@ TypeScript 必须在同版本 Java 制品已经能从 Maven Central 解析后再
 
 1. 核对标签版本与 `packages/ts/package.json` 完全相等；
 2. 执行 type-check、单测、构建和 npm pack 审计；
-3. 通过 GitHub OIDC 和 npm Trusted Publisher 使用 provenance 发布；仓库不保存长期 npm 发布令牌；
-4. 预发布版本发布到 npm `preview` dist-tag，普通版本发布到 `latest`。
+3. 从真实 tarball 临时安装并执行 ESM、CommonJS、浏览器 IIFE 和旧兼容别名检查；
+4. 通过 GitHub OIDC 和 npm Trusted Publisher 使用 provenance 发布；仓库不保存长期 npm 发布令牌；
+5. 预发布版本发布到 npm `preview` dist-tag，普通版本发布到 `latest`。
+
+普通 CI 在 Node.js 18、20、22、24 上执行同一个 tarball 消费脚本；正式发布固定使用 Node.js 24。这样既验证 `engines.node >=18` 的消费者边界，也避免仅从源码运行测试而漏掉 `exports`、`files` 或 CommonJS 入口错误。
 
 Trusted Publisher 未配置、OIDC 权限不足或发布失败时工作流直接失败，不会伪装成成功或跳过。完整本地门禁比 tag workflow 更广；不能因为 tag workflow 变绿就推断 parity 和文档 fixture 已在该工作流中执行，它们由其他 CI 和发布前人工门禁负责。
 

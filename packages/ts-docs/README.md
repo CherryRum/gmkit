@@ -43,6 +43,7 @@ npm run type-check -w packages/ts
 npm test -w packages/ts
 npm run build -w packages/ts
 npm run audit:pack -w packages/ts
+npm run test:package -w packages/ts
 npm run parity
 npm run docs:check
 npm run docs:test-examples

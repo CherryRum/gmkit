@@ -34,7 +34,7 @@ gmkit/
 
 ```bash
 npm ci
-npm run verify          # TS type-check/test/build + Java reactor test + parity；不含 lint/pack/docs
+npm run verify          # TS/Java/parity/build + npm tarball 消费；不含 lint/包体积审计/docs
 npm run test:ts
 npm run test:java
 npm run parity

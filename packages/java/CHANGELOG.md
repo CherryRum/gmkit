@@ -33,6 +33,7 @@
 - Added explicit ZUC validation and tests for invalid key/IV length, invalid hex/base64, negative lengths, null payloads, invalid bearer, and invalid direction.
 - Restored the documented SM2 compatibility rule that `null` and empty user IDs both resolve to `SM2.DEFAULT_USER_ID`, including key-exchange identities.
 - Passed SM9 PEM passwords and paths through JNI as standard UTF-8, used wide-character file APIs on Windows, rejected embedded NUL, and covered Unicode PEM round trips in native CI.
+- Rejected SM9 DER ciphertext above 367 bytes before JNI, queried the GmSSL plaintext size before decryption, and cleared the native plaintext buffer after returning it to Java.
 - Updated the `gmkit` module description to match the implemented SM2/SM3/SM4/ZUC support.
 
 ### Compatibility

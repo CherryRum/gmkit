@@ -21,7 +21,7 @@ tag: [测试, 标准向量, 互操作]
 | 兼容测试 | 旧导出、默认 userId、RNG 策略 | `module-imports.test.ts`、`rng-guards.test.ts` |
 | 互操作 | 消费根级共享向量 | `interop-compliance.test.ts` |
 
-类型检查、lint、ESM/CJS/IIFE 构建和 npm tarball 审计属于工程验证，不替代算法测试。
+类型检查、lint、ESM/CJS/IIFE 构建、npm tarball 审计和临时安装消费属于工程验证，不替代算法测试。
 
 ## Java 验证层
 
@@ -62,7 +62,7 @@ npm run docs:test-examples
 npm run docs:build
 ```
 
-`npm run verify` 覆盖 TS 类型/测试/构建、Java 测试和 parity；文档、lint 与 pack 审计仍需显式执行。完整发布职责以[发布流程](/dev/PUBLISHING)为准。
+`npm run verify` 覆盖 TS 类型/测试/构建、Java 测试、parity 和真实 tarball 消费；文档、lint 与包体积/文件白名单审计仍需显式执行。完整发布职责以[发布流程](/dev/PUBLISHING)为准。
 
 ## 证据限制
 

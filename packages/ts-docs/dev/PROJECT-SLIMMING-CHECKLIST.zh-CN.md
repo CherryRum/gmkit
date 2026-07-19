@@ -18,6 +18,7 @@ npm test -w packages/ts
 npm run lint -w packages/ts
 npm run build -w packages/ts
 npm run audit:pack -w packages/ts
+npm run test:package -w packages/ts
 npm run parity
 npm run docs:check
 npm run docs:test-examples
@@ -30,6 +31,7 @@ npm run docs:build
 | 单测/parity | 算法、边界或跨语言协议回归 |
 | build | ESM/CJS/IIFE/类型产物失败或出现未知警告 |
 | pack 审计 | tarball 文件、体积或 source map 策略异常 |
+| tarball 消费 | 临时安装后的 ESM/CJS/IIFE、exports 或兼容别名异常 |
 | docs check | 链接、导航、API、版本或 fixture 依赖声明漂移 |
 | docs examples | Node/Go/Python/Rust/Hutool 示例不能从固定依赖运行 |
 | docs build | VuePress 配置、Markdown 或客户端渲染构建失败 |
@@ -42,6 +44,7 @@ npm run docs:build
 dist/
 README.md
 LICENSE
+THIRD_PARTY_NOTICES.md
 package.json
 ```
 

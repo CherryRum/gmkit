@@ -8,7 +8,8 @@
  *
  * <h2>能力范围</h2>
  * 与上游 GmSSL 一致，仅支持签名 / 验签与加密 / 解密，<b>不支持密钥交换</b>；
- * 单次加密明文上限为 {@value cn.gmkit.sm9.SM9EncMasterKey#MAX_PLAINTEXT_SIZE} 字节。
+ * 单次加密明文上限为 {@value cn.gmkit.sm9.SM9EncMasterKey#MAX_PLAINTEXT_SIZE} 字节，
+ * 解密接受的 DER 密文上限为 {@value cn.gmkit.sm9.SM9EncKey#MAX_CIPHERTEXT_SIZE} 字节。
  *
  * <h2>平台与 native 库</h2>
  * 该模块在同一个 JAR 中携带已验证平台的 native 库（{@code gmkitsm9} 及其依赖 {@code gmssl}），
