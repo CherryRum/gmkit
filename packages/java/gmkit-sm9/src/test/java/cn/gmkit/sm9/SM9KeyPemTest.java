@@ -18,6 +18,8 @@ class SM9KeyPemTest {
 
     private static final String PASSWORD = "Passw0rd!";
 
+    private static final String UNICODE_PASSWORD = "密钥-😊-Passw0rd!";
+
     @Test
     void signMasterKeyPublicPemRoundTripShouldVerify(@TempDir Path dir) {
         byte[] message = "pem-sign".getBytes(StandardCharsets.UTF_8);
@@ -97,6 +99,31 @@ class SM9KeyPemTest {
 
         try (SM9SignMasterKey pub = SM9SignMasterKey.importPublicMasterKeyPem(mpkFile)) {
             assertTrue(SM9.verify(pub, "alice@example.com", message, signature));
+        }
+    }
+
+    @Test
+    void unicodePasswordAndPathShouldRoundTrip(@TempDir Path dir) {
+        byte[] message = "unicode-pem".getBytes(StandardCharsets.UTF_8);
+        Path unicodeDir = dir.resolve("中文-😊");
+        assertTrue(unicodeDir.toFile().mkdirs());
+        String keyFile = unicodeDir.resolve("签名私钥.pem").toString();
+        String publicFile = unicodeDir.resolve("签名主公钥.pem").toString();
+
+        try (SM9SignMasterKey master = SM9.generateSignMasterKey()) {
+            master.exportPublicMasterKeyPem(publicFile);
+            try (SM9SignKey signKey = master.extractKey("用户-😊")) {
+                signKey.exportEncryptedPrivateKeyInfoPem(UNICODE_PASSWORD, keyFile);
+            }
+        }
+
+        byte[] signature;
+        try (SM9SignKey key = SM9SignKey.importEncryptedPrivateKeyInfoPem(
+                UNICODE_PASSWORD, keyFile, "用户-😊")) {
+            signature = SM9.sign(key, message);
+        }
+        try (SM9SignMasterKey publicKey = SM9SignMasterKey.importPublicMasterKeyPem(publicFile)) {
+            assertTrue(SM9.verify(publicKey, "用户-😊", message, signature));
         }
     }
 }

@@ -116,13 +116,34 @@ final class SM9NativeBridge {
 
     static native void sm9SignMasterKeyFree(long masterKey);
 
-    static native int sm9SignMasterKeyInfoEncryptToPem(long masterKey, String pass, String file);
+    static int sm9SignMasterKeyInfoEncryptToPem(long masterKey, String pass, String file) {
+        return sm9SignMasterKeyInfoEncryptToPem0(
+                masterKey,
+                SM9Checks.utf8CString(pass, "password"),
+                SM9Checks.utf8CString(file, "file"));
+    }
 
-    static native long sm9SignMasterKeyInfoDecryptFromPem(String pass, String file);
+    private static native int sm9SignMasterKeyInfoEncryptToPem0(long masterKey, byte[] pass, byte[] file);
 
-    static native int sm9SignMasterPublicKeyToPem(long masterKey, String file);
+    static long sm9SignMasterKeyInfoDecryptFromPem(String pass, String file) {
+        return sm9SignMasterKeyInfoDecryptFromPem0(
+                SM9Checks.utf8CString(pass, "password"),
+                SM9Checks.utf8CString(file, "file"));
+    }
 
-    static native long sm9SignMasterPublicKeyFromPem(String file);
+    private static native long sm9SignMasterKeyInfoDecryptFromPem0(byte[] pass, byte[] file);
+
+    static int sm9SignMasterPublicKeyToPem(long masterKey, String file) {
+        return sm9SignMasterPublicKeyToPem0(masterKey, SM9Checks.utf8CString(file, "file"));
+    }
+
+    private static native int sm9SignMasterPublicKeyToPem0(long masterKey, byte[] file);
+
+    static long sm9SignMasterPublicKeyFromPem(String file) {
+        return sm9SignMasterPublicKeyFromPem0(SM9Checks.utf8CString(file, "file"));
+    }
+
+    private static native long sm9SignMasterPublicKeyFromPem0(byte[] file);
 
     static native long sm9SignMasterKeyExtractKey(long masterKey, byte[] id);
 
@@ -132,9 +153,22 @@ final class SM9NativeBridge {
 
     static native void sm9SignKeyFree(long signKey);
 
-    static native int sm9SignKeyInfoEncryptToPem(long signKey, String pass, String file);
+    static int sm9SignKeyInfoEncryptToPem(long signKey, String pass, String file) {
+        return sm9SignKeyInfoEncryptToPem0(
+                signKey,
+                SM9Checks.utf8CString(pass, "password"),
+                SM9Checks.utf8CString(file, "file"));
+    }
 
-    static native long sm9SignKeyInfoDecryptFromPem(String pass, String file);
+    private static native int sm9SignKeyInfoEncryptToPem0(long signKey, byte[] pass, byte[] file);
+
+    static long sm9SignKeyInfoDecryptFromPem(String pass, String file) {
+        return sm9SignKeyInfoDecryptFromPem0(
+                SM9Checks.utf8CString(pass, "password"),
+                SM9Checks.utf8CString(file, "file"));
+    }
+
+    private static native long sm9SignKeyInfoDecryptFromPem0(byte[] pass, byte[] file);
 
     // ---------------------------------------------------------------------
     // 签名 / 验签上下文（支持流式 update）
@@ -164,13 +198,34 @@ final class SM9NativeBridge {
 
     static native void sm9EncMasterKeyFree(long masterKey);
 
-    static native int sm9EncMasterKeyInfoEncryptToPem(long masterKey, String pass, String file);
+    static int sm9EncMasterKeyInfoEncryptToPem(long masterKey, String pass, String file) {
+        return sm9EncMasterKeyInfoEncryptToPem0(
+                masterKey,
+                SM9Checks.utf8CString(pass, "password"),
+                SM9Checks.utf8CString(file, "file"));
+    }
 
-    static native long sm9EncMasterKeyInfoDecryptFromPem(String pass, String file);
+    private static native int sm9EncMasterKeyInfoEncryptToPem0(long masterKey, byte[] pass, byte[] file);
 
-    static native int sm9EncMasterPublicKeyToPem(long masterKey, String file);
+    static long sm9EncMasterKeyInfoDecryptFromPem(String pass, String file) {
+        return sm9EncMasterKeyInfoDecryptFromPem0(
+                SM9Checks.utf8CString(pass, "password"),
+                SM9Checks.utf8CString(file, "file"));
+    }
 
-    static native long sm9EncMasterPublicKeyFromPem(String file);
+    private static native long sm9EncMasterKeyInfoDecryptFromPem0(byte[] pass, byte[] file);
+
+    static int sm9EncMasterPublicKeyToPem(long masterKey, String file) {
+        return sm9EncMasterPublicKeyToPem0(masterKey, SM9Checks.utf8CString(file, "file"));
+    }
+
+    private static native int sm9EncMasterPublicKeyToPem0(long masterKey, byte[] file);
+
+    static long sm9EncMasterPublicKeyFromPem(String file) {
+        return sm9EncMasterPublicKeyFromPem0(SM9Checks.utf8CString(file, "file"));
+    }
+
+    private static native long sm9EncMasterPublicKeyFromPem0(byte[] file);
 
     static native long sm9EncMasterKeyExtractKey(long masterKey, byte[] id);
 
@@ -180,9 +235,22 @@ final class SM9NativeBridge {
 
     static native void sm9EncKeyFree(long encKey);
 
-    static native int sm9EncKeyInfoEncryptToPem(long encKey, String pass, String file);
+    static int sm9EncKeyInfoEncryptToPem(long encKey, String pass, String file) {
+        return sm9EncKeyInfoEncryptToPem0(
+                encKey,
+                SM9Checks.utf8CString(pass, "password"),
+                SM9Checks.utf8CString(file, "file"));
+    }
 
-    static native long sm9EncKeyInfoDecryptFromPem(String pass, String file);
+    private static native int sm9EncKeyInfoEncryptToPem0(long encKey, byte[] pass, byte[] file);
+
+    static long sm9EncKeyInfoDecryptFromPem(String pass, String file) {
+        return sm9EncKeyInfoDecryptFromPem0(
+                SM9Checks.utf8CString(pass, "password"),
+                SM9Checks.utf8CString(file, "file"));
+    }
+
+    private static native long sm9EncKeyInfoDecryptFromPem0(byte[] pass, byte[] file);
 
     // ---------------------------------------------------------------------
     // 加密 / 解密（IBE，一次性）

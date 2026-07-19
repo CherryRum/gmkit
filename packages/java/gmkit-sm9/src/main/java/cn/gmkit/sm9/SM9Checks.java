@@ -30,6 +30,14 @@ final class SM9Checks {
         return value.getBytes(StandardCharsets.UTF_8);
     }
 
+    static byte[] utf8CString(String value, String label) {
+        String checked = requireNonBlank(value, label);
+        if (checked.indexOf('\0') >= 0) {
+            throw new SM9Exception(SM9Messages.nulCharacter(label));
+        }
+        return utf8Bytes(checked);
+    }
+
     static byte[] requireNonEmpty(byte[] value, String label) {
         requireNonNull(value, label);
         if (value.length == 0) {

@@ -20,6 +20,10 @@ final class SM9Messages {
         return label + " 不能为空 / must not be empty";
     }
 
+    static String nulCharacter(String label) {
+        return label + " 不能包含 NUL 字符 / must not contain a NUL character";
+    }
+
     static String plaintextTooLong(int actual, int max) {
         return "SM9 明文长度 " + actual + " 超过上限 " + max
                 + " 字节，请使用混合加密 / plaintext length " + actual
