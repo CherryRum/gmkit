@@ -191,7 +191,7 @@ String plain = hybrid.decryptToUtf8(keyPair.privateKey(), payload);
 | 密文排列 | 默认 `C1C3C2`，可显式使用 `SM2CipherMode.C1C2C3` |
 | 密文编码 | raw 密文字节以非压缩 C1 开头；`SM2Ciphertexts` 支持 DER/ASN.1 编解码辅助 |
 | 签名格式 | 默认 RAW `r || s`，可指定 `SM2SignatureFormat.DER` |
-| 用户 ID | 默认 `SM2.DEFAULT_USER_ID` (`1234567812345678`)；如需 GM/T 0009-2023 推荐空 ID，请显式传入 `""` |
+| 用户 ID | 默认 `SM2.DEFAULT_USER_ID` (`1234567812345678`)；`null` 和 `""` 均按历史兼容语义回落默认值，当前 API 不能表达真实空 ID |
 | 输入边界 | SM2 加密不接受空明文；验签 wrong userId、错误签名、篡改消息均返回失败或抛出统一异常 |
 
 ### SM4

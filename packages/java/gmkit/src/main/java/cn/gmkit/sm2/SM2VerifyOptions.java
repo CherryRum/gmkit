@@ -58,11 +58,11 @@ public final class SM2VerifyOptions {
         /**
          * 设置用户标识。
          *
-         * @param userId 用户标识；传入 {@code null} 时回退为默认用户标识
+         * @param userId 用户标识；传入 {@code null} 或空字符串时回退为默认用户标识
          * @return 当前构建器
          */
         public Builder userId(String userId) {
-            this.userId = Checks.defaultIfNull(userId, SM2.DEFAULT_USER_ID);
+            this.userId = userId == null || userId.isEmpty() ? SM2.DEFAULT_USER_ID : userId;
             return this;
         }
 

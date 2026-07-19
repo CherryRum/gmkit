@@ -49,7 +49,8 @@ final class SM2Domain {
     }
 
     static byte[] userIdBytes(String userId) {
-        String resolvedUserId = Checks.defaultIfNull(userId, SM2.DEFAULT_USER_ID);
+        // 兼容旧版调用：null 与空字符串都表示“未指定”，统一使用标准默认 ID。
+        String resolvedUserId = userId == null || userId.isEmpty() ? SM2.DEFAULT_USER_ID : userId;
         byte[] bytes = Texts.utf8(resolvedUserId);
         if (bytes.length >= 8192) {
             throw new GmkitException(Messages.sm2UserIdTooLong());

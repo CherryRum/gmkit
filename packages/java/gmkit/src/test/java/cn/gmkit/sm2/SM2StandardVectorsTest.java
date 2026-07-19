@@ -119,9 +119,9 @@ class SM2StandardVectorsTest {
 
     @Test
     void computeZShouldRemainStableForFixedPublicKey() {
-        assertEquals(
-            "e1e7bae6607d915da177536ff7f800b5d1c523572424653b0d7ab9647a763966",
-            HexCodec.encode(sm2.computeZ(SM2.DEFAULT_USER_ID, FIXED_PUBLIC_KEY)));
+        byte[] defaultZ = sm2.computeZ(SM2.DEFAULT_USER_ID, FIXED_PUBLIC_KEY);
+        assertEquals("e1e7bae6607d915da177536ff7f800b5d1c523572424653b0d7ab9647a763966", HexCodec.encode(defaultZ));
+        assertArrayEquals(defaultZ, sm2.computeZ("", FIXED_PUBLIC_KEY));
     }
 
     @Test

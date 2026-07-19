@@ -49,7 +49,6 @@ class SM2UtilTest {
             derSignature,
             SM2VerifyOptions.builder()
                 .signatureFormat(SM2SignatureInputFormat.DER)
-                .userId("")
                 .build()));
     }
 

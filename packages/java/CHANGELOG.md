@@ -31,6 +31,7 @@
 ### Fixed
 
 - Added explicit ZUC validation and tests for invalid key/IV length, invalid hex/base64, negative lengths, null payloads, invalid bearer, and invalid direction.
+- Restored the documented SM2 compatibility rule that `null` and empty user IDs both resolve to `SM2.DEFAULT_USER_ID`, including key-exchange identities.
 - Updated the `gmkit` module description to match the implemented SM2/SM3/SM4/ZUC support.
 
 ### Compatibility

@@ -85,22 +85,22 @@ public final class SM2KeyExchangeOptions {
         /**
          * 设置己方用户标识。
          *
-         * @param selfId 己方用户标识；传入 {@code null} 时回退为默认用户标识
+         * @param selfId 己方用户标识；传入 {@code null} 或空字符串时回退为默认用户标识
          * @return 当前构建器
          */
         public Builder selfId(String selfId) {
-            this.selfId = cn.gmkit.core.Checks.defaultIfNull(selfId, SM2.DEFAULT_USER_ID);
+            this.selfId = selfId == null || selfId.isEmpty() ? SM2.DEFAULT_USER_ID : selfId;
             return this;
         }
 
         /**
          * 设置对方用户标识。
          *
-         * @param peerId 对方用户标识；传入 {@code null} 时回退为默认用户标识
+         * @param peerId 对方用户标识；传入 {@code null} 或空字符串时回退为默认用户标识
          * @return 当前构建器
          */
         public Builder peerId(String peerId) {
-            this.peerId = cn.gmkit.core.Checks.defaultIfNull(peerId, SM2.DEFAULT_USER_ID);
+            this.peerId = peerId == null || peerId.isEmpty() ? SM2.DEFAULT_USER_ID : peerId;
             return this;
         }
 

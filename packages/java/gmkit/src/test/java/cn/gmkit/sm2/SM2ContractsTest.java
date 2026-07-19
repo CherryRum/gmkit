@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class SM2ContractsTest {
 
     @Test
-    void signOptionsShouldFallbackToDefaultsForNullValues() {
+    void signOptionsShouldFallbackToDefaultsForNullAndEmptyValues() {
         SM2SignOptions options = SM2SignOptions.builder()
             .signatureFormat(null)
             .userId(null)
@@ -23,10 +23,11 @@ class SM2ContractsTest {
         assertEquals(SM2.DEFAULT_USER_ID, options.userId());
         assertFalse(options.skipZComputation());
         assertSame(GmSecurityContexts.defaults(), options.securityContext());
+        assertEquals(SM2.DEFAULT_USER_ID, SM2SignOptions.builder().userId("").build().userId());
     }
 
     @Test
-    void verifyOptionsShouldFallbackToDefaultsForNullValues() {
+    void verifyOptionsShouldFallbackToDefaultsForNullAndEmptyValues() {
         SM2VerifyOptions options = SM2VerifyOptions.builder()
             .signatureFormat(null)
             .userId(null)
@@ -35,6 +36,7 @@ class SM2ContractsTest {
         assertEquals(SM2SignatureInputFormat.AUTO, options.signatureFormat());
         assertEquals(SM2.DEFAULT_USER_ID, options.userId());
         assertFalse(options.skipZComputation());
+        assertEquals(SM2.DEFAULT_USER_ID, SM2VerifyOptions.builder().userId("").build().userId());
     }
 
     @Test
@@ -53,6 +55,10 @@ class SM2ContractsTest {
         assertEquals(SM2.DEFAULT_USER_ID, options.selfId());
         assertEquals(SM2.DEFAULT_USER_ID, options.peerId());
         assertArrayEquals(original, options.confirmationTag());
+
+        SM2KeyExchangeOptions emptyIds = SM2KeyExchangeOptions.builder().selfId("").peerId("").build();
+        assertEquals(SM2.DEFAULT_USER_ID, emptyIds.selfId());
+        assertEquals(SM2.DEFAULT_USER_ID, emptyIds.peerId());
 
         byte[] returned = options.confirmationTag();
         returned[1] ^= 0x01;
