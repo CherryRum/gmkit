@@ -15,6 +15,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: publish-java-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   GMSSL_COMMIT: d655c06b3a6b0fe8cff900f293bf0e5aac6eb0a2
 

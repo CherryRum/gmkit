@@ -16,6 +16,10 @@ permissions:
   contents: read
   id-token: write
 
+concurrency:
+  group: publish-ts-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: ubuntu-latest
