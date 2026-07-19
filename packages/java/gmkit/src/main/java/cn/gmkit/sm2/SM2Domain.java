@@ -15,7 +15,8 @@ final class SM2Domain {
     static final int CURVE_LENGTH = (DOMAIN_PARAMS.getCurve().getFieldSize() + 7) / 8;
     static final int RAW_SIGNATURE_LENGTH = CURVE_LENGTH * 2;
     static final int C1_LENGTH = 1 + CURVE_LENGTH * 2;
-    static final int MIN_CIPHERTEXT_LENGTH = C1_LENGTH + SM2.SM3_DIGEST_LENGTH;
+    // SM2 加密不接受空明文，因此最短密文还必须包含至少 1 字节 C2。
+    static final int MIN_CIPHERTEXT_LENGTH = C1_LENGTH + SM2.SM3_DIGEST_LENGTH + 1;
     static final byte[] CURVE_A = org.bouncycastle.util.BigIntegers.asUnsignedByteArray(
         CURVE_LENGTH,
         X9_PARAMETERS.getCurve().getA().toBigInteger());

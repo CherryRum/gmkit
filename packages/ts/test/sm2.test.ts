@@ -145,6 +145,11 @@ describe('SM2 国密算法测试', () => {
       const result = decompressPublicKey(keyPair.publicKey);
       expect(result).toBe(keyPair.publicKey.toLowerCase());
     });
+
+    it('应该拒绝长度错误或不在 SM2 曲线上的未压缩公钥', () => {
+      expect(() => decompressPublicKey('04' + '00'.repeat(63))).toThrow('must be 65 bytes');
+      expect(() => decompressPublicKey('04' + '00'.repeat(64))).toThrow();
+    });
   });
 
   describe('加解密测试', () => {

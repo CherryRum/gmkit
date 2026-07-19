@@ -6,6 +6,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1Encoding;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.BERSequence;
+import org.bouncycastle.asn1.DEROctetString;
 
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
@@ -81,6 +86,42 @@ class SM2StandardVectorsTest {
 
         assertArrayEquals(ciphertext, decoded);
         assertArrayEquals(plaintext, sm2.decrypt(keyPair.privateKey(), encoded, mode));
+    }
+
+    @Test
+    void ciphertextAsn1CodecShouldUseC1C3C2WhenModeIsNull() {
+        SM2KeyPair keyPair = sm2.generateKeyPair(false);
+        byte[] plaintext = Texts.utf8("asn1-default-mode");
+        byte[] ciphertext = sm2.encrypt(keyPair.publicKey(), plaintext, SM2CipherMode.C1C3C2);
+
+        byte[] encoded = SM2Ciphertexts.encodeAsn1(ciphertext, null);
+        byte[] decoded = SM2Ciphertexts.decodeAsn1(encoded, null);
+
+        assertArrayEquals(ciphertext, decoded);
+        assertArrayEquals(plaintext, sm2.decrypt(keyPair.privateKey(), encoded, null));
+    }
+
+    @Test
+    void ciphertextAsn1CodecShouldRejectBerAndInvalidC3Length() throws Exception {
+        SM2KeyPair keyPair = sm2.generateKeyPair(false);
+        byte[] ciphertext = sm2.encrypt(keyPair.publicKey(), Texts.utf8("strict-der"), SM2CipherMode.C1C3C2);
+        byte[] encoded = SM2Ciphertexts.encodeDer(ciphertext, SM2CipherMode.C1C3C2);
+        ASN1Sequence sequence = ASN1Sequence.getInstance(encoded);
+
+        ASN1EncodableVector elements = new ASN1EncodableVector();
+        for (int i = 0; i < sequence.size(); i++) {
+            elements.add(sequence.getObjectAt(i));
+        }
+        byte[] ber = new BERSequence(elements).getEncoded(ASN1Encoding.BER);
+        assertThrows(GmkitException.class, () -> SM2Ciphertexts.decodeDer(ber, SM2CipherMode.C1C3C2));
+
+        ASN1EncodableVector invalidC3 = new ASN1EncodableVector();
+        invalidC3.add(sequence.getObjectAt(0));
+        invalidC3.add(sequence.getObjectAt(1));
+        invalidC3.add(new DEROctetString(new byte[31]));
+        invalidC3.add(sequence.getObjectAt(3));
+        byte[] malformed = new org.bouncycastle.asn1.DERSequence(invalidC3).getEncoded();
+        assertThrows(GmkitException.class, () -> SM2Ciphertexts.decodeDer(malformed, SM2CipherMode.C1C3C2));
     }
 
     @Test

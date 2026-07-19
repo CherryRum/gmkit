@@ -122,6 +122,21 @@ class SM2ErrorHandlingTest {
     }
 
     @Test
+    void decryptShouldRejectCiphertextWithEmptyC2() {
+        SM2KeyPair keyPair = sm2.generateKeyPair(false);
+        byte[] oneByteCiphertext = sm2.encrypt(
+            keyPair.publicKey(),
+            new byte[]{0x01},
+            SM2CipherMode.C1C3C2);
+        byte[] emptyC2Ciphertext = new byte[oneByteCiphertext.length - 1];
+        System.arraycopy(oneByteCiphertext, 0, emptyC2Ciphertext, 0, emptyC2Ciphertext.length);
+
+        assertThrows(
+            GmkitException.class,
+            () -> sm2.decrypt(keyPair.privateKey(), emptyC2Ciphertext, SM2CipherMode.C1C3C2));
+    }
+
+    @Test
     void verifyShouldThrowForInvalidPublicKey() {
         GmkitException exception = assertThrows(
             GmkitException.class,

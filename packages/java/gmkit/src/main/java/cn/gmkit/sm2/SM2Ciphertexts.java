@@ -2,6 +2,7 @@ package cn.gmkit.sm2;
 
 import cn.gmkit.core.Bytes;
 import cn.gmkit.core.GmkitException;
+import cn.gmkit.core.HexCodec;
 import cn.gmkit.core.Messages;
 import cn.gmkit.core.SM2CipherMode;
 import org.bouncycastle.asn1.*;
@@ -9,6 +10,7 @@ import org.bouncycastle.util.BigIntegers;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Arrays;
 
 /**
  * SM2 密文编码转换工具。
@@ -38,12 +40,14 @@ public final class SM2Ciphertexts {
         }
         int c1Length = SM2Domain.C1_LENGTH;
         int c3Length = SM2.SM3_DIGEST_LENGTH;
-        if (normalizedCiphertext.length < c1Length + c3Length) {
+        if (normalizedCiphertext.length < c1Length + c3Length + 1) {
             throw new GmkitException(Messages.bilingual(
                 "SM2 密文缺少 C1/C3/C2 片段",
                 "Invalid SM2 ciphertext: missing C1/C3/C2 segments"));
         }
         byte[] c1 = Bytes.copyOfRange(normalizedCiphertext, 0, c1Length);
+        // parse() 也是公开编码入口，不能只在真正解密时才发现 C1 不是曲线上的合法点。
+        SM2KeyOps.toPublicKeyPoint(HexCodec.encode(c1));
         byte[] c2;
         byte[] c3;
         if (resolvedMode == SM2CipherMode.C1C3C2) {
@@ -65,7 +69,8 @@ public final class SM2Ciphertexts {
      * @throws GmkitException 如果编码失败
      */
     public static byte[] encodeDer(byte[] ciphertext, SM2CipherMode mode) {
-        SM2Ciphertext parsed = parse(ciphertext, mode);
+        SM2CipherMode resolvedMode = SM2Domain.cipherMode(mode);
+        SM2Ciphertext parsed = parse(ciphertext, resolvedMode);
         byte[] c1 = parsed.c1();
         byte[] c1x = Bytes.copyOfRange(c1, 1, 1 + SM2Domain.CURVE_LENGTH);
         byte[] c1y = Bytes.copyOfRange(c1, 1 + SM2Domain.CURVE_LENGTH, c1.length);
@@ -73,7 +78,7 @@ public final class SM2Ciphertexts {
         ASN1EncodableVector vector = new ASN1EncodableVector();
         vector.add(new ASN1Integer(new BigInteger(1, c1x)));
         vector.add(new ASN1Integer(new BigInteger(1, c1y)));
-        if (mode == SM2CipherMode.C1C3C2) {
+        if (resolvedMode == SM2CipherMode.C1C3C2) {
             vector.add(new DEROctetString(parsed.c3()));
             vector.add(new DEROctetString(parsed.c2()));
         } else {
@@ -110,29 +115,55 @@ public final class SM2Ciphertexts {
      */
     public static byte[] decodeDer(byte[] derCiphertext, SM2CipherMode mode) {
         try {
-            ASN1Sequence sequence = ASN1Sequence.getInstance(derCiphertext);
+            byte[] safeCiphertext = Bytes.requireNonNull(derCiphertext, "SM2 DER ciphertext");
+            ASN1Primitive primitive = ASN1Primitive.fromByteArray(safeCiphertext);
+            if (!(primitive instanceof ASN1Sequence)) {
+                throw new GmkitException(Messages.bilingual(
+                    "SM2 密文 ASN.1 DER 编码无效，根节点必须是 SEQUENCE",
+                    "Invalid SM2 ciphertext ASN.1 DER encoding: root must be a SEQUENCE"));
+            }
+            // ASN1Primitive 会兼容读取 BER；对外声明 DER 的入口必须拒绝非规范编码。
+            if (!Arrays.equals(safeCiphertext, primitive.getEncoded(ASN1Encoding.DER))) {
+                throw new GmkitException(Messages.bilingual(
+                    "SM2 密文不是规范 ASN.1 DER 编码",
+                    "SM2 ciphertext is not canonical ASN.1 DER"));
+            }
+            ASN1Sequence sequence = (ASN1Sequence) primitive;
             if (sequence.size() != 4) {
                 throw new GmkitException(Messages.bilingual(
                     "SM2 密文 ASN.1 DER 编码无效，应为包含 4 个元素的 SEQUENCE",
                     "Invalid SM2 ciphertext ASN.1 DER encoding: expected SEQUENCE of 4 elements"));
             }
-            byte[] c1x = BigIntegers.asUnsignedByteArray(
-                SM2Domain.CURVE_LENGTH,
-                ASN1Integer.getInstance(sequence.getObjectAt(0)).getValue());
-            byte[] c1y = BigIntegers.asUnsignedByteArray(
-                SM2Domain.CURVE_LENGTH,
-                ASN1Integer.getInstance(sequence.getObjectAt(1)).getValue());
+            byte[] c1x = coordinateBytes(ASN1Integer.getInstance(sequence.getObjectAt(0)), "x");
+            byte[] c1y = coordinateBytes(ASN1Integer.getInstance(sequence.getObjectAt(1)), "y");
             byte[] first = ASN1OctetString.getInstance(sequence.getObjectAt(2)).getOctets();
             byte[] second = ASN1OctetString.getInstance(sequence.getObjectAt(3)).getOctets();
 
             byte[] c1 = Bytes.concat(new byte[]{0x04}, c1x, c1y);
-            if (SM2Domain.cipherMode(mode) == SM2CipherMode.C1C3C2) {
-                return Bytes.concat(c1, first, second);
+            SM2KeyOps.toPublicKeyPoint(HexCodec.encode(c1));
+            SM2CipherMode resolvedMode = SM2Domain.cipherMode(mode);
+            byte[] c2 = resolvedMode == SM2CipherMode.C1C3C2 ? second : first;
+            byte[] c3 = resolvedMode == SM2CipherMode.C1C3C2 ? first : second;
+            if (c3.length != SM2.SM3_DIGEST_LENGTH) {
+                throw new GmkitException(Messages.bilingual(
+                    "SM2 密文 C3 必须为 32 字节",
+                    "SM2 ciphertext C3 must be 32 bytes"));
             }
+            Bytes.requireNonEmpty(c2, "SM2 ciphertext C2");
             return Bytes.concat(c1, first, second);
-        } catch (IllegalArgumentException ex) {
+        } catch (IOException | IllegalArgumentException ex) {
             throw new GmkitException(Messages.bilingual("SM2 密文 ASN.1 DER 编码无效", "Invalid SM2 ciphertext ASN.1 DER encoding"), ex);
         }
+    }
+
+    private static byte[] coordinateBytes(ASN1Integer integer, String label) {
+        BigInteger value = integer.getValue();
+        if (value.signum() < 0 || value.bitLength() > SM2Domain.CURVE_LENGTH * 8) {
+            throw new GmkitException(Messages.bilingual(
+                "SM2 密文 " + label + " 坐标必须是 256 位以内的非负整数",
+                "SM2 ciphertext " + label + " coordinate must be a non-negative integer up to 256 bits"));
+        }
+        return BigIntegers.asUnsignedByteArray(SM2Domain.CURVE_LENGTH, value);
     }
 
     /**

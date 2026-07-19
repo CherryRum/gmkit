@@ -962,33 +962,10 @@ export function compressPublicKey(publicKey: BytesLike): string {
  * ```
  */
 export function decompressPublicKey(publicKey: BytesLike): string {
-  let cleaned = publicKey instanceof Uint8Array ? bytesToHex(publicKey) : publicKey.trim();
-
-  // 移除 0x 前缀
-  if (cleaned.startsWith('0x') || cleaned.startsWith('0X')) {
-    cleaned = cleaned.slice(2);
-  }
-
-  // 验证是否为有效的十六进制字符串
-  if (!isValidHexString(cleaned)) {
-    throw new Error('Invalid public key: must be a hexadecimal string');
-  }
-
-  cleaned = cleaned.toLowerCase();
-
-  const prefix = cleaned.slice(0, 2);
-
-  if (prefix === '04') {
-    // 已经是非压缩格式
-    return cleaned;
-  } else if (prefix === '02' || prefix === '03') {
-    // 压缩格式，需要解压
-    const point = sm2.Point.fromHex(cleaned);
-    const uncompressedBytes = point.toBytes(false); // false = 非压缩格式
-    return bytesToHex(uncompressedBytes);
-  } else {
-    throw new Error('Invalid public key prefix: must be 02, 03, or 04');
-  }
+  // 统一经过曲线点解析，避免未压缩格式只校验 04 前缀便原样返回无效点。
+  const normalized = normalizePublicKeyInput(publicKey);
+  const point = sm2.Point.fromHex(normalized);
+  return bytesToHex(point.toBytes(false));
 }
 
 /**
