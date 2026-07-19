@@ -9,6 +9,7 @@
 | `ci.yml` | 相关路径 push/PR、手动 | Java 在 JDK 8/11/17/21/25 上执行 Maven reactor 测试；不强制 SM9 native |
 | `parity.yml` | Java/TS/vector 变更、手动 | Java 在 JDK 17/21/25、TS 在 Node 20/22 消费共享向量 |
 | `sm9-native.yml` | SM9/native 变更、手动 | 5 个平台分别构建 GmSSL/JNI、打包 `gmkit-sm9` 并强制测试 |
+| `release.yml` | 手动 | 从源码版本创建 `java-v*` 或 `ts-v*` 标签，并显式启动对应发布工作流 |
 | `publish-java.yml` | `java-v*`、手动 | 聚合 5 平台 runtime、5 平台消费同一个 JAR、签名审计并自动发布 Maven Central |
 | `docs.yml` | TS/docs 变更、手动 | 构建 TS，运行文档审计和 Go/Python/Rust/Hutool/Node fixture |
 
@@ -46,7 +47,13 @@ pwsh ./scripts/sm9-native.ps1 -Platform current -Stage -PackageRuntime -Test
 
 ## Java 发布流程
 
-新版本只使用 `java-v<project version>` 标签。无语言前缀的 `v*` 和 TypeScript 的 `ts-v*` 都不会触发 Java 发布。
+新版本只使用 `java-v<project version>` 标签。无语言前缀的 `v*` 和 TypeScript 的 `ts-v*` 都不会触发 Java 发布。推荐从默认分支运行统一 Release 工作流，它会读取 POM 版本、创建 annotated tag，并以该 tag 为 ref 启动 Java 发布：
+
+```powershell
+gh workflow run release.yml --repo gmkits/gmkit --ref main -f target=java -f publish=true
+```
+
+在 Actions 页面手动运行时，选择 `target=java` 并勾选 `publish`。不勾选时只核对版本、目标 tag 和发布工作流，不创建 tag，也不发布。Release 工作流使用仓库自带的短期 `GITHUB_TOKEN`，无需新增 PAT；它会显式 dispatch 发布工作流，因为 Actions 使用 `GITHUB_TOKEN` 推送的 tag 不会再次触发普通 push 工作流。
 
 发布工作流按以下阶段执行：
 
@@ -57,7 +64,7 @@ pwsh ./scripts/sm9-native.ps1 -Platform current -Stage -PackageRuntime -Test
 5. 在五个平台分别消费同一个聚合 JAR，强制执行 SM9 签名、验签、加密、解密和资源释放测试。
 6. 校验 Maven Central/GPG 凭据，对 sources、Javadoc、POM、许可证、native 清单和签名做最终审计，然后使用 Central Publishing Portal 自动发布。
 
-标签发布缺少任一 Central/GPG 凭据时直接失败，不允许成功跳过。手动触发只运行构建与消费验证，不执行正式 Central 发布。
+标签发布缺少任一 Central/GPG 凭据时直接失败，不允许成功跳过。直接手动触发 `publish-java.yml` 时，默认只运行构建与消费验证；只有选择现有 `java-v*` tag 作为 ref 并显式勾选 `publish` 才执行正式 Central 发布。正常发版应使用上面的统一 Release 工作流自动创建 tag 和传递参数。
 
 ## 发布凭据
 

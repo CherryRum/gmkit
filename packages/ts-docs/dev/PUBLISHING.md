@@ -8,7 +8,7 @@ tag: [npm, GitHub Actions, Provenance]
 
 # TypeScript 发布与验收
 
-TypeScript 包只使用 `ts-v<package version>` 标签触发 `.github/workflows/publish-ts.yml`；无语言前缀的 `v*` 和 Java 的 `java-v*` 都不会触发 npm 发布。
+TypeScript 发布制品只对应 `ts-v<package version>` 标签。标签 push 可以直接触发 `.github/workflows/publish-ts.yml`；推荐使用统一 `release.yml` 自动创建标签并显式启动发布。无语言前缀的 `v*` 和 Java 的 `java-v*` 都不会触发 npm 发布。
 
 ## 发布产物
 
@@ -44,19 +44,19 @@ npm run docs:build
 
 `npm run verify` 包含 TS 类型/测试/构建、Java 测试和 parity，但不包含 lint、pack 审计或文档门禁，因此后续命令不能省略。
 
-## 标签工作流
+## 自动创建标签并发布
 
-先从清洁工作区读取版本，确认标签尚不存在：
+推荐从默认分支运行统一 Release 工作流。它从 `packages/ts/package.json` 读取版本，自动创建 annotated tag，再以该 tag 为 ref 显式启动 npm 发布工作流：
 
-```bash
-VERSION="$(node -p "require('./packages/ts/package.json').version")"
-git status --short
-git tag --list "ts-v${VERSION}"
-git tag "ts-v${VERSION}"
-git push origin "ts-v${VERSION}"
+```powershell
+gh workflow run release.yml --repo gmkits/gmkit --ref main -f target=typescript -f publish=true
 ```
 
-tag workflow 会：
+在 Actions 页面运行时，选择 `target=typescript` 并勾选 `publish`。不勾选时只显示版本、目标 tag 和发布工作流，不创建 tag，也不发布。Release 工作流使用仓库自带的短期 `GITHUB_TOKEN`，不需要配置 PAT；它会主动 dispatch `publish-ts.yml`，避免依赖 `GITHUB_TOKEN` 推 tag 后不会递归触发 push workflow 的行为。
+
+TypeScript 必须在同版本 Java 制品已经能从 Maven Central 解析后再发。自动 tag 工作流不会绕过这个顺序，也不会自动覆盖已存在的 tag；已有 tag 的失败发布应在 Actions 中重新运行原 publisher。
+
+发布工作流会：
 
 1. 核对标签版本与 `packages/ts/package.json` 完全相等；
 2. 执行 type-check、单测、构建和 npm pack 审计；

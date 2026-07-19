@@ -65,8 +65,9 @@ SM9 Java native runtime 可在需要时本地构建：
 - `parity.yml`：运行共享 `vectors/interop.json` 互操作校验。
 - `sm9-native.yml`：在 Linux、macOS、Windows 上编译 GmSSL/JNI runtime，并强制运行当前平台的 SM9 native 测试。
 - `docs.yml`：构建 TypeScript 包与 VuePress 文档，并执行 Node/Go/Python/Rust/Hutool 文档 fixture；不构建 Studio。
-- `publish-ts.yml`：只接受 `ts-v*` 标签，通过 npm Trusted Publisher 和 GitHub OIDC 发布。
-- `publish-java.yml`：只接受 `java-v*` 标签，聚合五个平台 runtime、消费测试同一个 `gmkit-sm9` JAR，再发布 Maven Central。
+- `release.yml`：手动选择 Java 或 TypeScript，从源码版本自动创建对应 tag，并启动正式发布工作流。
+- `publish-ts.yml`：发布 `ts-v*` 标签，通过 npm Trusted Publisher 和 GitHub OIDC 发布。
+- `publish-java.yml`：发布 `java-v*` 标签，聚合五个平台 runtime、消费测试同一个 `gmkit-sm9` JAR，再发布 Maven Central。
 
 ## 文档入口
 
