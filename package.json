@@ -12,7 +12,7 @@
     "verify": "npm run test:ts && npm run test:java && npm run parity && npm run build:ts",
     "test:ts": "npm run type-check -w packages/ts && npm test -w packages/ts",
     "test:java": "mvn -f packages/java/pom.xml -B -ntp test",
-    "parity": "mvn -f packages/java/pom.xml -B -ntp -pl gmkit -Dtest=InteropComplianceTest test && npx vitest run test/interop-compliance.test.ts --config vitest.config.ts --root packages/ts",
+    "parity": "mvn -f packages/java/pom.xml -B -ntp -pl gmkit -Dtest=InteropComplianceTest test && npm exec -w packages/ts -- vitest run test/interop-compliance.test.ts --config vitest.config.ts",
     "build:ts": "npm run build -w packages/ts",
     "build:java": "mvn -f packages/java/pom.xml -B -ntp -DskipTests install",
     "docs:build": "npm run build -w packages/ts-docs",
