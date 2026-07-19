@@ -293,6 +293,66 @@ export function uint32ToBytes4BE(value: number): Uint8Array {
  */
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
+const BASE64_LOOKUP = new Int16Array(128).fill(-1);
+for (let i = 0; i < BASE64_CHARS.length; i++) {
+  BASE64_LOOKUP[BASE64_CHARS.charCodeAt(i)] = i;
+}
+
+/**
+ * 校验标准 Base64，并返回去除空白后的文本和有效字符数。
+ * 允许省略末尾填充，但拒绝非法填充和非零 pad bits，避免不同文本被静默解码成相同字节。
+ */
+function validateBase64(base64: string): { cleaned: string; dataLength: number } {
+  let cleaned = '';
+  for (let i = 0; i < base64.length; i++) {
+    const code = base64.charCodeAt(i);
+    if (code === 32 || code === 9 || code === 10 || code === 13) continue;
+    cleaned += base64[i];
+  }
+
+  if (cleaned.length === 0) return { cleaned, dataLength: 0 };
+
+  const firstPadding = cleaned.indexOf('=');
+  const dataLength = firstPadding === -1 ? cleaned.length : firstPadding;
+  const paddingLength = cleaned.length - dataLength;
+
+  if (paddingLength > 2 || (paddingLength > 0 && cleaned.length % 4 !== 0)) {
+    throw new Error('Invalid Base64 string: malformed padding');
+  }
+  for (let i = dataLength; i < cleaned.length; i++) {
+    if (cleaned.charCodeAt(i) !== 61) {
+      throw new Error('Invalid Base64 string: padding must appear only at the end');
+    }
+  }
+  if (dataLength % 4 === 1) {
+    throw new Error('Invalid Base64 string: invalid length');
+  }
+  if (paddingLength === 1 && dataLength % 4 !== 3) {
+    throw new Error('Invalid Base64 string: malformed padding');
+  }
+  if (paddingLength === 2 && dataLength % 4 !== 2) {
+    throw new Error('Invalid Base64 string: malformed padding');
+  }
+
+  for (let i = 0; i < dataLength; i++) {
+    const code = cleaned.charCodeAt(i);
+    if (code >= BASE64_LOOKUP.length || BASE64_LOOKUP[code] < 0) {
+      throw new Error(`Invalid Base64 string: unexpected character at index ${i}`);
+    }
+  }
+
+  // RFC 4648 要求末尾未使用的补位为 0；否则编码不是规范表示。
+  const remainder = dataLength % 4;
+  if (remainder === 2 && (BASE64_LOOKUP[cleaned.charCodeAt(dataLength - 1)] & 0x0f) !== 0) {
+    throw new Error('Invalid Base64 string: non-zero padding bits');
+  }
+  if (remainder === 3 && (BASE64_LOOKUP[cleaned.charCodeAt(dataLength - 1)] & 0x03) !== 0) {
+    throw new Error('Invalid Base64 string: non-zero padding bits');
+  }
+
+  return { cleaned, dataLength };
+}
+
 /**
  * 将 Uint8Array 转换为 Base64 字符串
  * @param bytes - 要转换的 Uint8Array
@@ -332,37 +392,20 @@ export function bytesToBase64(bytes: Uint8Array): string {
  * @returns Uint8Array
  */
 export function base64ToBytes(base64: string): Uint8Array {
-  // 移除空白字符 - 优化：使用字符码判断避免正则
-  let cleaned = '';
-  for (let i = 0; i < base64.length; i++) {
-    const code = base64.charCodeAt(i);
-    // 跳过空白字符：空格(32), \t(9), \n(10), \r(13)
-    if (code !== 32 && code !== 9 && code !== 10 && code !== 13) {
-      cleaned += base64[i];
-    }
-  }
-  base64 = cleaned;
+  const { cleaned, dataLength } = validateBase64(base64);
+  if (dataLength === 0) return new Uint8Array(0);
 
-  // 创建反向查找表
-  const lookup: { [key: string]: number } = {};
-  for (let i = 0; i < BASE64_CHARS.length; i++) {
-    lookup[BASE64_CHARS[i]] = i;
-  }
-
-  // 计算输出长度
-  const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
-  const len = base64.length;
-  const outputLen = (len * 3) / 4 - padding;
+  const outputLen = Math.floor((dataLength * 6) / 8);
 
   const bytes = new Uint8Array(outputLen);
   let byteIndex = 0;
 
   // 每次处理 4 个 Base64 字符（24 位）转换为 3 个字节
-  for (let i = 0; i < len; i += 4) {
-    const char1 = lookup[base64[i]] || 0;
-    const char2 = lookup[base64[i + 1]] || 0;
-    const char3 = lookup[base64[i + 2]] || 0;
-    const char4 = lookup[base64[i + 3]] || 0;
+  for (let i = 0; i < dataLength; i += 4) {
+    const char1 = BASE64_LOOKUP[cleaned.charCodeAt(i)];
+    const char2 = i + 1 < dataLength ? BASE64_LOOKUP[cleaned.charCodeAt(i + 1)] : 0;
+    const char3 = i + 2 < dataLength ? BASE64_LOOKUP[cleaned.charCodeAt(i + 2)] : 0;
+    const char4 = i + 3 < dataLength ? BASE64_LOOKUP[cleaned.charCodeAt(i + 3)] : 0;
 
     const chunk = (char1 << 18) | (char2 << 12) | (char3 << 6) | char4;
 
@@ -413,37 +456,11 @@ export function isHexString(str: string): boolean {
  */
 export function isBase64String(str: string): boolean {
   if (str.length === 0) return false;
-
-  const len = str.length;
-
-  for (let i = 0; i < len; i++) {
-    const code = str.charCodeAt(i);
-
-    // 填充字符 '=' (61) 只能出现在最后两个位置
-    if (code === 61) {
-      if (i >= len - 2) continue;
-      return false;
-    }
-
-    // 使用位运算优化判断
-    // A-Z: 65-90, a-z: 97-122, 0-9: 48-57, +: 43, /: 47
-
-    // 快速路径：数字 0-9 (48-57)
-    if ((code - 48) >>> 0 < 10) continue;
-
-    // 大写字母 A-Z (65-90)
-    if ((code - 65) >>> 0 < 26) continue;
-
-    // 小写字母 a-z (97-122)
-    if ((code - 97) >>> 0 < 26) continue;
-
-    // + (43) 或 / (47)
-    if (code === 43 || code === 47) continue;
-
+  try {
+    return validateBase64(str).dataLength > 0;
+  } catch {
     return false;
   }
-
-  return true;
 }
 
 /**

@@ -140,8 +140,8 @@ describe('工具函数增强测试套件', () => {
     });
 
     it('应该识别包含特殊字符的 Base64', () => {
-      expect(isBase64String('AB+/CD==')).toBe(true); // 包含 + 和 /
-      expect(isBase64String('+++///')).toBe(true);
+      expect(isBase64String('AB+/CA==')).toBe(true); // 包含 + 和 /
+      expect(isBase64String('+++//w')).toBe(true);
     });
 
     it('应该拒绝无效的 Base64 字符串', () => {
@@ -150,6 +150,9 @@ describe('工具函数增强测试套件', () => {
       expect(isBase64String('Hello@World')).toBe(false); // 非法字符
       expect(isBase64String('SGVs=bG8=')).toBe(false); // = 不在末尾
       expect(isBase64String('=SGVsbG8=')).toBe(false); // = 在开头
+      expect(isBase64String('A')).toBe(false); // 仅 6 bit，无法组成字节
+      expect(isBase64String('QQ=')).toBe(false); // padding 后总长度必须为 4 的倍数
+      expect(isBase64String('QR==')).toBe(false); // 非零 pad bits
     });
 
     it('应该拒绝特殊字符', () => {
@@ -160,7 +163,6 @@ describe('工具函数增强测试套件', () => {
     });
 
     it('应该处理边界情况', () => {
-      expect(isBase64String('A')).toBe(true); // 单个字符
       expect(isBase64String('A'.repeat(1000))).toBe(true); // 长字符串
     });
   });
@@ -246,6 +248,15 @@ describe('工具函数增强测试套件', () => {
         // 两个填充 (1 byte)
         const twoPadding = base64ToBytes('QQ==');
         expect(twoPadding).toEqual(new Uint8Array([0x41]));
+      });
+
+      it('应该拒绝非法字符、长度、填充和非零补位', () => {
+        expect(() => base64ToBytes('SGV@sbG8')).toThrow(/unexpected character/);
+        expect(() => base64ToBytes('A')).toThrow(/invalid length/);
+        expect(() => base64ToBytes('QQ=')).toThrow(/malformed padding/);
+        expect(() => base64ToBytes('QQ===')).toThrow(/malformed padding/);
+        expect(() => base64ToBytes('QR==')).toThrow(/non-zero padding bits/);
+        expect(() => base64ToBytes('QUJ=')).toThrow(/non-zero padding bits/);
       });
     });
 

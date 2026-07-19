@@ -48,6 +48,19 @@ class CoreCodecsTest {
         assertFalse(Base64Codec.looksLikeBase64("abc"));
         assertFalse(Base64Codec.looksLikeBase64("YWJj=ZA="));
         assertFalse(Base64Codec.looksLikeBase64("YWJjZA==="));
+        assertFalse(Base64Codec.looksLikeBase64("QR=="));
+        assertFalse(Base64Codec.looksLikeBase64("QUJ="));
+    }
+
+    @Test
+    void base64DecoderShouldAcceptCanonicalPaddedAndUnpaddedInputOnly() {
+        assertArrayEquals(Texts.utf8("Hello"), Base64Codec.decode("SGVsbG8=", "test"));
+        assertArrayEquals(Texts.utf8("Hello"), Base64Codec.decode("SGVsbG8", "test"));
+
+        assertThrows(GmkitException.class, () -> Base64Codec.decode("A", "test"));
+        assertThrows(GmkitException.class, () -> Base64Codec.decode("QQ=", "test"));
+        assertThrows(GmkitException.class, () -> Base64Codec.decode("QR==", "test"));
+        assertThrows(GmkitException.class, () -> Base64Codec.decode("QUJ=", "test"));
     }
 
     @Test

@@ -26,6 +26,9 @@ public final class Base64Codec {
             throw new GmkitException(Messages.invalidBlankInput(label));
         }
         String trimmed = input.trim();
+        if (!isCanonicalBase64(trimmed, true)) {
+            throw new GmkitException(Messages.invalidBase64(label));
+        }
         try {
             return DECODER.decode(trimmed);
         } catch (IllegalArgumentException ex) {
@@ -70,35 +73,66 @@ public final class Base64Codec {
         if (length == 0 || (length & 3) != 0) {
             return false;
         }
-        int paddingStart = length;
-        int paddingCount = 0;
-        for (int i = 0; i < length; i++) {
-            char ch = trimmed.charAt(i);
-            if (ch == '=') {
-                if (paddingStart == length) {
-                    paddingStart = i;
-                }
-                paddingCount++;
-                if (paddingCount > 2) {
-                    return false;
-                }
-                continue;
-            }
-            if (paddingStart != length) {
-                return false;
-            }
-            if (!isBase64Char(ch)) {
+        return isCanonicalBase64(trimmed, false);
+    }
+
+    /**
+     * 校验 RFC 4648 标准 Base64 的字符、填充和 pad bits。
+     * 显式解码允许省略末尾填充；格式探测仍由调用方限制为 4 字符对齐，保持旧版自动识别边界。
+     */
+    private static boolean isCanonicalBase64(String input, boolean allowUnpadded) {
+        int length = input.length();
+        int paddingStart = input.indexOf('=');
+        int dataLength = paddingStart < 0 ? length : paddingStart;
+        int paddingCount = length - dataLength;
+
+        if (dataLength == 0 || dataLength % 4 == 1 || paddingCount > 2) {
+            return false;
+        }
+        if (!allowUnpadded && (length & 3) != 0) {
+            return false;
+        }
+        if (paddingCount > 0 && (length & 3) != 0) {
+            return false;
+        }
+        if ((paddingCount == 1 && dataLength % 4 != 3)
+            || (paddingCount == 2 && dataLength % 4 != 2)) {
+            return false;
+        }
+
+        for (int i = 0; i < dataLength; i++) {
+            if (base64Value(input.charAt(i)) < 0) {
                 return false;
             }
         }
-        return true;
+        for (int i = dataLength; i < length; i++) {
+            if (input.charAt(i) != '=') {
+                return false;
+            }
+        }
+
+        int remainder = dataLength % 4;
+        int lastValue = base64Value(input.charAt(dataLength - 1));
+        return (remainder != 2 || (lastValue & 0x0f) == 0)
+            && (remainder != 3 || (lastValue & 0x03) == 0);
     }
 
-    private static boolean isBase64Char(char ch) {
-        return (ch >= 'A' && ch <= 'Z')
-            || (ch >= 'a' && ch <= 'z')
-            || (ch >= '0' && ch <= '9')
-            || ch == '+'
-            || ch == '/';
+    private static int base64Value(char ch) {
+        if (ch >= 'A' && ch <= 'Z') {
+            return ch - 'A';
+        }
+        if (ch >= 'a' && ch <= 'z') {
+            return ch - 'a' + 26;
+        }
+        if (ch >= '0' && ch <= '9') {
+            return ch - '0' + 52;
+        }
+        if (ch == '+') {
+            return 62;
+        }
+        if (ch == '/') {
+            return 63;
+        }
+        return -1;
     }
 }
