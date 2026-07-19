@@ -80,15 +80,15 @@
     "node": ">=18.0.0"
   },
   "devDependencies": {
-    "@noble/curves": "^2.0.1",
-    "@noble/hashes": "^2.0.1",
+    "@noble/curves": "^2.2.0",
+    "@noble/hashes": "^2.2.0",
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
-    "@vitest/coverage-v8": "^1.6.1",
+    "@vitest/coverage-v8": "^3.2.7",
     "eslint": "^8.57.1",
     "tsup": "^8.5.1",
     "typescript": "^5.0.0",
-    "vitest": "^1.0.0"
+    "vitest": "^3.2.7"
   }
 }

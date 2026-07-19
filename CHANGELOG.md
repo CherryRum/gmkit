@@ -53,6 +53,8 @@
 - Validated RNG policies and custom RNG output, split Web Crypto requests at the 65536-byte platform limit, and kept the default warning compatibility fallback plus opt-in strict mode.
 - Reset reusable SHA-1/256/384/512 instances after `digest()` so implementation behavior now matches the documented streaming contract.
 - Made Java and TypeScript parity fail closed on missing, empty, malformed, duplicated, unsupported, or zero-match shared vectors. Java now consumes all 33 SM2/SM3/SM4/ZUC cases instead of skipping SM2.
+- Rejected malformed and non-canonical Base64 input, including invalid padding and non-zero pad bits, while retaining explicit unpadded decoding compatibility.
+- Updated the inlined Noble curve/hash implementation and the Vitest/Vite build chain; the complete npm workspace dependency graph now passes `npm audit` with zero known vulnerabilities.
 
 - **TS SM4 CK table — GB/T 32907-2016 conformance fix** (audit-iter8-D).
   The `CK[i]` constant generation in `packages/ts/src/crypto/sm4/index.ts` omitted

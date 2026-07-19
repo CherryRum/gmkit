@@ -2,8 +2,8 @@
 
 `gmkitx` 的 ESM、CommonJS 和 IIFE 构建产物内联了以下组件的代码：
 
-- `@noble/curves` 2.0.1, <https://github.com/paulmillr/noble-curves>
-- `@noble/hashes` 2.0.1, <https://github.com/paulmillr/noble-hashes>
+- `@noble/curves` 2.2.0, <https://github.com/paulmillr/noble-curves>
+- `@noble/hashes` 2.2.0, <https://github.com/paulmillr/noble-hashes>
 
 上述组件均按 MIT License 发布，版权声明和许可证全文如下。该声明仅适用于
 列出的第三方组件；`gmkitx` 自身继续按 Apache License 2.0 发布。
