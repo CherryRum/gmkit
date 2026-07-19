@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { digest as sm3Digest, hmac as sm3Hmac } from '../src/crypto/sm3';
@@ -29,14 +29,41 @@ import { CipherMode, InputFormat, OutputFormat, PaddingMode, SM2CipherMode } fro
 describe('互操作性和标准测试向量', () => {
   let interopVectors: any;
 
-  beforeEach(() => {
-    try {
-      const vectorPath = resolve(__dirname, '../../../vectors/interop.json');
-      const vectorData = readFileSync(vectorPath, 'utf-8');
-      interopVectors = JSON.parse(vectorData);
-    } catch (error) {
-      console.warn('Warning: Could not load interop vectors');
-      interopVectors = { cases: [] };
+  beforeAll(() => {
+    const vectorPath = resolve(__dirname, '../../../vectors/interop.json');
+    const vectorData = readFileSync(vectorPath, 'utf-8');
+    const parsed = JSON.parse(vectorData);
+    if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.cases)) {
+      throw new Error('Invalid interop vectors: root.cases must be an array');
+    }
+    if (!parsed.defaults || typeof parsed.defaults !== 'object') {
+      throw new Error('Invalid interop vectors: root.defaults must be an object');
+    }
+    interopVectors = parsed;
+  });
+
+  it('共享向量必须非空、ID 唯一且操作全部受支持', () => {
+    const supported = new Set([
+      'SM2/encrypt',
+      'SM2/sign',
+      'SM3/digest',
+      'SM4/encrypt',
+      'ZUC/keystream',
+      'ZUC/encrypt',
+      'ZUC/eea3',
+      'ZUC/eea3-encrypt',
+      'ZUC/eia3',
+    ]);
+    expect(interopVectors.cases.length).toBeGreaterThan(0);
+
+    const ids = new Set<string>();
+    for (const testCase of interopVectors.cases) {
+      expect(testCase.id, 'vector id must be a non-empty string').toBeTypeOf('string');
+      expect(testCase.id.length, 'vector id must not be empty').toBeGreaterThan(0);
+      expect(ids.has(testCase.id), `duplicate vector id: ${testCase.id}`).toBe(false);
+      ids.add(testCase.id);
+      expect(supported.has(`${testCase.algo}/${testCase.op}`),
+        `unsupported vector operation: ${testCase.algo}/${testCase.op}`).toBe(true);
     }
   });
 
@@ -69,7 +96,8 @@ describe('互操作性和标准测试向量', () => {
 
     it('应该符合互操作向量 - SM3摘要', () => {
       const sm3Cases = interopVectors.cases?.filter((c: any) => c.algo === 'SM3' && c.op === 'digest') || [];
-      
+      expect(sm3Cases.length).toBeGreaterThan(0);
+
       sm3Cases.forEach((testCase: any) => {
         const result = sm3Digest(testCase.input);
         expect(result).toBe(testCase.expected.hex);
@@ -121,7 +149,8 @@ describe('互操作性和标准测试向量', () => {
 
     it('应该符合互操作向量 - SM4加密', () => {
       const sm4Cases = interopVectors.cases?.filter((c: any) => c.algo === 'SM4' && c.op === 'encrypt') || [];
-      
+      expect(sm4Cases.length).toBeGreaterThan(0);
+
       sm4Cases.forEach((testCase: any) => {
         const key = testCase.keyHex || interopVectors.defaults?.sm4KeyHex;
         const iv = testCase.ivHex || interopVectors.defaults?.sm4IvHex;
@@ -152,6 +181,7 @@ describe('互操作性和标准测试向量', () => {
   describe('ZUC 项目固定向量', () => {
     it('应该符合互操作向量 - ZUC', () => {
       const zucCases = interopVectors.cases?.filter((c: any) => c.algo === 'ZUC') || [];
+      expect(zucCases.length).toBeGreaterThan(0);
 
       zucCases.forEach((testCase: any) => {
         const key = testCase.keyHex || interopVectors.defaults?.zucKeyHex;
@@ -210,6 +240,29 @@ describe('互操作性和标准测试向量', () => {
   });
 
   describe('SM2 互操作性测试', () => {
+    it('应该消费全部 SM2 共享向量', () => {
+      const sm2Cases = interopVectors.cases.filter((c: any) => c.algo === 'SM2');
+      expect(sm2Cases.length).toBeGreaterThan(0);
+
+      for (const testCase of sm2Cases) {
+        if (testCase.op === 'encrypt') {
+          const mode = SM2CipherMode[testCase.mode as keyof typeof SM2CipherMode];
+          expect(mode, `unsupported SM2 mode: ${testCase.mode}`).toBeDefined();
+          const ciphertext = sm2Encrypt(testCase.publicKeyHex, testCase.input, { mode });
+          expect(sm2Decrypt(testCase.privateKeyHex, ciphertext, { mode }))
+            .toBe(testCase.expected.plain);
+          continue;
+        }
+        if (testCase.op === 'sign') {
+          const signature = sm2Sign(testCase.privateKeyHex, testCase.input);
+          expect(sm2Verify(testCase.publicKeyHex, testCase.input, signature))
+            .toBe(testCase.expected.verify);
+          continue;
+        }
+        throw new Error(`Unsupported SM2 vector op: ${testCase.op}`);
+      }
+    });
+
     it('使用固定密钥对的签名应该可以被验证', () => {
       // 使用互操作向量中的密钥对
       const privateKey = interopVectors.defaults?.sm2PrivateKeyHex;
@@ -250,25 +303,14 @@ describe('互操作性和标准测试向量', () => {
       
       // 由于SM2加密使用了随机数k，每次加密的结果都不同
       // 因此我们主要测试：使用我们自己的实现加密，然后解密，应该能恢复原文
-      try {
-        // C1C3C2模式
-        const encrypted1 = sm2Encrypt(publicKey, plaintext, { mode: SM2CipherMode.C1C3C2 });
-        const decrypted1 = sm2Decrypt(privateKey, encrypted1, { mode: SM2CipherMode.C1C3C2 });
-        expect(decrypted1).toBe(plaintext);
-      } catch (e) {
-        // 固定密钥对加解密可能由于各种原因失败，这不是核心功能
-        // 我们已经在其他测试中验证了基本的加解密功能
-        console.warn('Fixed keypair encryption test skipped:', (e as Error).message);
-      }
+      // 固定共享密钥失败必须让测试失败，不能降级成 warning。
+      const encrypted1 = sm2Encrypt(publicKey, plaintext, { mode: SM2CipherMode.C1C3C2 });
+      const decrypted1 = sm2Decrypt(privateKey, encrypted1, { mode: SM2CipherMode.C1C3C2 });
+      expect(decrypted1).toBe(plaintext);
 
-      try {
-        // C1C2C3模式
-        const encrypted2 = sm2Encrypt(publicKey, plaintext, { mode: SM2CipherMode.C1C2C3 });
-        const decrypted2 = sm2Decrypt(privateKey, encrypted2, { mode: SM2CipherMode.C1C2C3 });
-        expect(decrypted2).toBe(plaintext);
-      } catch (e) {
-        console.warn('Fixed keypair encryption test skipped:', (e as Error).message);
-      }
+      const encrypted2 = sm2Encrypt(publicKey, plaintext, { mode: SM2CipherMode.C1C2C3 });
+      const decrypted2 = sm2Decrypt(privateKey, encrypted2, { mode: SM2CipherMode.C1C2C3 });
+      expect(decrypted2).toBe(plaintext);
     });
 
     it('不同密文模式的密文格式应该不同', () => {
