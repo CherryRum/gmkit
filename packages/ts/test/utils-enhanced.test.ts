@@ -335,7 +335,9 @@ describe('工具函数增强测试套件', () => {
       expect(hex.length).toBe(size * 2);
       
       const decoded = hexToBytes(hex);
-      expect(decoded).toEqual(data);
+      expect(decoded.length).toBe(data.length);
+      // Vitest 的深度比较会为百万字节构造差异树，在较慢的 Node 版本上可能误触 5 秒超时。
+      expect(decoded.every((byte, index) => byte === data[index])).toBe(true);
     });
 
     it('应该能处理大型 Base64 数据', () => {
