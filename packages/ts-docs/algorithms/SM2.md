@@ -17,11 +17,14 @@ GMKitX 提供 SM2 密钥生成、公钥派生与压缩、加解密、签名验�
 | 私钥 | 32 字节标量，hex 或 `Uint8Array` |
 | 公钥 | 非压缩 `04 || x || y`（65 字节）或压缩 `02/03 || x`（33 字节） |
 | 密文排列 | 默认 `C1C3C2`，支持 `C1C2C3` |
+| 密文编码 | 支持 raw 与 canonical ASN.1 DER；拒绝 BER、非最短编码和尾随数据 |
 | 签名 | 默认 raw `r || s`（64 字节），支持 ASN.1 DER |
 | userId | 省略或传 `''` 都回落到 `DEFAULT_USER_ID`，用于兼容旧版本 |
 | 文本 | 字符串按 UTF-8 编码；任意二进制使用 `Uint8Array` 和 `sm2DecryptBytes` |
 
 SM2 加密与签名含随机数，正常情况下每次结果不同。测试应验证解密、验签和篡改拒绝，不应比较随机密文或签名的完整字面值。
+
+SM2 加密不接受空明文。对非空明文执行 KDF 时若派生结果全零，实现会重新选择临时标量并有界重试，不会返回全零密钥流对应的密文。
 
 ## 密钥与公钥格式
 
@@ -119,7 +122,51 @@ if (sm2Verify(publicKey, `${message}!`, signature, {
 
 ## 密钥交换
 
-`sm2KeyExchange` 实现 SM2 双方密钥协商，不等同于普通 ECDH。调用方需要分别维护双方静态密钥和临时密钥，并核对确认标签。详细字段以 `SM2KeyExchangeParams` 类型为准，测试覆盖位于 `packages/ts/test/sm2.test.ts`。
+`sm2KeyExchange` 实现 SM2 双方密钥协商，不等同于普通 ECDH。调用方需要分别维护双方静态密钥和临时密钥，并核对确认标签。下面的固定数据同时由 TypeScript 与 Java/Bouncy Castle 消费：
+
+```ts
+import { sm2GetPublicKeyFromPrivateKey, sm2KeyExchange } from 'gmkitx';
+
+const dA = '0'.repeat(63) + '1';
+const rA = '0'.repeat(63) + '2';
+const dB = '0'.repeat(63) + '3';
+const rB = '0'.repeat(63) + '4';
+const publicA = sm2GetPublicKeyFromPrivateKey(dA);
+const tempPublicA = sm2GetPublicKeyFromPrivateKey(rA);
+const publicB = sm2GetPublicKeyFromPrivateKey(dB);
+const tempPublicB = sm2GetPublicKeyFromPrivateKey(rB);
+
+const resultA = sm2KeyExchange({
+  privateKey: dA,
+  publicKey: publicA,
+  tempPrivateKey: rA,
+  peerPublicKey: publicB,
+  peerTempPublicKey: tempPublicB,
+  userId: 'Alice-固定向量',
+  peerUserId: 'Bob-固定向量',
+  isInitiator: true,
+  keyLength: 32,
+});
+const resultB = sm2KeyExchange({
+  privateKey: dB,
+  publicKey: publicB,
+  tempPrivateKey: rB,
+  peerPublicKey: publicA,
+  peerTempPublicKey: tempPublicA,
+  userId: 'Bob-固定向量',
+  peerUserId: 'Alice-固定向量',
+  isInitiator: false,
+  keyLength: 32,
+});
+
+const expected = '858c9c6cd5541b4d9b8dc24c6cd43071e1262993b44988dd47bcb13d3949d66f';
+if (resultA.sharedKey !== expected || resultB.sharedKey !== expected) {
+  throw new Error('SM2 key exchange vector mismatch');
+}
+if (resultA.s1 !== resultB.s1 || resultA.s2 !== resultB.s2) {
+  throw new Error('SM2 confirmation tags mismatch');
+}
+```
 
 密钥交换协议必须明确：双方角色、userId、派生长度、静态/临时公钥编码和确认标签传输顺序。不要只交换公钥后忽略确认标签。
 

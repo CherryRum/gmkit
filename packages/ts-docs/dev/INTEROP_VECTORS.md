@@ -43,16 +43,18 @@ mvn -f packages/java/pom.xml -B -ntp -pl gmkit -Dtest=InteropComplianceTest test
 
 顶层 `meta` 描述向量格式版本和编码；`defaults` 只用于减少测试数据重复；`cases` 中每一项必须有稳定 `id`、`algo`、`op` 和期望结果。消费者不得根据未声明字段猜测编码或模式。
 
-向量门禁采用 fail-closed：文件缺失、JSON 结构错误、空 `cases`、重复 `id`、未知操作、必填字段缺失或某算法分组零匹配都会失败。当前 33 个 case 均由 Java 和 TypeScript 消费，其中 Java 测试报告 1 个结构门禁加 33 个动态 case。
+向量门禁采用 fail-closed：文件缺失、JSON 结构错误、空 `cases`、重复 `id`、未知操作、必填字段缺失或某算法分组零匹配都会失败。Java 与 TypeScript 必须消费全部 case；用例数量以测试运行输出为准，不在文档中写死。
 
 ## 字段边界
 
 | 算法 | 必须固定的字段 |
 |:--|:--|
-| SM2 | `mode`、userId、raw/DER、hex/base64、公钥表示 |
+| SM2 | `mode`、userId、raw/DER、hex/base64、公钥表示；密钥交换还需固定双方角色、静态/临时密钥、派生长度和 S1/S2 |
 | SM3 | UTF-8/原始字节输入与 hex/base64 输出 |
 | SM4 | `mode`、`padding`、key、IV/nonce、AAD、tag 长度 |
 | ZUC | key、IV、COUNT、BEARER、DIRECTION、`bitLength`，以及 `eea3`/`eea3-encrypt` 操作语义 |
+
+当前共享 JSON 中的 SM4 case 覆盖 ECB/CBC。CTR/CFB/OFB/GCM/CCM 使用 TypeScript 与 Java/Bouncy Castle 中相同的固定输入和输出做双端测试，但尚未并入 `vectors/interop.json`，文档不得把项目往返测试描述成共享 AEAD 向量。
 
 ZUC 的 `count` 在 JSON 中以十进制数保存，含义是 API 接收的 32-bit 整数，不是按宿主机端序解释的四字节数组。
 

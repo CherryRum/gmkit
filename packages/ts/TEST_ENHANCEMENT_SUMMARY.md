@@ -1,260 +1,72 @@
-# GMKitX Test Suite Enhancement Summary
+# GMKitX 测试与验证说明
 
-## Overview
-Comprehensive enhancement of the test suite to improve code quality, reliability, and professional standards compliance.
+本文记录当前测试体系的职责和发版门禁。测试数量会随用例增长而变化，因此不在文档中固化某次运行的计数；以 CI 和本地命令的实际输出为准。
 
-## Test Statistics
+## 验证分层
 
-### Before Enhancement
-- **Total Tests**: 268
-- **Test Files**: 14
-- **Test Lines of Code**: ~3,223
+| 层级 | 主要证据 | 代表文件 |
+|:--|:--|:--|
+| 标准固定向量 | SM2、SM3、SM4、ZUC、SHA 的公开标准结果 | `test/standard-vectors.test.ts`、各算法测试 |
+| 独立实现差分 | SM4 CTR/CFB/OFB/GCM/CCM 与 Java/Bouncy Castle 固定输出一致 | `test/sm4.test.ts`、Java `SM4StandardVectorsTest` |
+| Java/TS 互操作 | 两端消费同一份协议字段和确定性期望 | `test/interop-compliance.test.ts`、`vectors/interop.json` |
+| 协议往返 | 加解密、签名验签、密钥交换、编码转换 | `test/sm2.test.ts`、`test/sm4.test.ts`、`test/zuc.test.ts` |
+| 负向边界 | 非法密钥、DER、Base64、tag、C3、长度和篡改拒绝 | `test/error-handling.test.ts`、`test/asn1-strict-der.test.ts` |
+| 状态与兼容 | 流式摘要复用、旧导出、空 userId、RNG 降级策略 | `test/sha.test.ts`、`test/oop.test.ts`、`test/module-imports.test.ts`、`test/rng-guards.test.ts` |
 
-### After Enhancement
-- **Total Tests**: 454 (+186, 70% increase)
-- **Test Files**: 18 (+4 new comprehensive test files)
-- **Test Lines of Code**: ~7,000+
-- **All Tests**: ✅ PASSING
+## 已固定的算法边界
 
-## New Test Files Added
+### SM2
 
-### 1. `test/utils-enhanced.test.ts` (51 tests)
-**Purpose**: Comprehensive testing of utility functions previously missing coverage
+- 加密拒绝空明文，避免零长度 KDF 没有有效派生字节的歧义。
+- 非空明文若遇到 KDF 全零结果，会重新选择临时标量，最多执行有界次数；不会返回错误密文。
+- 签名私钥标量范围是 `[1, n-2]`，因为 `n-1` 无法计算 `(1+d)^-1`；公钥派生等通用 EC 操作仍接受 `n-1`。
+- 密钥交换由 Java/Bouncy Castle 和 TypeScript 同时消费固定静态/临时私钥、UTF-8 userId、共享密钥及 S1/S2。
+- raw/DER 签名、raw/ASN.1 密文、C1C3C2/C1C2C3、压缩/非压缩公钥分别覆盖。
+- DER 解码拒绝 BER、非最短长度、非法 INTEGER、尾随数据；ASN.1 XML 调试入口限制容器边界和嵌套深度。
 
-**Coverage**:
-- `bytes4ToUint32BE` / `uint32ToBytes4BE` - 32-bit integer conversions
-- `isHexString` / `isBase64String` - Format detection and validation
-- `autoDecodeString` - Auto-detection of encoding formats
-- Round-trip conversion integrity tests
-- Edge cases: empty inputs, boundary values, odd-length hex
-- Unicode and special character handling (emojis, zero-width, multi-byte UTF-8)
-- Performance tests for large data (1MB+)
+### SM3 与 SHA
 
-**Key Improvements**:
-- Discovered and tested all previously untested utility functions
-- Comprehensive boundary condition coverage
-- Real-world Unicode support validation
+- 使用公开摘要和 HMAC 固定向量。
+- 流式实例在 `digest()` 后重置，可安全复用；测试同时覆盖 finalize 后的状态约束。
+- SHA-1 仅作为旧协议兼容能力，不作为新协议推荐算法。
 
-### 2. `test/error-handling.test.ts` (49 tests)
-**Purpose**: Validate error handling and input validation across all algorithms
+### SM4
 
-**Coverage**:
-- **SM2**: Invalid keys, tampering detection, mode validation, empty string edge cases
-- **SM3**: Input validation, format validation
-- **SM4**: Key/IV validation, padding requirements, GCM authentication
-- **ZUC**: Key/IV validation, data handling
-- Cross-algorithm consistency tests
+- 标准单分组向量验证轮密钥和分组原语。
+- CTR/CFB/OFB/GCM/CCM 使用 Bouncy Castle 差分结果，不只做自身往返。
+- AEAD 测试要求错误 tag、AAD、nonce 或密钥不能返回明文。
+- ECB、CBC、CTR、CFB、OFB 的 padding 和 IV 边界分别验证。
 
-**Key Improvements**:
-- Systematic error path testing
-- Security validation (tampering detection, authentication)
-- Documented known limitations (SM2 KDF edge case)
-- Consistent error handling across algorithms
+### ZUC
 
-### 3. `test/crypto-properties.test.ts` (58 tests)
-**Purpose**: Validate cryptographic correctness and security properties
+- 当前只支持 ZUC-128，不包含 ZUC-256 占位实现。
+- ZUC-128 密钥流使用公开固定向量；128-EEA3 和 128-EIA3 使用 3GPP 测试集。
+- 覆盖非整字节消息、末位掩码、COUNT/BEARER/DIRECTION 和长度边界。
 
-**Coverage**:
-- **Hash Functions**:
-  - Determinism (same input → same output)
-  - Avalanche effect (1-bit change → ~50% output change)
-  - Collision resistance
-  - Fixed output length
+## 随机源测试
 
-- **Symmetric Encryption**:
-  - Round-trip correctness
-  - Semantic security
-  - ECB vs CBC behavior differences
-  - Statistical randomness of ciphertext
+默认策略保持 `warn` 兼容：没有 CSPRNG 时警告一次并使用非安全降级源。生产环境应启用 `configureRNG('strict')`，受限小程序应通过 `setCustomRNG()` 注入平台 CSPRNG。
 
-- **Asymmetric Crypto**:
-  - Signature uniqueness and verification
-  - Non-repudiation
-  - Key pair independence
+测试会验证：
 
-**Key Improvements**:
-- Professional cryptographic validation
-- Property-based testing approach
-- Statistical analysis (Hamming distance, frequency distribution)
-- Security property verification
+- Web Crypto 大请求按 65536 字节分块。
+- 自定义 RNG 必须返回精确长度的 `Uint8Array`。
+- 持续返回非法标量或全零派生结果时，算法会在有界次数后失败，不会无限循环。
+- 测试注入的确定性 RNG 可清理，不应进入生产配置。
 
-### 4. `test/interop-compliance.test.ts` (28 tests)
-**Purpose**: Standards compliance and interoperability validation
-
-**Coverage**:
-- **GM/T Standards**:
-  - GM/T 0004-2012 (SM3) official test vectors
-  - GM/T 0002-2012 (SM4) reference vectors
-  - GM/T 0003-2012 (SM2) compliance
-
-- **NIST Standards**:
-  - SHA-256 test vectors
-  - SHA-384 test vectors
-  - SHA-512 test vectors
-
-- **Cross-Validation**:
-  - Algorithm consistency
-  - Encoding format consistency
-  - Unicode handling consistency
-
-**Key Improvements**:
-- Official standards validation
-- Interoperability testing
-- Cross-algorithm consistency
-- Graceful handling of implementation variations
-
-## Testing Methodology Improvements
-
-### 1. Parametrized Testing
-- Table-driven tests for systematic coverage
-- Multiple input variations tested efficiently
-- Clear test case organization
-
-### 2. Property-Based Testing
-- Cryptographic property validation
-- Statistical analysis
-- Behavior verification rather than just output checking
-
-### 3. Test Organization
-- Clear test descriptions following "should + action" pattern
-- Nested describe blocks for logical grouping
-- Reusable test data and fixtures
-- Comprehensive documentation
-
-### 4. Edge Case Coverage
-- Empty inputs
-- Boundary values (0, max values)
-- Invalid formats and error paths
-- Large data (1MB+)
-- Unicode and special characters
-
-## Issues Discovered and Documented
-
-### 1. SM2 Empty String Encryption
-**Issue**: Probabilistic failure when encrypting empty strings due to KDF deriving all-zero keys
-**Status**: Documented as known limitation, rare edge case
-**Workaround**: Retry on failure or avoid encrypting empty payloads
-
-### 2. Interoperability Considerations
-**Finding**: Different implementations may have minor variations in padding and formatting
-**Resolution**: Tests focus on functional correctness (encrypt/decrypt round-trip) rather than byte-exact matches
-
-### 3. Type Safety
-**Observation**: TypeScript type system prevents many runtime errors
-**Benefit**: Invalid inputs are caught at compile time, reducing need for runtime validation
-
-## Quality Metrics
-
-### Test Coverage
-- ✅ All major functions and algorithms covered
-- ✅ Error paths and edge cases tested
-- ✅ Cryptographic properties validated
-- ✅ Standards compliance verified
-
-### Test Quality
-- ✅ Clear, descriptive test names
-- ✅ Proper test organization
-- ✅ Reusable fixtures and test data
-- ✅ Comprehensive assertions
-- ✅ Performance considerations
-
-### Standards Compliance
-- ✅ GM/T 0002-2012 (SM4) ✓
-- ✅ GM/T 0003-2012 (SM2) ✓
-- ✅ GM/T 0004-2012 (SM3) ✓
-- ✅ NIST SHA-2 Family ✓
-
-### Security
-- ✅ CodeQL security scan: 0 vulnerabilities
-- ✅ Tampering detection validated
-- ✅ Authentication mechanisms tested
-- ✅ Randomness properties verified
-
-## Test Execution Results
+## 发版命令
 
 ```bash
-Test Files  18 passed (18)
-Tests       454 passed | 3 skipped (457)
-Duration    ~5-8 seconds
+npm run type-check -w packages/ts
+npm test -w packages/ts
+npm run lint -w packages/ts
+npm run build -w packages/ts
+npm run audit:pack -w packages/ts
+npm run parity
 ```
 
-**Success Rate**: 100% (454/454 passing)
-**Skipped Tests**: 3 (ZUC-256 placeholder tests for future implementation)
+根级 `npm run verify` 不包含 lint、tarball 审计和文档门禁，正式发版必须额外执行这些命令以及 `npm run docs:check`、`npm run docs:test-examples`、`npm run docs:build`。
 
-## Professional Testing Standards Achieved
+## 证据限制
 
-### ✅ Comprehensive Coverage
-- All major functions tested
-- Edge cases covered
-- Error paths validated
-
-### ✅ Standards Compliance
-- Official test vectors used
-- Cryptographic properties verified
-- Industry standards met
-
-### ✅ Professional Organization
-- Clear naming conventions
-- Logical test grouping
-- Reusable test infrastructure
-
-### ✅ Documentation
-- Test purpose clearly stated
-- Known issues documented
-- Implementation notes provided
-
-### ✅ Maintainability
-- Easy to add new tests
-- Clear test structure
-- Minimal duplication
-
-## Recommendations for Future Enhancements
-
-### 1. Coverage Reporting
-Add test coverage tools to track line/branch coverage:
-```bash
-npm install --save-dev @vitest/coverage-v8
-npm test -- --coverage
-```
-
-### 2. Performance Benchmarking
-Add dedicated performance test suite for:
-- Throughput measurements
-- Latency benchmarks
-- Memory usage profiling
-
-### 3. Mutation Testing
-Add mutation testing to verify test quality:
-- Verify tests catch real bugs
-- Identify weak test assertions
-
-### 4. Continuous Integration
-Ensure all tests run on:
-- Multiple Node.js versions
-- Different platforms (Linux, macOS, Windows)
-- Pull request validation
-
-### 5. Integration Testing
-Add real-world scenario tests:
-- File encryption/decryption
-- Certificate generation/validation
-- Multi-step protocols
-
-## Conclusion
-
-The test suite has been significantly enhanced with 186 new comprehensive tests, achieving a 70% increase in coverage. The tests now meet professional standards with:
-
-- ✅ Comprehensive edge case coverage
-- ✅ Standards compliance validation
-- ✅ Cryptographic property verification
-- ✅ Professional organization and documentation
-- ✅ Zero security vulnerabilities
-
-The codebase is now better protected against regressions and more maintainable for future development.
-
----
-
-**Author**: GitHub Copilot  
-**Date**: 2025-12-25  
-**Test Suite Version**: 2.0  
-**All Tests**: ✅ PASSING (454/454)
+测试通过只说明当前提交在已覆盖环境和输入上满足断言，不等于项目完成独立第三方安全审计，也不证明所有标准条款、侧信道、密钥生命周期和业务协议均安全。项目生成的互操作向量只能证明 Java/TS 边界一致；只有标明外部来源并经核对的值才能作为标准固定向量证据。

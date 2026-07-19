@@ -22,6 +22,7 @@ const {
   sm2Encrypt,
   sm2GenerateKeyPair,
   sm2GetPublicKeyFromPrivateKey,
+  sm2KeyExchange,
   sm2Sign,
   sm2Verify,
   sm3Digest,
@@ -54,18 +55,65 @@ assert.deepEqual(sm2DecryptBytes(keys.privateKey, c1c2c3Cipher), binary);
 const signature = sm2Sign(keys.privateKey, binary, { userId: 'gmkit-release-v1', signatureFormat: 'der' });
 assert.equal(sm2Verify(keys.publicKey, binary, signature, { userId: 'gmkit-release-v1', signatureFormat: 'der' }), true);
 assert.equal(sm2Verify(keys.publicKey, Uint8Array.of(1), signature, { userId: 'gmkit-release-v1', signatureFormat: 'der' }), false);
+assert.throws(() => sm2Encrypt(keys.publicKey, new Uint8Array(0)), /must not be empty/);
+
+// 共享向量同时由 Java/Bouncy Castle 消费，固定双方静态密钥、临时密钥、ID 和确认标签。
+const dA = '0'.repeat(63) + '1';
+const rA = '0'.repeat(63) + '2';
+const dB = '0'.repeat(63) + '3';
+const rB = '0'.repeat(63) + '4';
+const publicA = sm2GetPublicKeyFromPrivateKey(dA);
+const tempPublicA = sm2GetPublicKeyFromPrivateKey(rA);
+const publicB = sm2GetPublicKeyFromPrivateKey(dB);
+const tempPublicB = sm2GetPublicKeyFromPrivateKey(rB);
+const exchangeA = sm2KeyExchange({
+  privateKey: dA,
+  publicKey: publicA,
+  tempPrivateKey: rA,
+  peerPublicKey: publicB,
+  peerTempPublicKey: tempPublicB,
+  userId: 'Alice-固定向量',
+  peerUserId: 'Bob-固定向量',
+  isInitiator: true,
+  keyLength: 32,
+});
+const exchangeB = sm2KeyExchange({
+  privateKey: dB,
+  publicKey: publicB,
+  tempPrivateKey: rB,
+  peerPublicKey: publicA,
+  peerTempPublicKey: tempPublicA,
+  userId: 'Bob-固定向量',
+  peerUserId: 'Alice-固定向量',
+  isInitiator: false,
+  keyLength: 32,
+});
+assert.equal(exchangeA.sharedKey, '858c9c6cd5541b4d9b8dc24c6cd43071e1262993b44988dd47bcb13d3949d66f');
+assert.equal(exchangeB.sharedKey, exchangeA.sharedKey);
+assert.equal(exchangeA.s1, 'bf0dd145fab696b9807bffdae5ddf4d1ab3f95269bae1a46daa979b8c2d7d01e');
+assert.equal(exchangeB.s1, exchangeA.s1);
+assert.equal(exchangeA.s2, '32df7cf664c9be84f8344a774908aa61c07d9a451cbe204001cab893a52c0af1');
+assert.equal(exchangeB.s2, exchangeA.s2);
 
 // 空 userId 是历史兼容输入，必须继续与 DEFAULT_USER_ID 使用同一验签语义。
 const emptyUserIdSignature = sm2Sign(keys.privateKey, binary, { userId: '' });
 assert.equal(sm2Verify(keys.publicKey, binary, emptyUserIdSignature, { userId: gmkit.DEFAULT_USER_ID }), true);
 
 const sm4Key = '0123456789abcdeffedcba9876543210';
-const gcmOptions = { mode: CipherMode.GCM, iv: '000102030405060708090a0b', aad: 'release-v1', tagLength: 16 };
-const sm4Cipher = sm4Encrypt(sm4Key, binary, gcmOptions);
-assert.deepEqual(sm4DecryptBytes(sm4Key, sm4Cipher, gcmOptions), binary);
+const gcmPlaintext = hexToBytes('00112233445566778899aabbccddeeff102030405060708090a0b0c0d0e0f000');
+const gcmOptions = {
+  mode: CipherMode.GCM,
+  iv: '000102030405060708090a0b',
+  aad: hexToBytes('a1a2a3a4a5'),
+  tagLength: 16,
+};
+const sm4Cipher = sm4Encrypt(sm4Key, gcmPlaintext, gcmOptions);
+assert.equal(sm4Cipher.ciphertext, '55303aa2f5e4cf68ec192910178188aa98d919ed1031ce3fd61419ef400de37b');
+assert.equal(sm4Cipher.tag, 'e1fc34aeb1fc2cc1fd4dff35500763eb');
+assert.deepEqual(sm4DecryptBytes(sm4Key, sm4Cipher, gcmOptions), gcmPlaintext);
 assert.throws(() => sm4DecryptBytes(sm4Key, { ...sm4Cipher, tag: '00'.repeat(16) }, gcmOptions), /Authentication tag/);
 assert.throws(
-  () => sm4DecryptBytes(sm4Key, sm4Cipher, { ...gcmOptions, aad: 'modified' }),
+  () => sm4DecryptBytes(sm4Key, sm4Cipher, { ...gcmOptions, aad: hexToBytes('a1a2a3a4a6') }),
   /Authentication tag/,
 );
 

@@ -189,7 +189,7 @@ String plain = hybrid.decryptToUtf8(keyPair.privateKey(), payload);
 |------|----------|
 | 公钥格式 | 支持非压缩 `04 || x || y` 与压缩 `02/03 || x`；`generateKeyPair(false)` 默认输出非压缩公钥 |
 | 密文排列 | 默认 `C1C3C2`，可显式使用 `SM2CipherMode.C1C2C3` |
-| 密文编码 | raw 密文字节以非压缩 C1 开头；`SM2Ciphertexts` 支持 DER/ASN.1 编解码辅助 |
+| 密文编码 | raw 密文字节以非压缩 C1 开头；`SM2Ciphertexts` 的 DER 入口只接受 canonical DER，不接受 BER 或尾随数据 |
 | 签名格式 | 默认 RAW `r || s`，可指定 `SM2SignatureFormat.DER` |
 | 用户 ID | 默认 `SM2.DEFAULT_USER_ID` (`1234567812345678`)；`null` 和 `""` 均按历史兼容语义回落默认值，当前 API 不能表达真实空 ID |
 | 输入边界 | SM2 加密不接受空明文；验签 wrong userId、错误签名、篡改消息均返回失败或抛出统一异常 |
@@ -201,7 +201,7 @@ String plain = hybrid.decryptToUtf8(keyPair.privateKey(), payload);
 | `ECB` | 不使用 | `PKCS7` / `ZERO` / `NONE` | 无 |
 | `CBC` | 16 字节 IV | `PKCS7` / `ZERO` / `NONE` | 无 |
 | `CTR` / `CFB` / `OFB` | 16 字节 IV | 流式模式不做分组填充，建议 `NONE` | 无 |
-| `GCM` | 12 字节 IV | `NONE` | tag 12-16 字节，默认 16；AAD 必须与解密端一致 |
+| `GCM` | 12-16 字节 nonce，推荐 12 | `NONE` | tag 12-16 字节，默认 16；AAD 必须与解密端一致 |
 | `CCM` | 7-13 字节 nonce，建议 12 | `NONE` | tag 4-16 字节偶数，默认 16；AAD 必须与解密端一致 |
 
 `SM4CipherResult` 会拆出 AEAD 的 `ciphertext` 与 `tag`。解密时可以传入加密结果对象，也可以在 `SM4Options` 中显式传 `tag(...)` 与 `tagLength(...)`。
@@ -212,6 +212,10 @@ SM9 以独立模块 `gmkit-sm9` 提供 Java API，通过 JNI 桥接 [GmSSL](http
 的 native 实现。与 GmSSL 一致，**仅支持签名/验签与基于身份的加密（IBE）加解密，不支持密钥交换**；
 单次加密明文上限为 **255 字节**，更大数据请采用混合加密（如用 SM4 加密数据、用 SM9 封装 SM4 密钥）。
 native 二进制不进入 `gmkit` 主包，而是随独立的 `gmkit-sm9` JAR 一次性交付。未使用 SM9 的项目只依赖 `gmkit`，不会下载这些文件；使用 SM9 的项目只需增加一个依赖。
+
+SM9 用户标识按 Java `String` 的标准 UTF-8 字节精确传入 GmSSL。首尾空格属于身份的一部分并会保留；全空白 ID 会被拒绝。派生私钥、验签、加密和解密必须使用逐字节相同的 ID。
+
+PEM 口令与文件路径同样按标准 UTF-8 传递；Windows 使用宽字符文件 API，因此中文和非 BMP 路径不依赖系统 ANSI 代码页。口令或路径含 NUL 时会明确拒绝，避免 C 字符串截断。
 
 ### Maven 引入
 

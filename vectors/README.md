@@ -37,4 +37,4 @@ npm run test:java
 ```
 
 涉及 `vectors/**` 的变更会触发 `parity.yml`，并在 `ci.yml` 中覆盖两端测试。
-当前文件包含 33 个 case；Java 门禁输出 1 个结构测试和 33 个动态测试。case 数量可随版本增长，不应把 33 写成解析器上限。
+case 数量会随版本增长，以 Java/TypeScript 门禁的实际输出为准，不应把某次计数写成解析器上限。

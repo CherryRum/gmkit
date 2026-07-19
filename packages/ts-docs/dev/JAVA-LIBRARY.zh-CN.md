@@ -34,6 +34,10 @@ SM9 不在主包中。需要 SM9 时只添加一个依赖，无需按平台选�
 
 该 JAR 内置 Linux x86_64/aarch64、macOS x86_64/aarch64 和 Windows x86_64 runtime，启动时只解压和加载当前平台。其他平台可自行编译，并用 `-Dgmkit.sm9.native.path=<bridge-path>` 指定 JNI 桥接库；TypeScript 包不提供 SM9。
 
+SM9 身份字符串使用标准 UTF-8 字节传给 GmSSL，首尾空格不会被裁剪；派生、验签和 IBE 加解密必须使用完全相同的身份字节。全空白身份会直接拒绝。
+
+PEM 口令与路径也按标准 UTF-8 处理，Windows 使用宽字符文件 API。中文、emoji 等非 BMP 路径由五平台 native CI 验证；口令或路径中的 NUL 会被明确拒绝。
+
 ## SM2 可运行示例
 
 ```java

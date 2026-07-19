@@ -8,9 +8,9 @@
 - Added Java ZUC tests for project key stream vectors, Unicode payloads, empty payloads, binary payloads, Base64 ciphertext, EEA3/EIA3, utility facade delegation, and invalid inputs.
 - Strengthened SM2 tests with compressed public keys, both `C1C3C2` and `C1C2C3`, raw/DER signatures, wrong userId checks, Chinese text, emoji, mixed Unicode, newlines, tabs, spaces, and long text.
 - Strengthened SM3 tests with fixed project vectors for empty, ASCII, Chinese, emoji, mixed Unicode, newlines/tabs, spaces, symbols, and long text.
-- Strengthened SM4 tests with CBC/PKCS7 and GCM/NONE round trips over Unicode payloads, long text, AAD, and tag verification.
+- Strengthened SM4 tests with fixed CTR/CFB/OFB/GCM/CCM outputs shared with TypeScript, plus Unicode payloads, long text, AAD, and tag verification.
 - Strengthened SM9 tests for native-gated Unicode signing/verifying and IBE encryption/decryption, including wrong identity and tampered data coverage.
-- Made shared-vector tests fail closed and added Java consumption of all 33 SM2/SM3/SM4/ZUC parity cases.
+- Made shared-vector tests fail closed and required Java to consume every SM2/SM3/SM4/ZUC parity case.
 
 ### Changed
 
@@ -32,6 +32,7 @@
 
 - Added explicit ZUC validation and tests for invalid key/IV length, invalid hex/base64, negative lengths, null payloads, invalid bearer, and invalid direction.
 - Restored the documented SM2 compatibility rule that `null` and empty user IDs both resolve to `SM2.DEFAULT_USER_ID`, including key-exchange identities.
+- Passed SM9 PEM passwords and paths through JNI as standard UTF-8, used wide-character file APIs on Windows, rejected embedded NUL, and covered Unicode PEM round trips in native CI.
 - Updated the `gmkit` module description to match the implemented SM2/SM3/SM4/ZUC support.
 
 ### Compatibility

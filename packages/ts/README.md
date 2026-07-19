@@ -191,7 +191,7 @@ const sha512Hash = sha.sha512('Hello World');
 - `sm4Encrypt` 现在返回 `{ ciphertext, tag?, format }` 对象；`sm4Decrypt` 可直接接收该对象。
 - `zucKeystream(key, iv, length)` 的 `length` 改为 **字节数**；若需要按 32-bit word，使用 `zucKeystreamWords`。
 - `sm2Encrypt` 的模式参数改为选项对象：`sm2Encrypt(pub, data, { mode })`；二进制解密使用 `sm2DecryptBytes`。
-- `sm2Sign / sm2Verify / signatureToXml` 支持 `signatureFormat: 'raw' | 'der' | 'auto'`；DER 输入请显式标注。
+- `sm2Sign / sm2Verify / signatureToXml` 支持 `signatureFormat: 'raw' | 'der' | 'auto'`；DER 输入请显式标注，解析器只接受 canonical DER。
 - Base64 密文解密支持自动识别；跨语言互操作时建议显式指定 `inputFormat: InputFormat.BASE64`（SM2 / SM4 / ZUC）。二进制明文分别使用 `sm2DecryptBytes`、`sm4DecryptBytes`、`zucDecryptBytes`，避免 UTF-8 解码破坏数据。
 - 安全修复：SM2 现在会拒绝非法 `mode` / `signatureFormat`；SM4 现在会拒绝奇数长度的 hex key/iv，并严格校验 GCM 标签长度。
 
@@ -203,7 +203,7 @@ const sha512Hash = sha.sha512('Hello World');
 - 加/解密、签名/验签、密钥对生成；默认 `C1C3C2`，可切换 `C1C2C3`。
 - Node/浏览器同构，面向对象与函数式并行。
 - 公钥输入支持非压缩格式 `04 || x || y`（65 字节 / 130 hex）与压缩格式 `02/03 || x`（33 字节 / 66 hex）；加密输出中的 C1 当前为非压缩点。
-- 解密支持 raw `C1C3C2` / `C1C2C3`，也支持 ASN.1 DER 密文；未显式传 `mode` 时会先按 `C1C3C2` 尝试，再按 `C1C2C3` 尝试。
+- 解密支持 raw `C1C3C2` / `C1C2C3`，也支持 canonical ASN.1 DER 密文；BER、非最短编码和尾随数据会拒绝。未显式传 `mode` 时会先按 `C1C3C2` 尝试，再按 `C1C2C3` 尝试。
 - 签名默认输出 raw `r || s`（64 字节 / 128 hex），可指定 DER；验签可指定 `raw` / `der` / `auto`。签名和验签必须使用相同 `userId`，默认 `1234567812345678`。
 
 ```ts

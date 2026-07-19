@@ -22,11 +22,11 @@ npm install gmkitx
 安全敏感的服务端或浏览器应用建议在启动时启用严格随机源策略：
 
 ```ts
-import { configureRNG, getEnvReport } from 'gmkitx';
+import { configureRNG, getEnvReport, hasCustomRNG } from 'gmkitx';
 
 configureRNG('strict');
 const env = getEnvReport();
-if (!env.hasCSPRNG) {
+if (!env.hasWebCrypto && !env.hasNodeCrypto && !hasCustomRNG()) {
   throw new Error('当前运行环境没有可用的 CSPRNG');
 }
 ```

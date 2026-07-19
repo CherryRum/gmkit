@@ -100,6 +100,8 @@ tag:
 |:--|
 | `encodeSignature`, `decodeSignature`, `rawToDer`, `derToRaw`, `asn1ToXml`, `signatureToXml` |
 
+DER 解码只接受 canonical DER。`asn1ToXml` 用于调试展示，会拒绝截断、越过容器边界或超过 64 层嵌套的输入，不应作为通用证书解析器。
+
 ### 默认导出
 
 默认导出保留 UMD / CDN 使用场景，包含：

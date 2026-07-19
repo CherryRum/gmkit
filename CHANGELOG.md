@@ -41,22 +41,29 @@
   deployed.
 - Java release CI builds five native runtimes, assembles one SM9 JAR, and
   consumes that same JAR on all five platforms before Central publishing.
+  The packaged-runtime test covers standard UTF-8 SM9 identities including
+  Chinese, supplementary-plane emoji, surrounding spaces, and embedded NUL,
+  plus Unicode PEM passwords and file paths.
   npm publishing now uses Trusted Publisher with GitHub OIDC.
 
 ### Fixed
 
 - Corrected ZUC EEA3/EIA3 to the 3GPP TS 35.221/35.222 IV layouts, key-stream sizing, final MAC word, non-byte-aligned masking, and parameter validation. Added `eea3Encrypt` while retaining the older `eea3` key-stream API.
 - Added binary-safe `sm2DecryptBytes`, `sm4DecryptBytes`, and `zucDecryptBytes` APIs so arbitrary plaintext bytes are not forced through UTF-8 decoding.
-- Hardened SM2 DER ciphertext parsing, userId ENTL bounds, standard-curve enforcement, key-pair consistency checks, and key-exchange length validation without changing the empty-userId compatibility fallback.
+- Hardened SM2 DER ciphertext parsing, userId ENTL bounds, standard-curve enforcement, signing-scalar validation, key-pair consistency checks, all-zero KDF retry, empty-plaintext rejection, and key-exchange length validation without changing the empty-userId compatibility fallback.
+- Added a deterministic SM2 key-exchange vector whose shared key and S1/S2 confirmation tags are consumed by both TypeScript and Java/Bouncy Castle.
+- Passed SM9 identities across JNI as standard UTF-8 bytes with an explicit length instead of JNI Modified UTF-8 plus `strlen`; validation now preserves significant surrounding whitespace.
+- Passed SM9 PEM passwords and paths as explicit standard UTF-8 bytes, used wide-character file APIs on Windows, rejected embedded NUL, and cleared temporary native password buffers.
 - Replaced SM3 chunk accumulation with a true incremental compression state and added fixed HMAC-SM3 verification.
-- Added Bouncy Castle differential vectors for SM4 CTR/CFB/OFB/GCM/CCM and runtime validation for unsupported SHA output formats.
+- Added matching TypeScript and Java/Bouncy Castle fixed outputs for SM4 CTR/CFB/OFB/GCM/CCM and runtime validation for unsupported SHA output formats.
 - Validated RNG policies and custom RNG output, split Web Crypto requests at the 65536-byte platform limit, and kept the default warning compatibility fallback plus opt-in strict mode.
 - Reset reusable SHA-1/256/384/512 instances after `digest()` so implementation behavior now matches the documented streaming contract.
-- Made Java and TypeScript parity fail closed on missing, empty, malformed, duplicated, unsupported, or zero-match shared vectors. Java now consumes all 33 SM2/SM3/SM4/ZUC cases instead of skipping SM2.
+- Made Java and TypeScript parity fail closed on missing, empty, malformed, duplicated, unsupported, or zero-match shared vectors. Java now consumes every SM2/SM3/SM4/ZUC case instead of skipping SM2.
 - Rejected malformed and non-canonical Base64 input, including invalid padding and non-zero pad bits, while retaining explicit unpadded decoding compatibility.
+- Rejected truncated or excessively nested ASN.1 input in the public XML visualization helper.
 - Updated the inlined Noble curve/hash implementation and the Vitest/Vite build chain; the complete npm workspace dependency graph now passes `npm audit` with zero known vulnerabilities.
 
-- **TS SM4 CK table — GB/T 32907-2016 conformance fix** (audit-iter8-D).
+- **TS SM4 CK table — GB/T 32907-2016 conformance fix**.
   The `CK[i]` constant generation in `packages/ts/src/crypto/sm4/index.ts` omitted
   the standard's required `×7 mod 256` multiplier, producing wrong round
   keys for every SM4 block encryption. Bug surfaced when the InteropCompliance
@@ -67,7 +74,7 @@
   standard input. All 6 affected vectors in `vectors/interop.json` regenerated
   from the corrected implementation (3 sm4-ecb-*, 3 sm4-cbc-*); both stacks
   now produce byte-identical output. `cn.gmkit.InteropComplianceTest`
-  now reports 1 structure gate plus all 33 shared dynamic cases.
+  now consumes the same complete dynamic case set as TypeScript.
 
 ### Added
 
