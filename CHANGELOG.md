@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 0.10.1 - 2026-07-20
+
+### Release correction
+
+- Retried the Java test release after the first `0.10.0` tag was rejected by
+  Maven Central authentication; `0.10.0` remains an unpublished failed tag.
+- Limited the Central reactor to `gmkit-parent`, `gmkit-bom`, `gmkit`, and
+  `gmkit-sm9`; internal `gmkit-benchmarks` is not included in the upload.
+
 ## 0.10.0 - 2026-07-19
 
 ### Monorepo merge

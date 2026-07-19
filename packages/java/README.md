@@ -34,7 +34,7 @@ GMKit 是一个基于 BouncyCastle 的国密算法工具库，提供 SM2、SM3�
 <dependency>
     <groupId>cn.gmkit</groupId>
     <artifactId>gmkit</artifactId>
-    <version>0.10.0</version>
+    <version>0.10.1</version>
 </dependency>
 ```
 
@@ -228,7 +228,7 @@ PEM 口令与文件路径同样按标准 UTF-8 传递；Windows 使用宽字符�
         <dependency>
             <groupId>cn.gmkit</groupId>
             <artifactId>gmkit-bom</artifactId>
-            <version>0.10.0</version>
+            <version>0.10.1</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -249,7 +249,7 @@ PEM 口令与文件路径同样按标准 UTF-8 传递；Windows 使用宽字符�
 <dependency>
     <groupId>cn.gmkit</groupId>
     <artifactId>gmkit-sm9</artifactId>
-    <version>0.10.0</version>
+    <version>0.10.1</version>
 </dependency>
 ```
 

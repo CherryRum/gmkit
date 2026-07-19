@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.10.1 - 2026-07-20
+
+### Fixed
+
+- Prepared a retry release after Maven Central rejected the unpublished
+  `0.10.0` upload with HTTP 401.
+- Excluded the internal benchmark module from the Central publishing reactor.
+
 ## 0.10.0 - 2026-07-19
 
 ### Added

@@ -16,7 +16,7 @@ tag: [Java, GMKit Java, Bouncy Castle]
 <dependency>
   <groupId>cn.gmkit</groupId>
   <artifactId>gmkit</artifactId>
-  <version>0.10.0</version>
+  <version>0.10.1</version>
 </dependency>
 ```
 
@@ -28,7 +28,7 @@ SM9 不在主包中。需要 SM9 时只添加一个依赖，无需按平台选�
 <dependency>
   <groupId>cn.gmkit</groupId>
   <artifactId>gmkit-sm9</artifactId>
-  <version>0.10.0</version>
+  <version>0.10.1</version>
 </dependency>
 ```
 
