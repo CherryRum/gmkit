@@ -124,7 +124,7 @@ final class SM9NativeBridge {
 
     static native long sm9SignMasterPublicKeyFromPem(String file);
 
-    static native long sm9SignMasterKeyExtractKey(long masterKey, String id);
+    static native long sm9SignMasterKeyExtractKey(long masterKey, byte[] id);
 
     // ---------------------------------------------------------------------
     // 用户签名私钥
@@ -154,7 +154,7 @@ final class SM9NativeBridge {
 
     static native int sm9VerifyUpdate(long ctx, byte[] data, int offset, int length);
 
-    static native int sm9VerifyFinish(long ctx, byte[] signature, long masterPublicKey, String id);
+    static native int sm9VerifyFinish(long ctx, byte[] signature, long masterPublicKey, byte[] id);
 
     // ---------------------------------------------------------------------
     // 加密主密钥（KGC + 加密方侧）
@@ -172,7 +172,7 @@ final class SM9NativeBridge {
 
     static native long sm9EncMasterPublicKeyFromPem(String file);
 
-    static native long sm9EncMasterKeyExtractKey(long masterKey, String id);
+    static native long sm9EncMasterKeyExtractKey(long masterKey, byte[] id);
 
     // ---------------------------------------------------------------------
     // 用户解密私钥
@@ -188,7 +188,7 @@ final class SM9NativeBridge {
     // 加密 / 解密（IBE，一次性）
     // ---------------------------------------------------------------------
 
-    static native byte[] sm9Encrypt(long masterPublicKey, String id, byte[] plaintext);
+    static native byte[] sm9Encrypt(long masterPublicKey, byte[] id, byte[] plaintext);
 
-    static native byte[] sm9Decrypt(long encKey, String id, byte[] ciphertext);
+    static native byte[] sm9Decrypt(long encKey, byte[] id, byte[] ciphertext);
 }

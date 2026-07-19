@@ -37,8 +37,8 @@ public final class SM9EncKey implements AutoCloseable {
      */
     public byte[] decrypt(byte[] ciphertext) {
         SM9Checks.requireNonEmpty(ciphertext, "ciphertext");
-        SM9Checks.requireNonBlank(id, "id");
-        byte[] plaintext = SM9NativeBridge.sm9Decrypt(handle(), id, ciphertext);
+        String userId = SM9Checks.requireNonBlank(id, "id");
+        byte[] plaintext = SM9NativeBridge.sm9Decrypt(handle(), SM9Checks.utf8Bytes(userId), ciphertext);
         if (plaintext == null) {
             throw new SM9Exception(SM9Messages.operationReturnedNull("decrypt"));
         }

@@ -184,11 +184,12 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9SignMasterPublicKeyFromPem(JNIEnv *env, jcl
 
 JNIEXPORT jlong JNICALL
 Java_cn_gmkit_sm9_SM9NativeBridge_sm9SignMasterKeyExtractKey(JNIEnv *env, jclass cls,
-		jlong handle, jstring jid)
+		jlong handle, jbyteArray jid)
 {
 	SM9_SIGN_MASTER_KEY *msk = HANDLE_PTR(SM9_SIGN_MASTER_KEY, handle);
 	SM9_SIGN_KEY *key;
-	const char *id;
+	jbyte *id;
+	jsize idlen;
 	int ret;
 
 	if (msk == NULL || jid == NULL) {
@@ -198,14 +199,20 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9SignMasterKeyExtractKey(JNIEnv *env, jclass
 	if (key == NULL) {
 		return 0;
 	}
-	id = (*env)->GetStringUTFChars(env, jid, NULL);
+	idlen = (*env)->GetArrayLength(env, jid);
+	if (idlen <= 0) {
+		memset(key, 0, sizeof(SM9_SIGN_KEY));
+		free(key);
+		return 0;
+	}
+	id = (*env)->GetByteArrayElements(env, jid, NULL);
 	if (id == NULL) {
 		memset(key, 0, sizeof(SM9_SIGN_KEY));
 		free(key);
 		return 0;
 	}
-	ret = sm9_sign_master_key_extract_key(msk, id, strlen(id), key);
-	(*env)->ReleaseStringUTFChars(env, jid, id);
+	ret = sm9_sign_master_key_extract_key(msk, (const char *)id, (size_t)idlen, key);
+	(*env)->ReleaseByteArrayElements(env, jid, id, JNI_ABORT);
 	if (ret != 1) {
 		memset(key, 0, sizeof(SM9_SIGN_KEY));
 		free(key);
@@ -412,13 +419,14 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9VerifyUpdate(JNIEnv *env, jclass cls,
 
 JNIEXPORT jint JNICALL
 Java_cn_gmkit_sm9_SM9NativeBridge_sm9VerifyFinish(JNIEnv *env, jclass cls,
-		jlong ctxHandle, jbyteArray jsig, jlong mpkHandle, jstring jid)
+		jlong ctxHandle, jbyteArray jsig, jlong mpkHandle, jbyteArray jid)
 {
 	SM9_SIGN_CTX *ctx = HANDLE_PTR(SM9_SIGN_CTX, ctxHandle);
 	SM9_SIGN_MASTER_KEY *mpk = HANDLE_PTR(SM9_SIGN_MASTER_KEY, mpkHandle);
 	jbyte *sig;
 	jsize siglen;
-	const char *id;
+	jbyte *id;
+	jsize idlen;
 	int ret;
 
 	if (ctx == NULL || mpk == NULL || jsig == NULL || jid == NULL) {
@@ -429,13 +437,19 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9VerifyFinish(JNIEnv *env, jclass cls,
 	if (sig == NULL) {
 		return 0;
 	}
-	id = (*env)->GetStringUTFChars(env, jid, NULL);
+	idlen = (*env)->GetArrayLength(env, jid);
+	if (idlen <= 0) {
+		(*env)->ReleaseByteArrayElements(env, jsig, sig, JNI_ABORT);
+		return 0;
+	}
+	id = (*env)->GetByteArrayElements(env, jid, NULL);
 	if (id == NULL) {
 		(*env)->ReleaseByteArrayElements(env, jsig, sig, JNI_ABORT);
 		return 0;
 	}
-	ret = sm9_verify_finish(ctx, (const uint8_t *)sig, (size_t)siglen, mpk, id, strlen(id));
-	(*env)->ReleaseStringUTFChars(env, jid, id);
+	ret = sm9_verify_finish(ctx, (const uint8_t *)sig, (size_t)siglen,
+		mpk, (const char *)id, (size_t)idlen);
+	(*env)->ReleaseByteArrayElements(env, jid, id, JNI_ABORT);
 	(*env)->ReleaseByteArrayElements(env, jsig, sig, JNI_ABORT);
 	return ret == 1 ? 1 : 0;
 }
@@ -584,11 +598,12 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9EncMasterPublicKeyFromPem(JNIEnv *env, jcla
 
 JNIEXPORT jlong JNICALL
 Java_cn_gmkit_sm9_SM9NativeBridge_sm9EncMasterKeyExtractKey(JNIEnv *env, jclass cls,
-		jlong handle, jstring jid)
+		jlong handle, jbyteArray jid)
 {
 	SM9_ENC_MASTER_KEY *msk = HANDLE_PTR(SM9_ENC_MASTER_KEY, handle);
 	SM9_ENC_KEY *key;
-	const char *id;
+	jbyte *id;
+	jsize idlen;
 	int ret;
 
 	if (msk == NULL || jid == NULL) {
@@ -598,14 +613,20 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9EncMasterKeyExtractKey(JNIEnv *env, jclass 
 	if (key == NULL) {
 		return 0;
 	}
-	id = (*env)->GetStringUTFChars(env, jid, NULL);
+	idlen = (*env)->GetArrayLength(env, jid);
+	if (idlen <= 0) {
+		memset(key, 0, sizeof(SM9_ENC_KEY));
+		free(key);
+		return 0;
+	}
+	id = (*env)->GetByteArrayElements(env, jid, NULL);
 	if (id == NULL) {
 		memset(key, 0, sizeof(SM9_ENC_KEY));
 		free(key);
 		return 0;
 	}
-	ret = sm9_enc_master_key_extract_key(msk, id, strlen(id), key);
-	(*env)->ReleaseStringUTFChars(env, jid, id);
+	ret = sm9_enc_master_key_extract_key(msk, (const char *)id, (size_t)idlen, key);
+	(*env)->ReleaseByteArrayElements(env, jid, id, JNI_ABORT);
 	if (ret != 1) {
 		memset(key, 0, sizeof(SM9_ENC_KEY));
 		free(key);
@@ -701,10 +722,11 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9EncKeyInfoDecryptFromPem(JNIEnv *env, jclas
 
 JNIEXPORT jbyteArray JNICALL
 Java_cn_gmkit_sm9_SM9NativeBridge_sm9Encrypt(JNIEnv *env, jclass cls,
-		jlong handle, jstring jid, jbyteArray jin)
+		jlong handle, jbyteArray jid, jbyteArray jin)
 {
 	SM9_ENC_MASTER_KEY *mpk = HANDLE_PTR(SM9_ENC_MASTER_KEY, handle);
-	const char *id;
+	jbyte *id;
+	jsize idlen;
 	jbyte *in;
 	jsize inlen;
 	uint8_t out[SM9_MAX_CIPHERTEXT_SIZE];
@@ -723,13 +745,19 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9Encrypt(JNIEnv *env, jclass cls,
 	if (in == NULL) {
 		return NULL;
 	}
-	id = (*env)->GetStringUTFChars(env, jid, NULL);
+	idlen = (*env)->GetArrayLength(env, jid);
+	if (idlen <= 0) {
+		(*env)->ReleaseByteArrayElements(env, jin, in, JNI_ABORT);
+		return NULL;
+	}
+	id = (*env)->GetByteArrayElements(env, jid, NULL);
 	if (id == NULL) {
 		(*env)->ReleaseByteArrayElements(env, jin, in, JNI_ABORT);
 		return NULL;
 	}
-	ret = sm9_encrypt(mpk, id, strlen(id), (const uint8_t *)in, (size_t)inlen, out, &outlen);
-	(*env)->ReleaseStringUTFChars(env, jid, id);
+	ret = sm9_encrypt(mpk, (const char *)id, (size_t)idlen,
+		(const uint8_t *)in, (size_t)inlen, out, &outlen);
+	(*env)->ReleaseByteArrayElements(env, jid, id, JNI_ABORT);
 	(*env)->ReleaseByteArrayElements(env, jin, in, JNI_ABORT);
 	if (ret != 1) {
 		return NULL;
@@ -744,10 +772,11 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9Encrypt(JNIEnv *env, jclass cls,
 
 JNIEXPORT jbyteArray JNICALL
 Java_cn_gmkit_sm9_SM9NativeBridge_sm9Decrypt(JNIEnv *env, jclass cls,
-		jlong handle, jstring jid, jbyteArray jin)
+		jlong handle, jbyteArray jid, jbyteArray jin)
 {
 	SM9_ENC_KEY *key = HANDLE_PTR(SM9_ENC_KEY, handle);
-	const char *id;
+	jbyte *id;
+	jsize idlen;
 	jbyte *in;
 	jsize inlen;
 	uint8_t out[SM9_MAX_PLAINTEXT_SIZE];
@@ -766,13 +795,19 @@ Java_cn_gmkit_sm9_SM9NativeBridge_sm9Decrypt(JNIEnv *env, jclass cls,
 	if (in == NULL) {
 		return NULL;
 	}
-	id = (*env)->GetStringUTFChars(env, jid, NULL);
+	idlen = (*env)->GetArrayLength(env, jid);
+	if (idlen <= 0) {
+		(*env)->ReleaseByteArrayElements(env, jin, in, JNI_ABORT);
+		return NULL;
+	}
+	id = (*env)->GetByteArrayElements(env, jid, NULL);
 	if (id == NULL) {
 		(*env)->ReleaseByteArrayElements(env, jin, in, JNI_ABORT);
 		return NULL;
 	}
-	ret = sm9_decrypt(key, id, strlen(id), (const uint8_t *)in, (size_t)inlen, out, &outlen);
-	(*env)->ReleaseStringUTFChars(env, jid, id);
+	ret = sm9_decrypt(key, (const char *)id, (size_t)idlen,
+		(const uint8_t *)in, (size_t)inlen, out, &outlen);
+	(*env)->ReleaseByteArrayElements(env, jid, id, JNI_ABORT);
 	(*env)->ReleaseByteArrayElements(env, jin, in, JNI_ABORT);
 	if (ret != 1) {
 		return NULL;

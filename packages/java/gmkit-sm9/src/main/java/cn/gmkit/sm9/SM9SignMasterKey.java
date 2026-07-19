@@ -39,7 +39,7 @@ public final class SM9SignMasterKey implements AutoCloseable {
      */
     public SM9SignKey extractKey(String id) {
         String userId = SM9Checks.requireNonBlank(id, "id");
-        long keyHandle = SM9NativeBridge.sm9SignMasterKeyExtractKey(handle(), userId);
+        long keyHandle = SM9NativeBridge.sm9SignMasterKeyExtractKey(handle(), SM9Checks.utf8Bytes(userId));
         if (keyHandle == 0L) {
             throw new SM9Exception(SM9Messages.operationReturnedNull("sign master key extract"));
         }

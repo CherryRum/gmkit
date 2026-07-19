@@ -122,7 +122,8 @@ public final class SM9Signature implements AutoCloseable {
         SM9Checks.requireNonEmpty(signature, "signature");
         SM9Checks.requireNonNull(masterPublicKey, "masterPublicKey");
         String userId = SM9Checks.requireNonBlank(id, "id");
-        int code = SM9NativeBridge.sm9VerifyFinish(ctx(), signature, masterPublicKey.handle(), userId);
+        int code = SM9NativeBridge.sm9VerifyFinish(
+            ctx(), signature, masterPublicKey.handle(), SM9Checks.utf8Bytes(userId));
         return code == 1;
     }
 

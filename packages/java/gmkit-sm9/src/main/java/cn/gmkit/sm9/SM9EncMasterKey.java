@@ -49,7 +49,7 @@ public final class SM9EncMasterKey implements AutoCloseable {
      */
     public SM9EncKey extractKey(String id) {
         String userId = SM9Checks.requireNonBlank(id, "id");
-        long keyHandle = SM9NativeBridge.sm9EncMasterKeyExtractKey(handle(), userId);
+        long keyHandle = SM9NativeBridge.sm9EncMasterKeyExtractKey(handle(), SM9Checks.utf8Bytes(userId));
         if (keyHandle == 0L) {
             throw new SM9Exception(SM9Messages.operationReturnedNull("enc master key extract"));
         }
@@ -69,7 +69,7 @@ public final class SM9EncMasterKey implements AutoCloseable {
         if (plaintext.length > MAX_PLAINTEXT_SIZE) {
             throw new SM9Exception(SM9Messages.plaintextTooLong(plaintext.length, MAX_PLAINTEXT_SIZE));
         }
-        byte[] ciphertext = SM9NativeBridge.sm9Encrypt(handle(), userId, plaintext);
+        byte[] ciphertext = SM9NativeBridge.sm9Encrypt(handle(), SM9Checks.utf8Bytes(userId), plaintext);
         if (ciphertext == null) {
             throw new SM9Exception(SM9Messages.operationReturnedNull("encrypt"));
         }

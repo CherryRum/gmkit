@@ -70,6 +70,17 @@ class SM9SignTest {
         }
     }
 
+    @ParameterizedTest(name = "identity: {0}")
+    @MethodSource("unicodeIdentities")
+    void unicodeIdentityShouldSignAndVerify(String name, String id) {
+        try (SM9SignMasterKey master = SM9.generateSignMasterKey();
+             SM9SignKey signKey = master.extractKey(id)) {
+            byte[] signature = SM9.sign(signKey, MESSAGE);
+
+            assertTrue(SM9.verify(master, id, MESSAGE, signature), name);
+        }
+    }
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("unicodeMessages")
     void unicodeMessagesShouldSignAndVerify(String name, String message) {
@@ -91,6 +102,14 @@ class SM9SignTest {
             Arguments.of("Mixed Unicode", "中文 + emoji 😊 + English + 123"),
             Arguments.of("Newlines and tabs", "第一行\nsecond line\t第三行"),
             Arguments.of("Long text", longMessage()));
+    }
+
+    private static Stream<Arguments> unicodeIdentities() {
+        return Stream.of(
+            Arguments.of("Chinese identity", "用户-甲"),
+            Arguments.of("Emoji identity", "user-😊"),
+            Arguments.of("Whitespace identity", "  spaced-id  "),
+            Arguments.of("Embedded NUL identity", "nul\u0000id"));
     }
 
     private static String longMessage() {

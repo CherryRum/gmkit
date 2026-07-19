@@ -1,5 +1,7 @@
 package cn.gmkit.sm9;
 
+import java.nio.charset.StandardCharsets;
+
 /**
  * SM9 模块内部参数检查工具，统一空值与空白处理并抛出 {@link SM9Exception}。
  */
@@ -17,11 +19,15 @@ final class SM9Checks {
 
     static String requireNonBlank(String value, String label) {
         requireNonNull(value, label);
-        String trimmed = value.trim();
-        if (trimmed.isEmpty()) {
+        if (value.trim().isEmpty()) {
             throw new SM9Exception(SM9Messages.blankValue(label));
         }
-        return trimmed;
+        // SM9 的 ID、PEM 路径和口令都属于逐字节输入；校验不能静默改变调用方内容。
+        return value;
+    }
+
+    static byte[] utf8Bytes(String value) {
+        return value.getBytes(StandardCharsets.UTF_8);
     }
 
     static byte[] requireNonEmpty(byte[] value, String label) {

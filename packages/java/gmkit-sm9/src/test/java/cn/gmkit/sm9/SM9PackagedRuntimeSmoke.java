@@ -16,21 +16,24 @@ public final class SM9PackagedRuntimeSmoke {
             throw new IllegalStateException(SM9.nativeLoadErrorMessage());
         }
 
+        String[] identities = {"用户-发布", "release-😊", "  spaced-release  ", "release\u0000id"};
         byte[] message = "gmkit-sm9-packaged-runtime".getBytes(StandardCharsets.UTF_8);
-        try (SM9SignMasterKey master = SM9.generateSignMasterKey();
-             SM9SignKey signKey = master.extractKey("release-signer@example.com")) {
-            byte[] signature = SM9.sign(signKey, message);
-            if (!SM9.verify(master, "release-signer@example.com", message, signature)) {
-                throw new IllegalStateException("SM9 packaged signature verification failed");
+        for (String id : identities) {
+            try (SM9SignMasterKey master = SM9.generateSignMasterKey();
+                 SM9SignKey signKey = master.extractKey(id)) {
+                byte[] signature = SM9.sign(signKey, message);
+                if (!SM9.verify(master, id, message, signature)) {
+                    throw new IllegalStateException("SM9 packaged signature verification failed for identity");
+                }
             }
-        }
 
-        byte[] plaintext = "gmkit-sm9-packaged-ibe".getBytes(StandardCharsets.UTF_8);
-        try (SM9EncMasterKey master = SM9.generateEncMasterKey();
-             SM9EncKey encKey = master.extractKey("release-recipient@example.com")) {
-            byte[] ciphertext = SM9.encrypt(master, "release-recipient@example.com", plaintext);
-            if (!Arrays.equals(plaintext, SM9.decrypt(encKey, ciphertext))) {
-                throw new IllegalStateException("SM9 packaged encryption round-trip failed");
+            byte[] plaintext = "gmkit-sm9-packaged-ibe".getBytes(StandardCharsets.UTF_8);
+            try (SM9EncMasterKey master = SM9.generateEncMasterKey();
+                 SM9EncKey encKey = master.extractKey(id)) {
+                byte[] ciphertext = SM9.encrypt(master, id, plaintext);
+                if (!Arrays.equals(plaintext, SM9.decrypt(encKey, ciphertext))) {
+                    throw new IllegalStateException("SM9 packaged encryption round-trip failed for identity");
+                }
             }
         }
 

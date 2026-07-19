@@ -78,6 +78,17 @@ class SM9EncTest {
         }
     }
 
+    @ParameterizedTest(name = "identity: {0}")
+    @MethodSource("unicodeIdentities")
+    void unicodeIdentityShouldEncryptAndDecrypt(String name, String id) {
+        try (SM9EncMasterKey master = SM9.generateEncMasterKey();
+             SM9EncKey encKey = master.extractKey(id)) {
+            byte[] ciphertext = SM9.encrypt(master, id, PLAINTEXT);
+
+            assertArrayEquals(PLAINTEXT, SM9.decrypt(encKey, ciphertext), name);
+        }
+    }
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("unicodePlaintexts")
     void unicodePlaintextShouldRoundTripWithinNativeLimit(String name, String message) {
@@ -97,5 +108,13 @@ class SM9EncTest {
             Arguments.of("Emoji", "SM9 加密 😊🚀🔥"),
             Arguments.of("Mixed Unicode", "中文 + emoji 😊 + English + 123"),
             Arguments.of("Newlines and tabs", "第一行\nsecond line\t第三行"));
+    }
+
+    private static Stream<Arguments> unicodeIdentities() {
+        return Stream.of(
+            Arguments.of("Chinese identity", "用户-乙"),
+            Arguments.of("Emoji identity", "recipient-🚀"),
+            Arguments.of("Whitespace identity", "  recipient  "),
+            Arguments.of("Embedded NUL identity", "recipient\u0000id"));
     }
 }
