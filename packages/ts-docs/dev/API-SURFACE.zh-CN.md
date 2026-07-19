@@ -157,7 +157,7 @@ Java 独有的 SM9 JNI/GmSSL 模块不属于 gmkitx 的公开 API，TypeScript �
 | SM4 | `mode`, `padding`, `iv/nonce`, `aad`, `tagLength`, 密文编码 |
 | ZUC | `key`, `iv`, 输出编码, `length` 语义是字节还是 word |
 | 文本 | UTF-8，不混用本地编码 |
-| RNG | 默认策略为 `warn`：无 CSPRNG 时警告并兼容降级；安全敏感应用应注入 CSPRNG 或启用 `configureRNG('strict')` |
+| RNG | 默认策略为 `warn`：无 CSPRNG 时警告并兼容降级；安全敏感应用应注入 CSPRNG 或启用 `configureRNG('strict')`；自定义 RNG 必须返回精确长度的 `Uint8Array` |
 
 ## 输入校验与兼容边界
 

@@ -63,7 +63,7 @@ flowchart LR
 
 - `src/index.ts` 决定 npm 公共导出面。业务代码不应导入未由包 `exports` 开放的内部路径。
 - 算法层可以依赖 `core` 和 `types`；公共工具层不得反向依赖算法模块。
-- SM2 曲线运算委托给 `@noble/curves`，SHA/HMAC-SHA 委托给 `@noble/hashes`；SM3、SM4 和 ZUC 主流程位于本仓库。
+- SM2 曲线运算委托给 `@noble/curves`，SHA/HMAC-SHA 委托给 `@noble/hashes`；SM3、SM4 和 ZUC 主流程位于本仓库。发布构建把 noble 代码内联到 ESM/CJS/IIFE，并随包附带 MIT 声明，因此消费者不再承担 noble 的 Node engine 和类型依赖。
 - 每个算法同时提供函数式入口和类入口，但两者必须共享实现和错误语义，不能形成两套算法代码。
 
 ### 一次调用的处理链

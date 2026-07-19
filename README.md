@@ -80,4 +80,4 @@ SM9 Java native runtime 可在需要时本地构建：
 
 ## 许可证
 
-Apache License 2.0，见 [LICENSE](LICENSE)。
+Apache License 2.0，见 [LICENSE](LICENSE)。`gmkitx` 内联第三方代码的版权与许可证见 [packages/ts/THIRD_PARTY_NOTICES.md](packages/ts/THIRD_PARTY_NOTICES.md)，该文件随 npm 包发布。

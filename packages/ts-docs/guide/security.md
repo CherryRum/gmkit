@@ -31,6 +31,7 @@ setCustomRNG((length) => platformSecureRandom(length));
 ```
 
 不得在生产环境注入固定种子或确定性测试 RNG。
+自定义 RNG 必须返回精确长度的 `Uint8Array`；库会拒绝错误类型和长度。Web Crypto 请求超过 65536 字节时会自动分块，避免把平台单次调用上限误判为“没有 CSPRNG”。
 
 ## 密钥生命周期
 

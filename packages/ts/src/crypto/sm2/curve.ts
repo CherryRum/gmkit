@@ -5,7 +5,8 @@
  * - GM/T 0003-2012: SM2 椭圆曲线公钥密码算法
  * - GM/T 0009-2023: SM2 密码算法使用规范
  *
- * 椭圆曲线运算委托给 @noble/curves（常量时间、已发布安全审计报告）。
+ * 椭圆曲线运算委托给 @noble/curves。依赖项目公开的审计材料不等于 GMKit
+ * 组合实现已完成独立安全审计，JavaScript/JIT 运行时也不保证严格恒时。
  */
 
 import { weierstrass, ecdsa } from '@noble/curves/abstract/weierstrass.js';

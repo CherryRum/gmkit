@@ -17,9 +17,10 @@ TypeScript 发布制品只对应 `ts-v<package version>` 标签。标签 push �
 | ESM | `dist/index.js` | `exports.import` |
 | CommonJS | `dist/index.cjs` | `exports.require` |
 | IIFE | `dist/index.global.js` | 全局 `GMKit` |
-| TypeScript | `dist/index.d.ts`、`index.d.cts` | `types` |
+| TypeScript | `dist/index.d.ts`、`dist/index.d.cts` | `types` |
+| 第三方声明 | `THIRD_PARTY_NOTICES.md` | tarball 文档 |
 
-`packages/ts/package.json#files` 只允许 `dist`、`README.md` 和 `LICENSE`。源码、测试、文档站、fixture 和 Studio 不应进入 npm tarball。
+`packages/ts/package.json#files` 只允许 `dist`、`README.md`、`LICENSE` 和 `THIRD_PARTY_NOTICES.md`。源码、测试、文档站、fixture 和 Studio 不应进入 npm tarball。`@noble/curves` 与 `@noble/hashes` 已内联到三个 JavaScript 构建中，因此不声明为消费者运行时依赖；第三方 MIT 版权与许可证必须随 tarball 发布，类型声明不得导入 noble 类型。
 
 ## 版本准备
 
@@ -43,6 +44,7 @@ npm run docs:build
 ```
 
 `npm run verify` 包含 TS 类型/测试/构建、Java 测试和 parity，但不包含 lint、pack 审计或文档门禁，因此后续命令不能省略。
+`audit:pack` 还会检查 9 个必需文件、第三方声明、source map、包体积、运行时依赖和 `.d.ts` 类型泄漏；只看压缩包大小不足以判断制品正确。
 
 ## 自动创建标签并发布
 

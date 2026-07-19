@@ -1,8 +1,8 @@
 /**
  * SHA 哈希算法实现
  *
- * 基于 @noble/hashes：纯 TypeScript、常量时间实现，已发布安全审计报告
- * （Cure53/Trail of Bits）。
+ * 基于 @noble/hashes 的纯 TypeScript 实现。依赖项目公开的审计材料不等于
+ * GMKit 组合实现已完成独立安全审计，JavaScript/JIT 运行时也不保证严格恒时。
  *
  * 支持的算法：
  * - SHA-256: 256 位哈希输出，推荐作为默认选择

@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.10.0 - 2026-07-17
+## 0.10.0 - 2026-07-19
 
 ### Monorepo merge
 
@@ -50,6 +50,9 @@
 - Hardened SM2 DER ciphertext parsing, userId ENTL bounds, standard-curve enforcement, key-pair consistency checks, and key-exchange length validation without changing the empty-userId compatibility fallback.
 - Replaced SM3 chunk accumulation with a true incremental compression state and added fixed HMAC-SM3 verification.
 - Added Bouncy Castle differential vectors for SM4 CTR/CFB/OFB/GCM/CCM and runtime validation for unsupported SHA output formats.
+- Validated RNG policies and custom RNG output, split Web Crypto requests at the 65536-byte platform limit, and kept the default warning compatibility fallback plus opt-in strict mode.
+- Reset reusable SHA-1/256/384/512 instances after `digest()` so implementation behavior now matches the documented streaming contract.
+- Made Java and TypeScript parity fail closed on missing, empty, malformed, duplicated, unsupported, or zero-match shared vectors. Java now consumes all 33 SM2/SM3/SM4/ZUC cases instead of skipping SM2.
 
 - **TS SM4 CK table — GB/T 32907-2016 conformance fix** (audit-iter8-D).
   The `CK[i]` constant generation in `packages/ts/src/crypto/sm4/index.ts` omitted
@@ -62,7 +65,7 @@
   standard input. All 6 affected vectors in `vectors/interop.json` regenerated
   from the corrected implementation (3 sm4-ecb-*, 3 sm4-cbc-*); both stacks
   now produce byte-identical output. `cn.gmkit.InteropComplianceTest`
-  re-enabled — 16/16 dynamic tests pass (10 SM3 + 3 SM4 ECB + 3 SM4 CBC).
+  now reports 1 structure gate plus all 33 shared dynamic cases.
 
 ### Added
 
@@ -92,6 +95,7 @@
 - Documented SM4 mode, padding, IV/nonce, tag length, and AAD requirements for ECB/CBC/CTR/CFB/OFB/GCM/CCM.
 - Documented that ZUC fixed values in this repository are project alignment vectors unless explicitly marked as external standard vectors.
 - Added runnable self-test commands for build, type-check, unit tests, and a Node `dist` SM3 example.
+- Added npm third-party notices for bundled noble code and package-audit gates for required files, runtime dependency leakage, and public declaration imports.
 - Reworked the public documentation into release-oriented architecture,
   support matrix, validation model, security-boundary, compatibility,
   benchmark, distribution, and release pages. Documentation CI now checks
@@ -100,7 +104,7 @@
 
 ### Fixed
 
-- Replaced stale SM4 interop expectations with values produced by the current implementation and made the assertions strict.
+- Replaced stale SM4 interop expectations after the standard CK correction and made the assertions strict across both implementations.
 - Covered invalid ZUC key/IV length, invalid hex/base64 ciphertext, invalid EEA3/EIA3 parameters, and tampered SM4 AEAD tag behavior in tests.
 
 ### Compatibility

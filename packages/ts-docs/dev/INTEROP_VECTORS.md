@@ -43,6 +43,8 @@ mvn -f packages/java/pom.xml -B -ntp -pl gmkit -Dtest=InteropComplianceTest test
 
 顶层 `meta` 描述向量格式版本和编码；`defaults` 只用于减少测试数据重复；`cases` 中每一项必须有稳定 `id`、`algo`、`op` 和期望结果。消费者不得根据未声明字段猜测编码或模式。
 
+向量门禁采用 fail-closed：文件缺失、JSON 结构错误、空 `cases`、重复 `id`、未知操作、必填字段缺失或某算法分组零匹配都会失败。当前 33 个 case 均由 Java 和 TypeScript 消费，其中 Java 测试报告 1 个结构门禁加 33 个动态 case。
+
 ## 字段边界
 
 | 算法 | 必须固定的字段 |
@@ -129,3 +131,4 @@ if (!"1b3d0f74".equals(mac)) {
 4. 任何确定性期望值变更都应先由外部标准或独立成熟实现复核，不能只用本项目实现自证。
 5. SM2 等随机算法不把一次随机输出固化成“标准值”，应固定输入并验证解密、验签与篡改拒绝。
 6. 提交前运行 `npm run parity`，并运行 Java 与 TypeScript 完整测试，防止只更新一侧断言。
+7. 不得捕获向量加载或算法断言异常后仅打印 warning；互操作失败必须让进程以非零状态退出。

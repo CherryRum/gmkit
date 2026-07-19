@@ -150,7 +150,7 @@ function incrementGCMCounter(counter: Uint8Array): void {
 }
 
 /**
- * 常数时间比较，避免基于短路的时序差异
+ * 避免按内容提前退出的比较；JavaScript/JIT 下不承诺严格恒时。
  */
 function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
   if (a.length !== b.length) {
@@ -1226,7 +1226,7 @@ export function decryptBytes(
       expectedTag[i] = ghashResult[i] ^ preCounterBlock[i];
     }
 
-    // 以常数时间比较方式校验认证标签
+    // 校验认证标签时避免显式按内容早退；JavaScript/JIT 下不承诺严格恒时。
     if (!constantTimeEqual(authTag, expectedTag)) {
       throw new Error('Authentication tag verification failed');
     }

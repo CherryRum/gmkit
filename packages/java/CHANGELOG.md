@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.10.0 - 2026-07-17
+## 0.10.0 - 2026-07-19
 
 ### Added
 
@@ -10,6 +10,7 @@
 - Strengthened SM3 tests with fixed project vectors for empty, ASCII, Chinese, emoji, mixed Unicode, newlines/tabs, spaces, symbols, and long text.
 - Strengthened SM4 tests with CBC/PKCS7 and GCM/NONE round trips over Unicode payloads, long text, AAD, and tag verification.
 - Strengthened SM9 tests for native-gated Unicode signing/verifying and IBE encryption/decryption, including wrong identity and tampered data coverage.
+- Made shared-vector tests fail closed and added Java consumption of all 33 SM2/SM3/SM4/ZUC parity cases.
 
 ### Changed
 

@@ -18,6 +18,7 @@ Java 测试通过 Maven test resources 将根级 `vectors/` 挂载到 classpath�
 - `source: "project"` 表示项目回归向量，只用于 GMKit Java/TS 对齐。
 - 标准向量必须写明标准来源，例如 `GM/T 0004-2012`、`3GPP TS 35.221` 或 `3GPP TS 35.222`。
 - SM2 加密和未固定随机数的签名不比较完整字面值，只验证解密或验签性质。
+- `cases` 不能为空，`id` 必须唯一；Java 与 TypeScript 消费方都必须拒绝未知操作、缺失字段和零匹配分组，不能用跳过产生假绿。
 - 新增字段应向后兼容；字段重命名或删除必须同步更新 Java、TypeScript 测试和 CHANGELOG。
 
 ## ZUC 字段约定
@@ -36,3 +37,4 @@ npm run test:java
 ```
 
 涉及 `vectors/**` 的变更会触发 `parity.yml`，并在 `ci.yml` 中覆盖两端测试。
+当前文件包含 33 个 case；Java 门禁输出 1 个结构测试和 33 个动态测试。case 数量可随版本增长，不应把 33 写成解析器上限。

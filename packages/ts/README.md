@@ -367,3 +367,9 @@ npm run audit:docs:assets
 ```
 
 -----
+
+## 许可证与第三方组件
+
+`gmkitx` 自身按 Apache License 2.0 发布。发布构建内联了
+`@noble/curves` 与 `@noble/hashes` 的 MIT 代码，完整版权和许可证文本见
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)，并随 npm tarball 一同分发。

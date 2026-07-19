@@ -240,7 +240,8 @@ function normalizePublicKeyInput(publicKey: BytesLike): string {
 }
 
 /**
- * 常量时间比较两个 Uint8Array（防止时序攻击）
+ * 比较两个 Uint8Array，并避免按内容提前退出。
+ * JavaScript/JIT 运行时不提供严格恒时保证。
  */
 function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
   if (a.length !== b.length) {
@@ -548,7 +549,7 @@ function decryptCore(
   const c3VerifyHex = sm3Digest(c3VerifyInput);
   const c3Verify = hexToBytes(c3VerifyHex);
 
-  // 验证 C3（使用常量时间比较防止时序攻击）
+  // 验证 C3：避免显式按内容早退，但不承诺 JavaScript/JIT 下严格恒时。
   if (!constantTimeEqual(c3, c3Verify)) {
     throw new Error('Decryption failed: C3 verification failed');
   }
