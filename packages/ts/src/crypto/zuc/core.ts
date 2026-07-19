@@ -9,7 +9,7 @@
  * 本实现基于官方标准文档。
  */
 
-import { hexToBytes, bytesToHex } from '../../core/utils';
+import { hexToBytes, bytesToHex, normalizeInput } from '../../core/utils';
 
 // F 函数使用的 S 盒（S0 和 S1）
 // 这些是 ZUC 算法定义的固定置换表，用于非线性变换
@@ -318,7 +318,8 @@ export function processBytes(
 ): Uint8Array {
   const keyBytes = decodeZucParameter(key, 'key');
   const ivBytes = decodeZucParameter(iv, 'IV');
-  const dataBytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
+  // 所有文本入口统一走可注入的 UTF-8 codec，保证旧小程序与现代浏览器语义一致。
+  const dataBytes = normalizeInput(data);
 
   const state = new ZUCState();
   state.initialize(keyBytes, ivBytes);

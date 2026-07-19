@@ -10,8 +10,7 @@ export default defineConfig({
       reporter: ['text', 'json', 'html', 'lcov'],
       include: ['src/**/*.ts'],
       exclude: ['src/**/*.d.ts', 'src/types/**'],
-      // 起步阈值：v0.x 阶段以"不低于现状"为底线，后续 audit 推高。
-      // SM4 CK-table bug (audit-iter8-D) 等若有覆盖与标准向量对照即可早期发现。
+      // v0.x 阶段以“不低于现状”为底线；标准向量用于尽早发现常量表等算法回归。
       thresholds: {
         lines: 80,
         functions: 80,

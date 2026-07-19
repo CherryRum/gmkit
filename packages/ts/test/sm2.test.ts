@@ -350,6 +350,13 @@ describe('SM2 国密算法测试', () => {
       expect(() => decrypt(keyPair.privateKey, shortCipher)).toThrow('Invalid ciphertext: too short');
     });
 
+    it('应该明确拒绝缺少 C2 的原始密文', () => {
+      const keyPair = generateKeyPair();
+      const oneByteCipher = encrypt(keyPair.publicKey, Uint8Array.of(0x42));
+      const emptyC2Cipher = oneByteCipher.slice(0, -2);
+      expect(() => decryptBytes(keyPair.privateKey, emptyC2Cipher)).toThrow('Invalid ciphertext: too short');
+    });
+
     it('应该在 C3 验证失败时抛出错误', () => {
       const keyPair = generateKeyPair();
       const plaintext = 'Test C3 verification';

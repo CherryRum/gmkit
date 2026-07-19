@@ -44,38 +44,6 @@ const IV: number[] = [
 const T_0_15 = 0x79cc4519;
 const T_16_63 = 0x7a879d8a;
 
-/**
- * SM3 消息填充函数
- * 
- * 按照 SM3 标准将消息填充到 512 位的倍数：
- * 1. 添加一个 '1' 位（字节 0x80）
- * 2. 添加若干 '0' 位，使总长度 ≡ 448 (mod 512)
- * 3. 添加 64 位的原始消息长度（大端序）
- * 
- * @param data - 原始消息字节
- * @returns 填充后的消息
- */
-function pad(data: Uint8Array): Uint8Array {
-  const msgLen = data.length;
-  const bitLen = msgLen * 8;
-
-  // 计算填充长度
-  const k = (448 - ((bitLen + 1) % 512) + 512) % 512;
-  const paddingLen = (k + 1) / 8;
-  const totalLen = msgLen + paddingLen + 8;
-
-  const padded = new Uint8Array(totalLen);
-  padded.set(data);
-  padded[msgLen] = 0x80;
-
-  // 附加长度（64 位大端格式）
-  const view = new DataView(padded.buffer, padded.byteOffset, padded.byteLength);
-  view.setUint32(totalLen - 8, Math.floor(bitLen / 0x100000000), false);
-  view.setUint32(totalLen - 4, bitLen >>> 0, false);
-
-  return padded;
-}
-
 // 模块级复用：JavaScript 单线程下 cf 不会并发执行，
 // 把 w / wPrime 提升为常驻 Uint32Array 可以省去每个 512 位块的两次堆分配。
 const W_BUF = new Uint32Array(68);
@@ -278,24 +246,8 @@ function assertOutputFormat(format?: OutputFormatType) {
  */
 export function digest(data: string | Uint8Array, options?: SM3Options): string {
   assertOutputFormat(options?.outputFormat);
-  const bytes = normalizeInput(data);
-  const padded = pad(bytes);
-
-  // 优化：避免每次循环都复制数组
-  let v = [...IV];
-
-  // 处理每个 512 位块 - 优化：直接传递视图而不是切片
-  for (let i = 0; i < padded.length; i += 64) {
-    const block = padded.subarray(i, i + 64);
-    v = cf(v, block);
-  }
-
-  // 将结果转换为字节 - 优化：使用 DataView 直接写入
-  const result = new Uint8Array(32);
-  const view = new DataView(result.buffer);
-  for (let i = 0; i < 8; i++) {
-    view.setUint32(i * 4, v[i], false); // false 表示大端序
-  }
+  // 复用增量状态，避免为一次性摘要再复制一份“消息 + padding”大缓冲区。
+  const result = new SM3HashState().update(data).digestBytes();
 
   // 根据输出格式返回结果
   return options?.outputFormat === OutputFormat.BASE64 ? bytesToBase64(result) : bytesToHex(result);
@@ -348,16 +300,8 @@ export function hmac(key: string | Uint8Array, data: string | Uint8Array, option
     opad[i] = paddedKey[i] ^ 0x5c;
   }
 
-  // 内部哈希: H(ipad || data)
-  const innerData = new Uint8Array(blockSize + dataBytes.length);
-  innerData.set(ipad);
-  innerData.set(dataBytes, blockSize);
-  const innerHash = digest(innerData);
-
-  // 外部哈希: H(opad || innerHash)
-  const outerData = new Uint8Array(blockSize + 32);
-  outerData.set(opad);
-  outerData.set(hexToBytes(innerHash), blockSize);
-
-  return digest(outerData, options);
+  // 分段送入状态机，避免 HMAC 对大消息执行 ipad || data 的整段复制。
+  const innerHash = new SM3HashState().update(ipad).update(dataBytes).digestBytes();
+  const mac = new SM3HashState().update(opad).update(innerHash).digestBytes();
+  return options?.outputFormat === OutputFormat.BASE64 ? bytesToBase64(mac) : bytesToHex(mac);
 }

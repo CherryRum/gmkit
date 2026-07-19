@@ -371,7 +371,8 @@ export function decryptBytes(
   else if (firstByte !== 0x04) throw new Error('Invalid ciphertext: unsupported format');
 
   const c3Length = 32;
-  if (cipherBytes.length < c1Length + c3Length) throw new Error('Invalid ciphertext: too short');
+  // 本库加密端明确拒绝空明文，因此原始密文必须至少包含 1 字节 C2。
+  if (cipherBytes.length < c1Length + c3Length + 1) throw new Error('Invalid ciphertext: too short');
 
   const c1Bytes = cipherBytes.slice(0, c1Length);
   const c1Point = sm2.Point.fromHex(bytesToHex(c1Bytes));

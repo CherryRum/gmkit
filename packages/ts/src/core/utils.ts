@@ -118,28 +118,130 @@ function tryNodeTextDecoder(): TextDecoder | null {
   return null;
 }
 
-function fallbackEncodeUtf8(str: string): Uint8Array {
-  const encoded = encodeURIComponent(str);
+/**
+ * 无原生 TextEncoder 时的 UTF-8 编码实现。
+ *
+ * 孤立 UTF-16 surrogate 按 WHATWG Encoding 约定替换为 U+FFFD，不能使用
+ * encodeURIComponent：后者会直接抛 URIError，导致旧小程序与现代浏览器产生不同摘要。
+ * 该函数仅从源码模块导出用于回归测试，不属于包根公开 API。
+ */
+export function fallbackEncodeUtf8(str: string): Uint8Array {
   const bytes: number[] = [];
-  for (let i = 0; i < encoded.length; i++) {
-    const ch = encoded[i];
-    if (ch === '%') {
-      const hex = encoded.slice(i + 1, i + 3);
-      bytes.push(parseInt(hex, 16));
-      i += 2;
+  for (let i = 0; i < str.length; i++) {
+    const first = str.charCodeAt(i);
+    let codePoint = first;
+
+    if (first >= 0xd800 && first <= 0xdbff) {
+      const second = i + 1 < str.length ? str.charCodeAt(i + 1) : -1;
+      if (second >= 0xdc00 && second <= 0xdfff) {
+        codePoint = 0x10000 + ((first - 0xd800) << 10) + (second - 0xdc00);
+        i++;
+      } else {
+        codePoint = 0xfffd;
+      }
+    } else if (first >= 0xdc00 && first <= 0xdfff) {
+      codePoint = 0xfffd;
+    }
+
+    if (codePoint <= 0x7f) {
+      bytes.push(codePoint);
+    } else if (codePoint <= 0x7ff) {
+      bytes.push(0xc0 | (codePoint >>> 6), 0x80 | (codePoint & 0x3f));
+    } else if (codePoint <= 0xffff) {
+      bytes.push(
+        0xe0 | (codePoint >>> 12),
+        0x80 | ((codePoint >>> 6) & 0x3f),
+        0x80 | (codePoint & 0x3f)
+      );
     } else {
-      bytes.push(encoded.charCodeAt(i));
+      bytes.push(
+        0xf0 | (codePoint >>> 18),
+        0x80 | ((codePoint >>> 12) & 0x3f),
+        0x80 | ((codePoint >>> 6) & 0x3f),
+        0x80 | (codePoint & 0x3f)
+      );
     }
   }
   return new Uint8Array(bytes);
 }
 
-function fallbackDecodeUtf8(bytes: Uint8Array): string {
-  let encoded = '';
-  for (let i = 0; i < bytes.length; i++) {
-    encoded += '%' + HEX_STRINGS[bytes[i]];
+/**
+ * 无原生 TextDecoder 时的宽松 UTF-8 解码实现。
+ *
+ * 与 TextDecoder 默认 fatal=false 一致：非法序列写入 U+FFFD，并在非法续字节处
+ * 重新开始解析，避免 decodeURIComponent 对任意二进制明文直接抛异常。
+ */
+export function fallbackDecodeUtf8(bytes: Uint8Array): string {
+  let output = '';
+  let index = 0;
+
+  while (index < bytes.length) {
+    const first = bytes[index];
+    if (first <= 0x7f) {
+      output += String.fromCharCode(first);
+      index++;
+      continue;
+    }
+
+    let continuationCount: number;
+    let codePoint: number;
+    let secondMin = 0x80;
+    let secondMax = 0xbf;
+    if (first >= 0xc2 && first <= 0xdf) {
+      continuationCount = 1;
+      codePoint = first & 0x1f;
+    } else if (first >= 0xe0 && first <= 0xef) {
+      continuationCount = 2;
+      codePoint = first & 0x0f;
+      if (first === 0xe0) secondMin = 0xa0;
+      if (first === 0xed) secondMax = 0x9f;
+    } else if (first >= 0xf0 && first <= 0xf4) {
+      continuationCount = 3;
+      codePoint = first & 0x07;
+      if (first === 0xf0) secondMin = 0x90;
+      if (first === 0xf4) secondMax = 0x8f;
+    } else {
+      output += '\ufffd';
+      index++;
+      continue;
+    }
+
+    let consumed = 1;
+    let complete = true;
+    for (let i = 0; i < continuationCount; i++) {
+      const position = index + 1 + i;
+      if (position >= bytes.length) {
+        consumed = bytes.length - index;
+        complete = false;
+        break;
+      }
+      const next = bytes[position];
+      const min = i === 0 ? secondMin : 0x80;
+      const max = i === 0 ? secondMax : 0xbf;
+      if (next < min || next > max) {
+        complete = false;
+        break;
+      }
+      codePoint = (codePoint << 6) | (next & 0x3f);
+      consumed++;
+    }
+
+    if (!complete) {
+      output += '\ufffd';
+      index += consumed;
+      continue;
+    }
+
+    if (codePoint <= 0xffff) {
+      output += String.fromCharCode(codePoint);
+    } else {
+      const value = codePoint - 0x10000;
+      output += String.fromCharCode(0xd800 + (value >>> 10), 0xdc00 + (value & 0x3ff));
+    }
+    index += consumed;
   }
-  return decodeURIComponent(encoded);
+
+  return output;
 }
 
 // TextEncoder/TextDecoder 在所有现代 JS runtime 中都是无状态可复用的，

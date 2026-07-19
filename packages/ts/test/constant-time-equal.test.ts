@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { constantTimeEqual } from '../src';
 
-describe('audit-C #2: public constantTimeEqual', () => {
+describe('公开 constantTimeEqual', () => {
   it('equal arrays return true', () => {
     expect(constantTimeEqual(new Uint8Array([1, 2, 3, 0xff]), new Uint8Array([1, 2, 3, 0xff]))).toBe(true);
   });

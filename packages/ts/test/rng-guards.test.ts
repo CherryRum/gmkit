@@ -11,7 +11,7 @@ import {
   sm2Sign,
 } from '../src';
 
-describe('audit-C #3: custom RNG guards', () => {
+describe('自定义 RNG 边界', () => {
   afterEach(() => {
     clearCustomRNG();
   });
