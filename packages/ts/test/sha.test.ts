@@ -15,6 +15,10 @@ describe('SHA 哈希算法', () => {
   it('应该拒绝未知输出格式', () => {
     expect(() => sha256('abc', { outputFormat: 'utf8' as any })).toThrow('Invalid output format');
     expect(() => new SHA256('utf8' as any)).toThrow('Invalid output format');
+    expect(() => SHA256.digest('abc', 'utf8' as any)).toThrow('Invalid output format');
+    expect(() => SHA384.digest('abc', 'utf8' as any)).toThrow('Invalid output format');
+    expect(() => SHA512.digest('abc', 'utf8' as any)).toThrow('Invalid output format');
+    expect(() => SHA1.digest('abc', 'utf8' as any)).toThrow('Invalid output format');
   });
 
   describe('SHA-256', () => {

@@ -55,6 +55,13 @@ describe('SM4 分组密码测试', () => {
   });
 
   describe('ECB 模式', () => {
+    it('PKCS#7 解密应拒绝空密文', () => {
+      expect(() => decryptBytes(key, '', {
+        mode: CipherMode.ECB,
+        padding: PaddingMode.PKCS7,
+      })).toThrow('Invalid padding');
+    });
+
     it('应该能够使用 ECB 模式加密和解密', () => {
       const plaintext = 'Hello, SM4!';
       const encrypted = encrypt(key, plaintext, { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });

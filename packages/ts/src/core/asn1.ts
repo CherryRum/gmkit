@@ -61,6 +61,7 @@ const Hex = {
    */
   decode(hex: string): Uint8Array {
     if (hex.length % 2 !== 0) throw new Error('Invalid hex string length');
+    if (!/^[0-9a-fA-F]*$/.test(hex)) throw new Error('Invalid hex string');
     const len = hex.length / 2;
     const bytes = new Uint8Array(len);
     for (let i = 0; i < len; i++) {
@@ -81,6 +82,9 @@ const Hex = {
  * @returns DER 编码的长度字节数组
  */
 function encodeLength(length: number): Uint8Array {
+  if (!Number.isSafeInteger(length) || length < 0 || length > 0xffffffff) {
+    throw new Error('DER length must be an unsigned 32-bit integer');
+  }
   if (length < 128) {
     return new Uint8Array([length]);
   }
@@ -90,7 +94,7 @@ function encodeLength(length: number): Uint8Array {
   let byteCount = 0;
   while (temp > 0) {
     byteCount++;
-    temp >>>= 8; // 无符号右移
+    temp = Math.floor(temp / 256);
   }
 
   const result = new Uint8Array(byteCount + 1);
@@ -98,8 +102,8 @@ function encodeLength(length: number): Uint8Array {
 
   temp = length;
   for (let i = byteCount; i > 0; i--) {
-    result[i] = temp & 0xff;
-    temp >>>= 8;
+    result[i] = temp % 256;
+    temp = Math.floor(temp / 256);
   }
 
   return result;
@@ -127,11 +131,13 @@ function decodeLength(data: Uint8Array, offset: number): { length: number; bytes
   }
 
   if (offset + 1 + numBytes > data.length) throw new Error('Length bytes out of bounds');
+  if (data[offset + 1] === 0) throw new Error('Non-canonical DER length: leading zero');
 
   let length = 0;
   for (let i = 0; i < numBytes; i++) {
-    length = (length << 8) | data[offset + 1 + i];
+    length = length * 256 + data[offset + 1 + i];
   }
+  if (length < 128) throw new Error('Non-canonical DER length: long form used for short length');
 
   return { length, bytesRead: 1 + numBytes };
 }
@@ -154,6 +160,7 @@ export function encodeInteger(value: string | Uint8Array): Uint8Array {
   } else {
     bytes = value;
   }
+  if (bytes.length === 0) throw new Error('ASN.1 INTEGER must be at least one byte');
 
   // 1. 移除原始数据中的冗余前导零 (DER 规则：最小化编码)
   let start = 0;
@@ -203,6 +210,9 @@ export function encodeInteger(value: string | Uint8Array): Uint8Array {
  * @throws 如果标签不是 INTEGER 或数据超出范围则抛出异常
  */
 export function decodeInteger(data: Uint8Array, offset: number = 0): { value: Uint8Array; bytesRead: number } {
+  if (!Number.isSafeInteger(offset) || offset < 0 || offset >= data.length) {
+    throw new Error('INTEGER offset out of bounds');
+  }
   if (data[offset] !== ASN1Tag.INTEGER) {
     throw new Error(`Expected INTEGER tag (0x02), got 0x${data[offset].toString(16)}`);
   }
@@ -272,6 +282,9 @@ export function encodeSequence(...elements: Uint8Array[]): Uint8Array {
  * @throws 如果标签不是 SEQUENCE 或数据超出范围则抛出异常
  */
 export function decodeSequence(data: Uint8Array, offset: number = 0): { elements: Uint8Array[]; bytesRead: number } {
+  if (!Number.isSafeInteger(offset) || offset < 0 || offset >= data.length) {
+    throw new Error('SEQUENCE offset out of bounds');
+  }
   if (data[offset] !== ASN1Tag.SEQUENCE) {
     throw new Error('Expected SEQUENCE tag');
   }
@@ -286,9 +299,13 @@ export function decodeSequence(data: Uint8Array, offset: number = 0): { elements
   let pos = contentStart;
 
   while (pos < contentEnd) {
+    if (pos + 1 >= contentEnd) throw new Error('Truncated element in DER sequence');
     // 解析下一个 TLV 元素的长度
     const { length: elemLength, bytesRead: elemLengthBytes } = decodeLength(data, pos + 1);
     const elemTotalLength = 1 + elemLengthBytes + elemLength;
+    if (pos + elemTotalLength > contentEnd) {
+      throw new Error('DER element extends beyond sequence boundary');
+    }
 
     // 使用 subarray 引用，零拷贝
     elements.push(data.subarray(pos, pos + elemTotalLength));
@@ -367,6 +384,9 @@ export function rawToDer(rawSignature: string | Uint8Array): Uint8Array {
  */
 export function derToRaw(derSignature: Uint8Array): string {
   const { r, s } = decodeSignature(derSignature);
+  if (r.length > 64 || s.length > 64) {
+    throw new Error('SM2 signature integers must fit in 32 bytes');
+  }
 
   // SM2 标准：r 和 s 必须填充到 32 字节（64 个十六进制字符）
   const rPadded = r.padStart(64, '0');

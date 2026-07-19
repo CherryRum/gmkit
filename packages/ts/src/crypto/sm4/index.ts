@@ -438,6 +438,9 @@ function pkcs7Pad(data: Uint8Array, blockSize: number): Uint8Array {
  * @returns 去除填充后的数据 (Unpadded data)
  */
 function pkcs7Unpad(data: Uint8Array): Uint8Array {
+  if (data.length === 0 || data.length % 16 !== 0) {
+    throw new Error('Invalid padding');
+  }
   const padding = data[data.length - 1];
   if (padding < 1 || padding > 16) {
     throw new Error('Invalid padding');

@@ -123,6 +123,7 @@ export class SHA256 extends SHABase {
    * @returns 哈希摘要
    */
   static digest(data: string | Uint8Array, outputFormat: OutputFormatType = OutputFormat.HEX): string {
+    assertOutputFormat(outputFormat);
     const bytes = normalizeInput(data);
     const hash = nobleSha256(bytes);
     return outputFormat === OutputFormat.BASE64 ? bytesToBase64(hash) : bytesToHex(hash);
@@ -154,6 +155,7 @@ export class SHA384 extends SHABase {
    * @returns 哈希摘要
    */
   static digest(data: string | Uint8Array, outputFormat: OutputFormatType = OutputFormat.HEX): string {
+    assertOutputFormat(outputFormat);
     const bytes = normalizeInput(data);
     const hash = nobleSha384(bytes);
     return outputFormat === OutputFormat.BASE64 ? bytesToBase64(hash) : bytesToHex(hash);
@@ -185,6 +187,7 @@ export class SHA512 extends SHABase {
    * @returns 哈希摘要
    */
   static digest(data: string | Uint8Array, outputFormat: OutputFormatType = OutputFormat.HEX): string {
+    assertOutputFormat(outputFormat);
     const bytes = normalizeInput(data);
     const hash = nobleSha512(bytes);
     return outputFormat === OutputFormat.BASE64 ? bytesToBase64(hash) : bytesToHex(hash);
@@ -218,6 +221,7 @@ export class SHA1 extends SHABase {
    * @returns 哈希摘要
    */
   static digest(data: string | Uint8Array, outputFormat: OutputFormatType = OutputFormat.HEX): string {
+    assertOutputFormat(outputFormat);
     const bytes = normalizeInput(data);
     const hash = nobleSha1(bytes);
     return outputFormat === OutputFormat.BASE64 ? bytesToBase64(hash) : bytesToHex(hash);

@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { decodeInteger, decodeSignature, encodeInteger, encodeSignature } from '../src/core/asn1';
+import {
+  decodeInteger,
+  decodeSequence,
+  decodeSignature,
+  encodeInteger,
+  encodeSignature,
+  rawToDer,
+} from '../src/core/asn1';
 
 describe('audit-C #1: ASN.1 INTEGER canonical DER', () => {
   it('rejects trailing bytes after a signature sequence', () => {
@@ -40,5 +47,23 @@ describe('audit-C #1: ASN.1 INTEGER canonical DER', () => {
     const encoded = encodeInteger(original);
     const { value } = decodeInteger(encoded);
     expect(Array.from(value)).toEqual(Array.from(original));
+  });
+
+  it('rejects invalid hexadecimal integers and empty integers', () => {
+    expect(() => encodeInteger('gg')).toThrow('Invalid hex string');
+    expect(() => encodeInteger(new Uint8Array())).toThrow('at least one byte');
+    expect(() => rawToDer('z'.repeat(128))).toThrow('Invalid hex string');
+  });
+
+  it('rejects non-canonical DER length forms', () => {
+    expect(() => decodeInteger(new Uint8Array([0x02, 0x81, 0x01, 0x01])))
+      .toThrow('long form used for short length');
+    expect(() => decodeInteger(new Uint8Array([0x02, 0x82, 0x00, 0x80])))
+      .toThrow('leading zero');
+  });
+
+  it('rejects an element that crosses its containing sequence boundary', () => {
+    const malformed = new Uint8Array([0x30, 0x03, 0x02, 0x02, 0x01, 0x00]);
+    expect(() => decodeSequence(malformed)).toThrow('beyond sequence boundary');
   });
 });

@@ -255,7 +255,7 @@ export interface SM3Options {
  * @throws 如果格式无效则抛出错误
  */
 function assertOutputFormat(format?: OutputFormatType) {
-  if (!format) return;
+  if (format === undefined) return;
   if (format !== OutputFormat.HEX && format !== OutputFormat.BASE64) {
     throw new Error('Invalid output format: must be hex or base64');
   }

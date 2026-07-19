@@ -105,6 +105,7 @@ describe('SM3 哈希算法测试', () => {
     });
 
     it('无效输出格式应被拒绝', () => {
+      expect(() => digest('abc', { outputFormat: '' as any })).toThrow('Invalid output format');
       expect(() => new SM3('utf8' as any)).toThrow('Invalid output format');
       expect(() => new SM3().setOutputFormat('utf8' as any)).toThrow('Invalid output format');
     });
