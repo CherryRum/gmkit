@@ -45,6 +45,51 @@ class SM4StandardVectorsTest {
                     .build()));
     }
 
+    @Test
+    void gcmShouldMatchBouncyCastleVector() {
+        byte[] plaintext = HexCodec.decodeStrict(
+            "00112233445566778899aabbccddeeff102030405060708090a0b0c0d0e0f000",
+            "plaintext");
+        SM4Options options = SM4Options.builder()
+            .mode(SM4CipherMode.GCM)
+            .padding(SM4Padding.NONE)
+            .iv(HexCodec.decodeStrict("000102030405060708090a0b", "nonce"))
+            .aad(HexCodec.decodeStrict("a1a2a3a4a5", "AAD"))
+            .tagLength(16)
+            .build();
+
+        SM4CipherResult encrypted = sm4.encrypt(KEY, plaintext, options);
+
+        // 与 TypeScript 测试使用同一组 Bouncy Castle 固定输出，避免仅验证自身往返。
+        assertEquals(
+            "55303aa2f5e4cf68ec192910178188aa98d919ed1031ce3fd61419ef400de37b",
+            encrypted.ciphertextHex());
+        assertEquals("e1fc34aeb1fc2cc1fd4dff35500763eb", encrypted.tagHex());
+        assertArrayEquals(plaintext, sm4.decrypt(KEY, encrypted, options));
+    }
+
+    @Test
+    void ccmShouldMatchBouncyCastleVector() {
+        byte[] plaintext = HexCodec.decodeStrict(
+            "00112233445566778899aabbccddeeff102030405060708090a0b0c0d0e0f000",
+            "plaintext");
+        SM4Options options = SM4Options.builder()
+            .mode(SM4CipherMode.CCM)
+            .padding(SM4Padding.NONE)
+            .iv(NONCE_12)
+            .aad(HexCodec.decodeStrict("a1a2a3a4a5", "AAD"))
+            .tagLength(12)
+            .build();
+
+        SM4CipherResult encrypted = sm4.encrypt(KEY, plaintext, options);
+
+        assertEquals(
+            "257356b9c53ddf366101dda6c6fc781ba563684a023b6320b950188eb6e0c0bd",
+            encrypted.ciphertextHex());
+        assertEquals("5b90d0072b9352c59d7b1623", encrypted.tagHex());
+        assertArrayEquals(plaintext, sm4.decrypt(KEY, encrypted, options));
+    }
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("roundTripCases")
     void roundTripShouldCoverMultipleModes(String name, byte[] plaintext, SM4Options options) {
