@@ -90,6 +90,26 @@ class SM4StandardVectorsTest {
         assertArrayEquals(plaintext, sm4.decrypt(KEY, encrypted, options));
     }
 
+    @ParameterizedTest(name = "{0} should match the shared differential output")
+    @MethodSource("streamModeVectors")
+    void streamModesShouldMatchTypeScriptDifferentialVectors(
+        SM4CipherMode mode,
+        String expectedCiphertext) {
+        byte[] plaintext = HexCodec.decodeStrict(
+            "00112233445566778899aabbccddeeff102030405060708090a0b0c0d0e0f000",
+            "plaintext");
+        SM4Options options = SM4Options.builder()
+            .mode(mode)
+            .padding(SM4Padding.NONE)
+            .iv(IV)
+            .build();
+
+        SM4CipherResult encrypted = sm4.encrypt(KEY, plaintext, options);
+
+        assertEquals(expectedCiphertext, encrypted.ciphertextHex());
+        assertArrayEquals(plaintext, sm4.decrypt(KEY, encrypted, options));
+    }
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("roundTripCases")
     void roundTripShouldCoverMultipleModes(String name, byte[] plaintext, SM4Options options) {
@@ -284,6 +304,19 @@ class SM4StandardVectorsTest {
                     .aad(Texts.utf8("aad"))
                     .tagLength(12)
                     .build()));
+    }
+
+    private static Stream<Arguments> streamModeVectors() {
+        return Stream.of(
+            Arguments.of(
+                SM4CipherMode.CTR,
+                "0689be5279f30edaa2145d392d7517957f273d0b10c38c814a31a32551e05d1a"),
+            Arguments.of(
+                SM4CipherMode.CFB,
+                "0689be5279f30edaa2145d392d751795f2bea09ebfa5646f1fd54174c3e52b5d"),
+            Arguments.of(
+                SM4CipherMode.OFB,
+                "0689be5279f30edaa2145d392d751795e3cf720ce7e32afdf1ff5c540dc31820"));
     }
 
     private static Stream<Arguments> unicodePlaintexts() {
