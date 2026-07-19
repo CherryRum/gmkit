@@ -1,6 +1,8 @@
 package cn.gmkit.sm4;
 
 import cn.gmkit.core.Bytes;
+import cn.gmkit.core.GmkitException;
+import cn.gmkit.core.Messages;
 import cn.gmkit.core.SM4CipherMode;
 import cn.gmkit.core.SM4Padding;
 
@@ -22,7 +24,14 @@ final class SM4Paddings {
             if (source.length % SM4Support.BLOCK_SIZE == 0) {
                 return source;
             }
-            byte[] padded = new byte[((source.length / SM4Support.BLOCK_SIZE) + 1) * SM4Support.BLOCK_SIZE];
+            int paddingLength = SM4Support.BLOCK_SIZE - source.length % SM4Support.BLOCK_SIZE;
+            long paddedLength = (long) source.length + paddingLength;
+            if (paddedLength > Integer.MAX_VALUE) {
+                throw new GmkitException(Messages.bilingual(
+                    "SM4 ZERO 填充结果超过 Java 数组长度上限",
+                    "SM4 ZERO padded output exceeds the Java array length limit"));
+            }
+            byte[] padded = new byte[(int) paddedLength];
             System.arraycopy(source, 0, padded, 0, source.length);
             return padded;
         }

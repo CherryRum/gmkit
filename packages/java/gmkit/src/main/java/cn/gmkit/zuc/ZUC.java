@@ -399,7 +399,13 @@ public final class ZUC {
     }
 
     private static byte[] wordsToBytes(int[] words) {
-        byte[] output = new byte[words.length * 4];
+        long byteLength = (long) words.length * 4L;
+        if (byteLength > Integer.MAX_VALUE) {
+            throw new GmkitException(Messages.bilingual(
+                "ZUC 字流超过 Java 字节数组长度上限",
+                "ZUC word stream exceeds the Java byte array length limit"));
+        }
+        byte[] output = new byte[(int) byteLength];
         for (int i = 0; i < words.length; i++) {
             int word = words[i];
             int offset = i * 4;

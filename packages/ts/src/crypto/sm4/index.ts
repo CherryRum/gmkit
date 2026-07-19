@@ -64,8 +64,7 @@ const FK: number[] = [0xa3b1bac6, 0x56aa3350, 0x677d9197, 0xb27022dc];
 
 // 固定参数 CK - 用于密钥扩展
 // ck_{i,j} = (4i+j) * 7 (mod 256), per GB/T 32907-2016 §7.3.2.
-// Previous implementation omitted the *7 multiplier, producing wrong
-// round keys and therefore wrong SM4 ciphertext (audit-iter8-D).
+// 每个字节都必须乘以 7；该因子属于标准密钥扩展常量的一部分。
 const CK: number[] = [];
 for (let i = 0; i < 32; i++) {
   CK[i] =

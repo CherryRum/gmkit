@@ -70,13 +70,18 @@ public final class Bytes {
      * @return 连接后的新字节数组
      */
     public static byte[] concat(byte[]... arrays) {
-        int total = 0;
+        long total = 0;
         for (byte[] array : arrays) {
             if (array != null) {
                 total += array.length;
+                if (total > Integer.MAX_VALUE) {
+                    throw new GmkitException(Messages.bilingual(
+                        "拼接后的字节数组超过 Java 数组长度上限",
+                        "Concatenated byte array exceeds the Java array length limit"));
+                }
             }
         }
-        byte[] merged = new byte[total];
+        byte[] merged = new byte[(int) total];
         int offset = 0;
         for (byte[] array : arrays) {
             if (array == null) {
@@ -98,9 +103,6 @@ public final class Bytes {
      *   <li>两侧均为空数组返回 {@code true}（零字节 == 零字节）。</li>
      *   <li>长度相同时，恒定时间扫描全部字节，不因首字节匹配就早返回。</li>
      * </ul>
-     *
-     * <p>audit-iter8-A 修复：原实现把空数组判定为不相等（依赖 {@code Checks.hasBytes}
-     * 把长度为 0 视为"无字节"），违反 MAC 比较的基本契约。
      *
      * @param left  第一个字节数组
      * @param right 第二个字节数组

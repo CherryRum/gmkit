@@ -8,7 +8,7 @@ import {
   rawToDer,
 } from '../src/core/asn1';
 
-describe('audit-C #1: ASN.1 INTEGER canonical DER', () => {
+describe('ASN.1 INTEGER canonical DER', () => {
   it('rejects trailing bytes after a signature sequence', () => {
     const valid = encodeSignature(new Uint8Array([1]), new Uint8Array([2]));
     const trailing = new Uint8Array(valid.length + 1);

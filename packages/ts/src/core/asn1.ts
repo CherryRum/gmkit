@@ -224,7 +224,7 @@ export function decodeInteger(data: Uint8Array, offset: number = 0): { value: Ui
   if (end > data.length) throw new Error('Integer value out of bounds');
   if (length === 0) throw new Error('ASN.1 INTEGER must be at least one byte');
 
-  // 严格 DER 校验（audit-iter8-C #1）：
+  // 严格 DER 校验：
   // - 第一字节 MSB 置位代表负整数，SM2 r/s 必须为正 — 拒绝。
   // - 长度 > 1 且首字节 0x00，仅当下一字节 MSB 置位时才合法（用于保持正号）；
   //   否则即为非规范化前导 0，构成签名可塑性风险，拒绝。
