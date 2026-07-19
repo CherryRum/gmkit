@@ -7,6 +7,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class SM2UtilTest {
 
+    private static final String N_MINUS_ONE =
+        "fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d54122";
+
     @Test
     void compressAndDecompressShouldRoundTrip() {
         SM2KeyPair keyPair = SM2Util.generateKeyPair(false);
@@ -50,6 +53,16 @@ class SM2UtilTest {
             SM2VerifyOptions.builder()
                 .signatureFormat(SM2SignatureInputFormat.DER)
                 .build()));
+    }
+
+    @Test
+    void signingShouldRejectNMinusOneWithoutBreakingOtherPrivateKeyUses() {
+        assertEquals(130, SM2Util.getPublicKeyFromPrivateKey(N_MINUS_ONE, false).length());
+
+        GmkitException exception = assertThrows(
+            GmkitException.class,
+            () -> SM2Util.sign(N_MINUS_ONE, Texts.utf8("invalid signing scalar"), null));
+        assertTrue(exception.getMessage().contains("[1, n-2]"));
     }
 
     @Test

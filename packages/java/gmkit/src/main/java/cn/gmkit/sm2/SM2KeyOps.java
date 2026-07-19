@@ -17,6 +17,9 @@ import java.math.BigInteger;
 
 final class SM2KeyOps {
 
+    private static final BigInteger MAX_SIGNING_PRIVATE_KEY = SM2Domain.DOMAIN_PARAMS.getN().subtract(BigInteger.ONE);
+    private static final int MAX_KEY_GENERATION_ATTEMPTS = 128;
+
     private SM2KeyOps() {
     }
 
@@ -24,8 +27,23 @@ final class SM2KeyOps {
         GmSecurityContext context = SM2Domain.context(securityContext);
         ECKeyPairGenerator generator = new ECKeyPairGenerator();
         generator.init(new ECKeyGenerationParameters(SM2Domain.DOMAIN_PARAMS, context.secureRandom()));
-        AsymmetricCipherKeyPair pair = generator.generateKeyPair();
-        ECPrivateKeyParameters privateKey = (ECPrivateKeyParameters) pair.getPrivate();
+        AsymmetricCipherKeyPair pair = null;
+        ECPrivateKeyParameters privateKey = null;
+        for (int attempt = 0; attempt < MAX_KEY_GENERATION_ATTEMPTS; attempt++) {
+            pair = generator.generateKeyPair();
+            privateKey = (ECPrivateKeyParameters) pair.getPrivate();
+            // 通用 EC 私钥允许 n-1，但 SM2 签名中的 (1+d)^-1 在该点不存在。
+            if (privateKey.getD().compareTo(MAX_SIGNING_PRIVATE_KEY) < 0) {
+                break;
+            }
+            pair = null;
+            privateKey = null;
+        }
+        if (pair == null || privateKey == null) {
+            throw new GmkitException(Messages.bilingual(
+                "无法生成可用于 SM2 签名的私钥",
+                "Failed to generate an SM2 private key valid for signing"));
+        }
         ECPublicKeyParameters publicKey = (ECPublicKeyParameters) pair.getPublic();
         return new SM2KeyPair(
             encodePublicKey(publicKey.getQ(), compressedPublicKey),
@@ -52,6 +70,16 @@ final class SM2KeyOps {
             throw new GmkitException(Messages.bilingual("无效的 SM2 私钥标量", "Invalid private key scalar"));
         }
         return new ECPrivateKeyParameters(d, SM2Domain.DOMAIN_PARAMS);
+    }
+
+    static ECPrivateKeyParameters toSigningPrivateKeyParameters(String privateKeyHex) {
+        ECPrivateKeyParameters privateKey = toPrivateKeyParameters(privateKeyHex);
+        if (privateKey.getD().compareTo(MAX_SIGNING_PRIVATE_KEY) >= 0) {
+            throw new GmkitException(Messages.bilingual(
+                "SM2 签名私钥标量必须位于 [1, n-2]",
+                "SM2 signing private key scalar must be in [1, n-2]"));
+        }
+        return privateKey;
     }
 
     static ECPublicKeyParameters toPublicKeyParameters(String publicKeyHex) {

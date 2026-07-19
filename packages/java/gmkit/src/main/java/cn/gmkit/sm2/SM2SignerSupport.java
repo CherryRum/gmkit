@@ -18,7 +18,7 @@ final class SM2SignerSupport {
     static byte[] sign(String privateKeyHex, byte[] message, SM2SignOptions options) {
         SM2SignOptions resolved = Checks.defaultIfNull(options, SM2SignOptions.builder().build());
         byte[] safeMessage = Bytes.requireNonNull(message, "SM2 message");
-        ECPrivateKeyParameters privateKey = SM2KeyOps.toPrivateKeyParameters(privateKeyHex);
+        ECPrivateKeyParameters privateKey = SM2KeyOps.toSigningPrivateKeyParameters(privateKeyHex);
         ECPoint publicPoint = SM2KeyOps.derivePublicPoint(privateKey);
         byte[] eHash = computeE(publicPoint, safeMessage, resolved.userId(), resolved.skipZComputation());
         return signDigest(privateKey, eHash, resolved.signatureFormat(), resolved.securityContext());
@@ -37,7 +37,7 @@ final class SM2SignerSupport {
         byte[] eHash,
         SM2SignatureFormat signatureFormat,
         GmSecurityContext securityContext) {
-        ECPrivateKeyParameters privateKey = SM2KeyOps.toPrivateKeyParameters(privateKeyHex);
+        ECPrivateKeyParameters privateKey = SM2KeyOps.toSigningPrivateKeyParameters(privateKeyHex);
         return signDigest(privateKey, Bytes.requireNonNull(eHash, "SM2 digest"), signatureFormat, securityContext);
     }
 

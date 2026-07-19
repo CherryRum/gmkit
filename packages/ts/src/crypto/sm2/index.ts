@@ -610,6 +610,7 @@ function computeZ(userId: string, publicKey: string): Uint8Array {
 }
 
 const SM2_N = BigInt('0x' + SM2_CURVE_PARAMS.n);
+const MAX_SM2_SIGNING_PRIVATE_KEY = SM2_N - 1n;
 
 function mod(value: bigint, modulo: bigint = SM2_N): bigint {
   const result = value % modulo;
@@ -663,8 +664,9 @@ function sm2PointX(point: ReturnType<typeof sm2.Point.BASE.multiply>): bigint {
 
 function sm2SignDigest(e: Uint8Array, privateKeyBytes: Uint8Array): Uint8Array {
   const d = bytesToBigIntBE(privateKeyBytes);
-  if (d <= 0n || d >= SM2_N) {
-    throw new Error('Invalid private key: scalar out of range');
+  // 通用 EC 私钥可取 n-1，但 SM2 签名需要计算 (1+d)^-1，因此上界只能到 n-2。
+  if (d <= 0n || d >= MAX_SM2_SIGNING_PRIVATE_KEY) {
+    throw new Error('Invalid SM2 signing private key: scalar must be in [1, n-2]');
   }
 
   const eInt = bytesToBigIntBE(e);
@@ -840,8 +842,17 @@ export interface VerifyOptions {
  * @returns 包含公钥和私钥的对象
  */
 export function generateKeyPair(compressed: boolean = false): KeyPair {
-  // 使用 @noble/curves 的 keygen
-  const privateKey = sm2.keygen().secretKey;
+  let privateKey: Uint8Array | undefined;
+  for (let attempt = 0; attempt < MAX_RANDOM_SCALAR_ATTEMPTS; attempt++) {
+    const candidate = sm2.keygen().secretKey;
+    if (bytesToBigIntBE(candidate) < MAX_SM2_SIGNING_PRIVATE_KEY) {
+      privateKey = candidate;
+      break;
+    }
+  }
+  if (!privateKey) {
+    throw new Error('Failed to generate an SM2 private key valid for signing');
+  }
 
   // 从私钥导出公钥，确保格式正确
   const publicKeyBytes = sm2.getPublicKey(privateKey, compressed);

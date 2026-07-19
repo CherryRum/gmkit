@@ -13,6 +13,8 @@ import {
 } from '../src/crypto/sm2';
 import { SM2CipherMode, DEFAULT_USER_ID } from '../src';
 
+const SM2_N_MINUS_ONE = 'fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d54122';
+
 describe('SM2 国密算法测试', () => {
   describe('密钥对生成', () => {
     it('应该能够生成密钥对[非压缩格式]', () => {
@@ -92,6 +94,13 @@ describe('SM2 国密算法测试', () => {
         isInitiator: true,
         keyLength: 0,
       })).toThrow('positive safe integer');
+    });
+
+    it('签名应拒绝 n-1，但公钥派生仍保持通用 EC 私钥兼容', () => {
+      expect(getPublicKeyFromPrivateKey(SM2_N_MINUS_ONE)).toHaveLength(130);
+      expect(() => sign(SM2_N_MINUS_ONE, 'invalid signing scalar')).toThrow(
+        'scalar must be in [1, n-2]'
+      );
     });
   });
 
