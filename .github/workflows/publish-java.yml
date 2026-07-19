@@ -268,12 +268,14 @@ jobs:
         with:
           name: sm9-runtime-bundle
           path: packages/java/gmkit-sm9/target/generated-resources/sm9-runtime
+      # Central Publishing 扩展不会遵守 benchmark 模块的 maven.deploy.skip，必须显式限制 reactor。
       - name: Audit signed release
         env:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
         run: >
           mvn -f packages/java/pom.xml -B -ntp
           -Psm9-runtime-bundle,release -DskipTests
+          -pl gmkit-bom,gmkit,gmkit-sm9 -am
           "-DaltDeploymentRepository=release::file://${{ runner.temp }}/signed-maven-release"
           deploy
       - name: Verify signed artifacts
@@ -291,4 +293,4 @@ jobs:
         run: >
           mvn -f packages/java/pom.xml -B -ntp
           -Psm9-runtime-bundle,release,central-publish
-          -DskipTests deploy
+          -DskipTests -pl gmkit-bom,gmkit,gmkit-sm9 -am deploy
