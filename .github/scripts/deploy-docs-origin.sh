@@ -86,6 +86,8 @@ trap 'rm -rf "$temporary"' EXIT
 key_file="$temporary/id_key"
 scan_file="$temporary/host.scan"
 known_hosts="$temporary/known_hosts"
+observed_fingerprints="$temporary/observed-fingerprints"
+touch "$observed_fingerprints"
 printf '%s\n' "$SSH_PRIVATE_KEY" > "$key_file"
 chmod 600 "$key_file"
 
@@ -93,7 +95,9 @@ ssh-keyscan -T 15 "$SSH_REMOTE_HOST" > "$scan_file" 2>/dev/null
 while IFS= read -r host_key; do
   [[ -n "$host_key" ]] || continue
   printf '%s\n' "$host_key" > "$temporary/host.key"
-  fingerprint=$(ssh-keygen -lf "$temporary/host.key" -E sha256 | awk '{print $2}')
+  fingerprint_info=$(ssh-keygen -lf "$temporary/host.key" -E sha256)
+  fingerprint=$(awk '{print $2}' <<< "$fingerprint_info")
+  awk '{print $2 " " $NF}' <<< "$fingerprint_info" >> "$observed_fingerprints"
   if [[ "$fingerprint" == "$SSH_HOST_FINGERPRINT" ]]; then
     printf '%s\n' "$host_key" >> "$known_hosts"
   fi
@@ -101,6 +105,8 @@ done < "$scan_file"
 
 if [[ ! -s "$known_hosts" ]]; then
   echo "SSH host fingerprint mismatch for $SSH_REMOTE_HOST" >&2
+  echo "Observed SSH host fingerprints:" >&2
+  sort -u "$observed_fingerprints" >&2
   exit 1
 fi
 
