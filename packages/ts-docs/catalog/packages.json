@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "packages": [
+    {
+      "id": "typescript",
+      "name": "gmkitx",
+      "ecosystem": "npm",
+      "coordinates": "gmkitx",
+      "version": "0.10.1",
+      "tagPrefix": "ts-v",
+      "guide": "/typescript/",
+      "api": "/api/typescript/latest/",
+      "apiGenerator": "typedoc",
+      "testCommand": "npm run test:ts"
+    },
+    {
+      "id": "java",
+      "name": "GMKit Java",
+      "ecosystem": "maven",
+      "coordinates": [
+        "cn.gmkit:gmkit",
+        "cn.gmkit:gmkit-sm9"
+      ],
+      "version": "0.10.1",
+      "tagPrefix": "java-v",
+      "guide": "/java/",
+      "api": "/api/java/latest/",
+      "apiGenerator": "maven-javadoc-plugin",
+      "testCommand": "npm run test:java"
+    }
+  ]
+}

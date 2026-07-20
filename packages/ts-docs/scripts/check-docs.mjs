@@ -19,7 +19,9 @@ async function walk(directory) {
 
 function routeFor(file) {
   const relative = path.relative(docsRoot, file).replaceAll('\\', '/');
-  return relative === 'README.md' ? '/' : `/${relative.replace(/\.md$/, '')}`;
+  if (relative === 'README.md') return '/';
+  if (relative.endsWith('/README.md')) return `/${relative.slice(0, -'README.md'.length)}`;
+  return `/${relative.replace(/\.md$/, '')}`;
 }
 
 function stripQueryAndHash(link) {
@@ -86,6 +88,10 @@ async function checkLocalLinks(file, content, relative) {
   const links = prose.matchAll(/\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g);
   for (const [, link] of links) {
     if (/^(?:https?:|mailto:|#)/.test(link)) continue;
+    // TypeDoc/Javadoc 只在构建阶段写入站点目录，不在文档源码中提交生成文件。
+    if (/^\/api\/(?:typescript|java)\/(?:latest|versions\/[^/]+)\/?$/.test(stripQueryAndHash(link))) {
+      continue;
+    }
     const candidates = linkCandidates(file, link);
     const exists = await Promise.all(candidates.map(async (candidate) => {
       try { return (await stat(candidate)).isFile(); } catch { return false; }

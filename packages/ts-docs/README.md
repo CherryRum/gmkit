@@ -1,53 +1,44 @@
 ---
 home: true
-title: GMKitX 技术文档
-heroText: GMKitX
-tagline: 面向浏览器与 Node.js 的 TypeScript 国密算法库
+title: GMKit 文档
+heroText: GMKit
+tagline: Java、TypeScript、互操作协议与扩展包的统一文档入口
 actions:
-  - text: 快速开始
-    link: /guide/getting-started
+  - text: 选择开发语言
+    link: /guide/
     type: primary
-  - text: API 清单
-    link: /dev/API-SURFACE.zh-CN
+  - text: API Reference
+    link: /api/
     type: secondary
 features:
-  - title: 协议边界明确
-    details: 明确记录 SM2 userId、密文排列、签名格式，SM4 mode/nonce/tag，以及 ZUC EEA3/EIA3 位长度语义。
-  - title: 跨语言验证
-    details: Java 与 TypeScript 共用根目录 vectors/interop.json，并在 CI 中执行确定性向量与回环验证。
-  - title: 多种分发格式
-    details: npm 包同时提供 ESM、CommonJS、浏览器 IIFE 和 TypeScript 类型声明。
+  - title: 按发布包查阅
+    details: Java 与 TypeScript 分开说明安装、公开 API、运行环境和版本，不把不同语言的能力混为一谈。
+  - title: 按验证证据说明
+    details: 固定标准向量、共享互操作向量、单元测试和外部运行时验证分别记录，避免扩大测试结论。
+  - title: 为扩展包预留目录
+    details: 新工具可以独立登记包、版本、API 入口和测试命令，无需改变现有核心包的使用方式。
 footer: Apache-2.0 Licensed | Copyright © 2026 GMKit contributors
 ---
 
-## 支持范围
+## 当前发布包
 
-| 算法 | TypeScript 能力 | 关键边界 |
-|:--|:--|:--|
-| SM2 | 密钥生成、加解密、签名验签、密钥交换 | 默认 C1C3C2；raw/DER 签名；空 userId 回落到兼容默认值 |
-| SM3 | 摘要、HMAC、增量摘要 | 输出 hex/base64；`SM3` 增量实例在 `digest()` 后重置 |
-| SM4 | ECB/CBC/CTR/CFB/OFB/GCM/CCM | 新业务优先 GCM/CCM；AEAD 必须传递 tag 与 AAD |
-| ZUC | ZUC-128、EEA3、EIA3 | `eea3` 是兼容密钥流入口；标准消息加密使用 `eea3Encrypt` |
-| SHA | SHA-1/256/384/512、HMAC | SHA-1 仅用于旧协议兼容；不提供 SHA-224 |
-| SM9 | 不支持 | SM9 仅由 Java 的 JNI/GmSSL 独立模块提供 |
+| 发布包 | 当前版本 | 入口 | 当前实现范围 |
+|:--|:--|:--|:--|
+| `cn.gmkit:gmkit` | `0.10.1` | [Java](/java/) | SM2、SM3、SM4、ZUC |
+| `cn.gmkit:gmkit-sm9` | `0.10.1` | [Java SM9](/java/#sm9-独立依赖) | Java API 与 JAR 内 JNI/GmSSL 运行库 |
+| `gmkitx` | `0.10.1` | [TypeScript](/typescript/) | SM2、SM3、SM4、ZUC、SHA；不包含 SM9 |
 
 ::: warning 安全状态
-GMKitX 尚未完成独立第三方安全审计。固定向量和单元测试只能证明已覆盖行为，不能替代密码产品认证、密钥管理设计或目标运行环境的安全评估。
+GMKit 当前发布包尚未完成独立第三方安全审计。固定向量和单元测试只能证明已覆盖行为，不能替代密码产品认证、密钥管理设计或目标运行环境的安全评估。
 :::
 
-## 发布前验证
+## 阅读路径
 
-```bash
-npm ci
-npm run type-check -w packages/ts
-npm test -w packages/ts
-npm run build -w packages/ts
-npm run audit:pack -w packages/ts
-npm run test:package -w packages/ts
-npm run parity
-npm run docs:check
-npm run docs:test-examples
-npm run docs:build
-```
+- [开始使用](/guide/)：根据 Java 或 TypeScript 选择安装与最小验证示例。
+- [API Reference](/api/)：查阅从公开入口生成的 TypeDoc 和 Javadoc。
+- [协议与标准](/standards/)：查看输入输出约定、标准来源和测试证据边界。
+- [集成示例](/integrations/)：查看 Java、Hutool、Go、Python、Rust 和 Node 示例。
+- [扩展包](/extensions/)：了解未来工具包如何接入文档、版本和测试。
+- [项目维护](/maintenance/)：查看架构、发布、基准和维护规则。
 
-继续阅读：[快速开始](/guide/getting-started)、[算法选择](/guide/about-guomi)、[安全边界](/guide/security)、[共享测试向量](/dev/INTEROP_VECTORS)。
+包版本和入口由 [`catalog/packages.json`](https://github.com/gmkits/gmkit/blob/main/packages/ts-docs/catalog/packages.json) 维护。新增能力以实际发布制品和测试结果为准，目录登记不代表安全认证或标准合规结论。

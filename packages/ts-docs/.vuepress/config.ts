@@ -17,8 +17,8 @@ const contributorInfo = [
 
 export default defineUserConfig({
   lang: 'zh-CN',
-  title: 'gmkitx',
-  description: 'GMKitX TypeScript 国密算法库技术文档',
+  title: 'GMKit 文档',
+  description: 'GMKit Java、TypeScript、协议边界与扩展包文档',
   base: '/',
 
   bundler: viteBundler({
@@ -45,74 +45,55 @@ export default defineUserConfig({
 
   plugins: [],
   theme: hopeTheme({
-    hostname: 'https://gmkits.github.io/gmkit',
+    hostname: 'https://gmkit.cn',
 
     repo: 'gmkits/gmkit',
     docsDir: 'packages/ts-docs',
     docsBranch: 'main',
 
     navbar: [
-      { text: '首页', link: '/' },
-      {
-        text: '指南',
-        children: [
-          { text: '快速开始', link: '/guide/getting-started' },
-          { text: '算法选择', link: '/guide/about-guomi' },
-          { text: '安全边界', link: '/guide/security' },
-        ],
-      },
-      {
-        text: '算法文档',
-        children: [
-          { text: 'SM2 - 椭圆曲线公钥密码', link: '/algorithms/SM2' },
-          { text: 'SM3 - 密码杂凑算法', link: '/algorithms/SM3' },
-          { text: 'SM4 - 分组密码算法', link: '/algorithms/SM4' },
-          { text: 'ZUC - 序列密码算法', link: '/algorithms/ZUC' },
-          { text: 'SHA - 国际标准算法', link: '/algorithms/SHA' },
-        ],
-      },
-      {
-        text: '开发指南',
-        children: [
-          { text: '架构', link: '/dev/ARCHITECTURE.zh-CN' },
-          { text: '导入方式', link: '/dev/IMPORT_GUIDE' },
-          { text: '公开 API 清单', link: '/dev/API-SURFACE.zh-CN' },
-          { text: 'GMKit Java', link: '/dev/JAVA-LIBRARY.zh-CN' },
-          { text: 'Java / Hutool 对接', link: '/dev/JAVA-INTEGRATION.zh-CN' },
-          { text: 'Go 对接', link: '/dev/GO-INTEGRATION.zh-CN' },
-          { text: 'Python 对接', link: '/dev/PYTHON-INTEGRATION.zh-CN' },
-          { text: 'Rust 对接', link: '/dev/RUST-INTEGRATION.zh-CN' },
-          { text: '国际算法边界', link: '/dev/INTERNATIONAL-ALGORITHMS.zh-CN' },
-          { text: '共享测试向量', link: '/dev/INTEROP_VECTORS' },
-          { text: '发布流程', link: '/dev/PUBLISHING' },
-          { text: '发布精简清单', link: '/dev/PROJECT-SLIMMING-CHECKLIST.zh-CN' },
-        ],
-      },
-      {
-        text: '标准与性能',
-        children: [
-          { text: 'GM/T 0009 实现边界', link: '/standards/GMT-0009-COMPLIANCE' },
-          { text: 'GM/T 0009 快速参考', link: '/standards/GMT-0009-快速参考' },
-          { text: '性能与基准', link: '/performance/PERFORMANCE' },
-          { text: '性能优化方法', link: '/performance/PERFORMANCE-OPTIMIZATIONS' },
-        ],
-      },
-      {
-        text: '项目参考',
-        children: [
-          { text: '支持范围', link: '/summaries/PROJECT_SUMMARY' },
-          { text: '验证模型', link: '/summaries/IMPLEMENTATION_SUMMARY' },
-          { text: '安全保证边界', link: '/summaries/SECURITY-SUMMARY' },
-          { text: 'SM2 兼容策略', link: '/summaries/STANDARD-MIGRATION-SUMMARY' },
-        ],
-      },
+      { text: '开始使用', link: '/guide/' },
+      { text: 'Java', link: '/java/' },
+      { text: 'TypeScript', link: '/typescript/' },
+      { text: 'API Reference', link: '/api/' },
+      { text: '协议与标准', link: '/standards/' },
+      { text: '集成示例', link: '/integrations/' },
+      { text: '扩展包', link: '/extensions/' },
+      { text: '项目维护', link: '/maintenance/' },
     ],
 
     sidebar: {
       '/guide/': [
         {
-          text: '快速开始',
-          children: ['/guide/getting-started', '/guide/about-guomi', '/guide/security'],
+          text: '开始使用',
+          children: ['/guide/', '/guide/getting-started', '/guide/about-guomi', '/guide/security'],
+        },
+      ],
+      '/java/': [
+        {
+          text: 'Java',
+          children: ['/java/', '/dev/JAVA-LIBRARY.zh-CN'],
+        },
+      ],
+      '/typescript/': [
+        {
+          text: 'TypeScript',
+          children: [
+            '/typescript/',
+            '/dev/IMPORT_GUIDE',
+            '/dev/API-SURFACE.zh-CN',
+            '/algorithms/SM2',
+            '/algorithms/SM3',
+            '/algorithms/SM4',
+            '/algorithms/ZUC',
+            '/algorithms/SHA',
+          ],
+        },
+      ],
+      '/api/': [
+        {
+          text: 'API Reference',
+          children: ['/api/'],
         },
       ],
       '/algorithms/': [
@@ -158,8 +139,49 @@ export default defineUserConfig({
       ],
       '/standards/': [
         {
-          text: '标准与合规',
-          children: ['/standards/GMT-0009-COMPLIANCE', '/standards/GMT-0009-快速参考'],
+          text: '协议与标准',
+          children: [
+            '/standards/',
+            '/standards/GMT-0009-COMPLIANCE',
+            '/standards/GMT-0009-快速参考',
+            '/dev/INTEROP_VECTORS',
+          ],
+        },
+      ],
+      '/integrations/': [
+        {
+          text: '集成示例',
+          children: [
+            '/integrations/',
+            '/dev/JAVA-INTEGRATION.zh-CN',
+            '/dev/GO-INTEGRATION.zh-CN',
+            '/dev/PYTHON-INTEGRATION.zh-CN',
+            '/dev/RUST-INTEGRATION.zh-CN',
+            '/dev/INTERNATIONAL-ALGORITHMS.zh-CN',
+          ],
+        },
+      ],
+      '/extensions/': [
+        {
+          text: '扩展包',
+          children: ['/extensions/'],
+        },
+      ],
+      '/maintenance/': [
+        {
+          text: '项目维护',
+          children: [
+            '/maintenance/',
+            '/dev/ARCHITECTURE.zh-CN',
+            '/dev/PUBLISHING',
+            '/dev/PROJECT-SLIMMING-CHECKLIST.zh-CN',
+            '/performance/PERFORMANCE',
+            '/performance/PERFORMANCE-OPTIMIZATIONS',
+            '/summaries/PROJECT_SUMMARY',
+            '/summaries/IMPLEMENTATION_SUMMARY',
+            '/summaries/SECURITY-SUMMARY',
+            '/summaries/STANDARD-MIGRATION-SUMMARY',
+          ],
         },
       ],
       '/performance/': [
@@ -198,6 +220,12 @@ export default defineUserConfig({
         },
       },
       readingTime: { wordPerMinute: 200 },
+      redirect: {
+        config: {
+          '/api/typescript/': '/api/typescript/latest/',
+          '/api/java/': '/api/java/latest/',
+        },
+      },
       copyright: false,
     },
 

@@ -2,7 +2,7 @@
   "name": "gmkitx-docs",
   "version": "0.10.1",
   "private": true,
-  "description": "Documentation for GMKitX",
+  "description": "Documentation portal for GMKit Java and TypeScript packages",
   "type": "module",
   "engines": {
     "node": ">=22.0.0"
