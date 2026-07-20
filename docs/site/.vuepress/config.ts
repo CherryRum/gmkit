@@ -108,6 +108,25 @@ export default defineUserConfig({
           children: ['/api/typescript/latest/'],
         },
       ],
+      '/api/java/': [
+        {
+          text: 'Java API 说明书',
+          children: [
+            '/api/java/',
+            '/api/java/core',
+            '/api/java/sm2',
+            '/api/java/sm3',
+            '/api/java/sm4',
+            '/api/java/zuc',
+            '/api/java/sm9',
+            '/api/java/integration',
+          ],
+        },
+        {
+          text: '生成 Reference',
+          children: ['/api/java/latest/'],
+        },
+      ],
       '/algorithms/': [
         {
           text: '算法与协议能力',
