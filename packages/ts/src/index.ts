@@ -129,7 +129,7 @@ export const zucEncrypt = zucFunctions.encrypt;
 export const zucDecrypt = zucFunctions.decrypt;
 /** 使用 ZUC-128 解密并返回原始字节。 */
 export const zucDecryptBytes = zucFunctions.decryptBytes;
-/** 生成指定字节数的 ZUC 密钥流并按 Hex 或 Base64 编码。 */
+/** 生成指定字节数的 ZUC 密钥流并返回小写 Hex 字符串。 */
 export const zucKeystream = zucFunctions.getKeystream;
 /** 生成指定数量的 32 位 ZUC 密钥流字，按大端顺序返回 Hex 字符串。 */
 export const zucKeystreamWords = zucFunctions.getKeystreamWords;
