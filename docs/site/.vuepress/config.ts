@@ -90,6 +90,24 @@ export default defineUserConfig({
           ],
         },
       ],
+      '/api/typescript/': [
+        {
+          text: 'TypeScript API 说明书',
+          children: [
+            '/api/typescript/',
+            '/api/typescript/common',
+            '/api/typescript/sm2',
+            '/api/typescript/sm3',
+            '/api/typescript/sm4',
+            '/api/typescript/zuc',
+            '/api/typescript/sha',
+          ],
+        },
+        {
+          text: '生成 Reference',
+          children: ['/api/typescript/latest/'],
+        },
+      ],
       '/algorithms/': [
         {
           text: '算法与协议能力',

@@ -12,25 +12,100 @@ tag:
 
 # TypeScript API 说明书
 
-这里是 `gmkitx` 公共 API 的手写说明书入口。说明书负责解释如何选择入口、参数如何编码、默认值是什么、失败时如何处理，以及完整调用如何组合；逐符号类型定义仍可在 [TypeDoc Reference](/api/typescript/latest/) 中核对。
+`gmkitx` 是从一个根入口发布的 TypeScript/JavaScript 密码工具包。本说明书解释怎样选择公开入口、字符串和字节如何转换、默认值是什么，以及失败时会返回 `false` 还是抛出异常。逐符号类型定义见 [TypeDoc Reference](/api/typescript/latest/)。
 
-## 阅读顺序
+## 安装与运行环境
 
-1. 从 [快速开始](/guide/getting-started.html#typescript) 安装 `gmkitx` 并完成最小验证。
-2. 阅读本说明书中的导入方式和公共约定。
-3. 按算法进入 SM2、SM3、SM4、ZUC 或 SHA 页面。
-4. 排查具体类型或源码签名时使用 [latest TypeDoc](/api/typescript/latest/)；线上版本问题使用相同版本的快照。
+```bash
+npm install gmkitx
+```
 
-## 当前边界
+发布包同时提供 ESM、CommonJS 和浏览器 IIFE：
 
-- 公共入口是 `gmkitx` 根导出；不支持从 `src/*` 或 `dist/*` 深度导入。
-- 字符串消息默认按 UTF-8 处理，Hex/Base64 字段必须按 API 的格式参数解释。
-- TypeScript 包包含 SM2、SM3、SM4、ZUC 和 SHA，不包含 SM9。
-- Java 与 TypeScript 独立版本化；同名算法不表示函数签名、异常和对象生命周期相同。
+| 环境 | 入口 | 说明 |
+|:--|:--|:--|
+| ESM/TypeScript | `import { sm3Digest } from 'gmkitx'` | 推荐；支持静态分析和 tree-shaking |
+| CommonJS | `const { sm3Digest } = require('gmkitx')` | Node.js 兼容入口 |
+| 浏览器脚本 | `GMKit.sm3Digest('abc')` | 使用发布包的 `dist/index.global.js` |
+| 类型声明 | `dist/index.d.ts` | 由 package `types`/`exports` 自动选择 |
 
-## Reference
+包声明 Node.js 18 或更高版本。浏览器、小程序和受限 JavaScript 宿主还应检查 UTF-8 编解码器与安全随机源；详见 [运行环境与 RNG](/api/typescript/common.html#随机源与运行环境)。
 
-- [TypeDoc latest](/api/typescript/latest/)
-- [TypeDoc 版本目录](/api/)
-- [公开 API 审计清单](/api/public-api.html)
-- [公共输入与安全约定](/api/common.html)
+## 四种调用方式
+
+### 具名函数：新代码首选
+
+```ts
+import {
+  CipherMode,
+  sm2GenerateKeyPair,
+  sm2Encrypt,
+  sm3Digest,
+  sm4Encrypt,
+} from 'gmkitx';
+
+const keys = sm2GenerateKeyPair();
+const ciphertext = sm2Encrypt(keys.publicKey, 'hello');
+const digest = sm3Digest('hello');
+const result = sm4Encrypt('0123456789abcdeffedcba9876543210', 'hello', {
+  mode: CipherMode.GCM,
+  iv: '000102030405060708090a0b',
+});
+```
+
+带算法前缀的名称能在代码评审和日志中直接体现算法归属。
+
+### 算法命名空间
+
+`sm2`、`sm3`、`sm4`、`zuc`、`sha` 聚合各算法函数和对应类，适合统一注入：
+
+```ts
+import { sm2, sm3 } from 'gmkitx';
+
+const keys = sm2.generateKeyPair();
+const digest = sm3.digest('abc');
+```
+
+### 类
+
+`SM2`、`SM3`、`SM4`、`ZUC`、`SHA1`、`SHA256`、`SHA384`、`SHA512` 适合保存密钥、配置或增量摘要状态。类是否有状态、`digest()` 后是否重置，以各算法页面为准。
+
+### 默认导出
+
+默认导出为 UMD/CDN 和旧整体导入保留，包含五个算法命名空间、推荐顶层算法函数和弃用别名，不包含编码、RNG、ASN.1 工具：
+
+```ts
+import GMKit from 'gmkitx';
+
+const digest = GMKit.sm3Digest('abc');
+```
+
+新的模块化代码优先使用具名导出。
+
+## API 导航
+
+| 页面 | 公开能力 |
+|:--|:--|
+| [公共类型与工具](/api/typescript/common.html) | 编码、格式常量、RNG、环境、字节运算、ASN.1、默认导出和兼容别名 |
+| [SM2](/api/typescript/sm2.html) | 密钥、加解密、签名验签、密钥交换、`SM2` 类 |
+| [SM3](/api/typescript/sm3.html) | 摘要、HMAC、增量 `SM3` |
+| [SM4](/api/typescript/sm4.html) | ECB/CBC/CTR/CFB/OFB/GCM/CCM、`SM4` 类 |
+| [ZUC](/api/typescript/zuc.html) | ZUC-128、密钥流、EEA3/EIA3、`ZUCState` |
+| [SHA](/api/typescript/sha.html) | SHA-1/256/384/512、HMAC、增量类 |
+
+## 输入、返回和错误总则
+
+- `string` 消息按 UTF-8 编码；Hex 字符串只有在密钥、IV、密文等明确字段中才按 Hex 解释。
+- `Uint8Array` 表示原始字节。二进制解密使用 `sm2DecryptBytes`、`sm4DecryptBytes` 或 `zucDecryptBytes`。
+- 输出编码省略时通常为小写 Hex；每个选项页会明确列出例外。
+- 验签不通过返回 `false`；非法格式、密钥、长度、AEAD tag 或运行环境错误会抛出 `Error`。
+- 自动识别优先把形态合法的偶数长度字符串当作 Hex。稳定协议应显式传 `InputFormat`。
+- 公开边界只有包根入口和 `gmkitx/package.json`；`src/*`、`dist/*` 深度导入不受兼容承诺保护。
+
+## 版本与精确签名
+
+- [TypeDoc latest](/api/typescript/latest/)：当前 `main`。
+- `/api/typescript/versions/<version>/`：已发布版本快照。
+- [公开 API 清单](/api/public-api.html)：全部根导出及弃用名称。
+
+线上问题应先选择与 npm 制品相同版本的快照；`latest` 可能领先正式发布版本。
