@@ -14,6 +14,7 @@ public final class ByteEncodings {
      * @param input        待编码的字节数组
      * @param outputFormat 输出格式，支持HEX和BASE64
      * @return 编码后的字符串
+     * @throws GmkitException 输入为空或输出格式不受支持时抛出
      */
     public static String encode(byte[] input, OutputFormat outputFormat) {
         OutputFormat format = Checks.defaultIfNull(outputFormat, OutputFormat.HEX);
@@ -33,6 +34,7 @@ public final class ByteEncodings {
      * @param inputFormat 输入格式，支持HEX和BASE64，为null时自动检测
      * @param label       错误提示标签
      * @return 解码后的字节数组
+     * @throws GmkitException 输入为空、格式不受支持或内容无法按指定格式解码时抛出
      */
     public static byte[] decode(String input, InputFormat inputFormat, String label) {
         if (inputFormat == null) {
@@ -53,6 +55,7 @@ public final class ByteEncodings {
      * @param input 待解码的字符串
      * @param label 错误提示标签
      * @return 解码后的字节数组
+     * @throws GmkitException 输入为空或既不是严格 Hex 也不是规范 Base64 时抛出
      */
     public static byte[] decodeAuto(String input, String label) {
         if (input == null || input.trim().isEmpty()) {

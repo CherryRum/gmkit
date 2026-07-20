@@ -105,6 +105,8 @@ final class SM9NativeBridge {
 
     /**
      * 在 native 库不可用时抛出带诊断信息的异常。
+     *
+     * @throws SM9UnsupportedPlatformException 当前平台无内置 runtime 或 native 库加载失败时抛出
      */
     static void requireAvailable() {
         if (!AVAILABLE) {

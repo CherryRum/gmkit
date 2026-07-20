@@ -38,6 +38,7 @@ final class SM3Support {
      * @param key  HMAC 密钥，不能为 {@code null}
      * @param data 输入数据，不能为 {@code null}
      * @return 32 字节 HMAC 结果
+     * @throws GmkitException key 或 data 为 {@code null} 时抛出
      */
     public static byte[] hmac(byte[] key, byte[] data) {
         if (key == null || data == null) {

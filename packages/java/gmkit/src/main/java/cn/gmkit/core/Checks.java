@@ -15,6 +15,7 @@ public final class Checks {
      * @param label 错误标签
      * @param <T>   对象类型
      * @return 原对象
+     * @throws GmkitException 对象为 {@code null} 时抛出
      */
     public static <T> T requireNonNull(T value, String label) {
         if (value == null) {
@@ -29,6 +30,7 @@ public final class Checks {
      * @param value 待检查字符串
      * @param label 错误标签
      * @return 去除首尾空白后的字符串
+     * @throws GmkitException 字符串为 {@code null} 或去除首尾空白后为空时抛出
      */
     public static String requireNonBlank(String value, String label) {
         requireNonNull(value, label);
@@ -57,6 +59,7 @@ public final class Checks {
      * @param value 待检查数组
      * @param label 错误标签
      * @return 原数组
+     * @throws GmkitException 数组为 {@code null} 或长度为 0 时抛出
      */
     public static byte[] requireNonEmpty(byte[] value, String label) {
         requireNonNull(value, label);

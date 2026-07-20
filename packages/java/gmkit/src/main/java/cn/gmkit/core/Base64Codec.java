@@ -79,6 +79,10 @@ public final class Base64Codec {
     /**
      * 校验 RFC 4648 标准 Base64 的字符、填充和 pad bits。
      * 显式解码允许省略末尾填充；格式探测仍由调用方限制为 4 字符对齐，保持旧版自动识别边界。
+     *
+     * @param input 待校验的 Base64 文本
+     * @param allowUnpadded 是否允许省略末尾 {@code =} 填充
+     * @return 字符、填充位置和 pad bits 均合法时返回 {@code true}
      */
     private static boolean isCanonicalBase64(String input, boolean allowUnpadded) {
         int length = input.length();

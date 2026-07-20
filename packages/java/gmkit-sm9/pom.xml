@@ -150,7 +150,8 @@
                             <docencoding>${project.build.sourceEncoding}</docencoding>
                             <charset>${project.build.sourceEncoding}</charset>
                             <source>${maven.compiler.source}</source>
-                            <doclint>none</doclint>
+                            <doclint>all</doclint>
+                            <failOnWarnings>true</failOnWarnings>
                         </configuration>
                         <executions>
                             <execution>

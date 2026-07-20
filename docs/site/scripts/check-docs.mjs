@@ -82,6 +82,16 @@ function linkCandidates(source, link) {
 const markdownFiles = await walk(docsRoot);
 const config = await readFile(configPath, 'utf8');
 const failures = [];
+const forbiddenClaims = [
+  '生产级',
+  '完全兼容',
+  '完整合规',
+  '绝对安全',
+  '性能领先',
+  '100%兼容',
+  '全面支持所有',
+  '完全符合',
+];
 
 async function checkLocalLinks(file, content, relative) {
   const prose = stripFencedCode(content);
@@ -117,10 +127,16 @@ for (const file of markdownFiles) {
   for (const forbidden of [
     'github.com/CherryRum/gmkit',
     'gmkits/gmkit-java',
+    'gmkit.oldletter.cn',
     'test/vectors/interop.json',
     'gmkitx@latest',
   ]) {
     if (content.includes(forbidden)) failures.push(`${relative}: 包含过期引用 ${forbidden}`);
+  }
+
+  // 文档只陈述可由固定测试、标准来源或发布制品核对的结论。
+  for (const claim of forbiddenClaims) {
+    if (prose.includes(claim)) failures.push(`${relative}: 包含缺少证据边界的表述 ${claim}`);
   }
 
   await checkLocalLinks(file, content, relative);
@@ -157,10 +173,19 @@ if (rootPackage.version !== tsPackage.version || rootPackage.version !== docsPac
   failures.push(`workspace 版本不一致: root=${rootPackage.version}, ts=${tsPackage.version}, docs=${docsPackage.version}`);
 }
 
+for (const relative of ['README.md', 'guide/README.md', 'typescript/README.md']) {
+  const content = await readFile(path.join(docsRoot, relative), 'utf8');
+  requireDocumentedVersion(content, tsPackage.version, relative);
+}
+
 const javaPom = await readFile(path.join(repoRoot, 'packages', 'java', 'pom.xml'), 'utf8');
 const javaVersion = requireMatch(javaPom, /<artifactId>gmkit-parent<\/artifactId>\s*<version>([^<]+)<\/version>/, 'packages/java/pom.xml');
 const javaGuide = await readFile(path.join(docsRoot, 'dev', 'JAVA-LIBRARY.zh-CN.md'), 'utf8');
 requireDocumentedVersion(javaGuide, javaVersion, 'JAVA-LIBRARY.zh-CN.md');
+for (const relative of ['README.md', 'guide/README.md', 'java/README.md']) {
+  const content = await readFile(path.join(docsRoot, relative), 'utf8');
+  requireDocumentedVersion(content, javaVersion, relative);
+}
 
 const goMod = await readFile(path.join(docsRoot, 'examples', 'go', 'go.mod'), 'utf8');
 const goGmsmVersion = requireMatch(goMod, /github\.com\/emmansun\/gmsm\s+(v[^\s]+)/, 'examples/go/go.mod');

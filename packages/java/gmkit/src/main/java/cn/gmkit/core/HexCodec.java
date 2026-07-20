@@ -78,6 +78,7 @@ public final class HexCodec {
      * @param input 待规范化的字符串
      * @param label 错误提示标签
      * @return 规范化后的十六进制字符串
+     * @throws GmkitException 输入为 {@code null}、空白或去除前缀后为空时抛出
      */
     public static String normalize(String input, String label) {
         if (input == null || input.trim().isEmpty()) {

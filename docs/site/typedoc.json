@@ -4,6 +4,7 @@
   "entryPointStrategy": "resolve",
   "tsconfig": "../../packages/ts/tsconfig.json",
   "out": ".vuepress/public/api/typescript/latest",
+  "json": ".vuepress/api-typescript.json",
   "name": "gmkitx API",
   "lang": "zh",
   "readme": "typescript/README.md",

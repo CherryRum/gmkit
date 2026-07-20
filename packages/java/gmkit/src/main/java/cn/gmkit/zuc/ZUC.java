@@ -309,6 +309,7 @@ public final class ZUC {
      * @param message   message bytes
      * @param bitLength authenticated bit length, may stop inside the final byte
      * @return 8-character hexadecimal MAC
+     * @throws GmkitException key、bearer、direction、message 或 bitLength 不合法时抛出
      */
     public static String eia3(String keyHex, int count, int bearer, int direction, byte[] message, int bitLength) {
         requireBearer(bearer);

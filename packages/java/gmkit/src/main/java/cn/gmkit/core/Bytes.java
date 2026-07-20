@@ -68,6 +68,7 @@ public final class Bytes {
      *
      * @param arrays 待连接的字节数组
      * @return 连接后的新字节数组
+     * @throws GmkitException 合并后的长度超过 Java 数组上限时抛出
      */
     public static byte[] concat(byte[]... arrays) {
         long total = 0;
