@@ -16,6 +16,9 @@ const {
   hexToBytes,
   hmacSha256,
   sha256,
+  sha1,
+  sha384,
+  sha512,
   sm2CompressPublicKey,
   sm2DecryptBytes,
   sm2DecompressPublicKey,
@@ -26,17 +29,26 @@ const {
   sm2Sign,
   sm2Verify,
   sm3Digest,
+  sm3Hmac,
   sm4DecryptBytes,
   sm4Encrypt,
   zucKeystream,
+  zucKeystreamWords,
 } = gmkit;
 
 assert.equal(sm3Digest('abc'), '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0');
+assert.equal(sm3Hmac('secret-key', 'hmac-payload'), 'b57fb50bbc8ad6f9b11129cf1ec67cf0c658f0d4b597ae3f05a64eaa4a22d312');
 const incremental = new SM3().update('a').update(Uint8Array.of(0x62, 0x63));
 assert.equal(incremental.digest(), sm3Digest('abc'));
 assert.equal(incremental.update('abc').digest(), sm3Digest('abc'), 'SM3 digest 后应重置状态');
 
 const keys = sm2GenerateKeyPair();
+const fixedPrivateKey = '0'.repeat(63) + '1';
+assert.equal(
+  sm2GetPublicKeyFromPrivateKey(fixedPrivateKey),
+  '0432c4ae2c1f1981195f9904466a39c9948fe30bbff2660be1715a4589334c74c7' +
+    'bc3736a2f4f6779c59bdcee36b692153d0a9877cc62a474002df32e52139f0a0',
+);
 const compressed = sm2CompressPublicKey(keys.publicKey);
 assert.equal(sm2DecompressPublicKey(compressed), keys.publicKey);
 const binary = Uint8Array.of(0x00, 0xff, 0x80, 0x41);
@@ -118,6 +130,7 @@ assert.throws(
 );
 
 assert.equal(zucKeystream('00'.repeat(16), '00'.repeat(16), 8), '27bede74018082da');
+assert.equal(zucKeystreamWords('00'.repeat(16), '00'.repeat(16), 2), '27bede74018082da');
 const partialByteCipher = eea3Encrypt('00'.repeat(16), 0, 0, 0, Uint8Array.of(0xff), 5);
 assert.equal(Number.parseInt(partialByteCipher, 16) & 0b111, 0, 'EEA3 未使用的末尾低位必须清零');
 assert.equal(eia3('000102030405060708090a0b0c0d0e0f', 0x01234567, 0x0a, 0, hexToBytes('5bad724710ba1c56'), 64), '1b3d0f74');
@@ -142,6 +155,9 @@ assert.equal(
 );
 
 assert.equal(sha256('abc'), 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+assert.equal(sha1('abc'), 'a9993e364706816aba3e25717850c26c9cd0d89d');
+assert.equal(sha384('abc'), 'cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed8086072ba1e7cc2358baeca134c825a7');
+assert.equal(sha512('abc'), 'ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f');
 assert.equal(hmacSha256(hexToBytes('0b'.repeat(20)), 'Hi There'), 'b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7');
 
 const legacyAliases = {

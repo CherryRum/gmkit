@@ -7,7 +7,10 @@ category:
 
 # API Reference
 
-API Reference 从各发布包的唯一公开入口生成，用来核对函数签名、参数、返回值、异常与弃用状态。概念说明、协议选择和安全边界仍以手写指南为准。
+本区分为手写公共 API 指南与自动生成 Reference。手写页面解释入口选择、编码、默认值和跨语言差异；TypeDoc/Javadoc 用来核对每个函数、重载、字段、返回值、异常与弃用状态。
+
+- [公开 API 清单](/api/public-api.html)：TypeScript 全部顶层导出和 Java 全部公共类型。
+- [公共能力](/api/common.html)：编码、随机源、安全上下文、格式、ASN.1、异常与混合加密。
 
 | 语言 | latest | 版本快照 |
 |:--|:--|:--|
@@ -18,4 +21,4 @@ latest 随 `main` 更新，不等同于已发布版本。版本快照从对应 `
 
 <ApiVersionCatalog />
 
-在自动生成页面上线前，可以使用 [TypeScript 公开 API 清单](/typescript/api-surface) 和 [Java 使用指南](/java/guide)。
+`latest` 可能领先已发布版本。排查线上调用时优先选择与制品版本相同的快照；开发 `main` 时再使用 latest。

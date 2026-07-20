@@ -7,7 +7,7 @@
   "json": ".vuepress/api-typescript.json",
   "name": "gmkitx API",
   "lang": "zh",
-  "readme": "typescript/README.md",
+  "readme": "api/public-api.md",
   "includeVersion": true,
   "excludePrivate": true,
   "excludeProtected": true,
@@ -18,7 +18,7 @@
   "sourceLinkExternal": true,
   "navigationLinks": {
     "GMKit 文档": "https://gmkit.cn/",
-    "TypeScript 指南": "https://gmkit.cn/typescript/"
+    "使用指南": "https://gmkit.cn/guide/getting-started.html"
   },
   "hostedBaseUrl": "https://gmkit.cn/api/typescript/latest/",
   "validation": {

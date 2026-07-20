@@ -131,7 +131,7 @@ export const zucDecrypt = zucFunctions.decrypt;
 export const zucDecryptBytes = zucFunctions.decryptBytes;
 /** 生成指定字节数的 ZUC 密钥流并按 Hex 或 Base64 编码。 */
 export const zucKeystream = zucFunctions.getKeystream;
-/** 生成指定数量的 32 位 ZUC 密钥流字，返回无符号整数数组。 */
+/** 生成指定数量的 32 位 ZUC 密钥流字，按大端顺序返回 Hex 字符串。 */
 export const zucKeystreamWords = zucFunctions.getKeystreamWords;
 /** 兼容旧版的 EEA3 密钥流入口；`length` 表示需要生成的 bit 数。 */
 export const eea3 = zucFunctions.eea3;
