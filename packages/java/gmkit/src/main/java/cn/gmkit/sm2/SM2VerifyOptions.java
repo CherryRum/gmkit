@@ -2,16 +2,12 @@ package cn.gmkit.sm2;
 
 import cn.gmkit.core.Checks;
 import cn.gmkit.core.SM2SignatureInputFormat;
-import lombok.Getter;
-import lombok.experimental.Accessors;
 
 /**
  * SM2 验签选项。
  * <p>
  * 用于指定签名输入格式、用户标识以及是否跳过 Z 值计算。
  */
-@Getter
-@Accessors(fluent = true)
 public final class SM2VerifyOptions {
 
     private final SM2SignatureInputFormat signatureFormat;
@@ -31,6 +27,33 @@ public final class SM2VerifyOptions {
      */
     public static Builder builder() {
         return new Builder();
+    }
+
+    /**
+     * 获取签名输入格式。
+     *
+     * @return RAW、DER 或 AUTO；构建器默认值为 AUTO
+     */
+    public SM2SignatureInputFormat signatureFormat() {
+        return signatureFormat;
+    }
+
+    /**
+     * 获取用于计算 Z 值的用户标识。
+     *
+     * @return 用户标识；构建器会将 {@code null} 或空字符串回退为兼容默认值
+     */
+    public String userId() {
+        return userId;
+    }
+
+    /**
+     * 是否按跳过 Z 值的兼容语义验签。
+     *
+     * @return 跳过时返回 {@code true}；默认返回 {@code false}
+     */
+    public boolean skipZComputation() {
+        return skipZComputation;
     }
 
     /**

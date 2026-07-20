@@ -4,16 +4,12 @@ import cn.gmkit.core.Checks;
 import cn.gmkit.core.GmSecurityContext;
 import cn.gmkit.core.GmSecurityContexts;
 import cn.gmkit.core.SM2SignatureFormat;
-import lombok.Getter;
-import lombok.experimental.Accessors;
 
 /**
  * SM2 签名选项。
  * <p>
  * 用于控制签名输出格式、用户标识、是否跳过 Z 值计算以及安全上下文。
  */
-@Getter
-@Accessors(fluent = true)
 public final class SM2SignOptions {
 
     private final SM2SignatureFormat signatureFormat;
@@ -35,6 +31,42 @@ public final class SM2SignOptions {
      */
     public static Builder builder() {
         return new Builder();
+    }
+
+    /**
+     * 获取签名输出格式。
+     *
+     * @return {@link SM2SignatureFormat#RAW} 或 {@link SM2SignatureFormat#DER}；默认 RAW
+     */
+    public SM2SignatureFormat signatureFormat() {
+        return signatureFormat;
+    }
+
+    /**
+     * 获取用于计算 Z 值的用户标识。
+     *
+     * @return 用户标识；构建器会将 {@code null} 或空字符串回退为兼容默认值
+     */
+    public String userId() {
+        return userId;
+    }
+
+    /**
+     * 是否跳过 Z 值计算。
+     *
+     * @return 跳过时返回 {@code true}；默认返回 {@code false}
+     */
+    public boolean skipZComputation() {
+        return skipZComputation;
+    }
+
+    /**
+     * 获取签名操作使用的 Provider 与安全随机源配置。
+     *
+     * @return 非空安全上下文；默认使用 {@link GmSecurityContexts#defaults()}
+     */
+    public GmSecurityContext securityContext() {
+        return securityContext;
     }
 
     /**

@@ -1,24 +1,18 @@
 package cn.gmkit.sm2;
 
 import cn.gmkit.core.Bytes;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.experimental.Accessors;
 
 /**
  * SM2 密钥交换选项。
  * <p>
  * 用于控制协商角色、输出密钥位数、双方用户标识以及确认标签。
  */
-@Getter
-@Accessors(fluent = true)
 public final class SM2KeyExchangeOptions {
 
     private final boolean initiator;
     private final int keyBits;
     private final String selfId;
     private final String peerId;
-    @Getter(AccessLevel.NONE)
     private final byte[] confirmationTag;
 
     private SM2KeyExchangeOptions(Builder builder) {
@@ -36,6 +30,42 @@ public final class SM2KeyExchangeOptions {
      */
     public static Builder builder() {
         return new Builder();
+    }
+
+    /**
+     * 当前参与方是否为协议发起方。
+     *
+     * @return 发起方返回 {@code true}，响应方返回 {@code false}
+     */
+    public boolean initiator() {
+        return initiator;
+    }
+
+    /**
+     * 获取派生密钥位数。
+     *
+     * @return 正整数位数；构建器默认值为 128
+     */
+    public int keyBits() {
+        return keyBits;
+    }
+
+    /**
+     * 获取己方用户标识。
+     *
+     * @return 非空用户标识；构建器会将 {@code null} 或空字符串回退为默认标识
+     */
+    public String selfId() {
+        return selfId;
+    }
+
+    /**
+     * 获取对方用户标识。
+     *
+     * @return 非空用户标识；构建器会将 {@code null} 或空字符串回退为默认标识
+     */
+    public String peerId() {
+        return peerId;
     }
 
     /**

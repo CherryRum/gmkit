@@ -52,7 +52,6 @@
         <bouncycastle.version>1.83</bouncycastle.version>
         <junit.version>5.10.2</junit.version>
         <jmh.version>1.37</jmh.version>
-        <lombok.version>1.18.38</lombok.version>
         <maven.enforcer.version>3.5.0</maven.enforcer.version>
         <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
         <maven.surefire.plugin.version>3.2.5</maven.surefire.plugin.version>
