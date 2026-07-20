@@ -42,15 +42,84 @@ function collectNames(value, names = new Set()) {
 const rootPackage = JSON.parse(await readFile(path.join(repoRoot, 'package.json'), 'utf8'));
 const tsPackage = JSON.parse(await readFile(path.join(repoRoot, 'packages', 'ts', 'package.json'), 'utf8'));
 const docsPackage = JSON.parse(await readFile(path.join(docsRoot, 'package.json'), 'utf8'));
+const catalogSchema = JSON.parse(await readFile(path.join(docsRoot, 'catalog', 'package.schema.json'), 'utf8'));
 const catalog = JSON.parse(await readFile(path.join(docsRoot, 'catalog', 'packages.json'), 'utf8'));
 const packageIds = new Set();
+const tagPrefixes = new Set();
+const coordinates = new Set();
+const packageEntrySchema = catalogSchema.$defs?.packageEntry;
+const requiredCatalogFields = packageEntrySchema?.required ?? [];
+const allowedCatalogFields = new Set(Object.keys(packageEntrySchema?.properties ?? {}));
+const siteRoutePattern = new RegExp(catalogSchema.$defs?.siteRoute?.pattern ?? '^/');
 
-for (const entry of catalog.packages) {
+if (catalog.schemaVersion !== catalogSchema.properties?.schemaVersion?.const) {
+  failures.push(
+    `包目录 schemaVersion 不支持: catalog=${catalog.schemaVersion}, schema=${catalogSchema.properties?.schemaVersion?.const ?? '<missing>'}`,
+  );
+}
+if (!Array.isArray(catalog.packages) || catalog.packages.length === 0) {
+  failures.push('包目录 packages 必须是非空数组');
+}
+
+function routeSourceCandidates(route) {
+  const relative = route.replace(/^\//, '').replace(/\.html$/, '').replace(/\/$/, '');
+  return [
+    path.join(docsRoot, `${relative}.md`),
+    path.join(docsRoot, relative, 'README.md'),
+  ];
+}
+
+async function requireSourceRoute(route, label) {
+  const candidates = routeSourceCandidates(route);
+  const checks = await Promise.all(candidates.map(async (candidate) => {
+    try { return (await stat(candidate)).isFile(); } catch { return false; }
+  }));
+  if (!checks.some(Boolean)) failures.push(`${label} 路由没有对应文档源码: ${route}`);
+}
+
+for (const entry of catalog.packages ?? []) {
   if (packageIds.has(entry.id)) failures.push(`包目录 id 重复: ${entry.id}`);
   packageIds.add(entry.id);
-  for (const field of ['id', 'name', 'ecosystem', 'coordinates', 'version', 'tagPrefix', 'guide', 'api', 'apiGenerator', 'testCommand']) {
+
+  for (const field of requiredCatalogFields) {
     if (entry[field] === undefined || entry[field] === '') failures.push(`包目录 ${entry.id ?? '<unknown>'} 缺少 ${field}`);
   }
+  for (const field of Object.keys(entry)) {
+    if (!allowedCatalogFields.has(field)) failures.push(`包目录 ${entry.id ?? '<unknown>'} 包含未知字段 ${field}`);
+  }
+
+  if (!/^[a-z][a-z0-9-]*$/.test(entry.id ?? '')) failures.push(`包目录 id 格式错误: ${entry.id}`);
+  if (!/^\d+\.\d+\.\d+$/.test(entry.version ?? '')) failures.push(`包目录 ${entry.id} 版本格式错误: ${entry.version}`);
+  if (!/^[a-z][a-z0-9-]*-v$/.test(entry.tagPrefix ?? '')) failures.push(`包目录 ${entry.id} tagPrefix 格式错误: ${entry.tagPrefix}`);
+  if (tagPrefixes.has(entry.tagPrefix)) failures.push(`包目录 tagPrefix 重复: ${entry.tagPrefix}`);
+  tagPrefixes.add(entry.tagPrefix);
+
+  const allowedStatuses = packageEntrySchema?.properties?.status?.enum ?? [];
+  if (!allowedStatuses.includes(entry.status)) failures.push(`包目录 ${entry.id} status 不支持: ${entry.status}`);
+
+  const entryCoordinates = Array.isArray(entry.coordinates) ? entry.coordinates : [entry.coordinates];
+  if (entryCoordinates.length === 0 || entryCoordinates.some((coordinate) => typeof coordinate !== 'string' || coordinate.length === 0)) {
+    failures.push(`包目录 ${entry.id} coordinates 必须是非空字符串或非空字符串数组`);
+  }
+  for (const coordinate of entryCoordinates) {
+    if (coordinates.has(coordinate)) failures.push(`包目录制品坐标重复: ${coordinate}`);
+    coordinates.add(coordinate);
+  }
+
+  if (!Array.isArray(entry.capabilities) || entry.capabilities.length === 0) {
+    failures.push(`包目录 ${entry.id} capabilities 必须是非空数组`);
+  } else if (new Set(entry.capabilities).size !== entry.capabilities.length) {
+    failures.push(`包目录 ${entry.id} capabilities 包含重复项`);
+  }
+
+  for (const field of ['guide', 'manual', 'api']) {
+    if (!siteRoutePattern.test(entry[field] ?? '')) failures.push(`包目录 ${entry.id} ${field} 不是合法站内路由: ${entry[field]}`);
+  }
+  if (entry.api !== `/api/${entry.id}/latest/`) {
+    failures.push(`包目录 ${entry.id} api 路径错误: ${entry.api}`);
+  }
+  await requireSourceRoute(entry.guide, `包目录 ${entry.id} guide`);
+  await requireSourceRoute(entry.manual, `包目录 ${entry.id} manual`);
 }
 
 const tsCatalog = catalog.packages.find(({ id }) => id === 'typescript');
@@ -74,6 +143,10 @@ for (const exported of publicExportNames(tsEntry)) {
 }
 
 const publicApi = path.join(docsRoot, '.vuepress', 'public', 'api');
+for (const entry of catalog.packages ?? []) {
+  const apiIndex = path.join(docsRoot, '.vuepress', 'public', entry.api.replace(/^\//, ''), 'index.html');
+  await requireFile(apiIndex, `${entry.name} latest Reference 首页`);
+}
 await requireFile(path.join(publicApi, 'typescript', 'latest', 'index.html'), 'TypeDoc 首页');
 await requireFile(path.join(publicApi, 'java', 'latest', 'index.html'), 'Javadoc 首页');
 await requireFile(path.join(publicApi, 'java', 'latest', 'cn', 'gmkit', 'sm2', 'SM2.html'), 'SM2 Javadoc');

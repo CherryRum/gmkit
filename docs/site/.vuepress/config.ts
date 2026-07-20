@@ -83,6 +83,8 @@ export default defineUserConfig({
         children: [
           { text: '集成示例', link: '/integrations/' },
           { text: '扩展包', link: '/extensions/' },
+          { text: '扩展包接入契约', link: '/extensions/package-contract' },
+          { text: '文档交付清单', link: '/extensions/documentation-checklist' },
         ],
       },
       { text: '项目维护', link: '/maintenance/' },
@@ -197,8 +199,12 @@ export default defineUserConfig({
       ],
       '/extensions/': [
         {
-          text: '扩展包',
-          children: ['/extensions/'],
+          text: '扩展与接入',
+          children: [
+            '/extensions/',
+            '/extensions/package-contract',
+            '/extensions/documentation-checklist',
+          ],
         },
       ],
       '/maintenance/': [

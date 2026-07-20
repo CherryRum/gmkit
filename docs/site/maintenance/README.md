@@ -32,7 +32,7 @@ tag:
     <strong>文档构建与部署</strong>
     <small>生成 TypeDoc/Javadoc，执行页面、链接、示例和部署产物检查。</small>
   </a>
-  <a class="doc-path-card" href="/extensions/">
+  <a class="doc-path-card" href="/extensions/package-contract.html">
     <span class="doc-path-label">增加能力</span>
     <strong>扩展包接入契约</strong>
     <small>定义制品隔离、目录登记、说明书、测试证据和版本快照要求。</small>

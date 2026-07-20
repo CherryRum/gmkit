@@ -1,0 +1,113 @@
+---
+title: 扩展包接入契约
+description: 定义新增独立包时必须满足的制品隔离、目录登记、版本、API、测试、数据和生命周期要求。
+icon: boxes-stacked
+order: 2
+category:
+  - 扩展包
+tag:
+  - 包契约
+  - catalog
+  - 生命周期
+---
+
+# 扩展包接入契约
+
+本契约适用于新增独立 npm、Maven 或未来其他生态制品。目标是让扩展包有自己的依赖、版本、说明书和验证证据，同时继续复用 GMKit 文档门户。
+
+## 1. 先确定是否应该独立成包
+
+满足以下任一情况时可以考虑独立包：
+
+- 能力与 SM2、SM3、SM4、ZUC、SM9、SHA 没有运行时耦合。
+- 引入大型数据、native runtime、网络服务或不同许可证。
+- 发布节奏、支持平台或兼容性承诺与现有包明显不同。
+- 用户只需要该能力，不应被迫安装密码算法实现。
+
+只是在现有 API 上增加重载、编码入口或模式时，应留在原包并遵守公共 API 覆盖门禁。
+
+## 2. 仓库与制品边界
+
+扩展实现放入独立 `packages/<package-id>` 目录，并拥有自己的包清单、测试、README、许可证声明和发布配置。不得：
+
+- 从 `docs/site` 反向导入运行时代码。
+- 通过未发布的源码深度路径跨包调用。
+- 把第三方数据直接复制进制品却不记录来源和许可证。
+- 让核心 `gmkitx` 或 `cn.gmkit:gmkit` 默认依赖扩展包。
+
+扩展需要复用核心能力时，只依赖已发布公共入口，并明确允许的版本范围。
+
+## 3. 登记发布目录
+
+只有已经具备发布制品、稳定版本 tag 和可执行测试的包才能加入 `docs/site/catalog/packages.json`。文件必须通过 [`package.schema.json`](https://github.com/gmkits/gmkit/blob/main/docs/site/catalog/package.schema.json) 描述的结构。
+
+| 字段 | 约束 | 示例语义 |
+|:--|:--|:--|
+| `id` | 小写字母、数字与连字符；全局唯一 | 同时决定 `/api/<id>/` 路径 |
+| `name` | 面向用户的制品名称 | 导航和版本选择器展示 |
+| `status` | `published` 或 `deprecated` | 不允许用目录表示尚未发布 |
+| `ecosystem` | 生态标识 | `npm`、`maven` |
+| `coordinates` | 字符串或非空字符串数组 | npm 包名或 Maven GAV |
+| `version` | 严格 `major.minor.patch` | 必须与真实制品清单一致 |
+| `tagPrefix` | 全局唯一且以 `-v` 结尾 | 与稳定版本 tag 组合 |
+| `guide` | 站内快速入门路由 | 安装和第一个可验证示例 |
+| `manual` | 站内手写说明书根路由 | 面向使用者的完整用法 |
+| `api` | 当前生成 Reference 路由 | 固定为 `/api/<id>/latest/` |
+| `apiGenerator` | 实际生成器名称 | TypeDoc、Javadoc 或等价工具 |
+| `testCommand` | 从仓库根目录可执行 | CI 用于验证实现和示例 |
+| `capabilities` | 非空能力列表 | 用于范围审计，不替代详细页面 |
+
+目录条目的路由必须已经存在，不能先登记再补文档。坐标、tag 前缀和 `id` 不得与其他条目重复。
+
+## 4. API 与文档结构
+
+每个包至少提供：
+
+```text
+docs/site/
+├── guide/<package-id>.md
+└── api/<package-id>/
+    ├── README.md
+    └── <capability>.md
+```
+
+生成 Reference 固定使用：
+
+```text
+/api/<package-id>/latest/
+/api/<package-id>/versions/<major.minor.patch>/
+```
+
+手写说明书解释适用场景、参数、单位、编码、默认值、返回值、失败行为、状态和安全边界；生成 Reference 负责逐成员精确签名。两者不能互相替代。
+
+完整页面要求见[文档交付清单](/extensions/documentation-checklist.html)。
+
+## 5. 测试和数据
+
+扩展的 `testCommand` 至少验证公共入口和快速入门示例。涉及日期、节假日、行政区划或其他外部数据时，还必须登记：
+
+- 数据来源、许可证、覆盖范围和原始版本。
+- 导入时间、生成脚本和可复现校验值。
+- 更新频率、失效策略和无法保证的未来范围。
+- 时区、历法、语言环境和边界日期。
+
+外部网络服务只能作为可选集成，不能让离线的基础测试和文档构建失效。
+
+## 6. 生命周期
+
+1. **开发阶段**：不进入发布 catalog，可以在变更分支中准备实现和文档。
+2. **首次发布**：创建制品、稳定 tag、说明书、Reference 和测试后，状态设为 `published`。
+3. **兼容维护**：公共 API 变化必须同步变更记录、迁移说明、说明书和覆盖门禁。
+4. **弃用阶段**：状态改为 `deprecated`，保留历史 Reference，首页给出替代路径和最后支持版本。
+5. **归档阶段**：不得覆盖或删除已发布版本的 Reference；移除活动入口前保留可发现的迁移记录。
+
+## 合并前验收
+
+- [ ] 制品坐标和依赖边界独立。
+- [ ] 版本、tag 前缀、目录路由和生成器已确定。
+- [ ] 快速入门、说明书、Reference 和可执行示例齐全。
+- [ ] `catalog/packages.json` 通过 schema 与重复项检查。
+- [ ] 外部数据或 native runtime 的来源、平台、许可证和关闭行为已说明。
+- [ ] 定向测试、文档全量验证和版本快照生成全部通过。
+
+发布命令和 tag 操作以[项目发布流程](/maintenance/publishing.html)为准。

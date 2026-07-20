@@ -8,17 +8,35 @@ const catalog = JSON.parse(await readFile(path.join(docsRoot, 'catalog', 'packag
 const output = path.join(docsRoot, '.vuepress', 'public', 'api', 'manifest.json');
 
 const manifest = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   generatedAt: new Date().toISOString(),
-  packages: catalog.packages.map(({ id, name, ecosystem, coordinates, version, tagPrefix, api }) => ({
-    id,
-    name,
-    ecosystem,
-    coordinates,
-    version,
-    tagPrefix,
-    api,
-  })),
+  packages: catalog.packages.map(
+    ({
+      id,
+      name,
+      status,
+      ecosystem,
+      coordinates,
+      version,
+      tagPrefix,
+      guide,
+      manual,
+      api,
+      capabilities,
+    }) => ({
+      id,
+      name,
+      status,
+      ecosystem,
+      coordinates,
+      version,
+      tagPrefix,
+      guide,
+      manual,
+      api,
+      capabilities,
+    }),
+  ),
 };
 
 await mkdir(path.dirname(output), { recursive: true });

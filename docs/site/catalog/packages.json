@@ -1,21 +1,31 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "packages": [
     {
       "id": "typescript",
       "name": "gmkitx",
+      "status": "published",
       "ecosystem": "npm",
       "coordinates": "gmkitx",
       "version": "0.10.1",
       "tagPrefix": "ts-v",
       "guide": "/guide/typescript.html",
+      "manual": "/api/typescript/",
       "api": "/api/typescript/latest/",
       "apiGenerator": "typedoc",
-      "testCommand": "npm run test:ts"
+      "testCommand": "npm run test:ts",
+      "capabilities": [
+        "SM2",
+        "SM3",
+        "SM4",
+        "ZUC",
+        "SHA"
+      ]
     },
     {
       "id": "java",
       "name": "GMKit Java",
+      "status": "published",
       "ecosystem": "maven",
       "coordinates": [
         "cn.gmkit:gmkit",
@@ -24,9 +34,19 @@
       "version": "0.10.1",
       "tagPrefix": "java-v",
       "guide": "/guide/java.html",
+      "manual": "/api/java/",
       "api": "/api/java/latest/",
       "apiGenerator": "maven-javadoc-plugin",
-      "testCommand": "npm run test:java"
+      "testCommand": "npm run test:java",
+      "capabilities": [
+        "Core",
+        "SM2",
+        "SM3",
+        "SM4",
+        "ZUC",
+        "SM9",
+        "SM2-SM4 Hybrid"
+      ]
     }
   ]
 }
