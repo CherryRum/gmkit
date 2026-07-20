@@ -1,174 +1,66 @@
 ---
-title: 快速开始
-icon: play
-order: 1
+title: 快速开始总览
+description: 在接入 GMKit 前完成语言选择、环境确认、固定向量自检和协议字段检查。
+icon: route
+order: 2
 category:
   - 使用指南
 tag:
   - 安装
-  - Java
-  - TypeScript
+  - 环境检查
+  - 接入流程
 ---
 
-# 快速开始
+# 快速开始总览
 
-GMKit 的 Java 与 TypeScript 制品独立发布。两端可以通过共享向量验证协议字段，但包名、函数签名、异常类型和运行时依赖并不相同。
+GMKit 的 Java 与 TypeScript 制品独立发布。两端可以通过共享向量核对协议字段，但包名、函数签名、异常类型和运行时依赖并不相同。
 
-## Java
+## 先做三个选择
 
-Java 主包最低支持 Java 8。Maven 项目使用：
+| 问题 | 选择 |
+|:--|:--|
+| 代码运行在哪里？ | 浏览器、Node.js、小程序进入 [TypeScript 快速入门](/guide/typescript.html)；JVM 服务进入 [Java 快速入门](/guide/java.html) |
+| 要解决什么问题？ | 签名/公钥加密看 SM2；摘要/HMAC 看 SM3；认证加密看 SM4-GCM/CCM；3GPP 场景看 ZUC；Java 标识密码看 SM9 |
+| 是否需要跨语言互操作？ | 需要时先固定协议字段，再使用 [共享互操作向量](/standards/interop-vectors.html) 验证，不从相似 API 名称推断兼容 |
 
-```xml
-<dependency>
-  <groupId>cn.gmkit</groupId>
-  <artifactId>gmkit</artifactId>
-  <version>0.10.1</version>
-</dependency>
-```
+## 运行环境矩阵
 
-只有使用 SM9 时才需要额外依赖：
+| 环境 | 制品 | 最低基线 | 额外检查 |
+|:--|:--|:--|:--|
+| Node.js | `gmkitx@0.10.1` | Node.js 18 | ESM/CJS 入口、安全随机源 |
+| 现代浏览器 | `gmkitx@0.10.1` | ES2020、TextEncoder/TextDecoder | Web Crypto、CSP、XSS 与密钥暴露 |
+| 受限小程序 | `gmkitx@0.10.1` | 兼容 ES2020 语义 | 注入平台 CSPRNG，必要时注入 UTF-8 codec |
+| Java 服务 | `cn.gmkit:gmkit:0.10.1` | Java 8 | Bouncy Castle Provider、SecureRandom |
+| Java + SM9 | `cn.gmkit:gmkit-sm9:0.10.1` | Java 8 + 受支持平台 | JNI/GmSSL 可用性和句柄关闭 |
 
-```xml
-<dependency>
-  <groupId>cn.gmkit</groupId>
-  <artifactId>gmkit-sm9</artifactId>
-  <version>0.10.1</version>
-</dependency>
-```
+## 第一个验收标准
 
-`gmkit-sm9` 内置五个平台的 JNI/GmSSL 运行库；不引用该模块时，普通 `gmkit` 依赖树不包含 SM9 native 文件。平台与加载顺序见 [SM9 文档](/algorithms/SM9.html)。
+接入完成不能只以“可以 import”或“没有抛异常”为准。至少同时满足：
 
-<details open class="language-entry">
-<summary><strong>Java 最小验证</strong></summary>
+1. SM3 `abc` 固定向量得到 `66c7f0f4...8f4ba8e0`。
+2. 一次随机操作能够往返或验签成功。
+3. 修改消息、AAD、tag 或签名后，认证一定失败。
+4. 文本与任意二进制分别走 UTF-8 API 和字节 API。
+5. 使用的依赖版本、mode、编码和身份字段已经写入应用协议或配置。
 
-```java
-import cn.gmkit.sm3.SM3Util;
+## 选择语言
 
-String actual = SM3Util.digestHex("abc");
-String expected = "66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0";
-if (!expected.equals(actual)) {
-    throw new IllegalStateException("SM3 vector mismatch: " + actual);
-}
-```
+<div class="doc-path-grid doc-path-grid-compact">
+  <a class="doc-path-card" href="/guide/typescript.html">
+    <span class="doc-path-label">gmkitx 0.10.1</span>
+    <strong>TypeScript / JavaScript</strong>
+    <small>具名导出、命名空间、类、ESM/CJS/IIFE、RNG 与二进制 API。</small>
+  </a>
+  <a class="doc-path-card" href="/guide/java.html">
+    <span class="doc-path-label">cn.gmkit 0.10.1</span>
+    <strong>Java</strong>
+    <small>Maven、实例式/静态式 API、Provider、安全上下文、SM9 native。</small>
+  </a>
+</div>
 
-</details>
+## 上线前的下一步
 
-## TypeScript
-
-GMKitX 支持 Node.js 18 及以上版本和具备 ES2020、`TextEncoder`、`TextDecoder` 的现代浏览器。Monorepo 开发与文档构建使用 Node.js 22.12 及以上版本。
-
-```bash
-npm install gmkitx
-```
-
-安全敏感的服务端或浏览器应用建议在启动时启用严格随机源策略：
-
-```ts
-import { configureRNG, getEnvReport, hasCustomRNG } from 'gmkitx';
-
-configureRNG('strict');
-const env = getEnvReport();
-if (!env.hasWebCrypto && !env.hasNodeCrypto && !hasCustomRNG()) {
-  throw new Error('当前运行环境没有可用的 CSPRNG');
-}
-```
-
-受限小程序环境可保留默认 `warn` 策略，但必须关注警告，并优先通过 `setCustomRNG()` 注入平台安全随机源。默认兼容降级不是密码学安全随机数。
-
-<details open class="language-entry">
-<summary><strong>TypeScript 最小验证</strong></summary>
-
-```ts
-import {
-  CipherMode,
-  PaddingMode,
-  bytesToHex,
-  getRandomBytes,
-  sm2Decrypt,
-  sm2Encrypt,
-  sm2GenerateKeyPair,
-  sm2Sign,
-  sm2Verify,
-  sm3Digest,
-  sm4Decrypt,
-  sm4Encrypt,
-} from 'gmkitx';
-
-const message = 'GMKitX release check';
-
-const keyPair = sm2GenerateKeyPair();
-const sm2Cipher = sm2Encrypt(keyPair.publicKey, message);
-if (sm2Decrypt(keyPair.privateKey, sm2Cipher) !== message) {
-  throw new Error('SM2 round-trip failed');
-}
-
-const signature = sm2Sign(keyPair.privateKey, message);
-if (!sm2Verify(keyPair.publicKey, message, signature)) {
-  throw new Error('SM2 signature verification failed');
-}
-
-const sm3 = sm3Digest('abc');
-if (sm3 !== '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0') {
-  throw new Error(`SM3 vector mismatch: ${sm3}`);
-}
-
-const sm4Key = bytesToHex(getRandomBytes(16));
-const nonce = bytesToHex(getRandomBytes(12));
-const sm4Cipher = sm4Encrypt(sm4Key, message, {
-  mode: CipherMode.GCM,
-  padding: PaddingMode.NONE,
-  iv: nonce,
-  aad: 'example-v1',
-});
-const sm4Plain = sm4Decrypt(sm4Key, sm4Cipher, {
-  mode: CipherMode.GCM,
-  padding: PaddingMode.NONE,
-  iv: nonce,
-  aad: 'example-v1',
-});
-if (sm4Plain !== message) {
-  throw new Error('SM4-GCM round-trip failed');
-}
-```
-
-</details>
-
-## TypeScript 导入方式
-
-推荐使用具名导出，名称能直接表达算法归属，也便于 tree-shaking：
-
-```ts
-import { sm2Encrypt, sm3Digest, sm4Encrypt } from 'gmkitx';
-```
-
-需要统一组织调用时可以使用算法命名空间：
-
-```ts
-import { sm2, sm3, sm4, zuc, sha } from 'gmkitx';
-
-const hash = sm3.digest('message');
-const shaHash = sha.sha256('message');
-```
-
-旧的 `sign`、`digest`、`generateKeyPair` 等无算法前缀名称仍保留，但已弃用。新代码不要继续依赖这些别名。
-
-包的公共 subpath 只有 `gmkitx` 和 `gmkitx/package.json`。不要导入 `gmkitx/dist/*` 或仓库 `src/*`，这些路径不属于兼容承诺。
-
-## 文本与二进制
-
-字符串输入统一按 UTF-8 编码。解密任意二进制数据时使用字节 API：
-
-- `sm2DecryptBytes`
-- `sm4DecryptBytes`
-- `zucDecryptBytes`
-
-文本解密 API 会执行 UTF-8 解码，不能无损表示任意字节序列。
-
-## 下一步
-
-- [TypeScript API 说明书](/api/typescript/)：从导入方式开始，按 common、SM2、SM3、SM4、ZUC、SHA 查阅。
-- [Java API 说明书](/api/java/)：从 Maven 依赖开始，按 core、算法、SM9 和 integration 查阅。
-- [安全边界](/guide/security.html)：上线前必须确认的随机源、密钥、nonce 和认证要求。
-- [公开 API 清单](/api/public-api.html)：当前 TypeScript 导出与 Java 公共类型。
-- [共享测试向量](/standards/interop-vectors.html)：Java/TypeScript 互操作验证方式。
-- [算法文档](/algorithms/SM2.html)：逐算法参数与固定向量。
+- [算法选择与协议设计](/guide/about-guomi.html)：确定算法、模式和跨端字段。
+- [安全边界](/guide/security.html)：检查密钥、nonce、认证和运行环境。
+- [常见问题与故障排查](/guide/troubleshooting.html)：排查安装、编码、验签和 AEAD 错误。
+- [公共输入约定](/api/common.html)：统一 Hex、Base64、UTF-8、随机源和异常语义。

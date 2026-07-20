@@ -1,6 +1,7 @@
 ---
 home: true
 title: GMKit 文档
+description: GMKit Java 与 TypeScript 的快速入门、算法协议、公共 API、集成和维护文档。
 heroText: GMKit
 tagline: 按能力查阅 Java、TypeScript、协议约定与扩展包
 actions:
@@ -27,9 +28,9 @@ footer: Apache-2.0 Licensed | Copyright © 2026 GMKit contributors
 
 | 发布包 | 当前版本 | 入口 | 当前实现范围 |
 |:--|:--|:--|:--|
-| `cn.gmkit:gmkit` | `0.10.1` | [安装](/guide/getting-started.html#java) | SM2、SM3、SM4、ZUC |
+| `cn.gmkit:gmkit` | `0.10.1` | [安装](/guide/java.html) | SM2、SM3、SM4、ZUC |
 | `cn.gmkit:gmkit-sm9` | `0.10.1` | [SM9](/algorithms/SM9.html) | Java API 与 JAR 内 JNI/GmSSL 运行库 |
-| `gmkitx` | `0.10.1` | [安装](/guide/getting-started.html#typescript) | SM2、SM3、SM4、ZUC、SHA；不包含 SM9 |
+| `gmkitx` | `0.10.1` | [安装](/guide/typescript.html) | SM2、SM3、SM4、ZUC、SHA；不包含 SM9 |
 
 ::: warning 安全状态
 GMKit 当前发布包尚未完成独立第三方安全审计。固定向量和单元测试只能证明已覆盖行为，不能替代密码产品认证、密钥管理设计或目标运行环境的安全评估。

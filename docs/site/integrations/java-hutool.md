@@ -8,7 +8,7 @@ tag: [Java, Hutool, Bouncy Castle, 互操作]
 
 # Java 与 Hutool 对接指南
 
-新项目优先使用同仓库的 `cn.gmkit:gmkit`，安装与公共 API 见 [快速开始](/guide/getting-started.html#java) 和 [公开 API 清单](/api/public-api.html)。本页保留给已有 Hutool/Bouncy Castle 项目，明确版本与迁移边界。
+新项目优先使用同仓库的 `cn.gmkit:gmkit`，安装与公共 API 见 [Java 快速入门](/guide/java.html) 和 [公开 API 清单](/api/public-api.html)。本页保留给已有 Hutool/Bouncy Castle 项目，明确版本与迁移边界。
 
 ## 已验证版本
 

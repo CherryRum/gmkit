@@ -49,7 +49,7 @@ tag: [支持矩阵, TypeScript, Java]
 
 ## 选择入口
 
-- 浏览器或 Node.js：从[快速开始](/guide/getting-started.html#typescript)和[公开 API 清单](/api/public-api.html)开始。
-- Java 后端：从[快速开始](/guide/getting-started.html#java)和对应[算法文档](/algorithms/)开始。
+- 浏览器或 Node.js：从 [TypeScript 快速入门](/guide/typescript.html)和[公开 API 清单](/api/public-api.html)开始。
+- Java 后端：从 [Java 快速入门](/guide/java.html)和对应[算法文档](/algorithms/)开始。
 - 跨语言协议：先固定[互操作向量字段](/standards/interop-vectors)，再做双向测试。
 - 发布评估：阅读[验证模型](/maintenance/reports/validation-model)和[安全保证边界](/maintenance/reports/security-boundaries)。

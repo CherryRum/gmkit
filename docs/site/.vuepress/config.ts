@@ -75,8 +75,21 @@ export default defineUserConfig({
     sidebar: {
       '/guide/': [
         {
-          text: '开始使用',
-          children: ['/guide/', '/guide/getting-started', '/guide/about-guomi', '/guide/security'],
+          text: '入门路径',
+          children: [
+            '/guide/',
+            '/guide/getting-started',
+            '/guide/typescript',
+            '/guide/java',
+          ],
+        },
+        {
+          text: '设计与上线',
+          children: [
+            '/guide/about-guomi',
+            '/guide/security',
+            '/guide/troubleshooting',
+          ],
         },
       ],
       '/api/': [
