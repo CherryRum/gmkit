@@ -4,8 +4,8 @@ code, kbd, pre, samp {
   font-family: 'JetBrains Maple Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
 }
 
-// 同时兼容 VuePress 主题的历史类名和当前 vp-content 属性。
-:is(.theme-hope-content, [vp-content]) {
+// 当前 VuePress 2 内容容器。
+[vp-content] {
   min-width: 0;
   line-height: 1.7;
 
@@ -235,7 +235,7 @@ html.dark :not(pre) > code {
 }
 
 @media (max-width: 719px) {
-  :is(.theme-hope-content, [vp-content]) {
+  [vp-content] {
     div[class*='language-'] pre {
       padding: 1rem;
       font-size: 13px;
