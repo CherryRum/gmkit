@@ -49,5 +49,5 @@ GMKit 尚未完成项目级独立第三方安全审计，也不提供密码产�
 安全问题请使用仓库 GitHub Security Advisories 私下报告。报告应包含受影响版本、最小复现、影响范围和已知缓解措施；不要在公开 issue 中提交真实密钥、业务数据或可直接利用的细节。
 
 - [安全使用指南](/guide/security)
-- [验证模型](/summaries/IMPLEMENTATION_SUMMARY)
-- [发布流程](/dev/PUBLISHING)
+- [验证模型](/maintenance/reports/validation-model)
+- [发布流程](/maintenance/publishing)

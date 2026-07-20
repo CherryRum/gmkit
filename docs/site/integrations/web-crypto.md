@@ -2,7 +2,7 @@
 title: 国际算法与 Web Crypto 边界
 icon: globe
 order: 8
-category: [开发指南, 国际算法]
+category: [集成示例, Web Crypto]
 tag: [SHA, AES-GCM, RSA-OAEP, Web Crypto]
 ---
 

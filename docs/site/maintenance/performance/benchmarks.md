@@ -73,5 +73,5 @@ result: <未经挑选的完整输出>
 
 共享 GitHub runner 噪声较大，当前 CI 不设置绝对吞吐门槛。涉及热路径的变更应提交同机前后原始结果、正确性测试和分配变化；只有在固定专用 runner、样本策略和容忍区间后，才适合用性能数值阻断合并。
 
-- [性能优化与评审](/performance/PERFORMANCE-OPTIMIZATIONS)
-- [验证模型](/summaries/IMPLEMENTATION_SUMMARY)
+- [性能优化与评审](/maintenance/performance/optimization)
+- [验证模型](/maintenance/reports/validation-model)

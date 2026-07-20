@@ -2,7 +2,7 @@
 title: Rust 对接指南
 icon: code
 order: 7
-category: [开发指南, 集成]
+category: [集成示例, Rust]
 tag: [Rust, RustCrypto, SM3, SM4]
 ---
 

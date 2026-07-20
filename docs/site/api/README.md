@@ -16,4 +16,4 @@ API Reference 从各发布包的唯一公开入口生成，用来核对函数签
 
 latest 随 `main` 更新，不等同于已发布版本。版本快照从对应 `ts-v*` 或 `java-v*` tag 重建，适合核对公开制品。
 
-在自动生成页面上线前，可以使用 [TypeScript 公开 API 清单](/dev/API-SURFACE.zh-CN) 和 [Java 使用指南](/dev/JAVA-LIBRARY.zh-CN)。
+在自动生成页面上线前，可以使用 [TypeScript 公开 API 清单](/typescript/api-surface) 和 [Java 使用指南](/java/guide)。

@@ -108,6 +108,6 @@ npm test -w packages/ts -- sm4
 npm run parity
 ```
 
-- [Java 对接](/dev/JAVA-LIBRARY.zh-CN)
+- [Java 对接](/java/guide)
 - [安全边界](/guide/security)
-- [性能与基准](/performance/PERFORMANCE)
+- [性能与基准](/maintenance/performance/benchmarks)

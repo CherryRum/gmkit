@@ -93,6 +93,6 @@ npm run parity
 ```
 
 - [安全边界](/guide/security)
-- [Go 对接](/dev/GO-INTEGRATION.zh-CN)
-- [Python 对接](/dev/PYTHON-INTEGRATION.zh-CN)
-- [Rust 对接](/dev/RUST-INTEGRATION.zh-CN)
+- [Go 对接](/integrations/go)
+- [Python 对接](/integrations/python)
+- [Rust 对接](/integrations/rust)

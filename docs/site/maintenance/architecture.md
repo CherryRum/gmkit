@@ -2,7 +2,7 @@
 title: Monorepo 架构与模块边界
 icon: sitemap
 order: 1
-category: [开发指南, 架构]
+category: [项目维护, 架构]
 tag: [Monorepo, TypeScript, Java, 模块边界]
 ---
 
@@ -118,7 +118,7 @@ Java 和 TypeScript 不共享源码，也不承诺类名、参数对象或 ABI �
 | 外部语言 fixture | 文档中的固定依赖示例可编译运行 | 外部库全部 API 可互操作 |
 | native CI | SM9 runtime 在目标平台可构建并执行 | 未列入矩阵的平台可用 |
 
-发布前命令和 CI 责任见[发布流程](/dev/PUBLISHING)，算法安全边界见[安全使用指南](/guide/security)。
+发布前命令和 CI 责任见[发布流程](/maintenance/publishing)，算法安全边界见[安全使用指南](/guide/security)。
 
 ## 修改规则
 
@@ -132,6 +132,6 @@ Java 和 TypeScript 不共享源码，也不承诺类名、参数对象或 ABI �
 
 TypeScript 发布 ESM、CommonJS、浏览器 IIFE 和 `.d.ts`；Java Central 只发布 parent、BOM、主 JAR 和内置多平台 runtime 的 `gmkit-sm9`。文档站和 Studio 是独立应用，不应成为算法包的隐式运行时依赖。
 
-- [公开 API 清单](/dev/API-SURFACE.zh-CN)
-- [共享互操作向量](/dev/INTEROP_VECTORS)
-- [项目支持范围](/summaries/PROJECT_SUMMARY)
+- [公开 API 清单](/typescript/api-surface)
+- [共享互操作向量](/standards/interop-vectors)
+- [项目支持范围](/maintenance/reports/support-scope)

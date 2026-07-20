@@ -1,0 +1,54 @@
+---
+title: 文档构建与部署
+icon: cloud-upload
+category:
+  - 项目维护
+tag:
+  - VuePress
+  - EdgeOne
+  - GitHub Actions
+---
+
+# 文档构建与部署
+
+文档站由 `.github/workflows/docs.yml` 构建。Pull Request 与 `main` 使用同一套 `docs:verify` 门禁和同一个站点 artifact；Pull Request 只上传 artifact，`main` 才部署。工作流变绿表示本次构建和部署检查通过，不代表算法实现通过第三方安全认证。
+
+## 本地验证
+
+```bash
+npm ci
+npm run docs:verify
+```
+
+`docs:verify` 会构建 gmkitx，生成 TypeDoc 与 Java/SM9 聚合 Javadoc，检查公开 API、版本、措辞和链接，再执行 Node、Go、Python、Rust、Hutool 示例。Java Javadoc 使用 `doclint=all`，公共成员缺少参数、返回值或异常说明时会失败。
+
+## 部署顺序
+
+1. Action 写入 `deployment.json`，记录 commit、构建时间、Action run 和 Java/TypeScript 版本。
+2. 同一个 artifact 先后 rsync 到 HK 与 CN 的 `/home/gmkit-site/www/`。
+3. 每个源站都检查首页、TypeDoc、Javadoc 和 `deployment.json` 中的 commit。
+4. 两个源站均通过后，调用 EdgeOne Global 的 `CreatePurgeTask` 刷新 `gmkit.cn` 与 `www.gmkit.cn`。
+5. 轮询 `https://gmkit.cn/deployment.json`，直到读取到本次 commit；随后检查 `https://www.gmkit.cn` 通过 HTTPS 3xx 跳转到规范域名。
+
+rsync 使用 `--delay-updates --delete-delay`。latest 部署明确排除 `/api/*/versions/` 和 `/api/versions.json`，避免覆盖或删除由 tag 快照工作流维护的历史 API。
+
+## GitHub Secrets
+
+部署使用仓库已有的主机、账号、私钥和 EdgeOne Global 凭据，并增加两个主机指纹：
+
+| Secret | 用途 |
+|:--|:--|
+| `USER` | 两个源站的 SSH 用户 |
+| `SSH_KEY` | 部署私钥 |
+| `HK_HOST`、`CN_HOST` | HK/CN 源站地址 |
+| `HK_SSH_HOST_FINGERPRINT`、`CN_SSH_HOST_FINGERPRINT` | 可信渠道核对的 SSH `SHA256:` 主机指纹 |
+| `TENCENT_SECRET_ID_GLOBAL`、`TENCENT_SECRET_KEY_GLOBAL` | EdgeOne Global API 凭据 |
+| `EDGEONE_ZONE_ID_GLOBAL` | `gmkit.cn` 所属 EdgeOne Zone |
+
+指纹必须在可信主机控制台或云平台控制面核对，不能把首次 `ssh-keyscan` 的输出直接当作可信值。部署脚本只把与预置指纹匹配的主机公钥写入临时 `known_hosts`；缺少 secret 或指纹不匹配时直接失败。
+
+## 手动执行
+
+`workflow_dispatch` 默认只验证并上传 artifact。需要人工重新部署 latest 时，选择 `deploy=true`；仍会从头执行完整门禁，不复用未验证的本地构建。
+
+EdgeOne 请求失败、限流重试耗尽、任一源站校验失败、CDN 未读到本次 commit 或 www 跳转错误都会使工作流失败。当前规范域名仅为 `https://gmkit.cn`，不再刷新已停用的旧域名。

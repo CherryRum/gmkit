@@ -2,13 +2,13 @@
 title: Java 与 Hutool 对接指南
 icon: java
 order: 4
-category: [开发指南, 集成]
+category: [集成示例, Java]
 tag: [Java, Hutool, Bouncy Castle, 互操作]
 ---
 
 # Java 与 Hutool 对接指南
 
-新项目优先使用同仓库的 `cn.gmkit:gmkit`，API 与共享向量见 [GMKit Java](/dev/JAVA-LIBRARY.zh-CN)。本页保留给已有 Hutool/Bouncy Castle 项目，明确版本与迁移边界。
+新项目优先使用同仓库的 `cn.gmkit:gmkit`，API 与共享向量见 [GMKit Java](/java/guide)。本页保留给已有 Hutool/Bouncy Castle 项目，明确版本与迁移边界。
 
 ## 已验证版本
 

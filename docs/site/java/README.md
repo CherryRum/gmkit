@@ -33,4 +33,4 @@ GMKit Java 当前发布两个按需依赖的制品。普通算法与 SM9 分开�
 
 `gmkit-sm9` 同时包含 Java API、JNI 桥接和已支持平台的 GmSSL 动态库。运行时只选择并加载当前平台资源；不支持的平台会返回明确错误。SM9 对象持有 native 资源，使用后应通过 `try-with-resources` 或 `close()` 释放。
 
-完整安装、平台列表和示例见 [GMKit Java 指南](/dev/JAVA-LIBRARY.zh-CN)。公开成员详见 [Java API Reference](/api/)。
+完整安装、平台列表和示例见 [GMKit Java 指南](/java/guide)。公开成员详见 [Java API Reference](/api/)。

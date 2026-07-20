@@ -62,11 +62,11 @@ npm run docs:test-examples
 npm run docs:build
 ```
 
-`npm run verify` 覆盖 TS 类型/测试/构建、Java 测试、parity 和真实 tarball 消费；文档、lint 与包体积/文件白名单审计仍需显式执行。完整发布职责以[发布流程](/dev/PUBLISHING)为准。
+`npm run verify` 覆盖 TS 类型/测试/构建、Java 测试、parity 和真实 tarball 消费；文档、lint 与包体积/文件白名单审计仍需显式执行。完整发布职责以[发布流程](/maintenance/publishing)为准。
 
 ## 证据限制
 
 通过上述验证只说明当前提交在已列环境和输入上满足断言。它不证明：所有标准条款已逐项认证、运行时无侧信道、依赖供应链永远安全、调用方的密钥生命周期正确，或未覆盖平台可用。
 
-- [共享互操作向量](/dev/INTEROP_VECTORS)
-- [安全保证边界](/summaries/SECURITY-SUMMARY)
+- [共享互操作向量](/standards/interop-vectors)
+- [安全保证边界](/maintenance/reports/security-boundaries)

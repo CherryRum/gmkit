@@ -303,7 +303,7 @@ const hash = sha.sha256('Hello World');
 - Java/BouncyCastle 若使用 `SM4/CCM/NoPadding`，前端/Node 对应 `mode: CipherMode.CCM`；需显式对齐 nonce（7-13 字节）和 tag 长度。
 - SM2 签名格式要显式约定：Java 常见 DER，gmkitx 默认 raw。
 - Base64 密文解密支持自动识别；与 Java 等异构系统对接时建议显式传 `inputFormat: InputFormat.BASE64`（SM2 / SM4 / ZUC）。
-- 完整公开 API 清单与 Java 对照边界见 [`../../docs/site/dev/API-SURFACE.zh-CN.md`](../../docs/site/dev/API-SURFACE.zh-CN.md)。
+- 完整公开 API 清单与 Java 对照边界见 [`../../docs/site/typescript/api-surface.md`](../../docs/site/typescript/api-surface.md)。
 
 ## 编码与格式
 

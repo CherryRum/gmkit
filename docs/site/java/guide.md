@@ -2,7 +2,7 @@
 title: GMKit Java 同源实现
 icon: java
 order: 3
-category: [开发指南, 集成]
+category: [Java]
 tag: [Java, GMKit Java, Bouncy Castle]
 ---
 
@@ -143,5 +143,5 @@ mvn -f packages/java/pom.xml -B -ntp -pl gmkit test
 npm run parity
 ```
 
-- [Java / Hutool 对接](/dev/JAVA-INTEGRATION.zh-CN)
-- [互操作向量](/dev/INTEROP_VECTORS)
+- [Java / Hutool 对接](/integrations/java-hutool)
+- [互操作向量](/standards/interop-vectors)

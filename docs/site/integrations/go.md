@@ -2,7 +2,7 @@
 title: Go 对接指南
 icon: code
 order: 5
-category: [开发指南, 集成]
+category: [集成示例, Go]
 tag: [Go, SM3, SM4, 互操作]
 ---
 
@@ -68,7 +68,7 @@ Go `cipher.Block` 只实现单分组原语。CBC、CTR、填充和认证必须�
 2. gmkitx 签名、Go 验签；Go 签名、gmkitx 验签。
 3. 篡改消息、签名、密文后两端都必须拒绝。
 
-随机 SM2 密文和签名不能按字面值相等来判断互操作。共享边界见[互操作向量](/dev/INTEROP_VECTORS)。
+随机 SM2 密文和签名不能按字面值相等来判断互操作。共享边界见[互操作向量](/standards/interop-vectors)。
 
 ## 版本策略
 

@@ -120,6 +120,6 @@ const shaHash = sha.sha256('message');
 ## 下一步
 
 - [安全边界](/guide/security)：上线前必须确认的随机源、密钥、nonce 和认证要求。
-- [API 清单](/dev/API-SURFACE.zh-CN)：当前公开导出与兼容别名。
-- [共享测试向量](/dev/INTEROP_VECTORS)：Java/TypeScript 互操作验证方式。
+- [API 清单](/typescript/api-surface)：当前公开导出与兼容别名。
+- [共享测试向量](/standards/interop-vectors)：Java/TypeScript 互操作验证方式。
 - [算法文档](/algorithms/SM2)：逐算法参数与固定向量。

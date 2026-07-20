@@ -69,5 +69,5 @@ HMAC key 是原始密钥字节，不是 hex 文本时应传 `Uint8Array`。签�
 npm test -w packages/ts -- sha
 ```
 
-- [国际算法边界](/dev/INTERNATIONAL-ALGORITHMS.zh-CN)
+- [国际算法边界](/integrations/web-crypto)
 - [安全边界](/guide/security)

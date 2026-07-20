@@ -2,7 +2,7 @@
 title: 发布内容审计
 icon: checklist
 order: 10
-category: [开发指南, 发布]
+category: [项目维护, 发布]
 tag: [npm pack, 文档审计, 供应链]
 ---
 
@@ -66,5 +66,5 @@ package.json
 
 只有所有适用门禁成功、工作区和 tag 版本核对完成后才创建 `ts-v*` 标签。任何失败都必须修复或形成公开、可评估的阻断说明，不能以“只是示例”“只是文档”跳过。
 
-- [TypeScript 发布与验收](/dev/PUBLISHING)
-- [验证模型与证据](/summaries/IMPLEMENTATION_SUMMARY)
+- [TypeScript 发布与验收](/maintenance/publishing)
+- [验证模型与证据](/maintenance/reports/validation-model)

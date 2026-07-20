@@ -2,7 +2,7 @@
 title: TypeScript 发布与验收
 icon: upload
 order: 9
-category: [开发指南, 发布]
+category: [项目维护, 发布]
 tag: [npm, GitHub Actions, Provenance]
 ---
 
@@ -114,6 +114,6 @@ npm 已发布版本不可覆盖：
 3. 若泄露 token 或密钥，立即吊销并按安全事件处理；删除版本不能消除已下载副本。
 4. 若只发生 dist-tag 指向错误，先核对版本内容，再使用 npm dist-tag 命令修正指针。
 
-- [发布内容审计](/dev/PROJECT-SLIMMING-CHECKLIST.zh-CN)
-- [API 稳定性策略](/dev/API-SURFACE.zh-CN)
-- [安全保证边界](/summaries/SECURITY-SUMMARY)
+- [发布内容审计](/maintenance/release-audit)
+- [API 稳定性策略](/typescript/api-surface)
+- [安全保证边界](/maintenance/reports/security-boundaries)

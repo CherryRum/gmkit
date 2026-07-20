@@ -2,6 +2,7 @@
 title: GMKit 跨语言互操作向量
 icon: link
 order: 99
+category: [协议与标准, 互操作]
 ---
 
 # GMKit 跨语言互操作向量

@@ -2,7 +2,7 @@
 title: 导入与分发方式
 icon: download
 order: 2
-category: [开发指南]
+category: [TypeScript]
 tag: [ESM, CommonJS, IIFE, Tree-shaking]
 ---
 
@@ -100,5 +100,5 @@ npm run docs:test-examples --workspace docs/site
 
 `gmkit-release.mjs` 会加载 ESM、CommonJS 和 IIFE 三种真实构建产物，验证固定摘要、算法主路径、空 userId 回落及全部旧兼容别名。
 
-- [公开 API 清单](/dev/API-SURFACE.zh-CN)
-- [发布流程](/dev/PUBLISHING)
+- [公开 API 清单](/typescript/api-surface)
+- [发布流程](/maintenance/publishing)

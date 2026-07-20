@@ -2,7 +2,7 @@
 title: Python 对接指南
 icon: code
 order: 6
-category: [开发指南, 集成]
+category: [集成示例, Python]
 tag: [Python, gmssl, SM3, SM4]
 ---
 

@@ -56,5 +56,5 @@ raw SM2 签名固定 64 字节，DER 长度可变。跨 Java/JCA 系统时 DER �
 
 缺少这些证据时，应把改动描述为“实现调整”，不能对外声称性能提升。
 
-- [性能基准与解释方法](/performance/PERFORMANCE)
-- [跨语言互操作向量](/dev/INTEROP_VECTORS)
+- [性能基准与解释方法](/maintenance/performance/benchmarks)
+- [跨语言互操作向量](/standards/interop-vectors)

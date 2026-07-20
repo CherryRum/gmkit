@@ -3,7 +3,7 @@ title: 公开 API 清单
 icon: list
 order: 2
 category:
-  - 开发指南
+  - TypeScript
   - API
 tag:
   - API
@@ -137,7 +137,7 @@ DER 解码只接受 canonical DER。`asn1ToXml` 用于调试展示，会拒绝�
 
 ## Java 对照边界
 
-Java 主包已经实现 SM2、SM3、SM4 和 ZUC。跨语言调用以 [共享互操作向量](/dev/INTEROP_VECTORS) 为验证依据，而不是按函数名推断行为一致：
+Java 主包已经实现 SM2、SM3、SM4 和 ZUC。跨语言调用以 [共享互操作向量](/standards/interop-vectors) 为验证依据，而不是按函数名推断行为一致：
 
 | 协议项 | 对接要求 |
 |:--|:--|

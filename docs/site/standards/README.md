@@ -11,7 +11,7 @@ category:
 
 - [GM/T 0009 实现边界](/standards/GMT-0009-COMPLIANCE)
 - [GM/T 0009 快速参考](/standards/GMT-0009-快速参考)
-- [共享互操作向量](/dev/INTEROP_VECTORS)
+- [共享互操作向量](/standards/interop-vectors)
 - [算法选择](/guide/about-guomi)
 - [安全边界](/guide/security)
 

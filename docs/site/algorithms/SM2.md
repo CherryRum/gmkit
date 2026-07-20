@@ -191,5 +191,5 @@ npm run parity
 ```
 
 - [GM/T 0009 快速参考](/standards/GMT-0009-快速参考)
-- [Java 同源实现](/dev/JAVA-LIBRARY.zh-CN)
-- [跨语言互操作向量](/dev/INTEROP_VECTORS)
+- [Java 同源实现](/java/guide)
+- [跨语言互操作向量](/standards/interop-vectors)

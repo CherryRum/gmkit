@@ -159,7 +159,7 @@ for (const relative of [
   await checkLocalLinks(file, await readFile(file, 'utf8'), relative);
 }
 
-const apiDoc = await readFile(path.join(docsRoot, 'dev', 'API-SURFACE.zh-CN.md'), 'utf8');
+const apiDoc = await readFile(path.join(docsRoot, 'typescript', 'api-surface.md'), 'utf8');
 const publicEntry = await readFile(path.join(repoRoot, 'packages', 'ts', 'src', 'index.ts'), 'utf8');
 for (const name of publicExportNames(publicEntry)) {
   if (!apiDoc.includes(`\`${name}\``)) failures.push(`API-SURFACE.zh-CN.md 缺少公开 API: ${name}`);
@@ -180,7 +180,7 @@ for (const relative of ['README.md', 'guide/README.md', 'typescript/README.md'])
 
 const javaPom = await readFile(path.join(repoRoot, 'packages', 'java', 'pom.xml'), 'utf8');
 const javaVersion = requireMatch(javaPom, /<artifactId>gmkit-parent<\/artifactId>\s*<version>([^<]+)<\/version>/, 'packages/java/pom.xml');
-const javaGuide = await readFile(path.join(docsRoot, 'dev', 'JAVA-LIBRARY.zh-CN.md'), 'utf8');
+const javaGuide = await readFile(path.join(docsRoot, 'java', 'guide.md'), 'utf8');
 requireDocumentedVersion(javaGuide, javaVersion, 'JAVA-LIBRARY.zh-CN.md');
 for (const relative of ['README.md', 'guide/README.md', 'java/README.md']) {
   const content = await readFile(path.join(docsRoot, relative), 'utf8');
@@ -189,23 +189,23 @@ for (const relative of ['README.md', 'guide/README.md', 'java/README.md']) {
 
 const goMod = await readFile(path.join(docsRoot, 'examples', 'go', 'go.mod'), 'utf8');
 const goGmsmVersion = requireMatch(goMod, /github\.com\/emmansun\/gmsm\s+(v[^\s]+)/, 'examples/go/go.mod');
-const goGuide = await readFile(path.join(docsRoot, 'dev', 'GO-INTEGRATION.zh-CN.md'), 'utf8');
+const goGuide = await readFile(path.join(docsRoot, 'integrations', 'go.md'), 'utf8');
 requireDocumentedVersion(goGuide, goGmsmVersion, 'GO-INTEGRATION.zh-CN.md');
 
 const requirements = await readFile(path.join(docsRoot, 'examples', 'python', 'requirements.txt'), 'utf8');
 const pythonGmsslVersion = requireMatch(requirements, /^gmssl==([^\s]+)$/m, 'examples/python/requirements.txt');
-const pythonGuide = await readFile(path.join(docsRoot, 'dev', 'PYTHON-INTEGRATION.zh-CN.md'), 'utf8');
+const pythonGuide = await readFile(path.join(docsRoot, 'integrations', 'python.md'), 'utf8');
 requireDocumentedVersion(pythonGuide, pythonGmsslVersion, 'PYTHON-INTEGRATION.zh-CN.md');
 
 const cargoToml = await readFile(path.join(docsRoot, 'examples', 'rust', 'Cargo.toml'), 'utf8');
-const rustGuide = await readFile(path.join(docsRoot, 'dev', 'RUST-INTEGRATION.zh-CN.md'), 'utf8');
+const rustGuide = await readFile(path.join(docsRoot, 'integrations', 'rust.md'), 'utf8');
 for (const crate of ['sm3', 'sm4']) {
   const version = requireMatch(cargoToml, new RegExp(`^${crate}\\s*=\\s*"([^"]+)"$`, 'm'), `examples/rust/Cargo.toml ${crate}`);
   requireDocumentedVersion(rustGuide, version, `RUST-INTEGRATION.zh-CN.md ${crate}`);
 }
 
 const hutoolPom = await readFile(path.join(docsRoot, 'examples', 'hutool', 'pom.xml'), 'utf8');
-const hutoolGuide = await readFile(path.join(docsRoot, 'dev', 'JAVA-INTEGRATION.zh-CN.md'), 'utf8');
+const hutoolGuide = await readFile(path.join(docsRoot, 'integrations', 'java-hutool.md'), 'utf8');
 for (const artifact of ['hutool-crypto', 'bcprov-jdk15to18']) {
   const version = requireMatch(
     hutoolPom,

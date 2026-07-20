@@ -28,4 +28,4 @@ TypeScript 包不提供 SM9。Java 的 SM9 能力依赖 JAR 内随包发布的 J
 4. 在目标运行环境检查安全随机源，密钥和 nonce 不应来自 `Math.random()`。
 5. 用固定向量验证协议字段，再做双向互操作测试。
 
-继续阅读：[快速开始](/guide/getting-started)、[安全边界](/guide/security)、[共享测试向量](/dev/INTEROP_VECTORS)。
+继续阅读：[快速开始](/guide/getting-started)、[安全边界](/guide/security)、[共享测试向量](/standards/interop-vectors)。

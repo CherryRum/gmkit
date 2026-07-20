@@ -78,4 +78,4 @@ Java 公开 API 以发布 JAR 中的 `cn.gmkit` 公共类型和 `packages/java/R
 4. 对协议字段运行 Java/TypeScript parity。
 5. 对 breaking change 使用清晰版本号和 CHANGELOG，不复用已发布 tag。
 
-完整 TypeScript 导出见 [`docs/site/dev/API-SURFACE.zh-CN.md`](site/dev/API-SURFACE.zh-CN.md)。
+完整 TypeScript 导出见 [`docs/site/typescript/api-surface.md`](site/typescript/api-surface.md)。
