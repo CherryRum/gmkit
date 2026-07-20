@@ -10,6 +10,8 @@ tag: [ZUC, EEA3, EIA3]
 
 Java 与 TypeScript 都实现 ZUC-128 密钥流、3GPP 128-EEA3 机密性算法和 128-EIA3 完整性算法。当前不提供 ZUC-256。
 
+完整函数、重载、底层状态和长度单位分别见 [TypeScript ZUC API](/api/typescript/zuc.html) 与 [Java ZUC API](/api/java/zuc.html)。
+
 ## API 与长度单位
 
 | 用途 | TypeScript | Java | 长度单位 / 返回值 |

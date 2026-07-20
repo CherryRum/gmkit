@@ -4,11 +4,14 @@ title: GMKit 文档
 heroText: GMKit
 tagline: 按能力查阅 Java、TypeScript、协议约定与扩展包
 actions:
+  - text: TypeScript API 说明书
+    link: /api/typescript/
+    type: primary
+  - text: Java API 说明书
+    link: /api/java/
+    type: primary
   - text: 开始使用
     link: /guide/
-    type: primary
-  - text: API Reference
-    link: /api/
     type: secondary
 features:
   - title: 按能力查阅
@@ -36,8 +39,10 @@ GMKit 当前发布包尚未完成独立第三方安全审计。固定向量和�
 
 - [开始使用](/guide/)：安装发布包并执行最小验证示例。
 - [算法](/algorithms/)：按 SM2、SM3、SM4、ZUC、SM9、SHA 查阅两端能力与边界。
+- [TypeScript API 说明书](/api/typescript/)：逐项查阅 121 个根导出、默认值、错误和可运行示例。
+- [Java API 说明书](/api/java/)：逐项查阅 46 个公共顶层类型、重载、Builder 和资源生命周期。
 - [公共能力](/api/common.html)：查阅编码、随机源、安全上下文、格式与异常约定。
-- [API Reference](/api/)：查阅从公开入口生成的 TypeDoc 和 Javadoc。
+- [API 总入口](/api/)：选择说明书、公开审计清单、latest 或已发布版本 Reference。
 - [协议与标准](/standards/)：查看输入输出约定、标准来源和测试证据边界。
 - [集成示例](/integrations/)：查看 Java、Hutool、Go、Python、Rust 和 Node 示例。
 - [扩展包](/extensions/)：了解未来工具包如何接入文档、版本和测试。

@@ -328,6 +328,7 @@ html.dark :not(pre) > code {
   [vp-content] {
     padding-right: 16px;
     padding-left: 16px;
+    overflow-wrap: anywhere;
 
     h1,
     .vp-page-title h1 {
@@ -345,10 +346,20 @@ html.dark :not(pre) > code {
 
     table {
       margin: 1rem 0;
+      overscroll-behavior-inline: contain;
 
       th,
       td {
         padding: 0.625rem 0.75rem;
+      }
+    }
+
+    div[class*='language-'] {
+      margin-right: 0;
+      margin-left: 0;
+
+      pre {
+        tab-size: 2;
       }
     }
 

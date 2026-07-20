@@ -73,6 +73,8 @@ SM9 Java native runtime 可在需要时本地构建：
 
 ## 文档入口
 
+- [TypeScript API 说明书](https://gmkit.cn/api/typescript/)
+- [Java API 说明书](https://gmkit.cn/api/java/)
 - [TypeScript 包说明](packages/ts/README.md)
 - [Java 包说明](packages/java/README.md)
 - [共享向量说明](vectors/README.md)

@@ -63,6 +63,7 @@ export default defineUserConfig({
           { text: 'Java 说明书', link: '/api/java/' },
           { text: 'TypeDoc latest', link: '/api/typescript/latest/' },
           { text: 'Javadoc latest', link: '/api/java/latest/' },
+          { text: '版本 Reference', link: '/api/#版本化-reference' },
         ],
       },
       { text: '协议与标准', link: '/standards/' },

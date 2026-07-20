@@ -27,7 +27,7 @@ category:
 1. 先看算法页的支持矩阵和默认值，不要从相似函数名推断两端行为相同。
 2. 协议中显式保存 mode、padding、编码、`userId`、IV/nonce、tag 等字段。
 3. 用页面中的固定向量验证确定性操作，再验证随机签名、随机密文能被对端验签或解密。
-4. 查具体重载和类型签名时进入 [API Reference](/api/)；查公共编码、随机源与异常时进入 [公共能力](/api/common.html)。
+4. 查具体用法时进入 [TypeScript 说明书](/api/typescript/) 或 [Java 说明书](/api/java/)；核对逐成员签名和历史版本时再进入 [API Reference](/api/)。
 
 ## 共同约定
 

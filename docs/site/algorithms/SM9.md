@@ -10,6 +10,8 @@ tag: [SM9, Java, JNI, GmSSL]
 
 SM9 当前只由 Java 模块 `cn.gmkit:gmkit-sm9:0.10.1` 提供。该模块通过 JNI 调用 GmSSL，包含签名/验签、基于身份的加密/解密、PEM 导入导出和流式签名上下文；不提供密钥交换。`gmkitx` 没有 SM9 导出、WASM 占位或浏览器降级实现。
 
+完整句柄类型、诊断、签名、IBE、PEM、路径和大小限制见 [Java SM9 API](/api/java/sm9.html)。
+
 ## 依赖与平台
 
 ```xml

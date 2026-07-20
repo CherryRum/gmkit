@@ -10,6 +10,8 @@ tag: [SHA-1, SHA-256, SHA-384, SHA-512, HMAC]
 
 `gmkitx` 提供 SHA-1、SHA-256、SHA-384、SHA-512 与 HMAC-SHA-256/384/512。Java 主包没有 `cn.gmkit.sha` 封装，Java 应直接使用 JDK `MessageDigest` 和 `Mac`。当前两端示例都不包含 SHA-224 或 HMAC-SHA-1 公共入口。
 
+完整函数、选项、增量类和 SHA-1 弃用边界见 [TypeScript SHA API](/api/typescript/sha.html)。
+
 ## TypeScript API
 
 | 算法 | 一次性函数 | 增量类 | HMAC |

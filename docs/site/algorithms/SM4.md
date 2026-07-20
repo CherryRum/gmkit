@@ -10,6 +10,8 @@ tag: [SM4, GCM, CCM, 分组密码]
 
 SM4 的密钥和分组长度均为 128 bit。Java 与 TypeScript 当前提供 ECB、CBC、CTR、CFB、OFB、GCM 和 CCM。模式、填充、IV/nonce、AAD、tag 与编码都是协议字段，不能只传密文后由接收端猜测。
 
+完整函数、重载、Builder、结果对象和 AEAD 失败行为分别见 [TypeScript SM4 API](/api/typescript/sm4.html) 与 [Java SM4 API](/api/java/sm4.html)。
+
 ## API 选择
 
 | 用途 | TypeScript | Java |

@@ -10,6 +10,8 @@ tag: [SM2, 加密, 签名, 密钥交换]
 
 GMKit 的 Java 与 TypeScript 包都提供 SM2 密钥生成、公钥派生与压缩、加解密、签名验签和密钥交换。实现固定使用标准 SM2 曲线；本文记录当前 API 行为和测试边界，不构成产品认证声明。
 
+完整函数、重载、默认值和错误说明分别见 [TypeScript SM2 API](/api/typescript/sm2.html) 与 [Java SM2 API](/api/java/sm2.html)。
+
 ## 支持与入口
 
 | 能力 | TypeScript | Java |

@@ -10,6 +10,8 @@ tag: [SM3, HMAC, 摘要]
 
 SM3 接收字节序列并输出 256-bit 摘要。Java 与 TypeScript 都提供一次性摘要和 HMAC-SM3；只有 TypeScript `SM3` 类提供可持续 `update()` 的增量状态。
 
+完整函数、重载、状态与错误说明分别见 [TypeScript SM3 API](/api/typescript/sm3.html) 与 [Java SM3 API](/api/java/sm3.html)。
+
 ## API 选择
 
 | 用途 | TypeScript | Java |

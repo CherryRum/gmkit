@@ -166,6 +166,8 @@ const shaHash = sha.sha256('message');
 
 ## 下一步
 
+- [TypeScript API 说明书](/api/typescript/)：从导入方式开始，按 common、SM2、SM3、SM4、ZUC、SHA 查阅。
+- [Java API 说明书](/api/java/)：从 Maven 依赖开始，按 core、算法、SM9 和 integration 查阅。
 - [安全边界](/guide/security.html)：上线前必须确认的随机源、密钥、nonce 和认证要求。
 - [公开 API 清单](/api/public-api.html)：当前 TypeScript 导出与 Java 公共类型。
 - [共享测试向量](/standards/interop-vectors.html)：Java/TypeScript 互操作验证方式。
