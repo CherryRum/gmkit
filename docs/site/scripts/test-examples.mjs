@@ -45,11 +45,13 @@ async function runPythonExample() {
   const cwd = path.join(examplesRoot, 'python');
   const temporary = await mkdtemp(path.join(os.tmpdir(), 'gmkit-docs-python-'));
   const venv = path.join(temporary, '.venv');
+  const systemPython = process.env.PYTHON
+    ?? (process.platform === 'win32' ? 'python' : 'python3');
   const python = process.platform === 'win32'
     ? path.join(venv, 'Scripts', 'python.exe')
     : path.join(venv, 'bin', 'python');
   try {
-    await runCommand('python', ['-m', 'venv', venv], { cwd });
+    await runCommand(systemPython, ['-m', 'venv', venv], { cwd });
     await runCommand(python, ['-m', 'pip', 'install', '--disable-pip-version-check', '-r', 'requirements.txt'], { cwd });
     await runCommand(python, ['verify_vectors.py'], { cwd });
   } finally {
