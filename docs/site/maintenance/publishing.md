@@ -115,5 +115,5 @@ npm 已发布版本不可覆盖：
 4. 若只发生 dist-tag 指向错误，先核对版本内容，再使用 npm dist-tag 命令修正指针。
 
 - [发布内容审计](/maintenance/release-audit)
-- [API 稳定性策略](/typescript/api-surface)
+- [公开 API 清单](/api/public-api)
 - [安全保证边界](/maintenance/reports/security-boundaries)

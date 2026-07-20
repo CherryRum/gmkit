@@ -53,8 +53,8 @@ export default defineUserConfig({
 
     navbar: [
       { text: '开始使用', link: '/guide/' },
-      { text: 'Java', link: '/java/' },
-      { text: 'TypeScript', link: '/typescript/' },
+      { text: '算法', link: '/algorithms/' },
+      { text: '公共能力', link: '/api/common' },
       { text: 'API Reference', link: '/api/' },
       { text: '协议与标准', link: '/standards/' },
       { text: '集成示例', link: '/integrations/' },
@@ -69,46 +69,24 @@ export default defineUserConfig({
           children: ['/guide/', '/guide/getting-started', '/guide/about-guomi', '/guide/security'],
         },
       ],
-      '/java/': [
-        {
-          text: 'Java',
-          children: ['/java/', '/java/guide'],
-        },
-      ],
-      '/typescript/': [
-        {
-          text: 'TypeScript',
-          children: [
-            '/typescript/',
-            '/typescript/imports',
-            '/typescript/api-surface',
-            '/algorithms/SM2',
-            '/algorithms/SM3',
-            '/algorithms/SM4',
-            '/algorithms/ZUC',
-            '/algorithms/SHA',
-          ],
-        },
-      ],
       '/api/': [
         {
-          text: 'API Reference',
-          children: ['/api/'],
+          text: '公共 API',
+          children: ['/api/', '/api/public-api', '/api/common'],
         },
       ],
       '/algorithms/': [
         {
-          text: '国密算法',
+          text: '算法与协议能力',
           children: [
+            '/algorithms/',
             '/algorithms/SM2',
             '/algorithms/SM3',
             '/algorithms/SM4',
             '/algorithms/ZUC',
+            '/algorithms/SM9',
+            '/algorithms/SHA',
           ],
-        },
-        {
-          text: '国际标准算法',
-          children: ['/algorithms/SHA'],
         },
       ],
       '/standards/': [

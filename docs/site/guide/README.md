@@ -8,17 +8,17 @@ category:
 
 # 开始使用
 
-GMKit 以独立的 Java 和 TypeScript 包发布。先根据运行环境选择入口，再确认算法、编码、随机源与运行时边界。
+GMKit 以独立的 Java 和 TypeScript 包发布，文档按算法和公共能力统一组织。先安装目标运行时对应的包，再确认编码、默认值、随机源和协议字段。
 
 ## 选择开发语言
 
 <details open class="language-entry">
 <summary><strong>Java</strong></summary>
 
-普通算法使用 `cn.gmkit:gmkit:0.10.1`，当前包含 SM2、SM3、SM4 和 ZUC。需要 SM9 时单独添加 `cn.gmkit:gmkit-sm9:0.10.1`；该依赖包含 Java API 与受支持平台的 JNI/GmSSL 运行库。
+普通算法使用 `cn.gmkit:gmkit:0.10.1`，当前包含 SM2、SM3、SM4 和 ZUC。需要 SM9 时添加 `cn.gmkit:gmkit-sm9:0.10.1`；该依赖包含 Java API 与受支持平台的 JNI/GmSSL 运行库。
 
-- [Java 起步文档](/java/)
-- [SM9 依赖与运行时说明](/java/#sm9-独立依赖)
+- [统一安装与 Java 示例](/guide/getting-started.html#java)
+- [SM9 API 与运行时边界](/algorithms/SM9.html)
 
 </details>
 
@@ -27,8 +27,8 @@ GMKit 以独立的 Java 和 TypeScript 包发布。先根据运行环境选择�
 
 浏览器、Node.js 和具备兼容运行时的小程序使用 `gmkitx@0.10.1`，当前包含 SM2、SM3、SM4、ZUC 和 SHA。TypeScript 包不提供 SM9。
 
-- [TypeScript 起步文档](/typescript/)
-- [模块导入方式](/typescript/imports)
+- [统一安装与 TypeScript 示例](/guide/getting-started.html#typescript)
+- [TypeScript 公开导出](/api/public-api#typescript-公开导出)
 
 </details>
 
@@ -40,4 +40,4 @@ GMKit 以独立的 Java 和 TypeScript 包发布。先根据运行环境选择�
 4. 在目标运行环境检查安全随机源，密钥和 nonce 不应来自 `Math.random()`。
 5. 用固定向量验证协议字段，再做双向互操作测试。
 
-继续阅读：[快速开始](/guide/getting-started)、[安全边界](/guide/security)、[共享测试向量](/standards/interop-vectors)。
+继续阅读：[快速开始](/guide/getting-started.html)、[算法目录](/algorithms/)、[公共能力](/api/common.html)、[安全边界](/guide/security.html)、[共享测试向量](/standards/interop-vectors.html)。

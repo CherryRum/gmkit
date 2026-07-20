@@ -132,6 +132,6 @@ Java 和 TypeScript 不共享源码，也不承诺类名、参数对象或 ABI �
 
 TypeScript 发布 ESM、CommonJS、浏览器 IIFE 和 `.d.ts`；Java Central 只发布 parent、BOM、主 JAR 和内置多平台 runtime 的 `gmkit-sm9`。文档站和 Studio 是独立应用，不应成为算法包的隐式运行时依赖。
 
-- [公开 API 清单](/typescript/api-surface)
+- [公开 API 清单](/api/public-api)
 - [共享互操作向量](/standards/interop-vectors)
 - [项目支持范围](/maintenance/reports/support-scope)

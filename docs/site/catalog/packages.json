@@ -8,7 +8,7 @@
       "coordinates": "gmkitx",
       "version": "0.10.1",
       "tagPrefix": "ts-v",
-      "guide": "/typescript/",
+      "guide": "/guide/getting-started.html#typescript",
       "api": "/api/typescript/latest/",
       "apiGenerator": "typedoc",
       "testCommand": "npm run test:ts"
@@ -23,7 +23,7 @@
       ],
       "version": "0.10.1",
       "tagPrefix": "java-v",
-      "guide": "/java/",
+      "guide": "/guide/getting-started.html#java",
       "api": "/api/java/latest/",
       "apiGenerator": "maven-javadoc-plugin",
       "testCommand": "npm run test:java"

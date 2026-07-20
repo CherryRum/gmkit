@@ -10,8 +10,9 @@
 | `site/` | VuePress 文档门户 workspace | 是 |
 | `site/.vuepress/` | 站点配置、主题样式和静态资源 | 是 |
 | `site/guide/` | 安装、快速开始和安全边界 | 是 |
-| `site/java/`、`site/typescript/` | 按语言组织的使用说明 | 是 |
-| `site/algorithms/`、`site/standards/` | 算法行为、协议约定和验证依据 | 是 |
+| `site/algorithms/` | 按能力统一组织 Java 与 TypeScript 算法文档 | 是 |
+| `site/api/` | 公共 API 清单、公共能力和自动 Reference 入口 | 是 |
+| `site/standards/` | 协议约定和验证依据 | 是 |
 | `site/integrations/` | Java、Go、Python、Rust、Node 等集成说明 | 是 |
 | `site/extensions/` | 后续扩展包的登记和接入规则 | 是 |
 | `site/maintenance/` | 架构、发布、部署、性能和验证报告 | 是 |
