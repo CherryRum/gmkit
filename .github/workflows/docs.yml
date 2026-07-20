@@ -130,13 +130,13 @@ jobs:
           SSH_REMOTE_HOST: ${{ secrets.CN_HOST }}
           SSH_HOST_FINGERPRINT: ${{ secrets.CN_SSH_HOST_FINGERPRINT }}
         run: bash .github/scripts/deploy-docs-origin.sh
-      - name: Purge EdgeOne Global
+      - name: Purge EdgeOne CN
         env:
-          TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID_GLOBAL }}
-          TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY_GLOBAL }}
-          EDGEONE_ZONE_ID: ${{ secrets.EDGEONE_ZONE_ID_GLOBAL }}
-          EDGEONE_TARGETS: gmkit.cn,www.gmkit.cn
-          EDGEONE_SITE_TYPE: global
+          TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID_CN }}
+          TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY_CN }}
+          EDGEONE_ZONE_ID: ${{ secrets.EDGEONE_ZONE_ID_CN }}
+          EDGEONE_TARGETS: gmkit.cn
+          EDGEONE_SITE_TYPE: cn
         run: python .github/scripts/purge_edgeone.py
       - name: Verify canonical deployment
         env:
@@ -152,10 +152,3 @@ jobs:
           done
           echo "gmkit.cn did not serve deployment $EXPECTED_COMMIT after EdgeOne purge" >&2
           exit 1
-      - name: Verify www HTTPS redirect
-        run: |
-          headers=$(curl --silent --show-error --max-time 20 --head https://www.gmkit.cn/)
-          status=$(printf '%s\n' "$headers" | head -n 1 | tr -d '\r')
-          location=$(printf '%s\n' "$headers" | awk 'BEGIN { IGNORECASE=1 } /^location:/ { sub(/^[^:]+:[[:space:]]*/, ""); gsub(/\r/, ""); print; exit }')
-          [[ "$status" =~ ^HTTP/[0-9.]+\ 30[12378]$ ]]
-          [[ "$location" == https://gmkit.cn* ]]

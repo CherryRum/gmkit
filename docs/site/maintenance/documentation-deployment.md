@@ -27,14 +27,14 @@ npm run docs:verify
 1. Action 写入 `deployment.json`，记录 commit、构建时间、Action run 和 Java/TypeScript 版本。
 2. 同一个 artifact 先后 rsync 到 HK 与 CN 的 `/home/gmkit-site/www/`。
 3. 每个源站都检查首页、TypeDoc、Javadoc 和 `deployment.json` 中的 commit。
-4. 两个源站均通过后，调用 EdgeOne Global 的 `CreatePurgeTask` 刷新 `gmkit.cn` 与 `www.gmkit.cn`。
-5. 轮询 `https://gmkit.cn/deployment.json`，直到读取到本次 commit；随后检查 `https://www.gmkit.cn` 通过 HTTPS 3xx 跳转到规范域名。
+4. 两个源站均通过后，调用中国大陆 EdgeOne 的 `CreatePurgeTask`，只刷新 `gmkit.cn`。
+5. 轮询 `https://gmkit.cn/deployment.json`，直到读取到本次 commit。
 
 rsync 使用 `--delay-updates --delete-delay`。latest 部署明确排除 `/api/*/versions/` 和 `/api/versions.json`，避免覆盖或删除由 tag 快照工作流维护的历史 API。
 
 ## GitHub Secrets
 
-部署使用仓库已有的主机、账号、私钥和 EdgeOne Global 凭据，并增加两个主机指纹：
+部署使用仓库已有的主机、账号、私钥和 EdgeOne 中国大陆凭据，并增加两个主机指纹：
 
 | Secret | 用途 |
 |:--|:--|
@@ -42,8 +42,8 @@ rsync 使用 `--delay-updates --delete-delay`。latest 部署明确排除 `/api/
 | `SSH_KEY` | 部署私钥 |
 | `HK_HOST`、`CN_HOST` | HK/CN 源站地址 |
 | `HK_SSH_HOST_FINGERPRINT`、`CN_SSH_HOST_FINGERPRINT` | 可信渠道核对的 SSH `SHA256:` 主机指纹 |
-| `TENCENT_SECRET_ID_GLOBAL`、`TENCENT_SECRET_KEY_GLOBAL` | EdgeOne Global API 凭据 |
-| `EDGEONE_ZONE_ID_GLOBAL` | `gmkit.cn` 所属 EdgeOne Zone |
+| `TENCENT_SECRET_ID_CN`、`TENCENT_SECRET_KEY_CN` | EdgeOne 中国大陆 API 凭据 |
+| `EDGEONE_ZONE_ID_CN` | `gmkit.cn` 所属 EdgeOne Zone |
 
 指纹必须在可信主机控制台或云平台控制面核对，不能把首次 `ssh-keyscan` 的输出直接当作可信值。部署脚本只把与预置指纹匹配的主机公钥写入临时 `known_hosts`；缺少 secret 或指纹不匹配时直接失败。
 
@@ -51,7 +51,7 @@ rsync 使用 `--delay-updates --delete-delay`。latest 部署明确排除 `/api/
 
 `workflow_dispatch` 默认只验证并上传 artifact。需要人工重新部署 latest 时，选择 `deploy=true`；仍会从头执行完整门禁，不复用未验证的本地构建。
 
-EdgeOne 请求失败、限流重试耗尽、任一源站校验失败、CDN 未读到本次 commit 或 www 跳转错误都会使工作流失败。当前规范域名仅为 `https://gmkit.cn`，不再刷新已停用的旧域名。
+EdgeOne 请求失败、限流重试耗尽、任一源站校验失败或 CDN 未读到本次 commit 都会使工作流失败。当前公开域名仅为 `https://gmkit.cn`，不会刷新其他域名。
 
 ## API 版本快照
 

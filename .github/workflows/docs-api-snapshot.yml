@@ -275,13 +275,13 @@ jobs:
           SSH_REMOTE_HOST: ${{ secrets.CN_HOST }}
           SSH_HOST_FINGERPRINT: ${{ secrets.CN_SSH_HOST_FINGERPRINT }}
         run: bash .github/scripts/deploy-docs-origin.sh
-      - name: Purge EdgeOne Global
+      - name: Purge EdgeOne CN
         env:
-          TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID_GLOBAL }}
-          TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY_GLOBAL }}
-          EDGEONE_ZONE_ID: ${{ secrets.EDGEONE_ZONE_ID_GLOBAL }}
-          EDGEONE_TARGETS: gmkit.cn,www.gmkit.cn
-          EDGEONE_SITE_TYPE: global
+          TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID_CN }}
+          TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY_CN }}
+          EDGEONE_ZONE_ID: ${{ secrets.EDGEONE_ZONE_ID_CN }}
+          EDGEONE_TARGETS: gmkit.cn
+          EDGEONE_SITE_TYPE: cn
         run: python .github/scripts/purge_edgeone.py
       - name: Verify public API snapshot
         shell: bash

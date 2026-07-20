@@ -19,17 +19,17 @@ class FakeResponse:
 
 
 class EdgeOneClientTest(unittest.TestCase):
-    def test_signed_global_request_contains_expected_contract(self):
+    def test_signed_cn_request_contains_expected_contract(self):
         request = purge_edgeone.build_request(
             "secret-id",
             "secret-key",
             "zone-id",
-            ["gmkit.cn", "www.gmkit.cn"],
-            "global",
+            ["gmkit.cn"],
+            "cn",
             timestamp=1_700_000_000,
         )
 
-        self.assertEqual(request.full_url, "https://teo.intl.tencentcloudapi.com/")
+        self.assertEqual(request.full_url, "https://teo.tencentcloudapi.com/")
         self.assertEqual(request.get_method(), "POST")
         self.assertEqual(request.headers["X-tc-action"], "CreatePurgeTask")
         self.assertIn("Credential=secret-id/", request.headers["Authorization"])
@@ -38,7 +38,7 @@ class EdgeOneClientTest(unittest.TestCase):
             {
                 "ZoneId": "zone-id",
                 "Type": "purge_host",
-                "Targets": ["gmkit.cn", "www.gmkit.cn"],
+                "Targets": ["gmkit.cn"],
             },
         )
 
