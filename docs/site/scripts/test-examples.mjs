@@ -13,6 +13,7 @@ const mavenExample = process.platform === 'win32'
 
 const examples = [
   { name: 'gmkit', command: process.execPath, args: ['gmkit-release.mjs'], cwd: path.join(examplesRoot, 'node') },
+  { name: 'api-typescript', command: process.execPath, args: ['public-api-manual.mjs'], cwd: path.join(examplesRoot, 'node') },
   { name: 'node', command: process.execPath, args: ['international-crypto.mjs'], cwd: path.join(examplesRoot, 'node') },
   { name: 'go', command: 'go', args: ['test', './...'], cwd: path.join(examplesRoot, 'go') },
   { name: 'python', custom: runPythonExample },

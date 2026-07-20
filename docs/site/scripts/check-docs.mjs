@@ -17,20 +17,23 @@ async function walk(directory) {
   return files;
 }
 
-async function publicJavaTypeNames(directory) {
-  const names = [];
+async function publicJavaTypes(directory) {
+  const types = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const absolute = path.join(directory, entry.name);
     if (entry.isDirectory()) {
-      names.push(...await publicJavaTypeNames(absolute));
+      types.push(...await publicJavaTypes(absolute));
       continue;
     }
     if (!entry.name.endsWith('.java')) continue;
     const source = await readFile(absolute, 'utf8');
     const match = source.match(/^public\s+(?:(?:final|abstract)\s+)?(?:class|interface|enum)\s+([A-Za-z_$][\w$]*)/m);
-    if (match) names.push(match[1]);
+    const packageName = source.match(/^package\s+([A-Za-z_$][\w.$]*);/m)?.[1];
+    if (match && packageName) {
+      types.push({ name: match[1], fqcn: `${packageName}.${match[1]}` });
+    }
   }
-  return names.sort();
+  return types.sort((left, right) => left.fqcn.localeCompare(right.fqcn));
 }
 
 function routeFor(file) {
@@ -187,14 +190,65 @@ const publicEntry = await readFile(path.join(repoRoot, 'packages', 'ts', 'src', 
 for (const name of publicExportNames(publicEntry)) {
   if (!apiDoc.includes(`\`${name}\``)) failures.push(`api/public-api.md 缺少 TypeScript 公开 API: ${name}`);
 }
+const javaTypes = [];
 for (const sourceRoot of [
   path.join(repoRoot, 'packages', 'java', 'gmkit', 'src', 'main', 'java'),
   path.join(repoRoot, 'packages', 'java', 'gmkit-sm9', 'src', 'main', 'java'),
 ]) {
-  for (const name of await publicJavaTypeNames(sourceRoot)) {
+  const sourceTypes = await publicJavaTypes(sourceRoot);
+  javaTypes.push(...sourceTypes);
+  for (const { name } of sourceTypes) {
     if (!apiDoc.includes(`\`${name}\``)) failures.push(`api/public-api.md 缺少 Java 公共类型: ${name}`);
   }
 }
+
+const manualCoveragePath = path.join(docsRoot, 'api', 'manual-coverage.json');
+const manualCoverage = JSON.parse(await readFile(manualCoveragePath, 'utf8'));
+if (manualCoverage.schemaVersion !== 1) {
+  failures.push(`api/manual-coverage.json schemaVersion 不支持: ${manualCoverage.schemaVersion}`);
+}
+
+async function checkManualCoverage(language, entries, expectedSymbols) {
+  const assigned = new Map();
+  for (const [relativePage, symbols] of Object.entries(entries ?? {})) {
+    const page = path.join(docsRoot, relativePage);
+    let content;
+    try {
+      content = await readFile(page, 'utf8');
+    } catch {
+      failures.push(`api/manual-coverage.json 的 ${language} 页面不存在: ${relativePage}`);
+      continue;
+    }
+    if (!relativePage.startsWith(`api/${language}/`) || !relativePage.endsWith('.md')) {
+      failures.push(`api/manual-coverage.json 的 ${language} 页面路径非法: ${relativePage}`);
+    }
+    if (!Array.isArray(symbols) || symbols.length === 0) {
+      failures.push(`api/manual-coverage.json 的 ${relativePage} 没有 API 映射`);
+      continue;
+    }
+    for (const symbol of symbols) {
+      if (assigned.has(symbol)) {
+        failures.push(`api/manual-coverage.json 重复映射 ${symbol}: ${assigned.get(symbol)}, ${relativePage}`);
+      }
+      assigned.set(symbol, relativePage);
+      const displayName = symbol.split('.').at(-1);
+      if (!new RegExp(`\\b${displayName.replaceAll('$', '\\$')}\\b`).test(content)) {
+        failures.push(`${relativePage} 未实际说明映射的 API: ${symbol}`);
+      }
+    }
+  }
+
+  const expected = new Set(expectedSymbols);
+  for (const symbol of expected) {
+    if (!assigned.has(symbol)) failures.push(`api/manual-coverage.json 缺少 ${language} API: ${symbol}`);
+  }
+  for (const symbol of assigned.keys()) {
+    if (!expected.has(symbol)) failures.push(`api/manual-coverage.json 包含非公开 ${language} API: ${symbol}`);
+  }
+}
+
+await checkManualCoverage('typescript', manualCoverage.typescript, publicExportNames(publicEntry));
+await checkManualCoverage('java', manualCoverage.java, javaTypes.map(({ fqcn }) => fqcn));
 
 // 正式发布文档中的版本必须来自构建清单，避免升级后保留可运行但过期的样例。
 const rootPackage = JSON.parse(await readFile(path.join(repoRoot, 'package.json'), 'utf8'));
