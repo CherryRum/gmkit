@@ -34,6 +34,7 @@ public final class SM9SignKey implements AutoCloseable {
      *
      * @param password 加密口令
      * @param file     输出文件路径
+     * @throws SM9Exception 口令/路径为空、对象已关闭或 native 写入失败时抛出
      */
     public void exportEncryptedPrivateKeyInfoPem(String password, String file) {
         SM9Checks.requireNonBlank(password, "password");
@@ -51,6 +52,7 @@ public final class SM9SignKey implements AutoCloseable {
      * @param file     PEM 文件路径
      * @param id       该私钥对应的用户标识，可为 {@code null}
      * @return 导入的签名私钥
+     * @throws SM9Exception native 不可用、参数无效、口令错误或 PEM 读取失败时抛出
      */
     public static SM9SignKey importEncryptedPrivateKeyInfoPem(String password, String file, String id) {
         SM9NativeBridge.requireAvailable();

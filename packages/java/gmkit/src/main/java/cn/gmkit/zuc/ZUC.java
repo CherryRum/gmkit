@@ -266,6 +266,17 @@ public final class ZUC {
         return output;
     }
 
+    /**
+     * 按完整消息字节长度执行 3GPP EEA3 加密。
+     *
+     * @param keyHex 32 个十六进制字符的 128 位密钥
+     * @param count 32 位计数器
+     * @param bearer 5 位承载标识，范围 0 至 31
+     * @param direction 方向位，只能为 0 或 1
+     * @param message 消息字节；按全部字节计算有效位数
+     * @return 与输入等长的密文字节
+     * @throws cn.gmkit.core.GmkitException key、参数或消息为空/越界时抛出
+     */
     public static byte[] eea3Encrypt(String keyHex, int count, int bearer, int direction, byte[] message) {
         byte[] messageBytes = Bytes.requireNonNull(message, "ZUC EEA3 message");
         return eea3Encrypt(keyHex, count, bearer, direction, messageBytes,

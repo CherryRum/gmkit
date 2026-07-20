@@ -28,6 +28,7 @@ public final class SM9Signature implements AutoCloseable {
      * 创建签名或验签上下文。
      *
      * @param doSign {@code true} 创建签名上下文，{@code false} 创建验签上下文
+     * @throws SM9Exception native 不可用或上下文初始化失败时抛出
      */
     public SM9Signature(boolean doSign) {
         SM9NativeBridge.requireAvailable();
@@ -59,6 +60,7 @@ public final class SM9Signature implements AutoCloseable {
      * 重置上下文以复用，重新进入签名或验签模式。
      *
      * @param doSign {@code true} 重置为签名模式，{@code false} 重置为验签模式
+     * @throws SM9Exception 上下文已关闭或 native 初始化失败时抛出
      */
     public void reset(boolean doSign) {
         init(doSign);
@@ -69,6 +71,7 @@ public final class SM9Signature implements AutoCloseable {
      *
      * @param data 数据
      * @return 当前上下文，便于链式调用
+     * @throws SM9Exception 数据为空、范围无效、上下文已关闭或 native 更新失败时抛出
      */
     public SM9Signature update(byte[] data) {
         SM9Checks.requireNonNull(data, "data");
@@ -82,6 +85,7 @@ public final class SM9Signature implements AutoCloseable {
      * @param offset 起始偏移
      * @param length 长度
      * @return 当前上下文，便于链式调用
+     * @throws SM9Exception 缓冲区范围无效、上下文已关闭或 native 更新失败时抛出
      */
     public SM9Signature update(byte[] data, int offset, int length) {
         SM9Checks.requireRange(data, offset, length, "data range");
@@ -100,6 +104,7 @@ public final class SM9Signature implements AutoCloseable {
      *
      * @param signKey 用户签名私钥
      * @return 签名值
+     * @throws SM9Exception 私钥为空、上下文已关闭或 native 签名失败时抛出
      */
     public byte[] sign(SM9SignKey signKey) {
         SM9Checks.requireNonNull(signKey, "signKey");
@@ -117,6 +122,7 @@ public final class SM9Signature implements AutoCloseable {
      * @param masterPublicKey 公开主密钥
      * @param id              签名者用户标识
      * @return 验证通过返回 {@code true}
+     * @throws SM9Exception 签名、主公钥或 ID 无效，或上下文已关闭时抛出
      */
     public boolean verify(byte[] signature, SM9SignMasterKey masterPublicKey, String id) {
         SM9Checks.requireNonEmpty(signature, "signature");

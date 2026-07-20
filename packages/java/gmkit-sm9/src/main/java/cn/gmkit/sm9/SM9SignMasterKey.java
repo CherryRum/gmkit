@@ -21,6 +21,7 @@ public final class SM9SignMasterKey implements AutoCloseable {
      * 生成新的 SM9 签名主密钥（含私有部分）。
      *
      * @return 签名主密钥
+     * @throws SM9Exception native 不可用或生成操作失败时抛出
      */
     public static SM9SignMasterKey generate() {
         SM9NativeBridge.requireAvailable();
@@ -36,6 +37,7 @@ public final class SM9SignMasterKey implements AutoCloseable {
      *
      * @param id 用户标识（ID）
      * @return 用户签名私钥
+     * @throws SM9Exception ID 为空、当前对象已关闭或 native 派生失败时抛出
      */
     public SM9SignKey extractKey(String id) {
         String userId = SM9Checks.requireNonBlank(id, "id");
@@ -51,6 +53,7 @@ public final class SM9SignMasterKey implements AutoCloseable {
      *
      * @param password 加密口令
      * @param file     输出文件路径
+     * @throws SM9Exception 口令/路径为空、对象已关闭或 native 写入失败时抛出
      */
     public void exportEncryptedMasterKeyInfoPem(String password, String file) {
         SM9Checks.requireNonBlank(password, "password");
@@ -67,6 +70,7 @@ public final class SM9SignMasterKey implements AutoCloseable {
      * @param password 解密口令
      * @param file     PEM 文件路径
      * @return 签名主密钥
+     * @throws SM9Exception native 不可用、参数无效、口令错误或 PEM 读取失败时抛出
      */
     public static SM9SignMasterKey importEncryptedMasterKeyInfoPem(String password, String file) {
         SM9NativeBridge.requireAvailable();
@@ -83,6 +87,7 @@ public final class SM9SignMasterKey implements AutoCloseable {
      * 将公开主密钥导出为 PEM 文件（用于分发给验签方）。
      *
      * @param file 输出文件路径
+     * @throws SM9Exception 路径为空、对象已关闭或 native 写入失败时抛出
      */
     public void exportPublicMasterKeyPem(String file) {
         SM9Checks.requireNonBlank(file, "file");
@@ -97,6 +102,7 @@ public final class SM9SignMasterKey implements AutoCloseable {
      *
      * @param file PEM 文件路径
      * @return 仅含公开部分的签名主密钥
+     * @throws SM9Exception native 不可用、路径无效或 PEM 读取失败时抛出
      */
     public static SM9SignMasterKey importPublicMasterKeyPem(String file) {
         SM9NativeBridge.requireAvailable();

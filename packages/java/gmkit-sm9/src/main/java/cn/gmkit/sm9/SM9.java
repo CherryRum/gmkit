@@ -65,6 +65,7 @@ public final class SM9 {
      * 生成 SM9 签名主密钥。
      *
      * @return 签名主密钥
+     * @throws SM9Exception native 不可用或生成操作失败时抛出
      */
     public static SM9SignMasterKey generateSignMasterKey() {
         return SM9SignMasterKey.generate();
@@ -85,6 +86,7 @@ public final class SM9 {
      * @param master 签名主密钥
      * @param id     用户标识
      * @return 用户签名私钥
+     * @throws SM9Exception master 为空、ID 为空或 native 派生失败时抛出
      */
     public static SM9SignKey extractSignKey(SM9SignMasterKey master, String id) {
         SM9Checks.requireNonNull(master, "master");
@@ -97,6 +99,7 @@ public final class SM9 {
      * @param master 加密主密钥
      * @param id     用户标识
      * @return 用户解密私钥
+     * @throws SM9Exception master 为空、ID 为空或 native 派生失败时抛出
      */
     public static SM9EncKey extractEncKey(SM9EncMasterKey master, String id) {
         SM9Checks.requireNonNull(master, "master");
@@ -113,6 +116,7 @@ public final class SM9 {
      * @param signKey 用户签名私钥
      * @param data    待签名数据
      * @return 签名值
+     * @throws SM9Exception 参数为空、native 不可用或签名失败时抛出
      */
     public static byte[] sign(SM9SignKey signKey, byte[] data) {
         SM9Checks.requireNonNull(signKey, "signKey");
@@ -131,6 +135,7 @@ public final class SM9 {
      * @param data            原始数据
      * @param signature       待验证签名值
      * @return 验证通过返回 {@code true}
+     * @throws SM9Exception 主公钥、数据或签名为空，或用户标识无效时抛出
      */
     public static boolean verify(SM9SignMasterKey masterPublicKey, String id, byte[] data, byte[] signature) {
         SM9Checks.requireNonNull(masterPublicKey, "masterPublicKey");
@@ -153,6 +158,7 @@ public final class SM9 {
      * @param id              接收方用户标识
      * @param plaintext       明文，长度不得超过 {@link SM9EncMasterKey#MAX_PLAINTEXT_SIZE}
      * @return 密文
+     * @throws SM9Exception 主密钥为空、ID 无效、明文为空/超长或 native 加密失败时抛出
      */
     public static byte[] encrypt(SM9EncMasterKey masterPublicKey, String id, byte[] plaintext) {
         SM9Checks.requireNonNull(masterPublicKey, "masterPublicKey");
@@ -165,6 +171,7 @@ public final class SM9 {
      * @param encKey     用户解密私钥
      * @param ciphertext 密文
      * @return 明文
+     * @throws SM9Exception 私钥为空、密文为空/超长或 native 解密失败时抛出
      */
     public static byte[] decrypt(SM9EncKey encKey, byte[] ciphertext) {
         SM9Checks.requireNonNull(encKey, "encKey");

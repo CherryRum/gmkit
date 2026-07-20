@@ -39,6 +39,7 @@ public final class SM9EncKey implements AutoCloseable {
      *
      * @param ciphertext SM9 密文
      * @return 明文
+     * @throws SM9Exception ID/密文无效、密文超过上限、对象已关闭或 native 解密失败时抛出
      */
     public byte[] decrypt(byte[] ciphertext) {
         SM9Checks.requireNonEmpty(ciphertext, "ciphertext");
@@ -58,6 +59,7 @@ public final class SM9EncKey implements AutoCloseable {
      *
      * @param password 加密口令
      * @param file     输出文件路径
+     * @throws SM9Exception 口令/路径为空、对象已关闭或 native 写入失败时抛出
      */
     public void exportEncryptedPrivateKeyInfoPem(String password, String file) {
         SM9Checks.requireNonBlank(password, "password");
@@ -75,6 +77,7 @@ public final class SM9EncKey implements AutoCloseable {
      * @param file     PEM 文件路径
      * @param id       该私钥对应的用户标识（解密时必填）
      * @return 导入的解密私钥
+     * @throws SM9Exception native 不可用、参数无效、口令错误或 PEM 读取失败时抛出
      */
     public static SM9EncKey importEncryptedPrivateKeyInfoPem(String password, String file, String id) {
         SM9NativeBridge.requireAvailable();
