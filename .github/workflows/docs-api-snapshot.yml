@@ -1,0 +1,311 @@
+name: Docs API Snapshot
+
+on:
+  push:
+    tags:
+      - 'ts-v*'
+      - 'java-v*'
+      - '!ts-v*-*'
+      - '!java-v*-*'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Rebuild latest or a stable version snapshot
+        required: true
+        type: choice
+        options:
+          - snapshot
+          - latest
+        default: snapshot
+      target:
+        description: API documentation target
+        required: true
+        type: choice
+        options:
+          - typescript
+          - java
+      ref:
+        description: Stable release tag for snapshot, or any Git ref for latest
+        required: true
+        type: string
+        default: main
+      deploy:
+        description: Deploy the generated API documentation
+        required: true
+        type: boolean
+        default: false
+      publish_manifest:
+        description: Publish versions.json after verifying every listed snapshot
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-api-${{ github.ref }}-${{ inputs.target || 'tag' }}
+  cancel-in-progress: false
+
+env:
+  API_ARTIFACT_NAME: gmkit-api-${{ github.run_id }}
+
+jobs:
+  resolve:
+    name: Resolve source and target
+    runs-on: ubuntu-latest
+    outputs:
+      mode: ${{ steps.metadata.outputs.mode }}
+      target: ${{ steps.metadata.outputs.target }}
+      source_ref: ${{ steps.metadata.outputs.source_ref }}
+      version: ${{ steps.metadata.outputs.version }}
+      deploy: ${{ steps.metadata.outputs.deploy }}
+      publish_manifest: ${{ steps.metadata.outputs.publish_manifest }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: metadata
+        name: Validate snapshot metadata
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_REF: ${{ github.ref_name }}
+          INPUT_MODE: ${{ inputs.mode }}
+          INPUT_TARGET: ${{ inputs.target }}
+          INPUT_REF: ${{ inputs.ref }}
+          INPUT_DEPLOY: ${{ inputs.deploy }}
+          INPUT_PUBLISH_MANIFEST: ${{ inputs.publish_manifest }}
+        run: |
+          if [[ "$EVENT_NAME" == "push" ]]; then
+            mode=snapshot
+            source_ref="$EVENT_REF"
+            deploy=true
+            publish_manifest=true
+            case "$source_ref" in
+              ts-v*) target=typescript ;;
+              java-v*) target=java ;;
+              *) echo "Unsupported release tag: $source_ref" >&2; exit 1 ;;
+            esac
+          else
+            mode="$INPUT_MODE"
+            target="$INPUT_TARGET"
+            source_ref="$INPUT_REF"
+            deploy="$INPUT_DEPLOY"
+            publish_manifest="$INPUT_PUBLISH_MANIFEST"
+          fi
+
+          if [[ "$target" == "typescript" ]]; then prefix=ts-v; else prefix=java-v; fi
+          if [[ "$mode" == "snapshot" ]]; then
+            if [[ ! "$source_ref" =~ ^${prefix}([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+              echo "Snapshot ref must be a stable $prefix<major.minor.patch> tag: $source_ref" >&2
+              exit 1
+            fi
+            version="${BASH_REMATCH[1]}"
+            git rev-parse --verify "refs/tags/$source_ref^{commit}" >/dev/null
+          elif [[ "$mode" == "latest" ]]; then
+            version=latest
+            git rev-parse --verify "$source_ref^{commit}" >/dev/null
+            publish_manifest=false
+          else
+            echo "Unsupported mode: $mode" >&2
+            exit 1
+          fi
+
+          {
+            echo "mode=$mode"
+            echo "target=$target"
+            echo "source_ref=$source_ref"
+            echo "version=$version"
+            echo "deploy=$deploy"
+            echo "publish_manifest=$publish_manifest"
+          } >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ needs.resolve.outputs.target }} ${{ needs.resolve.outputs.version }}
+    needs: resolve
+    runs-on: ubuntu-latest
+    outputs:
+      package_version: ${{ steps.package.outputs.version }}
+    steps:
+      - name: Checkout current documentation tooling
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+      - name: Checkout immutable API source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.resolve.outputs.source_ref }}
+          path: .api-source
+          fetch-depth: 1
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22.x'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - if: needs.resolve.outputs.target == 'java'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: .api-source/packages/java/pom.xml
+      - run: npm ci
+      - id: package
+        name: Verify source package version
+        shell: bash
+        env:
+          TARGET: ${{ needs.resolve.outputs.target }}
+          MODE: ${{ needs.resolve.outputs.mode }}
+          TAG_VERSION: ${{ needs.resolve.outputs.version }}
+        run: |
+          if [[ "$TARGET" == "typescript" ]]; then
+            version=$(node -p 'require("./.api-source/packages/ts/package.json").version')
+          else
+            version=$(node -e '
+              const fs = require("node:fs");
+              const pom = fs.readFileSync(".api-source/packages/java/pom.xml", "utf8");
+              const match = pom.match(/<artifactId>gmkit-parent<\/artifactId>\s*<version>([^<]+)<\/version>/);
+              if (!match) process.exit(1);
+              process.stdout.write(match[1]);
+            ')
+          fi
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          if [[ "$MODE" == "snapshot" && "$version" != "$TAG_VERSION" ]]; then
+            echo "Tag/package version mismatch: tag=$TAG_VERSION package=$version" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Generate API documentation from selected ref
+        env:
+          API_TARGET: ${{ needs.resolve.outputs.target }}
+          API_CHANNEL: ${{ needs.resolve.outputs.mode }}
+          API_VERSION: ${{ steps.package.outputs.version }}
+          API_SOURCE_ROOT: ${{ github.workspace }}/.api-source
+          API_OUTPUT_DIR: ${{ runner.temp }}/api-package/snapshot
+        run: node .github/scripts/generate-api-snapshot.mjs
+      - name: Generate stable version manifest
+        if: needs.resolve.outputs.mode == 'snapshot'
+        run: >-
+          node docs/site/scripts/generate-api-versions.mjs
+          --output "${{ runner.temp }}/api-package/manifest/versions.json"
+      - name: Upload API artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.API_ARTIFACT_NAME }}
+          path: ${{ runner.temp }}/api-package/
+          if-no-files-found: error
+          retention-days: 14
+
+  deploy:
+    name: Deploy API documentation
+    if: needs.resolve.outputs.deploy == 'true'
+    needs: [resolve, build]
+    runs-on: ubuntu-latest
+    environment: docs-production
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22.x'
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ env.API_ARTIFACT_NAME }}
+          path: api-package
+      - name: Resolve deployment paths
+        shell: bash
+        env:
+          MODE: ${{ needs.resolve.outputs.mode }}
+          TARGET: ${{ needs.resolve.outputs.target }}
+          VERSION: ${{ needs.build.outputs.package_version }}
+        run: |
+          if [[ "$MODE" == "latest" ]]; then
+            echo "DOCS_DEPLOY_MODE=api-latest" >> "$GITHUB_ENV"
+            echo "DOCS_REMOTE_DIR=/home/gmkit-site/www/api/$TARGET/latest/" >> "$GITHUB_ENV"
+          else
+            echo "DOCS_DEPLOY_MODE=api-snapshot" >> "$GITHUB_ENV"
+            echo "DOCS_REMOTE_DIR=/home/gmkit-site/www/api/$TARGET/versions/$VERSION/" >> "$GITHUB_ENV"
+          fi
+      - name: Deploy API to HK origin
+        env:
+          DOCS_SOURCE_DIR: ${{ github.workspace }}/api-package/snapshot
+          DEPLOY_COMMIT: ${{ github.sha }}
+          API_LANGUAGE: ${{ needs.resolve.outputs.target }}
+          API_VERSION: ${{ needs.build.outputs.package_version }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
+          SSH_REMOTE_USER: ${{ secrets.USER }}
+          SSH_REMOTE_HOST: ${{ secrets.HK_HOST }}
+          SSH_HOST_FINGERPRINT: ${{ secrets.HK_SSH_HOST_FINGERPRINT }}
+        run: bash .github/scripts/deploy-docs-origin.sh
+      - name: Deploy API to CN origin
+        env:
+          DOCS_SOURCE_DIR: ${{ github.workspace }}/api-package/snapshot
+          DEPLOY_COMMIT: ${{ github.sha }}
+          API_LANGUAGE: ${{ needs.resolve.outputs.target }}
+          API_VERSION: ${{ needs.build.outputs.package_version }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
+          SSH_REMOTE_USER: ${{ secrets.USER }}
+          SSH_REMOTE_HOST: ${{ secrets.CN_HOST }}
+          SSH_HOST_FINGERPRINT: ${{ secrets.CN_SSH_HOST_FINGERPRINT }}
+        run: bash .github/scripts/deploy-docs-origin.sh
+      - name: Publish version manifest to HK origin
+        if: needs.resolve.outputs.mode == 'snapshot' && needs.resolve.outputs.publish_manifest == 'true'
+        env:
+          DOCS_DEPLOY_MODE: api-manifest
+          DOCS_SOURCE_DIR: ${{ github.workspace }}/api-package/manifest
+          DOCS_REMOTE_DIR: /home/gmkit-site/www/api/
+          DEPLOY_COMMIT: ${{ github.sha }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
+          SSH_REMOTE_USER: ${{ secrets.USER }}
+          SSH_REMOTE_HOST: ${{ secrets.HK_HOST }}
+          SSH_HOST_FINGERPRINT: ${{ secrets.HK_SSH_HOST_FINGERPRINT }}
+        run: bash .github/scripts/deploy-docs-origin.sh
+      - name: Publish version manifest to CN origin
+        if: needs.resolve.outputs.mode == 'snapshot' && needs.resolve.outputs.publish_manifest == 'true'
+        env:
+          DOCS_DEPLOY_MODE: api-manifest
+          DOCS_SOURCE_DIR: ${{ github.workspace }}/api-package/manifest
+          DOCS_REMOTE_DIR: /home/gmkit-site/www/api/
+          DEPLOY_COMMIT: ${{ github.sha }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
+          SSH_REMOTE_USER: ${{ secrets.USER }}
+          SSH_REMOTE_HOST: ${{ secrets.CN_HOST }}
+          SSH_HOST_FINGERPRINT: ${{ secrets.CN_SSH_HOST_FINGERPRINT }}
+        run: bash .github/scripts/deploy-docs-origin.sh
+      - name: Purge EdgeOne Global
+        env:
+          TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID_GLOBAL }}
+          TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY_GLOBAL }}
+          EDGEONE_ZONE_ID: ${{ secrets.EDGEONE_ZONE_ID_GLOBAL }}
+          EDGEONE_TARGETS: gmkit.cn,www.gmkit.cn
+          EDGEONE_SITE_TYPE: global
+        run: python .github/scripts/purge_edgeone.py
+      - name: Verify public API snapshot
+        shell: bash
+        env:
+          MODE: ${{ needs.resolve.outputs.mode }}
+          TARGET: ${{ needs.resolve.outputs.target }}
+          VERSION: ${{ needs.build.outputs.package_version }}
+          PUBLISH_MANIFEST: ${{ needs.resolve.outputs.publish_manifest }}
+        run: |
+          if [[ "$MODE" == "latest" ]]; then
+            url="https://gmkit.cn/api/$TARGET/latest/"
+          else
+            url="https://gmkit.cn/api/$TARGET/versions/$VERSION/"
+          fi
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent --show-error --max-time 20 -H 'Cache-Control: no-cache' "$url" >/dev/null; then
+              break
+            fi
+            [[ "$attempt" -lt 20 ]] || exit 1
+            sleep 15
+          done
+          if [[ "$MODE" == "snapshot" && "$PUBLISH_MANIFEST" == "true" ]]; then
+            curl --fail --silent --show-error --max-time 20 -H 'Cache-Control: no-cache' \
+              https://gmkit.cn/api/versions.json \
+              | jq -e --arg target "$TARGET" --arg version "$VERSION" \
+                '.packages[] | select(.id == $target) | .versions[] | select(.version == $version)' >/dev/null
+          fi

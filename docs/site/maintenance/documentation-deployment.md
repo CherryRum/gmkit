@@ -52,3 +52,20 @@ rsync 使用 `--delay-updates --delete-delay`。latest 部署明确排除 `/api/
 `workflow_dispatch` 默认只验证并上传 artifact。需要人工重新部署 latest 时，选择 `deploy=true`；仍会从头执行完整门禁，不复用未验证的本地构建。
 
 EdgeOne 请求失败、限流重试耗尽、任一源站校验失败、CDN 未读到本次 commit 或 www 跳转错误都会使工作流失败。当前规范域名仅为 `https://gmkit.cn`，不再刷新已停用的旧域名。
+
+## API 版本快照
+
+`.github/workflows/docs-api-snapshot.yml` 监听稳定的 `ts-v*`、`java-v*` 标签。工作流使用当前文档工具链 checkout 对应不可变 tag 的源码，生成单语言 API，然后只同步到：
+
+- TypeScript：`/api/typescript/versions/<version>/`
+- Java：`/api/java/versions/<version>/`
+
+preview 或其他预发布标签不会进入 `api/versions.json`。更新版本清单前，部署脚本会通过 SSH 逐个确认清单中所有版本的 `index.html` 已存在；缺少任一快照时不会覆盖现有清单。
+
+首次回填按以下顺序手动执行，并选择 `deploy=true`：
+
+1. `java-v0.10.0`，`publish_manifest=false`。
+2. `java-v0.10.1`，`publish_manifest=false`。
+3. `ts-v0.10.1`，`publish_manifest=true`。
+
+手动运行还可以用 `mode=latest` 与指定 `ref` 只重建某一语言的 latest API。该入口不修改版本清单，也不替代 `docs.yml` 的整站部署。

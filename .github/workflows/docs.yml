@@ -11,7 +11,9 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/docs.yml'
+      - '.github/workflows/docs-api-snapshot.yml'
       - '.github/scripts/deploy-docs-origin.sh'
+      - '.github/scripts/generate-api-snapshot.mjs'
       - '.github/scripts/purge_edgeone.py'
       - '.github/scripts/test_purge_edgeone.py'
   pull_request:
@@ -23,7 +25,9 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/docs.yml'
+      - '.github/workflows/docs-api-snapshot.yml'
       - '.github/scripts/deploy-docs-origin.sh'
+      - '.github/scripts/generate-api-snapshot.mjs'
       - '.github/scripts/purge_edgeone.py'
       - '.github/scripts/test_purge_edgeone.py'
   workflow_dispatch:

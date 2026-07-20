@@ -82,6 +82,26 @@ await requireFile(path.join(publicApi, 'java', 'latest', 'cn', 'gmkit', 'sm4', '
 await requireFile(path.join(publicApi, 'java', 'latest', 'cn', 'gmkit', 'zuc', 'ZUC.html'), 'ZUC Javadoc');
 await requireFile(path.join(publicApi, 'java', 'latest', 'cn', 'gmkit', 'sm9', 'SM9.html'), 'SM9 Javadoc');
 await requireFile(path.join(publicApi, 'manifest.json'), 'API 生成清单');
+const versionsPath = path.join(publicApi, 'versions.json');
+await requireFile(versionsPath, 'API 版本清单');
+const versionsManifest = JSON.parse(await readFile(versionsPath, 'utf8'));
+for (const entry of versionsManifest.packages ?? []) {
+  if (!packageIds.has(entry.id)) failures.push(`API 版本清单包含未知包: ${entry.id}`);
+  for (const version of entry.versions ?? []) {
+    if (!/^\d+\.\d+\.\d+$/.test(version.version)) {
+      failures.push(`API 版本清单包含非稳定版本: ${entry.id} ${version.version}`);
+    }
+    if (version.url !== `/api/${entry.id}/versions/${version.version}/`) {
+      failures.push(`API 版本清单 URL 错误: ${entry.id} ${version.version}`);
+    }
+  }
+}
+for (const id of packageIds) {
+  const entry = versionsManifest.packages?.find((candidate) => candidate.id === id);
+  if (!entry || !Array.isArray(entry.versions) || entry.versions.length === 0) {
+    failures.push(`API 版本清单缺少已发布版本: ${id}`);
+  }
+}
 
 if (failures.length > 0) {
   console.error('[docs-api-check] FAIL');

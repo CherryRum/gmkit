@@ -17,12 +17,67 @@ for name in "${required[@]}"; do
   fi
 done
 
-if [[ ! -s "$DOCS_SOURCE_DIR/index.html" || ! -s "$DOCS_SOURCE_DIR/deployment.json" ]]; then
-  echo "Documentation artifact is incomplete: $DOCS_SOURCE_DIR" >&2
-  exit 1
-fi
-if [[ "$DOCS_REMOTE_DIR" != /home/*/www/ ]]; then
-  echo "Refusing unexpected remote directory: $DOCS_REMOTE_DIR" >&2
+deploy_mode=${DOCS_DEPLOY_MODE:-site}
+site_root=/home/gmkit-site/www
+rsync_options=(-az --delay-updates)
+
+case "$deploy_mode" in
+  site)
+    if [[ ! -s "$DOCS_SOURCE_DIR/index.html" || ! -s "$DOCS_SOURCE_DIR/deployment.json" ]]; then
+      echo "Documentation artifact is incomplete: $DOCS_SOURCE_DIR" >&2
+      exit 1
+    fi
+    expected_remote="$site_root/"
+    rsync_options+=(
+      --delete-delay
+      '--exclude=/api/typescript/versions/***'
+      '--exclude=/api/java/versions/***'
+      '--exclude=/api/versions.json'
+    )
+    ;;
+  api-latest)
+    if [[ "${API_LANGUAGE:-}" != "typescript" && "${API_LANGUAGE:-}" != "java" ]]; then
+      echo "API_LANGUAGE must be typescript or java" >&2
+      exit 1
+    fi
+    [[ -s "$DOCS_SOURCE_DIR/index.html" ]] || {
+      echo "API artifact is missing index.html: $DOCS_SOURCE_DIR" >&2
+      exit 1
+    }
+    expected_remote="$site_root/api/$API_LANGUAGE/latest/"
+    rsync_options+=(--delete-delay)
+    ;;
+  api-snapshot)
+    if [[ "${API_LANGUAGE:-}" != "typescript" && "${API_LANGUAGE:-}" != "java" ]]; then
+      echo "API_LANGUAGE must be typescript or java" >&2
+      exit 1
+    fi
+    if [[ ! "${API_VERSION:-}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+      echo "API_VERSION must be a stable semantic version" >&2
+      exit 1
+    fi
+    [[ -s "$DOCS_SOURCE_DIR/index.html" ]] || {
+      echo "API artifact is missing index.html: $DOCS_SOURCE_DIR" >&2
+      exit 1
+    }
+    expected_remote="$site_root/api/$API_LANGUAGE/versions/$API_VERSION/"
+    rsync_options+=(--delete-delay)
+    ;;
+  api-manifest)
+    [[ -s "$DOCS_SOURCE_DIR/versions.json" ]] || {
+      echo "API manifest artifact is missing versions.json: $DOCS_SOURCE_DIR" >&2
+      exit 1
+    }
+    expected_remote="$site_root/api/"
+    ;;
+  *)
+    echo "Unsupported DOCS_DEPLOY_MODE: $deploy_mode" >&2
+    exit 1
+    ;;
+esac
+
+if [[ "$DOCS_REMOTE_DIR" != "$expected_remote" ]]; then
+  echo "Refusing unexpected remote directory for $deploy_mode: $DOCS_REMOTE_DIR" >&2
   exit 1
 fi
 
@@ -51,19 +106,51 @@ fi
 
 ssh_options=(-i "$key_file" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$known_hosts")
 target="$SSH_REMOTE_USER@$SSH_REMOTE_HOST"
-rsync -az --delay-updates --delete-delay \
-  --exclude='/api/typescript/versions/***' \
-  --exclude='/api/java/versions/***' \
-  --exclude='/api/versions.json' \
+
+if [[ "$deploy_mode" == "api-manifest" ]]; then
+  while IFS=$'\t' read -r language version; do
+    [[ "$language" =~ ^(typescript|java)$ && "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+      echo "Invalid entry in versions.json: $language $version" >&2
+      exit 1
+    }
+    ssh "${ssh_options[@]}" "$target" \
+      "test -s '$site_root/api/$language/versions/$version/index.html'"
+  done < <(
+    node -e '
+      const fs = require("node:fs");
+      const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+      for (const entry of manifest.packages ?? []) {
+        for (const version of entry.versions ?? []) console.log(`${entry.id}\t${version.version}`);
+      }
+    ' "$DOCS_SOURCE_DIR/versions.json"
+  )
+fi
+
+rsync "${rsync_options[@]}" \
   -e "ssh ${ssh_options[*]}" \
   "$DOCS_SOURCE_DIR/" "$target:$DOCS_REMOTE_DIR"
 
 remote_root=${DOCS_REMOTE_DIR%/}
-ssh "${ssh_options[@]}" "$target" \
-  "test -s '$remote_root/index.html' &&
-   test -s '$remote_root/api/typescript/latest/index.html' &&
-   test -s '$remote_root/api/java/latest/index.html' &&
-   test -s '$remote_root/deployment.json' &&
-   grep -F '\"commit\": \"$DEPLOY_COMMIT\"' '$remote_root/deployment.json' >/dev/null"
+case "$deploy_mode" in
+  site)
+    ssh "${ssh_options[@]}" "$target" \
+      "test -s '$remote_root/index.html' &&
+       test -s '$remote_root/api/typescript/latest/index.html' &&
+       test -s '$remote_root/api/java/latest/index.html' &&
+       test -s '$remote_root/deployment.json' &&
+       grep -F '\"commit\": \"$DEPLOY_COMMIT\"' '$remote_root/deployment.json' >/dev/null"
+    ;;
+  api-latest|api-snapshot)
+    ssh "${ssh_options[@]}" "$target" "test -s '$remote_root/index.html'"
+    ;;
+  api-manifest)
+    local_hash=$(sha256sum "$DOCS_SOURCE_DIR/versions.json" | awk '{print $1}')
+    remote_hash=$(ssh "${ssh_options[@]}" "$target" "sha256sum '$remote_root/versions.json'" | awk '{print $1}')
+    [[ "$local_hash" == "$remote_hash" ]] || {
+      echo "API version manifest checksum mismatch on $SSH_REMOTE_HOST" >&2
+      exit 1
+    }
+    ;;
+esac
 
-echo "Verified documentation deployment on $SSH_REMOTE_HOST"
+echo "Verified $deploy_mode deployment on $SSH_REMOTE_HOST"

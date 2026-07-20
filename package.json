@@ -19,6 +19,7 @@
     "docs:generate-api": "npm run generate:api -w docs/site",
     "docs:generate-api:ts": "npm run generate:api:typescript -w docs/site",
     "docs:generate-api:java": "npm run generate:api:java -w docs/site",
+    "docs:generate-api:versions": "npm run generate:api:versions -w docs/site",
     "docs:check-api": "npm run check:api -w docs/site",
     "docs:check": "npm run check -w docs/site",
     "docs:test-examples": "npm run test:examples -w docs/site",
