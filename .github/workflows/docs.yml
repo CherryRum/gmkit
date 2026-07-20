@@ -33,7 +33,7 @@ on:
   workflow_dispatch:
     inputs:
       deploy:
-        description: Deploy the verified artifact to both origins
+        description: Deploy the verified artifact to the CN origin
         required: true
         type: boolean
         default: false
@@ -99,27 +99,20 @@ jobs:
           retention-days: 7
 
   deploy:
-    name: Deploy both origins
+    name: Deploy CN origin
     if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy)
     needs: build
     runs-on: ubuntu-latest
     environment: docs-production
+    concurrency:
+      group: docs-production-deploy
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
           name: ${{ env.DOCS_ARTIFACT_NAME }}
           path: site
-      - name: Deploy HK origin
-        env:
-          DOCS_SOURCE_DIR: ${{ github.workspace }}/site
-          DOCS_REMOTE_DIR: /home/gmkit-site/www/
-          DEPLOY_COMMIT: ${{ github.sha }}
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
-          SSH_REMOTE_USER: ${{ secrets.USER }}
-          SSH_REMOTE_HOST: ${{ secrets.HK_HOST }}
-          SSH_HOST_FINGERPRINT: ${{ secrets.HK_SSH_HOST_FINGERPRINT }}
-        run: bash .github/scripts/deploy-docs-origin.sh
       - name: Deploy CN origin
         env:
           DOCS_SOURCE_DIR: ${{ github.workspace }}/site

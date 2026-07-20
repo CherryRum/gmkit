@@ -204,6 +204,9 @@ jobs:
     needs: [resolve, build]
     runs-on: ubuntu-latest
     environment: docs-production
+    concurrency:
+      group: docs-production-deploy
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
         with:
@@ -229,17 +232,6 @@ jobs:
             echo "DOCS_DEPLOY_MODE=api-snapshot" >> "$GITHUB_ENV"
             echo "DOCS_REMOTE_DIR=/home/gmkit-site/www/api/$TARGET/versions/$VERSION/" >> "$GITHUB_ENV"
           fi
-      - name: Deploy API to HK origin
-        env:
-          DOCS_SOURCE_DIR: ${{ github.workspace }}/api-package/snapshot
-          DEPLOY_COMMIT: ${{ github.sha }}
-          API_LANGUAGE: ${{ needs.resolve.outputs.target }}
-          API_VERSION: ${{ needs.build.outputs.package_version }}
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
-          SSH_REMOTE_USER: ${{ secrets.USER }}
-          SSH_REMOTE_HOST: ${{ secrets.HK_HOST }}
-          SSH_HOST_FINGERPRINT: ${{ secrets.HK_SSH_HOST_FINGERPRINT }}
-        run: bash .github/scripts/deploy-docs-origin.sh
       - name: Deploy API to CN origin
         env:
           DOCS_SOURCE_DIR: ${{ github.workspace }}/api-package/snapshot
@@ -250,18 +242,6 @@ jobs:
           SSH_REMOTE_USER: ${{ secrets.USER }}
           SSH_REMOTE_HOST: ${{ secrets.CN_HOST }}
           SSH_HOST_FINGERPRINT: ${{ secrets.CN_SSH_HOST_FINGERPRINT }}
-        run: bash .github/scripts/deploy-docs-origin.sh
-      - name: Publish version manifest to HK origin
-        if: needs.resolve.outputs.mode == 'snapshot' && needs.resolve.outputs.publish_manifest == 'true'
-        env:
-          DOCS_DEPLOY_MODE: api-manifest
-          DOCS_SOURCE_DIR: ${{ github.workspace }}/api-package/manifest
-          DOCS_REMOTE_DIR: /home/gmkit-site/www/api/
-          DEPLOY_COMMIT: ${{ github.sha }}
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
-          SSH_REMOTE_USER: ${{ secrets.USER }}
-          SSH_REMOTE_HOST: ${{ secrets.HK_HOST }}
-          SSH_HOST_FINGERPRINT: ${{ secrets.HK_SSH_HOST_FINGERPRINT }}
         run: bash .github/scripts/deploy-docs-origin.sh
       - name: Publish version manifest to CN origin
         if: needs.resolve.outputs.mode == 'snapshot' && needs.resolve.outputs.publish_manifest == 'true'

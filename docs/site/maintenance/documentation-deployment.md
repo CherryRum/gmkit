@@ -25,23 +25,23 @@ npm run docs:verify
 ## 部署顺序
 
 1. Action 写入 `deployment.json`，记录 commit、构建时间、Action run 和 Java/TypeScript 版本。
-2. 同一个 artifact 先后 rsync 到 HK 与 CN 的 `/home/gmkit-site/www/`。
-3. 每个源站都检查首页、TypeDoc、Javadoc 和 `deployment.json` 中的 commit。
-4. 两个源站均通过后，调用中国大陆 EdgeOne 的 `CreatePurgeTask`，只刷新 `gmkit.cn`。
+2. 同一个 artifact 通过 rsync 部署到 CN 源站的 `/home/gmkit-site/www/`。
+3. 源站检查首页、TypeDoc、Javadoc 和 `deployment.json` 中的 commit。
+4. 源站验证通过后，调用中国大陆 EdgeOne 的 `CreatePurgeTask`，只刷新 `gmkit.cn`。
 5. 轮询 `https://gmkit.cn/deployment.json`，直到读取到本次 commit。
 
 rsync 使用 `--delay-updates --delete-delay`。latest 部署明确排除 `/api/*/versions/` 和 `/api/versions.json`，避免覆盖或删除由 tag 快照工作流维护的历史 API。
 
 ## GitHub Secrets
 
-部署使用仓库已有的主机、账号、私钥和 EdgeOne 中国大陆凭据，并增加两个主机指纹：
+部署使用仓库已有的国内主机、账号、私钥和 EdgeOne 中国大陆凭据：
 
 | Secret | 用途 |
 |:--|:--|
-| `USER` | 两个源站的 SSH 用户 |
+| `USER` | 国内源站的 SSH 用户 |
 | `SSH_KEY` | 部署私钥 |
-| `HK_HOST`、`CN_HOST` | HK/CN 源站地址 |
-| `HK_SSH_HOST_FINGERPRINT`、`CN_SSH_HOST_FINGERPRINT` | 可信渠道核对的 SSH `SHA256:` 主机指纹 |
+| `CN_HOST` | 国内源站地址 |
+| `CN_SSH_HOST_FINGERPRINT` | 可信渠道核对的 SSH `SHA256:` 主机指纹 |
 | `TENCENT_SECRET_ID_CN`、`TENCENT_SECRET_KEY_CN` | EdgeOne 中国大陆 API 凭据 |
 | `EDGEONE_ZONE_ID_CN` | `gmkit.cn` 所属 EdgeOne Zone |
 
