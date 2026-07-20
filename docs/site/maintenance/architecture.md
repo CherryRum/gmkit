@@ -1,5 +1,6 @@
 ---
 title: Monorepo 架构与模块边界
+description: 说明 packages、apps、docs、vectors 的职责、依赖方向和公共边界。
 icon: sitemap
 order: 1
 category: [项目维护, 架构]

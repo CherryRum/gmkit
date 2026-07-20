@@ -1,5 +1,6 @@
 ---
 title: 公开 API 清单
+description: 审计 gmkitx 根导出与 GMKit Java 公共顶层类型的兼容性边界和说明书归属。
 icon: list
 order: 1
 category: [API Reference]

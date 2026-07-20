@@ -1,5 +1,6 @@
 ---
 title: GM/T 0009 实现边界与验证状态
+description: 对照 GM/T 0009 说明 GMKit 的已实现范围、验证依据和未覆盖边界。
 icon: certificate
 order: 1
 category:

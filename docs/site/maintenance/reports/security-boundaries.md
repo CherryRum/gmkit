@@ -1,5 +1,6 @@
 ---
 title: 安全保证边界
+description: 区分实现测试、安全审计、产品认证、威胁边界和漏洞披露责任。
 icon: shield
 order: 3
 category: [项目参考, 安全]

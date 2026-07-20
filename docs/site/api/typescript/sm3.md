@@ -1,5 +1,6 @@
 ---
 title: TypeScript SM3 API
+description: 说明 gmkitx SM3 摘要、HMAC、输出编码、增量状态与 reset 行为。
 icon: fingerprint
 order: 3
 category:

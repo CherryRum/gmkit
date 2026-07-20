@@ -1,5 +1,6 @@
 ---
 title: Rust 对接指南
+description: 使用固定 RustCrypto crate 版本对照 GMKit 的 SM3、SM4 和确定性结果。
 icon: code
 order: 7
 category: [集成示例, Rust]

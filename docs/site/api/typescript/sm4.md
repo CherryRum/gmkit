@@ -1,5 +1,6 @@
 ---
 title: TypeScript SM4 API
+description: 说明 gmkitx SM4 全部模式、填充、AEAD、结果对象、类工厂和失败行为。
 icon: lock
 order: 4
 category:

@@ -1,5 +1,6 @@
 ---
 title: Java SM4 API
+description: 说明 Java SM4 模式、填充、AEAD、选项 Builder、结果对象和静态实例入口。
 icon: lock
 order: 4
 category:

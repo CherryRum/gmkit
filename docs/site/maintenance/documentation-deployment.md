@@ -1,5 +1,6 @@
 ---
 title: 文档构建与部署
+description: 说明 VuePress、TypeDoc、Javadoc、版本快照、链接检查和部署产物流程。
 icon: cloud-upload
 category:
   - 项目维护

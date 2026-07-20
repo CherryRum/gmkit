@@ -1,5 +1,6 @@
 ---
 title: SM2 椭圆曲线公钥密码算法
+description: 对照 Java 与 TypeScript 的 SM2 密钥、加密、签名、格式和密钥交换协议。
 icon: key
 order: 1
 category: [算法]

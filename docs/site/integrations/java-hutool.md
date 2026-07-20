@@ -1,5 +1,6 @@
 ---
 title: Java 与 Hutool 对接指南
+description: 说明已有 Hutool 与 Bouncy Castle 项目的协议对接、版本边界和迁移路径。
 icon: java
 order: 4
 category: [集成示例, Java]

@@ -1,5 +1,6 @@
 ---
 title: SM3 密码杂凑算法
+description: 对照 Java 与 TypeScript 的 SM3 摘要、HMAC、输出编码和增量状态能力。
 icon: fingerprint
 order: 2
 category: [算法]

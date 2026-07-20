@@ -1,5 +1,6 @@
 ---
 title: 国际算法与 Web Crypto 边界
+description: 区分浏览器 Web Crypto 的 SHA、AES、RSA 能力与 gmkitx 国密算法职责。
 icon: globe
 order: 8
 category: [集成示例, Web Crypto]

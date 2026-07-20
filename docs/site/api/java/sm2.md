@@ -1,5 +1,6 @@
 ---
 title: Java SM2 API
+description: 说明 SM2、SM2Util、选项 Builder、密钥、签名、密文转换和密钥交换重载。
 icon: key
 order: 2
 category:

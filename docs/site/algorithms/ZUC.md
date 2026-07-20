@@ -1,5 +1,6 @@
 ---
 title: ZUC 祖冲之序列密码算法
+description: 对照 Java 与 TypeScript 的 ZUC-128、EEA3、EIA3 及 byte、word、bit 单位。
 icon: stream
 order: 4
 category: [算法]

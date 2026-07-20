@@ -1,5 +1,6 @@
 ---
 title: 性能优化与评审
+description: 说明怎样通过 profiling、内存分析和回归验证评审密码实现性能优化。
 icon: rocket
 order: 2
 category: [性能, 维护]

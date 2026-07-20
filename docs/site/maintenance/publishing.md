@@ -1,5 +1,6 @@
 ---
 title: TypeScript 发布与验收
+description: 说明 gmkitx 的版本、构建、测试、npm provenance、tag 和发布验收流程。
 icon: upload
 order: 9
 category: [项目维护, 发布]

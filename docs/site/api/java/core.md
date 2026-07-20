@@ -1,5 +1,6 @@
 ---
 title: Java 核心公共 API
+description: 说明 Java 编码、字节、Provider、安全上下文、格式枚举和公共异常类型。
 icon: toolbox
 order: 1
 category:

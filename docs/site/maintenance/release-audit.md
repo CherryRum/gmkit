@@ -1,5 +1,6 @@
 ---
 title: 发布内容审计
+description: 在发布前审计 npm 与 Maven 制品内容、文档、许可证、来源和供应链边界。
 icon: checklist
 order: 10
 category: [项目维护, 发布]

@@ -1,5 +1,6 @@
 ---
 title: SM4 分组密码算法
+description: 对照 Java 与 TypeScript 的 SM4 模式、填充、IV、nonce、AAD 和认证 tag。
 icon: lock
 order: 3
 category: [算法]

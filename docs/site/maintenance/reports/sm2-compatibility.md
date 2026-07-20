@@ -1,5 +1,6 @@
 ---
 title: SM2 兼容与版本策略
+description: 说明 SM2 密文、签名、公钥、userId 与 GM/T 0009 相关变更的兼容策略。
 icon: timeline
 order: 4
 category: [项目参考, 兼容性]

@@ -1,5 +1,6 @@
 ---
 title: Java API 说明书
+description: 按 core、SM2、SM3、SM4、ZUC、SM9 和集成类型查阅 Java 公共 API。
 icon: coffee
 category:
   - API Reference

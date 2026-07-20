@@ -1,5 +1,6 @@
 ---
 title: Java SM9 API
+description: 说明 Java SM9 平台诊断、句柄、签名、IBE、PEM、文件限制与资源关闭。
 icon: id-card
 order: 6
 category:

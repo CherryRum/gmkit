@@ -1,5 +1,6 @@
 ---
 title: SHA 系列密码杂凑算法
+description: 说明 gmkitx 的 SHA-1、SHA-256、SHA-384、SHA-512、HMAC 和增量摘要边界。
 icon: fingerprint
 order: 6
 category: [算法]

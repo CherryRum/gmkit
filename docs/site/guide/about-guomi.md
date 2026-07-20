@@ -1,5 +1,6 @@
 ---
 title: 算法选择与协议设计
+description: 根据签名、加密、摘要、认证和 3GPP 场景选择算法并固定跨端协议字段。
 icon: compass
 order: 2
 category:

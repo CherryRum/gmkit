@@ -1,5 +1,6 @@
 ---
 title: SM9 标识密码算法
+description: 说明 Java SM9 独立模块的签名、IBE、native runtime、平台和资源生命周期。
 icon: key
 order: 5
 category: [算法]

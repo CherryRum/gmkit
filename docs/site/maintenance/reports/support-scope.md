@@ -1,5 +1,6 @@
 ---
 title: 项目支持范围
+description: 汇总 GMKit Java 与 TypeScript 当前发布制品、平台、算法和明确不支持范围。
 icon: info
 order: 1
 category: [项目参考]

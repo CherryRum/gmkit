@@ -56,7 +56,8 @@ function readFrontmatter(content) {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
   if (!match) return null;
   const title = match[1].match(/^title:\s*(.+?)\s*$/m)?.[1];
-  return { title };
+  const description = match[1].match(/^description:\s*(.+?)\s*$/m)?.[1];
+  return { title, description };
 }
 
 function publicExportNames(source) {
@@ -121,8 +122,11 @@ const forbiddenClaims = [
 
 async function checkLocalLinks(file, content, relative) {
   const prose = stripFencedCode(content);
-  const links = prose.matchAll(/\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g);
-  for (const [, link] of links) {
+  const links = [
+    ...[...prose.matchAll(/\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g)].map((match) => match[1]),
+    ...[...prose.matchAll(/<(?:a|area)\b[^>]*\bhref=["']([^"']+)["'][^>]*>/gi)].map((match) => match[1]),
+  ];
+  for (const link of links) {
     if (/^(?:https?:|mailto:|#)/.test(link)) continue;
     // TypeDoc/Javadoc 只在构建阶段写入站点目录，不在文档源码中提交生成文件。
     if (/^\/api\/(?:typescript|java)\/(?:latest|versions\/[^/]+)(?:\/.*)?$/.test(stripQueryAndHash(link))) {
@@ -140,12 +144,18 @@ for (const file of markdownFiles) {
   const relative = path.relative(repoRoot, file).replaceAll('\\', '/');
   const content = await readFile(file, 'utf8');
   const prose = stripFencedCode(content);
+  const frontmatter = readFrontmatter(content);
 
-  if (path.basename(file) !== 'README.md') {
-    const frontmatter = readFrontmatter(content);
-    if (!frontmatter) failures.push(`${relative}: 缺少 YAML frontmatter`);
-    else if (!frontmatter.title) failures.push(`${relative}: frontmatter 缺少 title`);
+  if (!frontmatter) {
+    failures.push(`${relative}: 缺少 YAML frontmatter`);
+  } else {
+    if (!frontmatter.title) failures.push(`${relative}: frontmatter 缺少 title`);
+    if (!frontmatter.description || frontmatter.description.length < 12) {
+      failures.push(`${relative}: frontmatter 缺少有效 description`);
+    }
+  }
 
+  if (routeFor(file) !== '/') {
     const headings = [...prose.matchAll(/^#\s+(.+?)\s*$/gm)].map((match) => match[1]);
     if (headings.length !== 1) failures.push(`${relative}: 页面正文应只有一个 H1，实际为 ${headings.length}`);
   }

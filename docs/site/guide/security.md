@@ -1,5 +1,6 @@
 ---
 title: 安全边界
+description: 上线前检查随机源、密钥生命周期、IV 与 nonce、认证失败和运行环境限制。
 icon: shield
 order: 3
 category:

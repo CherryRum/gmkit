@@ -1,5 +1,6 @@
 ---
 title: Python 对接指南
+description: 使用固定 gmssl 版本对照 GMKit 的 SM2、SM3、SM4、编码和互操作边界。
 icon: code
 order: 6
 category: [集成示例, Python]

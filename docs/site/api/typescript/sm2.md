@@ -1,5 +1,6 @@
 ---
 title: TypeScript SM2 API
+description: 说明 gmkitx SM2 密钥、压缩公钥、加解密、raw/DER 签名和密钥交换。
 icon: key
 order: 2
 category:

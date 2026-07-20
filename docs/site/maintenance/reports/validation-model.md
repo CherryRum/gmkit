@@ -1,5 +1,6 @@
 ---
 title: 验证模型与证据
+description: 说明单元测试、固定向量、共享互操作、第三方 fixture 和审计证据的层级。
 icon: code
 order: 2
 category: [项目参考, 质量保证]

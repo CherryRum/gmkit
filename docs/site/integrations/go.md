@@ -1,5 +1,6 @@
 ---
 title: Go 对接指南
+description: 使用固定 Go 依赖版本对照 GMKit 的 SM3、SM4、编码和共享互操作向量。
 icon: code
 order: 5
 category: [集成示例, Go]

@@ -1,5 +1,6 @@
 ---
 title: GMKit 跨语言互操作向量
+description: 说明 Java 与 TypeScript 共享向量的字段、来源、执行方式和证据边界。
 icon: link
 order: 99
 category: [协议与标准, 互操作]

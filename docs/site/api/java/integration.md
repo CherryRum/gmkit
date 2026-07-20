@@ -1,5 +1,6 @@
 ---
 title: Java 集成便利 API
+description: 说明 SM2Sm4Hybrid、混合载荷字段、编码 getter 和序列化稳定性边界。
 icon: boxes-stacked
 order: 7
 category:

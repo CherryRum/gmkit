@@ -1,5 +1,6 @@
 ---
 title: 性能基准与解释方法
+description: 说明怎样在固定环境运行 GMKit 基准并正确记录吞吐、延迟与可复现条件。
 icon: gauge
 order: 1
 category: [性能]
