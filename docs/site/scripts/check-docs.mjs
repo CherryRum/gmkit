@@ -17,6 +17,22 @@ async function walk(directory) {
   return files;
 }
 
+async function publicJavaTypeNames(directory) {
+  const names = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      names.push(...await publicJavaTypeNames(absolute));
+      continue;
+    }
+    if (!entry.name.endsWith('.java')) continue;
+    const source = await readFile(absolute, 'utf8');
+    const match = source.match(/^public\s+(?:(?:final|abstract)\s+)?(?:class|interface|enum)\s+([A-Za-z_$][\w$]*)/m);
+    if (match) names.push(match[1]);
+  }
+  return names.sort();
+}
+
 function routeFor(file) {
   const relative = path.relative(docsRoot, file).replaceAll('\\', '/');
   if (relative === 'README.md') return '/';
@@ -74,9 +90,16 @@ function linkCandidates(source, link) {
   const base = cleaned.startsWith('/')
     ? path.join(docsRoot, cleaned.slice(1))
     : path.resolve(path.dirname(source), cleaned);
+  // VuePress 的 clean URL 通常带尾斜杠，但源码页面仍然是同名 Markdown 文件。
+  // 归一化后同时检查页面文件和目录 README，避免把合法路由误判为断链。
+  const normalizedBase = base !== docsRoot ? base.replace(/[\\/]$/, '') : base;
+  if (/\.html$/i.test(normalizedBase)) {
+    const markdownBase = normalizedBase.slice(0, -'.html'.length);
+    return [normalizedBase, `${markdownBase}.md`, path.join(markdownBase, 'README.md')];
+  }
   // `.zh-CN` 是页面名的一部分，不是 Markdown 扩展名；只有明确的文件后缀才直接读取。
-  if (/\.(?:md|png|jpe?g|gif|svg|webp|pdf|zip)$/i.test(base)) return [base];
-  return [base, `${base}.md`, path.join(base, 'README.md')];
+  if (/\.(?:md|png|jpe?g|gif|svg|webp|pdf|zip)$/i.test(normalizedBase)) return [normalizedBase];
+  return [normalizedBase, `${normalizedBase}.md`, path.join(normalizedBase, 'README.md')];
 }
 
 const markdownFiles = await walk(docsRoot);
@@ -99,7 +122,7 @@ async function checkLocalLinks(file, content, relative) {
   for (const [, link] of links) {
     if (/^(?:https?:|mailto:|#)/.test(link)) continue;
     // TypeDoc/Javadoc 只在构建阶段写入站点目录，不在文档源码中提交生成文件。
-    if (/^\/api\/(?:typescript|java)\/(?:latest|versions\/[^/]+)\/?$/.test(stripQueryAndHash(link))) {
+    if (/^\/api\/(?:typescript|java)\/(?:latest|versions\/[^/]+)(?:\/.*)?$/.test(stripQueryAndHash(link))) {
       continue;
     }
     const candidates = linkCandidates(file, link);
@@ -159,10 +182,18 @@ for (const relative of [
   await checkLocalLinks(file, await readFile(file, 'utf8'), relative);
 }
 
-const apiDoc = await readFile(path.join(docsRoot, 'typescript', 'api-surface.md'), 'utf8');
+const apiDoc = await readFile(path.join(docsRoot, 'api', 'public-api.md'), 'utf8');
 const publicEntry = await readFile(path.join(repoRoot, 'packages', 'ts', 'src', 'index.ts'), 'utf8');
 for (const name of publicExportNames(publicEntry)) {
-  if (!apiDoc.includes(`\`${name}\``)) failures.push(`API-SURFACE.zh-CN.md 缺少公开 API: ${name}`);
+  if (!apiDoc.includes(`\`${name}\``)) failures.push(`api/public-api.md 缺少 TypeScript 公开 API: ${name}`);
+}
+for (const sourceRoot of [
+  path.join(repoRoot, 'packages', 'java', 'gmkit', 'src', 'main', 'java'),
+  path.join(repoRoot, 'packages', 'java', 'gmkit-sm9', 'src', 'main', 'java'),
+]) {
+  for (const name of await publicJavaTypeNames(sourceRoot)) {
+    if (!apiDoc.includes(`\`${name}\``)) failures.push(`api/public-api.md 缺少 Java 公共类型: ${name}`);
+  }
 }
 
 // 正式发布文档中的版本必须来自构建清单，避免升级后保留可运行但过期的样例。
@@ -173,16 +204,16 @@ if (rootPackage.version !== tsPackage.version || rootPackage.version !== docsPac
   failures.push(`workspace 版本不一致: root=${rootPackage.version}, ts=${tsPackage.version}, docs=${docsPackage.version}`);
 }
 
-for (const relative of ['README.md', 'guide/README.md', 'typescript/README.md']) {
+for (const relative of ['README.md', 'guide/README.md', 'guide/getting-started.md']) {
   const content = await readFile(path.join(docsRoot, relative), 'utf8');
   requireDocumentedVersion(content, tsPackage.version, relative);
 }
 
 const javaPom = await readFile(path.join(repoRoot, 'packages', 'java', 'pom.xml'), 'utf8');
 const javaVersion = requireMatch(javaPom, /<artifactId>gmkit-parent<\/artifactId>\s*<version>([^<]+)<\/version>/, 'packages/java/pom.xml');
-const javaGuide = await readFile(path.join(docsRoot, 'java', 'guide.md'), 'utf8');
-requireDocumentedVersion(javaGuide, javaVersion, 'JAVA-LIBRARY.zh-CN.md');
-for (const relative of ['README.md', 'guide/README.md', 'java/README.md']) {
+const javaGuide = await readFile(path.join(docsRoot, 'guide', 'getting-started.md'), 'utf8');
+requireDocumentedVersion(javaGuide, javaVersion, 'guide/getting-started.md');
+for (const relative of ['README.md', 'guide/README.md', 'guide/getting-started.md']) {
   const content = await readFile(path.join(docsRoot, relative), 'utf8');
   requireDocumentedVersion(content, javaVersion, relative);
 }
