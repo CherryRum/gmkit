@@ -55,7 +55,16 @@ export default defineUserConfig({
       { text: '开始使用', link: '/guide/' },
       { text: '算法', link: '/algorithms/' },
       { text: '公共能力', link: '/api/common' },
-      { text: 'API Reference', link: '/api/' },
+      {
+        text: 'API Reference',
+        children: [
+          { text: 'API 总览', link: '/api/' },
+          { text: 'TypeScript 说明书', link: '/api/typescript/' },
+          { text: 'Java 说明书', link: '/api/java/' },
+          { text: 'TypeDoc latest', link: '/api/typescript/latest/' },
+          { text: 'Javadoc latest', link: '/api/java/latest/' },
+        ],
+      },
       { text: '协议与标准', link: '/standards/' },
       { text: '集成示例', link: '/integrations/' },
       { text: '扩展包', link: '/extensions/' },
@@ -72,7 +81,13 @@ export default defineUserConfig({
       '/api/': [
         {
           text: '公共 API',
-          children: ['/api/', '/api/public-api', '/api/common'],
+          children: [
+            '/api/',
+            '/api/typescript/',
+            '/api/java/',
+            '/api/public-api',
+            '/api/common',
+          ],
         },
       ],
       '/algorithms/': [
@@ -161,12 +176,6 @@ export default defineUserConfig({
         },
       },
       readingTime: { wordPerMinute: 200 },
-      redirect: {
-        config: {
-          '/api/typescript/': '/api/typescript/latest/',
-          '/api/java/': '/api/java/latest/',
-        },
-      },
       copyright: false,
     },
 
