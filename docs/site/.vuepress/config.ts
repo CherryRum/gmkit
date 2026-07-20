@@ -17,7 +17,7 @@ const contributorInfo = [
 
 export default defineUserConfig({
   lang: 'zh-CN',
-  title: 'GMKit 文档',
+  title: 'GMKit',
   description: 'GMKit Java、TypeScript、协议边界与扩展包文档',
   base: '/',
 

@@ -1,13 +1,35 @@
 // 等宽字体配置
 @import url("https://fontsapi.zeoseven.com/521/main/result.css");
+
+$gmkit-mono: 'JetBrains Maple Mono', 'Cascadia Mono', 'Noto Sans Mono CJK SC', 'Microsoft YaHei UI', ui-monospace, monospace;
+
+html,
+body,
+button,
+input,
+textarea,
+select {
+  font-family: $gmkit-mono;
+  letter-spacing: 0;
+}
+
+body {
+  font-size: 14px;
+}
+
 code, kbd, pre, samp {
-  font-family: 'JetBrains Maple Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: $gmkit-mono;
 }
 
 // 当前 VuePress 2 内容容器。
 [vp-content] {
+  box-sizing: border-box;
   min-width: 0;
-  line-height: 1.7;
+  padding-right: 20px;
+  padding-left: 20px;
+  font-family: $gmkit-mono;
+  font-size: 14px;
+  line-height: 1.75;
 
   #markdown-content {
     min-width: 0;
@@ -37,14 +59,14 @@ code, kbd, pre, samp {
       box-sizing: border-box;
       max-width: 100%;
       overflow-x: auto;
-      font-family: 'JetBrains Maple Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
-      font-size: 14px;
-      line-height: 1.6;
-      padding: 1.25rem 1.5rem;
+      font-family: $gmkit-mono;
+      font-size: 13px;
+      line-height: 1.65;
+      padding: 1rem 1.15rem;
     }
 
     code {
-      font-family: 'JetBrains Maple Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+      font-family: $gmkit-mono;
     }
 
     &::before {
@@ -56,22 +78,36 @@ code, kbd, pre, samp {
   }
 
   h1, h2, h3, h4, h5, h6 {
-    margin-top: 2rem;
-    margin-bottom: 1rem;
+    font-family: $gmkit-mono;
     font-weight: 600;
     overflow-wrap: anywhere;
   }
 
+  h1 {
+    font-size: 2rem;
+    line-height: 1.3;
+  }
+
+  h2 {
+    font-size: 1.45rem;
+    line-height: 1.4;
+  }
+
+  h3 {
+    font-size: 1.15rem;
+    line-height: 1.5;
+  }
+
   p {
-    margin: 1rem 0;
+    margin: 0.8rem 0;
   }
 
   ul, ol {
     padding-left: 1.5rem;
-    margin: 1rem 0;
+    margin: 0.8rem 0;
 
     li {
-      margin: 0.5rem 0;
+      margin: 0.35rem 0;
     }
   }
 
@@ -82,7 +118,7 @@ code, kbd, pre, samp {
     overflow-x: auto;
     overflow-y: hidden;
     border-collapse: collapse;
-    margin: 1.5rem 0;
+    margin: 1.25rem 0;
     width: 100%;
     -webkit-overflow-scrolling: touch;
 
@@ -90,7 +126,7 @@ code, kbd, pre, samp {
       background-color: rgba(127, 127, 127, 0.05);
 
       th {
-        padding: 0.75rem 1rem;
+        padding: 0.6rem 0.8rem;
         font-weight: 600;
         text-align: left;
         border-bottom: 2px solid rgba(127, 127, 127, 0.15);
@@ -108,7 +144,7 @@ code, kbd, pre, samp {
       }
 
       td {
-        padding: 0.75rem 1rem;
+        padding: 0.6rem 0.8rem;
         min-width: 7rem;
         overflow-wrap: anywhere;
       }
@@ -125,13 +161,14 @@ code, kbd, pre, samp {
   }
 
   .language-entry {
-    margin: 1rem 0;
+    margin: 0.85rem 0;
     border: 1px solid var(--vp-c-border, rgba(127, 127, 127, 0.22));
     border-radius: 6px;
     background: var(--vp-c-bg, transparent);
 
     summary {
-      padding: 0.8rem 1rem;
+      padding: 0.7rem 0.9rem;
+      font-size: 13px;
       cursor: pointer;
       user-select: none;
 
@@ -146,12 +183,12 @@ code, kbd, pre, samp {
     }
 
     > :not(summary) {
-      margin-right: 1rem;
-      margin-left: 1rem;
+      margin-right: 0.9rem;
+      margin-left: 0.9rem;
     }
 
     > :last-child {
-      margin-bottom: 1rem;
+      margin-bottom: 0.85rem;
     }
   }
 }
@@ -161,9 +198,9 @@ code, kbd, pre, samp {
   max-width: 100%;
   overflow-wrap: anywhere;
   word-break: break-word;
-  font-family: 'JetBrains Maple Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 0.88em;
-  padding: 0.2em 0.5em;
+  font-family: $gmkit-mono;
+  font-size: 0.83em;
+  padding: 0.15em 0.4em;
   border-radius: 4px;
   background-color: rgba(127, 127, 127, 0.08);
   color: #476582;
@@ -180,7 +217,7 @@ html.dark :not(pre) > code {
 
 // 代码标签样式
 .code-tabs {
-  margin: 1.5rem 0;
+  margin: 1.25rem 0;
 
   .code-tabs__nav {
     background-color: rgba(127, 127, 127, 0.04);
@@ -188,8 +225,9 @@ html.dark :not(pre) > code {
     padding: 0.5rem 0.5rem 0;
 
     button {
-      font-family: 'JetBrains Maple Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
-      padding: 0.5rem 1rem;
+      font-family: $gmkit-mono;
+      font-size: 13px;
+      padding: 0.4rem 0.8rem;
       border-radius: 6px 6px 0 0;
       transition: all 0.2s ease;
 
@@ -201,15 +239,63 @@ html.dark :not(pre) > code {
 }
 
 
-// 减少侧边栏遮挡
-.sidebar {
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+// 使用当前主题的实际类名收紧导航密度。
+.vp-navbar,
+.vp-sidebar,
+.vp-page-title,
+.vp-page-meta,
+.vp-page-nav {
+  font-family: $gmkit-mono;
 }
 
-// 优化导航栏样式
-.navbar {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  backdrop-filter: blur(8px);
+.vp-navbar {
+  min-height: 52px;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+  font-size: 13px;
+}
+
+.vp-site-name {
+  font-family: $gmkit-mono;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.vp-navbar .vp-navbar-item,
+.vp-navbar .vp-navbar-link {
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.vp-sidebar {
+  font-size: 13px;
+}
+
+.vp-sidebar-header {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.vp-sidebar-link {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.vp-page-title {
+  padding-right: 20px;
+  padding-left: 20px;
+}
+
+.vp-page-title h1 {
+  font-family: $gmkit-mono;
+  font-size: 2rem;
+  line-height: 1.3;
+}
+
+.vp-breadcrumb,
+.vp-page-meta,
+.vp-page-nav {
+  font-size: 12px;
 }
 
 // 提示框样式优化
@@ -235,10 +321,26 @@ html.dark :not(pre) > code {
 }
 
 @media (max-width: 719px) {
+  body {
+    font-size: 13px;
+  }
+
   [vp-content] {
+    padding-right: 16px;
+    padding-left: 16px;
+
+    h1,
+    .vp-page-title h1 {
+      font-size: 1.7rem;
+    }
+
+    h2 {
+      font-size: 1.3rem;
+    }
+
     div[class*='language-'] pre {
-      padding: 1rem;
-      font-size: 13px;
+      padding: 0.85rem;
+      font-size: 12px;
     }
 
     table {
@@ -252,7 +354,7 @@ html.dark :not(pre) > code {
 
     .language-entry {
       summary {
-        padding: 0.7rem 0.8rem;
+        padding: 0.65rem 0.75rem;
       }
 
       > :not(summary) {
