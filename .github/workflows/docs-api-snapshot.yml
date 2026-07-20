@@ -260,7 +260,7 @@ jobs:
           TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID_CN }}
           TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY_CN }}
           EDGEONE_ZONE_ID: ${{ secrets.EDGEONE_ZONE_ID_CN }}
-          EDGEONE_TARGETS: gmkit.cn
+          EDGEONE_TARGETS: gmkit.cn,www.gmkit.cn
           EDGEONE_SITE_TYPE: cn
         run: python .github/scripts/purge_edgeone.py
       - name: Verify public API snapshot

@@ -27,8 +27,8 @@ npm run docs:verify
 1. Action 写入 `deployment.json`，记录 commit、构建时间、Action run 和 Java/TypeScript 版本。
 2. 同一个 artifact 通过 rsync 部署到 CN 源站的 `/home/gmkit-site/www/`。
 3. 源站检查首页、TypeDoc、Javadoc 和 `deployment.json` 中的 commit。
-4. 源站验证通过后，调用中国大陆 EdgeOne 的 `CreatePurgeTask`，只刷新 `gmkit.cn`。
-5. 轮询 `https://gmkit.cn/deployment.json`，直到读取到本次 commit。
+4. 源站验证通过后，调用中国大陆 EdgeOne 的 `CreatePurgeTask`，同时刷新 `gmkit.cn` 与 `www.gmkit.cn`。
+5. 轮询 `https://gmkit.cn/deployment.json`，直到读取到本次 commit，并确认 `https://www.gmkit.cn/deployment.json` 通过 HTTPS 跳转到规范域名的同一路径。
 
 rsync 使用 `--delay-updates --delete-delay`。latest 部署明确排除 `/api/*/versions/` 和 `/api/versions.json`，避免覆盖或删除由 tag 快照工作流维护的历史 API。
 
@@ -51,7 +51,7 @@ rsync 使用 `--delay-updates --delete-delay`。latest 部署明确排除 `/api/
 
 `workflow_dispatch` 默认只验证并上传 artifact。需要人工重新部署 latest 时，选择 `deploy=true`；仍会从头执行完整门禁，不复用未验证的本地构建。
 
-EdgeOne 请求失败、限流重试耗尽、任一源站校验失败或 CDN 未读到本次 commit 都会使工作流失败。当前公开域名仅为 `https://gmkit.cn`，不会刷新其他域名。
+EdgeOne 请求失败、限流重试耗尽、源站校验失败、CDN 未读到本次 commit，或 `www` 没有通过 HTTPS 跳转到规范域名，都会使工作流失败。`https://gmkit.cn` 是规范域名；`https://www.gmkit.cn` 只作为兼容入口，不维护第二份站点内容。
 
 ## API 版本快照
 

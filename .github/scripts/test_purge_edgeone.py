@@ -24,7 +24,7 @@ class EdgeOneClientTest(unittest.TestCase):
             "secret-id",
             "secret-key",
             "zone-id",
-            ["gmkit.cn"],
+            ["gmkit.cn", "www.gmkit.cn"],
             "cn",
             timestamp=1_700_000_000,
         )
@@ -38,7 +38,7 @@ class EdgeOneClientTest(unittest.TestCase):
             {
                 "ZoneId": "zone-id",
                 "Type": "purge_host",
-                "Targets": ["gmkit.cn"],
+                "Targets": ["gmkit.cn", "www.gmkit.cn"],
             },
         )
 

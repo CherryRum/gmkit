@@ -128,7 +128,7 @@ jobs:
           TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID_CN }}
           TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY_CN }}
           EDGEONE_ZONE_ID: ${{ secrets.EDGEONE_ZONE_ID_CN }}
-          EDGEONE_TARGETS: gmkit.cn
+          EDGEONE_TARGETS: gmkit.cn,www.gmkit.cn
           EDGEONE_SITE_TYPE: cn
         run: python .github/scripts/purge_edgeone.py
       - name: Verify canonical deployment
@@ -139,9 +139,14 @@ jobs:
             if curl --fail --silent --show-error --max-time 20 \
               -H 'Cache-Control: no-cache' https://gmkit.cn/deployment.json \
               | grep --fixed-strings "\"commit\": \"$EXPECTED_COMMIT\""; then
-              exit 0
+              www_redirect=$(curl --silent --show-error --max-time 20 \
+                --output /dev/null --write-out '%{redirect_url}' \
+                https://www.gmkit.cn/deployment.json || true)
+              if [[ "$www_redirect" == "https://gmkit.cn/deployment.json" ]]; then
+                exit 0
+              fi
             fi
             sleep 15
           done
-          echo "gmkit.cn did not serve deployment $EXPECTED_COMMIT after EdgeOne purge" >&2
+          echo "Canonical deployment or www HTTPS redirect was not ready after EdgeOne purge" >&2
           exit 1
