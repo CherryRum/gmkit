@@ -5,13 +5,26 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const docsRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const repoRoot = path.resolve(docsRoot, '..', '..');
 const examplesRoot = path.join(docsRoot, 'examples');
 const only = process.env.DOC_EXAMPLE_ONLY?.split(',').map((item) => item.trim()).filter(Boolean);
-const mavenExample = process.platform === 'win32'
-  ? { command: process.env.ComSpec ?? 'cmd.exe', args: ['/d', '/s', '/c', 'mvn -B -ntp test'] }
-  : { command: 'mvn', args: ['-B', '-ntp', 'test'] };
+
+function mavenExample(args) {
+  return process.platform === 'win32'
+    ? {
+        command: process.env.ComSpec ?? 'cmd.exe',
+        args: ['/d', '/s', '/c', ['mvn', '-B', '-ntp', ...args].join(' ')],
+      }
+    : { command: 'mvn', args: ['-B', '-ntp', ...args] };
+}
 
 const examples = [
+  { name: 'quickstart-typescript', command: process.execPath, args: ['quick-start.mjs'], cwd: path.join(examplesRoot, 'node') },
+  {
+    name: 'quickstart-java',
+    ...mavenExample(['-pl', 'gmkit', '-Dtest=PublicApiManualExamplesTest', 'test']),
+    cwd: path.join(repoRoot, 'packages', 'java'),
+  },
   { name: 'gmkit', command: process.execPath, args: ['gmkit-release.mjs'], cwd: path.join(examplesRoot, 'node') },
   { name: 'api-typescript', command: process.execPath, args: ['public-api-manual.mjs'], cwd: path.join(examplesRoot, 'node') },
   { name: 'node', command: process.execPath, args: ['international-crypto.mjs'], cwd: path.join(examplesRoot, 'node') },
@@ -20,7 +33,7 @@ const examples = [
   { name: 'rust', custom: runRustExample },
   {
     name: 'hutool',
-    ...mavenExample,
+    ...mavenExample(['test']),
     cwd: path.join(examplesRoot, 'hutool'),
   },
 ].filter(({ name }) => !only || only.includes(name));

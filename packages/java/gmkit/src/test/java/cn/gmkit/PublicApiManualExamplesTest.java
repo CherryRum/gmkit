@@ -11,6 +11,7 @@ import cn.gmkit.sm2.SM2KeyPair;
 import cn.gmkit.sm2.SM2SignOptions;
 import cn.gmkit.sm2.SM2VerifyOptions;
 import cn.gmkit.sm3.SM3;
+import cn.gmkit.sm3.SM3Util;
 import cn.gmkit.sm4.SM4;
 import cn.gmkit.sm4.SM4CipherResult;
 import cn.gmkit.sm4.SM4Options;
@@ -28,6 +29,37 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** 编译并执行官网公共 API 说明书中的代表性 Java 示例。 */
 class PublicApiManualExamplesTest {
+
+    @Test
+    void quickStartFlowMatchesGuide() {
+        assertEquals(
+            "66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0",
+            SM3Util.digestHex("abc"));
+
+        SM2 sm2 = new SM2();
+        SM2KeyPair keys = sm2.generateKeyPair();
+        String message = "GMKit Java quick start";
+        String signature = sm2.signHex(
+            keys.privateKey(),
+            message,
+            SM2SignOptions.builder().userId("quick-start@example").build());
+        assertTrue(sm2.verify(
+            keys.publicKey(),
+            message,
+            signature,
+            SM2VerifyOptions.builder().userId("quick-start@example").build()));
+
+        byte[] sm4Key = new SM4().generateKey();
+        SM4Options options = SM4Options.builder()
+            .mode(GCM)
+            .padding(NONE)
+            .iv(HexCodec.decodeStrict("000102030405060708090a0b", "nonce"))
+            .aad("gmkit-quick-start-v1".getBytes(StandardCharsets.UTF_8))
+            .tagLength(16)
+            .build();
+        SM4CipherResult encrypted = new SM4().encrypt(sm4Key, message, options);
+        assertEquals(message, new SM4().decryptToUtf8(sm4Key, encrypted, options));
+    }
 
     @Test
     void explicitEncodingRoundTrips() {
