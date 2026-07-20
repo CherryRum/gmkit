@@ -1,0 +1,41 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["../ts/src/index.ts"],
+  "entryPointStrategy": "resolve",
+  "tsconfig": "../ts/tsconfig.json",
+  "out": ".vuepress/public/api/typescript/latest",
+  "name": "gmkitx API",
+  "lang": "zh",
+  "readme": "typescript/README.md",
+  "includeVersion": true,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "cleanOutputDir": true,
+  "githubPages": false,
+  "searchInComments": true,
+  "sourceLinkExternal": true,
+  "navigationLinks": {
+    "GMKit 文档": "https://gmkit.cn/",
+    "TypeScript 指南": "https://gmkit.cn/typescript/"
+  },
+  "hostedBaseUrl": "https://gmkit.cn/api/typescript/latest/",
+  "validation": {
+    "notExported": true,
+    "invalidLink": true,
+    "notDocumented": true
+  },
+  "requiredToBeDocumented": [
+    "Enum",
+    "EnumMember",
+    "Variable",
+    "Function",
+    "Class",
+    "Interface",
+    "Property",
+    "Method",
+    "Accessor",
+    "TypeAlias"
+  ],
+  "treatWarningsAsErrors": true
+}

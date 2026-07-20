@@ -16,6 +16,7 @@
     "build:ts": "npm run build -w packages/ts",
     "build:java": "mvn -f packages/java/pom.xml -B -ntp -DskipTests install",
     "docs:build": "npm run build -w packages/ts-docs",
+    "docs:generate-api:ts": "npm run generate:api:typescript -w packages/ts-docs",
     "docs:check": "npm run check -w packages/ts-docs",
     "docs:test-examples": "npm run test:examples -w packages/ts-docs",
     "studio:build": "npm run build -w apps/gmkit-studio",

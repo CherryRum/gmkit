@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "vuepress dev .",
     "build": "vuepress build .",
+    "generate:api:typescript": "typedoc --options typedoc.json",
     "clean": "node scripts/clean.mjs",
     "check": "node scripts/check-docs.mjs",
     "test:examples": "node scripts/test-examples.mjs"
@@ -21,6 +22,7 @@
     "katex": "^0.16.25",
     "mermaid": "^11.12.1",
     "sass": "^1.94.2",
+    "typedoc": "^0.28.20",
     "vite-plugin-compression2": "^2.3.1",
     "vue": "^3.5.24",
     "vue-router": "^4.6.3",

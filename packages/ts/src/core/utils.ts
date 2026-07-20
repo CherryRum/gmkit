@@ -79,15 +79,25 @@ export function bytesToHex(bytes: Uint8Array): string {
   return parts.join('');
 }
 
+/** 可由 API 接收的编码字符串或原始字节数组。字符串的具体编码由对应参数决定。 */
 export type BytesLike = string | Uint8Array;
 
+/** 受限运行环境注入的 UTF-8 文本编解码器。 */
 export type TextCodec = {
+  /** 将 JavaScript 字符串编码为 UTF-8 字节。 */
   encode: (input: string) => Uint8Array;
+  /** 将 UTF-8 字节解码为 JavaScript 字符串；无效序列的处理由实现决定。 */
   decode: (bytes: Uint8Array) => string;
 };
 
 let customTextCodec: TextCodec | null = null;
 
+/**
+ * 注入宿主提供的 UTF-8 编解码器，并清除内部缓存。
+ *
+ * @param codec - 同时提供 encode/decode 的编解码器
+ * @throws 后续调用中，编解码器返回类型不符合约定时由调用点抛出错误
+ */
 export function setTextCodec(codec: TextCodec) {
   customTextCodec = codec;
   cachedTextEncoder = null;
@@ -581,13 +591,24 @@ export function autoDecodeString(str: string): Uint8Array {
 }
 
 
+/**
+ * 缺少系统 CSPRNG 时的处理策略。
+ *
+ * `strict` 直接抛错；`warn` 使用兼容随机源并只警告一次；`allow` 静默兼容。
+ * `warn` 和 `allow` 的降级输出都不具备密码学安全性。
+ */
 export type RNGPolicy = 'strict' | 'warn' | 'allow';
 // 默认保持旧版兼容：缺少 CSPRNG 时明确警告，但不让小程序等受限运行时直接崩溃。
 let rngPolicy: RNGPolicy = 'warn';
 let customRNG: ((len: number) => Uint8Array) | null = null;
 let unsafeFallbackWarningShown = false;
 
-/** 配置缺少系统 CSPRNG 时的处理策略。 */
+/**
+ * 配置缺少系统 CSPRNG 时的处理策略。默认值是 `warn`。
+ *
+ * @param policy - `strict`、`warn` 或 `allow`
+ * @throws 传入其他字符串时抛出错误
+ */
 export function configureRNG(policy: RNGPolicy): void {
   if (policy !== 'strict' && policy !== 'warn' && policy !== 'allow') {
     throw new Error("Invalid RNG policy: expected 'strict', 'warn', or 'allow'");
@@ -602,6 +623,15 @@ export function setRNGPolicy(policy: RNGPolicy) {
   configureRNG(policy);
 }
 
+/**
+ * 注入宿主平台的随机字节函数，优先级高于 Web Crypto 和 Node crypto。
+ *
+ * 调用方负责保证实现来自 CSPRNG。每次调用必须返回精确长度的 `Uint8Array`；
+ * 测试中的确定性实现必须在结束后通过 {@link clearCustomRNG} 清除。
+ *
+ * @param fn - 接收正整数长度并返回相同长度字节数组的函数
+ * @throws 参数不是函数时立即抛错；返回类型或长度错误时由 {@link getRandomBytes} 抛错
+ */
 export function setCustomRNG(fn: (len: number) => Uint8Array): void {
   if (typeof fn !== 'function') {
     throw new Error('Custom RNG must be a function');
@@ -612,14 +642,14 @@ export function setCustomRNG(fn: (len: number) => Uint8Array): void {
 /**
  * 清除已注入的自定义 RNG，恢复使用系统 RNG（WebCrypto / Node crypto）。
  *
- * <p>测试 fixture 与跨用例隔离的标准 teardown 接口。生产代码不应调用。
+ * 测试 fixture 与跨用例隔离的标准 teardown 接口。生产代码不应调用。
  */
 export function clearCustomRNG(): void {
   customRNG = null;
 }
 
 /**
- * 是否已注入自定义 RNG。生产启动代码可断言 {@code !hasCustomRNG()}
+ * 是否已注入自定义 RNG。生产启动代码可断言 `!hasCustomRNG()`
  * 以防 deterministic 测试 RNG 误入产物。
  */
 export function hasCustomRNG(): boolean {
@@ -724,14 +754,25 @@ export function getRandomBytes(len: number = 32): Uint8Array {
   return unsafeFallbackRandom(len, rngPolicy === 'warn');
 }
 
+/** 当前 JavaScript 运行环境中与 GMKit 相关的基础能力探测结果。 */
 export type EnvReport = {
+  /** 是否提供原生 `BigInt`。 */
   hasBigInt: boolean;
+  /** 是否提供全局或 Node.js `TextEncoder`。 */
   hasTextEncoder: boolean;
+  /** 是否提供全局或 Node.js `TextDecoder`。 */
   hasTextDecoder: boolean;
+  /** 是否提供 `crypto.getRandomValues`。 */
   hasWebCrypto: boolean;
+  /** 当前 CommonJS 环境是否可加载 `node:crypto.randomBytes`。 */
   hasNodeCrypto: boolean;
 };
 
+/**
+ * 探测当前环境的文本、BigInt 与随机源能力，不修改全局配置。
+ *
+ * @returns 每项能力的布尔结果；结果只反映调用当时环境
+ */
 export function getEnvReport(): EnvReport {
   const hasBigInt = typeof BigInt !== 'undefined';
   const hasTextEncoder = typeof TextEncoder !== 'undefined' || tryNodeTextEncoder() !== null;
@@ -758,17 +799,15 @@ export function getEnvReport(): EnvReport {
 /**
  * 尽量避免按内容提前返回的字节数组比较。
  *
- * <p>用途：MAC / AEAD tag / HMAC / SM2 C3 哈希等敏感值比较。普通 `===`
+ * 用途：MAC / AEAD tag / HMAC / SM2 C3 哈希等敏感值比较。普通 `===`
  * 或循环早返回会随首个不匹配位置变化执行时间。JavaScript/JIT 运行时不提供
  * 严格恒时保证，本函数只避免显式按内容提前退出。
  *
- * <p>语义（与 Java {@code cn.gmkit.core.Bytes.constantTimeEquals} 对齐）：
- * <ul>
- *   <li>任一侧为 null/undefined 返回 false。</li>
- *   <li>长度不同返回 false（长度通常由消息格式公开，非机密）。</li>
- *   <li>两侧均为空数组返回 true。</li>
- *   <li>长度相同时全字节扫描，不因首字节匹配就早返回。</li>
- * </ul>
+ * 语义（与 Java `cn.gmkit.core.Bytes.constantTimeEquals` 对齐）：
+ * - 任一侧为 null/undefined 返回 false。
+ * - 长度不同返回 false（长度通常由消息格式公开，非机密）。
+ * - 两侧均为空数组返回 true。
+ * - 长度相同时全字节扫描，不因首字节匹配就早返回。
  *
  * @param a 第一个字节数组
  * @param b 第二个字节数组

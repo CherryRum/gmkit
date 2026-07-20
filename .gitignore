@@ -103,6 +103,8 @@ packages/ts-docs/.vuepress/dist
 .temp
 packages/ts-docs/.vuepress/.temp
 packages/ts-docs/.vuepress/.cache
+packages/ts-docs/.vuepress/public/api/
+packages/ts-docs/.vuepress/api-typescript.json
 
 # Sveltekit cache directory
 .svelte-kit/

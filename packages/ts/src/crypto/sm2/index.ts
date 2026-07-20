@@ -34,20 +34,28 @@ import {encodeSignature, decodeSignature} from '../../core/asn1';
  * SM2 曲线参数接口（用于自定义曲线）
  */
 export interface SM2CurveParams {
-  p?: string;    // 素数模数
-  a?: string;    // 系数 a
-  b?: string;    // 系数 b
-  Gx?: string;   // 基点 x 坐标
-  Gy?: string;   // 基点 y 坐标
-  n?: string;    // 阶 n
+  /** 素数域模数，小写或大写十六进制字符串。 */
+  p?: string;
+  /** 曲线系数 a，十六进制字符串。 */
+  a?: string;
+  /** 曲线系数 b，十六进制字符串。 */
+  b?: string;
+  /** 基点 x 坐标，十六进制字符串。 */
+  Gx?: string;
+  /** 基点 y 坐标，十六进制字符串。 */
+  Gy?: string;
+  /** 基点的阶 n，十六进制字符串。 */
+  n?: string;
 }
 
 /**
  * 密钥对接口
  */
 export interface KeyPair {
-  publicKey: string;   // 公钥（十六进制字符串，04 开头的非压缩格式）
-  privateKey: string;  // 私钥（十六进制字符串，32 字节）
+  /** 公钥十六进制字符串；默认是以 `04` 开头的 65 字节非压缩点。 */
+  publicKey: string;
+  /** 私钥小写十六进制字符串，固定 32 字节。 */
+  privateKey: string;
 }
 
 /**
@@ -94,7 +102,10 @@ export interface SM2DecryptOptions {
   inputFormat?: InputFormatType;
 }
 
+/** SM2 签名输出格式：64 字节 `r || s` 或 ASN.1 DER SEQUENCE。 */
 export type SM2SignatureFormat = 'raw' | 'der';
+
+/** SM2 签名输入格式；`auto` 根据首字节与长度尝试识别 raw/DER。 */
 export type SM2SignatureInputFormat = SM2SignatureFormat | 'auto';
 
 /**
@@ -322,8 +333,9 @@ function tryVerifyAndDecrypt(
  *
  * @param privateKey - 私钥（十六进制字符串）
  * @param encryptedData - 加密的数据（十六进制/Base64 字符串或 Uint8Array）
- * @param mode - 密文模式：'C1C3C2'（默认）或 'C1C2C3'
+ * @param options - 输入编码和密文排列；省略时自动识别编码并默认使用 C1C3C2
  * @returns 解密后的数据（UTF-8 字符串）
+ * @throws 私钥、密文编码、椭圆曲线点或 C3 完整性校验无效时抛出错误
  */
 export function decrypt(
   privateKey: BytesLike,

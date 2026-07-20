@@ -336,7 +336,12 @@ export function encodeSignature(r: string | Uint8Array, s: string | Uint8Array):
  * @returns 解码的签名分量 { r, s }，均为小写十六进制字符串
  * @throws 如果签名格式无效则抛出异常
  */
-export function decodeSignature(signature: Uint8Array): { r: string; s: string } {
+export function decodeSignature(signature: Uint8Array): {
+  /** 32 字节整数 r 的小写十六进制表示，不含符号补位字节。 */
+  r: string;
+  /** 32 字节整数 s 的小写十六进制表示，不含符号补位字节。 */
+  s: string;
+} {
   const { elements, bytesRead } = decodeSequence(signature);
   if (bytesRead !== signature.length) {
     throw new Error('Invalid signature: trailing data after DER sequence');
@@ -474,10 +479,15 @@ export function asn1ToXml(data: Uint8Array, indent: number = 0): string {
 }
 
 /**
- * Convert SM2 signature to XML representation
- * @param signature - DER-encoded signature or raw signature (r || s)
- * @param isDer - Whether the signature is DER-encoded (default: auto-detect)
- * @returns XML string representation of the signature
+ * 将 SM2 签名转换为便于诊断的 XML 文本。
+ *
+ * 该输出只用于查看 ASN.1 结构，不是标准签名交换格式，解析不可信 XML 时不应
+ * 反向依赖此调试表示。
+ *
+ * @param signature - DER 签名或 64 字节 raw `r || s` 签名
+ * @param options - 签名格式和输入编码；默认按 raw Hex 处理
+ * @returns 包含 r、s 与 DER TLV 结构的 XML 字符串
+ * @throws 输入编码、raw 长度或 DER 结构无效时抛出错误
  */
 export function signatureToXml(
   signature: BytesLike,

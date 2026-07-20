@@ -574,8 +574,13 @@ export interface SM4CipherResult {
   format: OutputFormatType;
 }
 
+/** GCM 加密结果的兼容类型别名；认证标签保存在 `authTag`。 */
 export type SM4GCMResult = SM4CipherResult;
+
+/** CCM 加密结果的兼容类型别名；认证标签保存在 `authTag`。 */
 export type SM4CCMResult = SM4CipherResult;
+
+/** SM4 认证加密结果的通用兼容类型别名。 */
 export type SM4AEADResult = SM4CipherResult;
 
 export interface SM4DecryptOptions extends SM4Options {

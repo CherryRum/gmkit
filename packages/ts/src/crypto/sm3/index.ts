@@ -148,6 +148,13 @@ export class SM3HashState {
   private byteLength = 0n;
   private finished = false;
 
+  /**
+   * 追加一段消息。字符串按 UTF-8 编码，可多次调用。
+   *
+   * @param data - 本次追加的文本或原始字节
+   * @returns 当前状态实例
+   * @throws 已调用 {@link digestBytes} 且尚未 {@link reset} 时抛出错误
+   */
   update(data: string | Uint8Array): this {
     if (this.finished) throw new Error('SM3 hash state is finalized; call reset() before update()');
     const input = normalizeInput(data);
@@ -175,6 +182,12 @@ export class SM3HashState {
     return this;
   }
 
+  /**
+   * 完成填充并返回 32 字节摘要。该方法只能在每次 reset 周期调用一次。
+   *
+   * @returns 32 字节 SM3 摘要
+   * @throws 当前状态已经完成摘要时抛出错误
+   */
   digestBytes(): Uint8Array {
     if (this.finished) throw new Error('SM3 hash state is already finalized');
     this.finished = true;
@@ -195,6 +208,11 @@ export class SM3HashState {
     return output;
   }
 
+  /**
+   * 清除累计消息和完成状态，恢复到新建实例状态。
+   *
+   * @returns 当前状态实例
+   */
   reset(): this {
     this.state = [...IV];
     this.buffer.fill(0);

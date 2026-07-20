@@ -13,10 +13,13 @@
  * - BASE64: Base64 编码 - 更紧凑的表示方式，适合网络传输
  */
 export const OutputFormat = {
+  /** 小写十六进制编码。 */
   HEX: 'hex',
+  /** RFC 4648 Base64 编码。 */
   BASE64: 'base64',
 } as const;
 
+/** 输出编码可选值：`hex` 或 `base64`。 */
 export type OutputFormatType = typeof OutputFormat[keyof typeof OutputFormat];
 
 /**
@@ -27,10 +30,13 @@ export type OutputFormatType = typeof OutputFormat[keyof typeof OutputFormat];
  * - BASE64: Base64 编码
  */
 export const InputFormat = {
+  /** 十六进制编码，输入可使用大小写字母。 */
   HEX: 'hex',
+  /** RFC 4648 Base64 编码。 */
   BASE64: 'base64',
 } as const;
 
+/** 输入编码可选值：`hex` 或 `base64`。 */
 export type InputFormatType = typeof InputFormat[keyof typeof InputFormat];
 
 /**
@@ -42,11 +48,15 @@ export type InputFormatType = typeof InputFormat[keyof typeof InputFormat];
  * - ZERO: 零填充 - 用零字节填充到块大小 (Zero padding - pad with zero bytes to block size)
  */
 export const PaddingMode = {
+  /** PKCS#7 填充；解密会校验每个填充字节。 */
   PKCS7: 'pkcs7',
+  /** 不填充；ECB/CBC 输入长度必须是 16 字节的倍数。 */
   NONE: 'none',
+  /** 使用零字节补齐；不能无歧义还原以零字节结尾的原文。 */
   ZERO: 'zero',
 } as const;
 
+/** SM4 填充模式可选值。 */
 export type PaddingModeType = typeof PaddingMode[keyof typeof PaddingMode];
 
 /**
@@ -70,15 +80,23 @@ export type PaddingModeType = typeof PaddingMode[keyof typeof PaddingMode];
  * - XTS: 可调密码本模式 - 用于磁盘加密 (XEX-based tweaked-codebook mode - for disk encryption) [计划中 Planned]
  */
 export const CipherMode = {
+  /** ECB 分组模式，不使用 IV；新协议不应选择。 */
   ECB: 'ecb',
+  /** CBC 分组链接模式，IV 必须为 16 字节。 */
   CBC: 'cbc',
+  /** CTR 计数器模式，计数器初值必须为 16 字节。 */
   CTR: 'ctr',
+  /** CFB 流式反馈模式，IV 必须为 16 字节。 */
   CFB: 'cfb',
+  /** OFB 流式反馈模式，IV 必须为 16 字节。 */
   OFB: 'ofb',
+  /** GCM 认证加密模式，输出密文和认证标签。 */
   GCM: 'gcm',
+  /** CCM 认证加密模式，nonce 长度为 7 至 13 字节。 */
   CCM: 'ccm',
 } as const;
 
+/** SM4 工作模式可选值。 */
 export type CipherModeType = typeof CipherMode[keyof typeof CipherMode];
 
 /**
@@ -94,10 +112,13 @@ export type CipherModeType = typeof CipherMode[keyof typeof CipherMode];
  * - C1C2C3：旧版本兼容格式
  */
 export const SM2CipherMode = {
+  /** 标准排列 `C1 || C3 || C2`，是当前默认值。 */
   C1C3C2: 'C1C3C2',
+  /** 旧系统常见排列 `C1 || C2 || C3`，仅用于互操作。 */
   C1C2C3: 'C1C2C3',
 } as const;
 
+/** SM2 密文排列可选值。 */
 export type SM2CipherModeType = typeof SM2CipherMode[keyof typeof SM2CipherMode];
 
 /**
@@ -118,18 +139,15 @@ export type SM2CipherModeType = typeof SM2CipherMode[keyof typeof SM2CipherMode]
  * - 建议使用 OpenSSL 3.x 以确保符合国密标准
  */
 export const OID = {
-  // SM2 算法 OID: 1.2.156.10197.1.301（国密标准，OpenSSL 3.x+）
-  // SM2 椭圆曲线公钥密码算法，兼容 ECC 但使用中国标准参数
+  /** SM2 公钥算法 OID：`1.2.156.10197.1.301`。 */
   SM2: '1.2.156.10197.1.301',
-  // SM2 with SM3 签名 OID: 1.2.156.10197.1.501
-  // 结合 SM2 签名和 SM3 哈希的完整签名方案
+  /** SM2-with-SM3 签名 OID：`1.2.156.10197.1.501`。 */
   SM2_SM3: '1.2.156.10197.1.501',
-  // SM3 哈希算法 OID: 1.2.156.10197.1.401
+  /** SM3 杂凑算法 OID：`1.2.156.10197.1.401`。 */
   SM3: '1.2.156.10197.1.401',
-  // SM4 密码算法 OID: 1.2.156.10197.1.104
+  /** SM4 分组密码算法 OID：`1.2.156.10197.1.104`。 */
   SM4: '1.2.156.10197.1.104',
-  // 标准 EC 公钥 OID: 1.2.840.10045.2.1（OpenSSL 1.x 对 SM2 的错误标识）
-  // 此 OID 仅供参考，用于识别 OpenSSL 1.x 生成的证书
+  /** 标准 EC 公钥 OID，仅用于识别历史 OpenSSL 1.x 产物。 */
   EC_PUBLIC_KEY: '1.2.840.10045.2.1',
 } as const;
 

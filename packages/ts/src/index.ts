@@ -35,6 +35,7 @@ import { SHA256 as SHA256Class, SHA384 as SHA384Class, SHA512 as SHA512Class, SH
  */
 export const sm2 = {
   ...sm2Functions,
+  /** SM2 对象式 API。实例可持有密钥并执行加解密、签名验签和密钥交换。 */
   SM2: SM2Class,
 };
 
@@ -44,6 +45,7 @@ export const sm2 = {
  */
 export const sm3 = {
   ...sm3Functions,
+  /** SM3 对象式 API，支持一次性摘要、HMAC 和增量摘要。 */
   SM3: SM3Class,
 };
 
@@ -53,6 +55,7 @@ export const sm3 = {
  */
 export const sm4 = {
   ...sm4Functions,
+  /** SM4 对象式 API，实例保存 key、mode、padding 与可选 IV 配置。 */
   SM4: SM4Class,
 };
 
@@ -62,6 +65,7 @@ export const sm4 = {
  */
 export const zuc = {
   ...zucFunctions,
+  /** ZUC 对象式 API，实例保存 128 位 key 与 IV。 */
   ZUC: ZUCClass,
 };
 
@@ -71,9 +75,13 @@ export const zuc = {
  */
 export const sha = {
   ...shaFunctions,
+  /** SHA-256 增量摘要类。 */
   SHA256: SHA256Class,
+  /** SHA-384 增量摘要类。 */
   SHA384: SHA384Class,
+  /** SHA-512 增量摘要类。 */
   SHA512: SHA512Class,
+  /** SHA-1 增量摘要类，仅用于旧协议兼容。 */
   SHA1: SHA1Class,
 };
 
@@ -82,40 +90,71 @@ export const sha = {
 // ============================================================================
 
 // 优先使用带算法前缀的顶层函数，便于直接识别归属算法。
+/** 生成 SM2 密钥对；参数、编码、返回值和异常与 `sm2.generateKeyPair` 相同。 */
 export const sm2GenerateKeyPair = sm2Functions.generateKeyPair;
+/** 从 32 字节 SM2 私钥派生公钥；行为与 `sm2.getPublicKeyFromPrivateKey` 相同。 */
 export const sm2GetPublicKeyFromPrivateKey = sm2Functions.getPublicKeyFromPrivateKey;
+/** 将 SM2 公钥转换为 33 字节压缩点编码；行为与 `sm2.compressPublicKey` 相同。 */
 export const sm2CompressPublicKey = sm2Functions.compressPublicKey;
+/** 将 SM2 压缩公钥转换为 65 字节非压缩点编码；行为与 `sm2.decompressPublicKey` 相同。 */
 export const sm2DecompressPublicKey = sm2Functions.decompressPublicKey;
+/** 使用 SM2 公钥加密；密文排列、输出编码和异常与 `sm2.encrypt` 相同。 */
 export const sm2Encrypt = sm2Functions.encrypt;
+/** 使用 SM2 私钥解密为 UTF-8 文本；二进制明文应使用 {@link sm2DecryptBytes}。 */
 export const sm2Decrypt = sm2Functions.decrypt;
+/** 使用 SM2 私钥解密并返回原始字节；行为与 `sm2.decryptBytes` 相同。 */
 export const sm2DecryptBytes = sm2Functions.decryptBytes;
+/** 生成 SM2 签名；用户标识、签名格式和异常与 `sm2.sign` 相同。 */
 export const sm2Sign = sm2Functions.sign;
+/** 验证 SM2 签名；用户标识和输入格式必须与签名端一致。 */
 export const sm2Verify = sm2Functions.verify;
+/** 执行 SM2 密钥交换；参与方角色、用户标识和派生长度见 `SM2KeyExchangeParams`。 */
 export const sm2KeyExchange = sm2Functions.keyExchange;
 
+/** 计算 SM3 摘要；字符串按 UTF-8 编码，默认返回小写十六进制。 */
 export const sm3Digest = sm3Functions.digest;
+/** 计算 HMAC-SM3；key 与消息字符串均按 UTF-8 编码。 */
 export const sm3Hmac = sm3Functions.hmac;
 
+/** 使用 SM4 加密；key、IV/nonce、mode、padding 与 AEAD 约束见 `SM4Options`。 */
 export const sm4Encrypt = sm4Functions.encrypt;
+/** 使用 SM4 解密为 UTF-8 文本；二进制明文应使用 {@link sm4DecryptBytes}。 */
 export const sm4Decrypt = sm4Functions.decrypt;
+/** 使用 SM4 解密并返回原始字节；AEAD 模式会先校验认证标签。 */
 export const sm4DecryptBytes = sm4Functions.decryptBytes;
 
+/** 使用 ZUC-128 流密码加密；key 与 IV 必须各为 16 字节。 */
 export const zucEncrypt = zucFunctions.encrypt;
+/** 使用 ZUC-128 解密为 UTF-8 文本；二进制明文应使用 {@link zucDecryptBytes}。 */
 export const zucDecrypt = zucFunctions.decrypt;
+/** 使用 ZUC-128 解密并返回原始字节。 */
 export const zucDecryptBytes = zucFunctions.decryptBytes;
+/** 生成指定字节数的 ZUC 密钥流并按 Hex 或 Base64 编码。 */
 export const zucKeystream = zucFunctions.getKeystream;
+/** 生成指定数量的 32 位 ZUC 密钥流字，返回无符号整数数组。 */
 export const zucKeystreamWords = zucFunctions.getKeystreamWords;
+/** 兼容旧版的 EEA3 密钥流入口；`length` 表示需要生成的 bit 数。 */
 export const eea3 = zucFunctions.eea3;
+/** 按 3GPP EEA3 参数加密消息 bit 串，末字节未使用 bit 会被清零。 */
 export const eea3Encrypt = zucFunctions.eea3Encrypt;
+/** 按 3GPP EIA3 参数计算 32 位 MAC，返回 8 个十六进制字符。 */
 export const eia3 = zucFunctions.eia3;
+/** 底层 ZUC 密钥流生成入口；key/IV 为 16 字节，`length` 为 32 位字数量。 */
 export const zucGenerateKeystream = zucFunctions.generateKeystream;
 
+/** 计算 SHA-256；字符串按 UTF-8 编码，默认返回小写十六进制。 */
 export const sha256 = shaFunctions.sha256;
+/** 计算 SHA-384；字符串按 UTF-8 编码，默认返回小写十六进制。 */
 export const sha384 = shaFunctions.sha384;
+/** 计算 SHA-512；字符串按 UTF-8 编码，默认返回小写十六进制。 */
 export const sha512 = shaFunctions.sha512;
+/** 计算 SHA-1，仅用于旧协议兼容；新协议不应继续选择 SHA-1。 */
 export const sha1 = shaFunctions.sha1;
+/** 计算 HMAC-SHA-256；key 与消息字符串均按 UTF-8 编码。 */
 export const hmacSha256 = shaFunctions.hmacSha256;
+/** 计算 HMAC-SHA-384；key 与消息字符串均按 UTF-8 编码。 */
 export const hmacSha384 = shaFunctions.hmacSha384;
+/** 计算 HMAC-SHA-512；key 与消息字符串均按 UTF-8 编码。 */
 export const hmacSha512 = shaFunctions.hmacSha512;
 
 // ============================================================================
@@ -261,52 +300,102 @@ export {
 // 默认导出（用于 UMD 格式）
 // ============================================================================
 
+/**
+ * UMD 与旧版整体导入使用的聚合对象。
+ *
+ * 新的 ESM/CommonJS 代码优先使用具名导出，以便静态分析和 tree-shaking。
+ */
 export default {
+  /** SM2 函数与对象式 API 命名空间。 */
   sm2,
+  /** SM3 函数与对象式 API 命名空间。 */
   sm3,
+  /** SM4 函数与对象式 API 命名空间。 */
   sm4,
+  /** ZUC、EEA3 与 EIA3 API 命名空间。 */
   zuc,
+  /** SHA 与 HMAC API 命名空间。 */
   sha,
   // 推荐使用的顶层函数导出
+  /** 具名导出 {@link sm2GenerateKeyPair}。 */
   sm2GenerateKeyPair,
+  /** 具名导出 {@link sm2GetPublicKeyFromPrivateKey}。 */
   sm2GetPublicKeyFromPrivateKey,
+  /** 具名导出 {@link sm2CompressPublicKey}。 */
   sm2CompressPublicKey,
+  /** 具名导出 {@link sm2DecompressPublicKey}。 */
   sm2DecompressPublicKey,
+  /** 具名导出 {@link sm2Encrypt}。 */
   sm2Encrypt,
+  /** 具名导出 {@link sm2Decrypt}。 */
   sm2Decrypt,
+  /** 具名导出 {@link sm2DecryptBytes}。 */
   sm2DecryptBytes,
+  /** 具名导出 {@link sm2Sign}。 */
   sm2Sign,
+  /** 具名导出 {@link sm2Verify}。 */
   sm2Verify,
+  /** 具名导出 {@link sm2KeyExchange}。 */
   sm2KeyExchange,
+  /** 具名导出 {@link sm3Digest}。 */
   sm3Digest,
+  /** 具名导出 {@link sm3Hmac}。 */
   sm3Hmac,
+  /** 具名导出 {@link sm4Encrypt}。 */
   sm4Encrypt,
+  /** 具名导出 {@link sm4Decrypt}。 */
   sm4Decrypt,
+  /** 具名导出 {@link sm4DecryptBytes}。 */
   sm4DecryptBytes,
+  /** 具名导出 {@link zucEncrypt}。 */
   zucEncrypt,
+  /** 具名导出 {@link zucDecrypt}。 */
   zucDecrypt,
+  /** 具名导出 {@link zucDecryptBytes}。 */
   zucDecryptBytes,
+  /** 具名导出 {@link zucKeystream}。 */
   zucKeystream,
+  /** 具名导出 {@link zucKeystreamWords}。 */
   zucKeystreamWords,
+  /** 具名导出 {@link zucGenerateKeystream}。 */
   zucGenerateKeystream,
+  /** 具名导出 {@link eea3}。 */
   eea3,
+  /** 具名导出 {@link eea3Encrypt}。 */
   eea3Encrypt,
+  /** 具名导出 {@link eia3}。 */
   eia3,
+  /** 具名导出 {@link sha256}。 */
   sha256,
+  /** 具名导出 {@link sha384}。 */
   sha384,
+  /** 具名导出 {@link sha512}。 */
   sha512,
+  /** 具名导出 {@link sha1}。 */
   sha1,
+  /** 具名导出 {@link hmacSha256}。 */
   hmacSha256,
+  /** 具名导出 {@link hmacSha384}。 */
   hmacSha384,
+  /** 具名导出 {@link hmacSha512}。 */
   hmacSha512,
   // 旧版调用继续可用，类型提示会引导新代码迁移到带算法前缀的名称。
+  /** @deprecated 请改用 {@link sm2GenerateKeyPair}。 */
   generateKeyPair,
+  /** @deprecated 请改用 {@link sm2GetPublicKeyFromPrivateKey}。 */
   getPublicKeyFromPrivateKey,
+  /** @deprecated 请改用 {@link sm2CompressPublicKey}。 */
   compressPublicKey,
+  /** @deprecated 请改用 {@link sm2DecompressPublicKey}。 */
   decompressPublicKey,
+  /** @deprecated 请改用 {@link sm2Sign}。 */
   sign,
+  /** @deprecated 请改用 {@link sm2Verify}。 */
   verify,
+  /** @deprecated 请改用 {@link sm2KeyExchange}。 */
   keyExchange,
+  /** @deprecated 请改用 {@link sm3Digest}。 */
   digest,
+  /** @deprecated 请改用 {@link sm3Hmac}。 */
   hmac,
 };
