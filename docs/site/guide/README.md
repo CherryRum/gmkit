@@ -12,13 +12,25 @@ GMKit 以独立的 Java 和 TypeScript 包发布。先根据运行环境选择�
 
 ## 选择开发语言
 
-| 场景 | 安装包 | 起步文档 |
-|:--|:--|:--|
-| JVM 应用中的 SM2、SM3、SM4、ZUC | `cn.gmkit:gmkit:0.10.1` | [Java](/java/) |
-| JVM 应用中的 SM9 | `cn.gmkit:gmkit-sm9:0.10.1` | [Java SM9](/java/#sm9-独立依赖) |
-| 浏览器、Node.js 或小程序 | `gmkitx@0.10.1` | [TypeScript](/typescript/) |
+<details open class="language-entry">
+<summary><strong>Java</strong></summary>
 
-TypeScript 包不提供 SM9。Java 的 SM9 能力依赖 JAR 内随包发布的 JNI/GmSSL 运行库，支持平台和加载顺序见 Java 文档。
+普通算法使用 `cn.gmkit:gmkit:0.10.1`，当前包含 SM2、SM3、SM4 和 ZUC。需要 SM9 时单独添加 `cn.gmkit:gmkit-sm9:0.10.1`；该依赖包含 Java API 与受支持平台的 JNI/GmSSL 运行库。
+
+- [Java 起步文档](/java/)
+- [SM9 依赖与运行时说明](/java/#sm9-独立依赖)
+
+</details>
+
+<details class="language-entry">
+<summary><strong>TypeScript</strong></summary>
+
+浏览器、Node.js 和具备兼容运行时的小程序使用 `gmkitx@0.10.1`，当前包含 SM2、SM3、SM4、ZUC 和 SHA。TypeScript 包不提供 SM9。
+
+- [TypeScript 起步文档](/typescript/)
+- [模块导入方式](/typescript/imports)
+
+</details>
 
 ## 使用前检查
 

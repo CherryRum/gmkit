@@ -4,18 +4,39 @@ code, kbd, pre, samp {
   font-family: 'JetBrains Maple Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
 }
 
-// 页面内容区域样式 - 增强可读性和代码块样式
-.theme-hope-content {
+// 同时兼容 VuePress 主题的历史类名和当前 vp-content 属性。
+:is(.theme-hope-content, [vp-content]) {
+  min-width: 0;
   line-height: 1.7;
 
-  // 代码块样式增强 - 更清爽的外观
+  #markdown-content {
+    min-width: 0;
+  }
+
+  a {
+    overflow-wrap: anywhere;
+  }
+
+  img,
+  svg,
+  video,
+  iframe {
+    max-width: 100%;
+  }
+
   div[class*='language-'] {
+    box-sizing: border-box;
+    max-width: 100%;
+    overflow: hidden;
     border-radius: 8px;
     margin: 1.5rem 0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     border: 1px solid rgba(0, 0, 0, 0.06);
 
     pre {
+      box-sizing: border-box;
+      max-width: 100%;
+      overflow-x: auto;
       font-family: 'JetBrains Maple Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
       font-size: 14px;
       line-height: 1.6;
@@ -26,7 +47,6 @@ code, kbd, pre, samp {
       font-family: 'JetBrains Maple Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
     }
 
-    // 语言标签样式优化
     &::before {
       opacity: 0.6;
       font-size: 0.75rem;
@@ -35,19 +55,17 @@ code, kbd, pre, samp {
     }
   }
 
-  // 标题样式
   h1, h2, h3, h4, h5, h6 {
     margin-top: 2rem;
     margin-bottom: 1rem;
     font-weight: 600;
+    overflow-wrap: anywhere;
   }
 
-  // 段落样式
   p {
     margin: 1rem 0;
   }
 
-  // 列表样式
   ul, ol {
     padding-left: 1.5rem;
     margin: 1rem 0;
@@ -57,11 +75,16 @@ code, kbd, pre, samp {
     }
   }
 
-  // API 文档表格样式 - 更好的可读性
   table {
+    display: block;
+    box-sizing: border-box;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
     border-collapse: collapse;
     margin: 1.5rem 0;
     width: 100%;
+    -webkit-overflow-scrolling: touch;
 
     thead {
       background-color: rgba(127, 127, 127, 0.05);
@@ -71,6 +94,7 @@ code, kbd, pre, samp {
         font-weight: 600;
         text-align: left;
         border-bottom: 2px solid rgba(127, 127, 127, 0.15);
+        white-space: nowrap;
       }
     }
 
@@ -85,6 +109,8 @@ code, kbd, pre, samp {
 
       td {
         padding: 0.75rem 1rem;
+        min-width: 7rem;
+        overflow-wrap: anywhere;
       }
     }
 
@@ -93,12 +119,48 @@ code, kbd, pre, samp {
       padding: 0;
       border: none;
       font-size: 0.9em;
+      overflow-wrap: normal;
+      word-break: normal;
+    }
+  }
+
+  .language-entry {
+    margin: 1rem 0;
+    border: 1px solid var(--vp-c-border, rgba(127, 127, 127, 0.22));
+    border-radius: 6px;
+    background: var(--vp-c-bg, transparent);
+
+    summary {
+      padding: 0.8rem 1rem;
+      cursor: pointer;
+      user-select: none;
+
+      &:focus-visible {
+        outline: 2px solid var(--theme-color);
+        outline-offset: -2px;
+      }
+    }
+
+    &[open] summary {
+      border-bottom: 1px solid var(--vp-c-border, rgba(127, 127, 127, 0.22));
+    }
+
+    > :not(summary) {
+      margin-right: 1rem;
+      margin-left: 1rem;
+    }
+
+    > :last-child {
+      margin-bottom: 1rem;
     }
   }
 }
 
 // 行内代码样式 - 更清晰不突兀
 :not(pre) > code {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   font-family: 'JetBrains Maple Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 0.88em;
   padding: 0.2em 0.5em;
@@ -152,6 +214,8 @@ html.dark :not(pre) > code {
 
 // 提示框样式优化
 .hint-container {
+  box-sizing: border-box;
+  max-width: 100%;
   border-radius: 6px;
   margin: 1.5rem 0;
   padding: 1rem 1.25rem;
@@ -168,4 +232,37 @@ html.dark :not(pre) > code {
 .icp-link:hover {
   color: var(--theme-color);
   border-color: currentColor;
+}
+
+@media (max-width: 719px) {
+  :is(.theme-hope-content, [vp-content]) {
+    div[class*='language-'] pre {
+      padding: 1rem;
+      font-size: 13px;
+    }
+
+    table {
+      margin: 1rem 0;
+
+      th,
+      td {
+        padding: 0.625rem 0.75rem;
+      }
+    }
+
+    .language-entry {
+      summary {
+        padding: 0.7rem 0.8rem;
+      }
+
+      > :not(summary) {
+        margin-right: 0.8rem;
+        margin-left: 0.8rem;
+      }
+    }
+  }
+
+  .hint-container {
+    padding: 0.875rem 1rem;
+  }
 }
