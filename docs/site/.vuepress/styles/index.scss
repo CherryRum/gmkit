@@ -1,6 +1,7 @@
-// 等宽字体配置
+// 正文优先使用适合长篇中文阅读的系统字体，签名与代码保留等宽字体。
 @import url("https://fontsapi.zeoseven.com/521/main/result.css");
 
+$gmkit-sans: Inter, 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei UI', system-ui, sans-serif;
 $gmkit-mono: 'JetBrains Maple Mono', 'Cascadia Mono', 'Noto Sans Mono CJK SC', 'Microsoft YaHei UI', ui-monospace, monospace;
 
 html,
@@ -9,12 +10,12 @@ button,
 input,
 textarea,
 select {
-  font-family: $gmkit-mono;
+  font-family: $gmkit-sans;
   letter-spacing: 0;
 }
 
 body {
-  font-size: 14px;
+  font-size: 15px;
 }
 
 code, kbd, pre, samp {
@@ -27,9 +28,9 @@ code, kbd, pre, samp {
   min-width: 0;
   padding-right: 20px;
   padding-left: 20px;
-  font-family: $gmkit-mono;
-  font-size: 14px;
-  line-height: 1.75;
+  font-family: $gmkit-sans;
+  font-size: 15px;
+  line-height: 1.8;
 
   #markdown-content {
     min-width: 0;
@@ -78,9 +79,10 @@ code, kbd, pre, samp {
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: $gmkit-mono;
-    font-weight: 600;
+    font-family: $gmkit-sans;
+    font-weight: 650;
     overflow-wrap: anywhere;
+    letter-spacing: -0.01em;
   }
 
   h1 {
@@ -100,6 +102,108 @@ code, kbd, pre, samp {
 
   p {
     margin: 0.8rem 0;
+  }
+
+  .doc-kicker {
+    margin-top: -0.5rem;
+    color: var(--vp-c-text-mute, #64748b);
+    font-size: 0.95rem;
+  }
+
+  .doc-path-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+    margin: 1.25rem 0 1.75rem;
+  }
+
+  .doc-path-grid-compact {
+    margin-bottom: 1.25rem;
+  }
+
+  .doc-path-card {
+    display: flex;
+    min-width: 0;
+    min-height: 7.25rem;
+    box-sizing: border-box;
+    flex-direction: column;
+    gap: 0.4rem;
+    justify-content: center;
+    padding: 1rem 1.1rem;
+    color: var(--vp-c-text, inherit);
+    text-decoration: none;
+    border: 1px solid var(--vp-c-border, rgba(127, 127, 127, 0.22));
+    border-radius: 10px;
+    background:
+      linear-gradient(145deg, color-mix(in srgb, var(--theme-color) 7%, transparent), transparent 55%),
+      var(--vp-c-bg, transparent);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition:
+      border-color 0.18s ease,
+      box-shadow 0.18s ease,
+      transform 0.18s ease;
+
+    &:hover {
+      color: var(--vp-c-text, inherit);
+      border-color: color-mix(in srgb, var(--theme-color) 55%, transparent);
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+      transform: translateY(-2px);
+    }
+
+    &:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--theme-color) 45%, transparent);
+      outline-offset: 2px;
+    }
+
+    strong {
+      font-size: 1rem;
+      line-height: 1.4;
+    }
+
+    small {
+      color: var(--vp-c-text-mute, #64748b);
+      font-size: 0.84rem;
+      line-height: 1.65;
+    }
+  }
+
+  .doc-path-label {
+    align-self: flex-start;
+    padding: 0.1rem 0.45rem;
+    color: var(--theme-color);
+    font-family: $gmkit-mono;
+    font-size: 0.72rem;
+    line-height: 1.55;
+    border: 1px solid color-mix(in srgb, var(--theme-color) 30%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--theme-color) 7%, transparent);
+  }
+
+  .doc-steps {
+    display: grid;
+    gap: 0.7rem;
+    padding-left: 0;
+    counter-reset: gmkit-step;
+    list-style: none;
+
+    li {
+      display: grid;
+      grid-template-columns: minmax(10rem, 0.75fr) minmax(0, 2fr);
+      gap: 0.8rem;
+      margin: 0;
+      padding: 0.8rem 0.9rem;
+      border-left: 3px solid color-mix(in srgb, var(--theme-color) 55%, transparent);
+      background: color-mix(in srgb, var(--theme-color) 4%, transparent);
+    }
+
+    strong {
+      font-size: 0.92rem;
+    }
+
+    span {
+      color: var(--vp-c-text-mute, #64748b);
+      font-size: 0.9rem;
+    }
   }
 
   ul, ol {
@@ -239,19 +343,20 @@ html.dark :not(pre) > code {
 }
 
 
-// 使用当前主题的实际类名收紧导航密度。
+// 使用当前 VuePress 主题的实际类名控制导航密度。
 .vp-navbar,
 .vp-sidebar,
 .vp-page-title,
 .vp-page-meta,
 .vp-page-nav {
-  font-family: $gmkit-mono;
+  font-family: $gmkit-sans;
 }
 
 .vp-navbar {
   min-height: 52px;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
   font-size: 13px;
+  backdrop-filter: blur(12px);
 }
 
 .vp-site-name {
@@ -279,6 +384,13 @@ html.dark :not(pre) > code {
 .vp-sidebar-link {
   font-size: 13px;
   line-height: 1.5;
+}
+
+.vp-sidebar-link:focus-visible,
+.vp-navbar-link:focus-visible,
+.vp-navbar-item:focus-visible {
+  outline: 2px solid var(--theme-color);
+  outline-offset: 2px;
 }
 
 .vp-page-title {
@@ -322,7 +434,7 @@ html.dark :not(pre) > code {
 
 @media (max-width: 719px) {
   body {
-    font-size: 13px;
+    font-size: 14px;
   }
 
   [vp-content] {
@@ -373,9 +485,57 @@ html.dark :not(pre) > code {
         margin-left: 0.8rem;
       }
     }
+
+    .doc-path-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.75rem;
+    }
+
+    .doc-path-card {
+      min-height: 0;
+      padding: 0.9rem;
+    }
+
+    .doc-steps li {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.25rem;
+    }
   }
 
   .hint-container {
     padding: 0.875rem 1rem;
+  }
+}
+
+@media print {
+  .vp-navbar,
+  .vp-sidebar,
+  .vp-page-meta,
+  .vp-page-nav,
+  .vp-back-to-top-button {
+    display: none !important;
+  }
+
+  [vp-content],
+  .vp-page-title {
+    max-width: none;
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  [vp-content] {
+    font-size: 11pt;
+
+    a {
+      color: inherit;
+      text-decoration: underline;
+    }
+
+    div[class*='language-'],
+    table,
+    .doc-path-card {
+      break-inside: avoid;
+      box-shadow: none;
+    }
   }
 }

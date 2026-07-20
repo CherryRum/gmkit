@@ -1,8 +1,13 @@
 ---
 title: API Reference
+description: 在双语言手写说明书、公共 API 审计清单、latest 和版本化 Reference 之间选择正确入口。
 icon: code
 category:
   - API Reference
+tag:
+  - API
+  - TypeDoc
+  - Javadoc
 ---
 
 # API Reference

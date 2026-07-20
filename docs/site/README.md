@@ -36,6 +36,31 @@ footer: Apache-2.0 Licensed | Copyright © 2026 GMKit contributors
 GMKit 当前发布包尚未完成独立第三方安全审计。固定向量和单元测试只能证明已覆盖行为，不能替代密码产品认证、密钥管理设计或目标运行环境的安全评估。
 :::
 
+## 从这里完成第一次接入
+
+<div class="doc-path-grid">
+  <a class="doc-path-card" href="/guide/typescript.html">
+    <span class="doc-path-label">浏览器 / Node.js</span>
+    <strong>安装 gmkitx</strong>
+    <small>先运行固定向量，再完成 SM2 签名与 SM4-GCM 认证加密闭环。</small>
+  </a>
+  <a class="doc-path-card" href="/guide/java.html">
+    <span class="doc-path-label">Java 8+</span>
+    <strong>安装 Maven 制品</strong>
+    <small>选择实例式或静态式入口，配置 Provider，并按需启用 SM9。</small>
+  </a>
+  <a class="doc-path-card" href="/guide/troubleshooting.html">
+    <span class="doc-path-label">调用失败</span>
+    <strong>按症状排查</strong>
+    <small>从依赖、编码、SM2 字段、AEAD 参数、随机源和 native runtime 逐层定位。</small>
+  </a>
+  <a class="doc-path-card" href="/api/">
+    <span class="doc-path-label">查 API</span>
+    <strong>进入双语言说明书</strong>
+    <small>先看可操作的手写说明，再按版本进入 TypeDoc 或 Javadoc 精确签名。</small>
+  </a>
+</div>
+
 ## 阅读路径
 
 - [开始使用](/guide/)：安装发布包并执行最小验证示例。

@@ -1,8 +1,13 @@
 ---
 title: 算法与协议能力
+description: 对照 SM2、SM3、SM4、ZUC、SM9 和 SHA 的双语言能力、协议字段与验证边界。
 icon: shield
 category:
   - 算法
+tag:
+  - 算法
+  - 跨语言
+  - 协议
 ---
 
 # 算法与协议能力

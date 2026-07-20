@@ -52,23 +52,39 @@ export default defineUserConfig({
     docsBranch: 'main',
 
     navbar: [
-      { text: '开始使用', link: '/guide/' },
-      { text: '算法', link: '/algorithms/' },
-      { text: '公共能力', link: '/api/common' },
+      { text: '快速入门', link: '/guide/' },
       {
-        text: 'API Reference',
+        text: 'API 说明书',
         children: [
-          { text: 'API 总览', link: '/api/' },
           { text: 'TypeScript 说明书', link: '/api/typescript/' },
           { text: 'Java 说明书', link: '/api/java/' },
+          { text: '公共约定', link: '/api/common' },
+          { text: 'API 总览', link: '/api/' },
           { text: 'TypeDoc latest', link: '/api/typescript/latest/' },
           { text: 'Javadoc latest', link: '/api/java/latest/' },
           { text: '版本 Reference', link: '/api/#版本化-reference' },
         ],
       },
-      { text: '协议与标准', link: '/standards/' },
-      { text: '集成示例', link: '/integrations/' },
-      { text: '扩展包', link: '/extensions/' },
+      {
+        text: '算法与标准',
+        children: [
+          { text: '算法能力总览', link: '/algorithms/' },
+          { text: 'SM2', link: '/algorithms/SM2' },
+          { text: 'SM3', link: '/algorithms/SM3' },
+          { text: 'SM4', link: '/algorithms/SM4' },
+          { text: 'ZUC', link: '/algorithms/ZUC' },
+          { text: 'SM9', link: '/algorithms/SM9' },
+          { text: 'SHA', link: '/algorithms/SHA' },
+          { text: '协议与标准', link: '/standards/' },
+        ],
+      },
+      {
+        text: '集成与扩展',
+        children: [
+          { text: '集成示例', link: '/integrations/' },
+          { text: '扩展包', link: '/extensions/' },
+        ],
+      },
       { text: '项目维护', link: '/maintenance/' },
     ],
 
