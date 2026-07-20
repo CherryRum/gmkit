@@ -8,7 +8,7 @@ tag: [API, TypeScript, Java]
 
 # 公开 API 清单
 
-本页列出 `gmkitx` 根入口和 Java 发布 JAR 的公共类型。它用于审计“哪些名称已经对外暴露”；具体参数与重载由 [TypeDoc](/api/typescript/latest/) 和 [Javadoc](/api/java/latest/) 生成，协议选择与安全边界见对应算法页。
+本页列出 `gmkitx` 根入口和 Java 发布 JAR 的公共类型。它用于审计“哪些名称已经对外暴露”，不是使用说明书。参数、默认值、错误和示例分别进入 [TypeScript API 说明书](/api/typescript/) 或 [Java API 说明书](/api/java/)；精确签名再由 [TypeDoc](/api/typescript/latest/) 和 [Javadoc](/api/java/latest/) 核对。
 
 ## 边界定义
 
@@ -21,6 +21,8 @@ tag: [API, TypeScript, Java]
 Java 与 TypeScript 独立版本化。共享向量只冻结指定协议字段，不表示两端 API、ABI、异常或对象生命周期相同。
 
 ## TypeScript 公开导出
+
+以下名称全部从 `gmkitx` 根入口公开。按场景调用的完整说明见 [TypeScript API 说明书](/api/typescript/)。
 
 ### 命名空间与推荐函数
 
@@ -94,6 +96,8 @@ Java 与 TypeScript 独立版本化。共享向量只冻结指定协议字段，
 `default` 导出用于 UMD/CDN 和旧整体导入，包含 `sm2`、`sm3`、`sm4`、`zuc`、`sha`，全部推荐顶层算法函数，以及上述弃用别名。编码、RNG、ASN.1 和类型工具不在默认对象中，应使用具名导入。
 
 ## Java 公共类型
+
+以下类型来自两个 Maven 发布 JAR。完整重载、Builder、异常和生命周期说明见 [Java API 说明书](/api/java/)。
 
 ### `cn.gmkit.core`
 
