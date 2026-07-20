@@ -97,14 +97,14 @@ apps/demo-vue/dist
 
 # vuepress build output
 .vuepress/dist
-packages/ts-docs/.vuepress/dist
+docs/site/.vuepress/dist
 
 # vuepress v2.x temp and cache directory
 .temp
-packages/ts-docs/.vuepress/.temp
-packages/ts-docs/.vuepress/.cache
-packages/ts-docs/.vuepress/public/api/
-packages/ts-docs/.vuepress/api-typescript.json
+docs/site/.vuepress/.temp
+docs/site/.vuepress/.cache
+docs/site/.vuepress/public/api/
+docs/site/.vuepress/api-typescript.json
 
 # Sveltekit cache directory
 .svelte-kit/

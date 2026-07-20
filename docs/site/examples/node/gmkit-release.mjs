@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
-const gmkit = await import('../../../ts/dist/index.js');
+const gmkit = await import('../../../../packages/ts/dist/index.js');
 const require = createRequire(import.meta.url);
 const {
   CipherMode,
@@ -160,7 +160,7 @@ for (const [legacyName, replacement] of Object.entries(legacyAliases)) {
 }
 
 // 发布包同时声明 ESM、CommonJS 和 IIFE，三种产物都必须执行同一个固定向量。
-const commonjs = require('../../../ts/dist/index.cjs');
+const commonjs = require('../../../../packages/ts/dist/index.cjs');
 assert.equal(commonjs.sm3Digest('abc'), sm3Digest('abc'));
 assert.equal(commonjs.default.sm3Digest, commonjs.sm3Digest);
 
@@ -170,7 +170,7 @@ const iifeContext = vm.createContext({
   TextDecoder,
   TextEncoder,
 });
-const iifeSource = await readFile(new URL('../../../ts/dist/index.global.js', import.meta.url), 'utf8');
+const iifeSource = await readFile(new URL('../../../../packages/ts/dist/index.global.js', import.meta.url), 'utf8');
 vm.runInContext(iifeSource, iifeContext, { filename: 'index.global.js' });
 assert.equal(iifeContext.GMKit.sm3Digest('abc'), sm3Digest('abc'));
 assert.equal(iifeContext.GMKit.default.sm3Digest, iifeContext.GMKit.sm3Digest);

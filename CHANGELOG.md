@@ -15,7 +15,7 @@
 
 - Merged the TypeScript and Java stacks into a single polyglot monorepo.
   The TypeScript stack now lives under `packages/ts/`, the Java stack under
-  `packages/java/`, docs under `packages/ts-docs/`, demo apps under `apps/`,
+  `packages/java/`, the documentation portal under `docs/site/`, demo apps under `apps/`,
   and cross-language vectors under `vectors/`.
 - TypeScript npm package name remains `gmkitx`; Java Maven coordinates
   remain `cn.gmkit:gmkit:0.10.0`.

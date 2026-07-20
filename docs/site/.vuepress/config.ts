@@ -48,7 +48,7 @@ export default defineUserConfig({
     hostname: 'https://gmkit.cn',
 
     repo: 'gmkits/gmkit',
-    docsDir: 'packages/ts-docs',
+    docsDir: 'docs/site',
     docsBranch: 'main',
 
     navbar: [

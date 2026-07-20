@@ -20,7 +20,7 @@ sm4 = "0.6.0"
 ```
 
 ```bash
-cd packages/ts-docs/examples/rust
+cd docs/site/examples/rust
 cargo test --locked
 ```
 

@@ -21,7 +21,7 @@ module.exports = {
   ignorePatterns: [
     'dist/',
     'node_modules/',
-    '../ts-docs/',
+    '../../docs/site/',
     '../../apps/demo-vue/',
     'coverage/',
     '*.cjs',

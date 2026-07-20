@@ -115,7 +115,7 @@ DER 解码只接受 canonical DER。`asn1ToXml` 用于调试展示，会拒绝�
 - `sha256`, `sha384`, `sha512`, `sha1`
 - `hmacSha256`, `hmacSha384`, `hmacSha512`
 
-默认导出继续包含 `generateKeyPair`、`getPublicKeyFromPrivateKey`、`compressPublicKey`、`decompressPublicKey`、`sign`、`verify`、`keyExchange`、`digest`、`hmac` 等已弃用旧名，以保证 UMD/CDN 和旧项目运行时兼容。新代码应使用带算法前缀的函数或命名空间。
+默认导出继续包含 `generateKeyPair`、`getPublicKeyFromPrivateKey`、`compressPublicKey`、`decompressPublicKey`、`sign`、`verify`、`keyExchange`、`digest`、`hmac` 等已弃用旧名，用于维持 UMD/CDN 和已有项目的调用路径。新代码应使用带算法前缀的函数或命名空间。
 
 ## 弃用兼容别名
 

@@ -5,7 +5,7 @@
   "description": "GMKit polyglot monorepo for Java and TypeScript packages",
   "workspaces": [
     "packages/ts",
-    "packages/ts-docs",
+    "docs/site",
     "apps/gmkit-studio"
   ],
   "scripts": {
@@ -15,10 +15,10 @@
     "parity": "mvn -f packages/java/pom.xml -B -ntp -pl gmkit -Dtest=InteropComplianceTest test && npm exec -w packages/ts -- vitest run test/interop-compliance.test.ts --config vitest.config.ts",
     "build:ts": "npm run build -w packages/ts",
     "build:java": "mvn -f packages/java/pom.xml -B -ntp -DskipTests install",
-    "docs:build": "npm run build -w packages/ts-docs",
-    "docs:generate-api:ts": "npm run generate:api:typescript -w packages/ts-docs",
-    "docs:check": "npm run check -w packages/ts-docs",
-    "docs:test-examples": "npm run test:examples -w packages/ts-docs",
+    "docs:build": "npm run build -w docs/site",
+    "docs:generate-api:ts": "npm run generate:api:typescript -w docs/site",
+    "docs:check": "npm run check -w docs/site",
+    "docs:test-examples": "npm run test:examples -w docs/site",
     "studio:build": "npm run build -w apps/gmkit-studio",
     "studio:dev": "npm run dev -w apps/gmkit-studio --",
     "studio:type-check": "npm run type-check -w apps/gmkit-studio"

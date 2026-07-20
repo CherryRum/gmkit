@@ -40,9 +40,9 @@
     "verify": "npm run type-check && npm run test && npm run build && npm run audit:pack && npm run test:package",
     "studio:dev": "npm run dev -w apps/gmkit-studio",
     "prepublishOnly": "npm run verify",
-    "docs:dev": "npm run dev -w packages/ts-docs",
-    "docs:build": "npm run build -w packages/ts-docs",
-    "docs:clean": "npm run clean -w packages/ts-docs",
+    "docs:dev": "npm run dev -w docs/site",
+    "docs:build": "npm run build -w docs/site",
+    "docs:clean": "npm run clean -w docs/site",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix"

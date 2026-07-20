@@ -17,7 +17,9 @@ gmkit/
 ├── packages/
 │   ├── ts/                 # npm 包 gmkitx
 │   ├── java/               # Maven 多模块工程
-│   └── ts-docs/            # VuePress 文档与可执行示例
+├── docs/
+│   ├── site/               # VuePress 全项目文档门户与可执行示例
+│   └── API_STABILITY.md    # 项目级 API 稳定性策略
 ├── apps/
 │   └── gmkit-studio/       # GMKit Studio V5 Vue3 工具站
 ├── vectors/                # Java/TypeScript 共享互操作数据
@@ -27,7 +29,7 @@ gmkit/
 └── package-lock.json       # workspace 唯一依赖锁文件
 ```
 
-`packages/ts` 和 `packages/java` 是可发布算法实现；`packages/ts-docs`、`apps/gmkit-studio` 和仓库脚本不进入 npm 或 Maven 主包。根级 `vectors` 是测试协议，不是运行时依赖。
+`packages/ts` 和 `packages/java` 是可发布算法实现；`docs/site`、`apps/gmkit-studio` 和仓库脚本不进入 npm 或 Maven 主包。根级 `vectors` 是测试协议，不是运行时依赖。
 
 ## TypeScript 包
 

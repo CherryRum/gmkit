@@ -16,4 +16,4 @@ category:
 - [Node.js 与国际算法](/dev/INTERNATIONAL-ALGORITHMS.zh-CN)
 - [共享测试向量](/dev/INTEROP_VECTORS)
 
-文档 CI 会执行仓库中登记的示例 fixture。能够运行只证明该固定版本和输入已通过，不能推导为所有版本完全兼容。
+文档 CI 会执行仓库中登记的示例 fixture。能够运行只证明该固定版本和输入已通过，不能推导为其他版本或未覆盖协议参数也能互操作。

@@ -182,7 +182,7 @@ const sha512Hash = sha.sha512('Hello World');
 将 `<version>` 替换为 npm 已发布的精确版本。不要在生产页面使用浮动 `latest`；预发布版本发布前，CDN URL 也不会存在。
 
 > 推荐使用带算法前缀的顶层名称，例如 `sm2Sign`、`sm3Digest`、`sm2GenerateKeyPair`。
-> 旧的 `sign`、`digest`、`generateKeyPair` 等裸名继续导出以保证升级兼容，但已标记 `@deprecated`；新代码请使用前缀函数或 `sm2` / `sm3` 命名空间。
+> 旧的 `sign`、`digest`、`generateKeyPair` 等裸名仍为已有调用保留，但已标记 `@deprecated`；新代码请使用前缀函数或 `sm2` / `sm3` 命名空间。
 
 -----
 
@@ -303,7 +303,7 @@ const hash = sha.sha256('Hello World');
 - Java/BouncyCastle 若使用 `SM4/CCM/NoPadding`，前端/Node 对应 `mode: CipherMode.CCM`；需显式对齐 nonce（7-13 字节）和 tag 长度。
 - SM2 签名格式要显式约定：Java 常见 DER，gmkitx 默认 raw。
 - Base64 密文解密支持自动识别；与 Java 等异构系统对接时建议显式传 `inputFormat: InputFormat.BASE64`（SM2 / SM4 / ZUC）。
-- 完整公开 API 清单与 Java 对照边界见 [`../ts-docs/dev/API-SURFACE.zh-CN.md`](../ts-docs/dev/API-SURFACE.zh-CN.md)。
+- 完整公开 API 清单与 Java 对照边界见 [`../../docs/site/dev/API-SURFACE.zh-CN.md`](../../docs/site/dev/API-SURFACE.zh-CN.md)。
 
 ## 编码与格式
 

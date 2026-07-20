@@ -8,12 +8,12 @@ tag: [Go, SM3, SM4, 互操作]
 
 # Go 对接指南
 
-本页采用 `github.com/emmansun/gmsm v0.40.0`。仓库中的 `packages/ts-docs/examples/go` 会真实编译并核对 SM3、SM4 标准向量；这证明固定算法结果一致，不代表该库与 gmkitx 的 API、默认值或全部协议行为相同。
+本页采用 `github.com/emmansun/gmsm v0.40.0`。仓库中的 `docs/site/examples/go` 会真实编译并核对 SM3、SM4 标准向量；这证明固定算法结果一致，不代表该库与 gmkitx 的 API、默认值或全部协议行为相同。
 
 ## 安装与验证
 
 ```bash
-cd packages/ts-docs/examples/go
+cd docs/site/examples/go
 go test ./...
 ```
 
@@ -47,7 +47,7 @@ func main() {
 }
 ```
 
-完整测试源码位于 `packages/ts-docs/examples/go/vectors_test.go`，`go.sum` 固定依赖校验值。
+完整测试源码位于 `docs/site/examples/go/vectors_test.go`，`go.sum` 固定依赖校验值。
 
 ## 互操作协议
 

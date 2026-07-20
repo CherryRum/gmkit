@@ -28,7 +28,7 @@ tag: [Java, Hutool, Bouncy Castle, 互操作]
 仓库 fixture：
 
 ```bash
-mvn -f packages/ts-docs/examples/hutool/pom.xml -B -ntp test
+mvn -f docs/site/examples/hutool/pom.xml -B -ntp test
 ```
 
 它验证 Hutool SM3 入口与 BC SM4 原语能在固定版本组合下加载并通过标准向量：

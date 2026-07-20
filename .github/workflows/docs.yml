@@ -3,14 +3,14 @@ name: Docs
 on:
   push:
     paths:
-      - 'packages/ts-docs/**'
+      - 'docs/**'
       - 'packages/ts/**'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/docs.yml'
   pull_request:
     paths:
-      - 'packages/ts-docs/**'
+      - 'docs/**'
       - 'packages/ts/**'
       - 'package.json'
       - 'package-lock.json'
@@ -32,8 +32,8 @@ jobs:
           cache-dependency-path: package-lock.json
       - uses: actions/setup-go@v7
         with:
-          go-version-file: packages/ts-docs/examples/go/go.mod
-          cache-dependency-path: packages/ts-docs/examples/go/go.sum
+          go-version-file: docs/site/examples/go/go.mod
+          cache-dependency-path: docs/site/examples/go/go.sum
       - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
@@ -43,7 +43,7 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
-          cache-dependency-path: packages/ts-docs/examples/hutool/pom.xml
+          cache-dependency-path: docs/site/examples/hutool/pom.xml
       - run: npm ci
       - name: Repair Rollup optional native package
         run: npm install --no-save --package-lock=false @rollup/rollup-linux-x64-gnu@$(node -p "require('./node_modules/rollup/package.json').version")

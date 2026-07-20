@@ -1,4 +1,4 @@
-module github.com/gmkits/gmkit/docs/examples/go
+module github.com/gmkits/gmkit/docs/site/examples/go
 
 go 1.24.0
 

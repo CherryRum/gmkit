@@ -5,7 +5,7 @@ on:
     paths:
       - 'packages/ts/**'
       - 'packages/java/**'
-      - 'packages/ts-docs/**'
+      - 'docs/**'
       - 'apps/gmkit-studio/**'
       - 'vectors/**'
       - 'package.json'
@@ -15,7 +15,7 @@ on:
     paths:
       - 'packages/ts/**'
       - 'packages/java/**'
-      - 'packages/ts-docs/**'
+      - 'docs/**'
       - 'apps/gmkit-studio/**'
       - 'vectors/**'
       - 'package.json'

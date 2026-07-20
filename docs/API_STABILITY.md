@@ -66,7 +66,7 @@ Java 公开 API 以发布 JAR 中的 `cn.gmkit` 公共类型和 `packages/java/R
 
 `vectors/interop.json` 的 case `id` 视为稳定测试标识。新增字段应保持消费者向后兼容；字段重命名、删除或语义改变必须在同一变更中更新 Java/TypeScript 消费者和 CHANGELOG。
 
-项目互操作向量只保证已固定字段下的两端一致性，不建立跨语言 API 稳定承诺。
+项目互操作向量只验证已固定字段下的两端一致性，不建立跨语言 API 稳定承诺。
 
 ## 变更检查
 
@@ -78,4 +78,4 @@ Java 公开 API 以发布 JAR 中的 `cn.gmkit` 公共类型和 `packages/java/R
 4. 对协议字段运行 Java/TypeScript parity。
 5. 对 breaking change 使用清晰版本号和 CHANGELOG，不复用已发布 tag。
 
-完整 TypeScript 导出见 [`packages/ts-docs/dev/API-SURFACE.zh-CN.md`](../packages/ts-docs/dev/API-SURFACE.zh-CN.md)。
+完整 TypeScript 导出见 [`docs/site/dev/API-SURFACE.zh-CN.md`](site/dev/API-SURFACE.zh-CN.md)。

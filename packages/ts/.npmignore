@@ -25,4 +25,4 @@ node_modules/
 .github/
 
 # Workspace docs
-../ts-docs/
+../../docs/site/

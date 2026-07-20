@@ -41,4 +41,8 @@ GMKit 当前发布包尚未完成独立第三方安全审计。固定向量和�
 - [扩展包](/extensions/)：了解未来工具包如何接入文档、版本和测试。
 - [项目维护](/maintenance/)：查看架构、发布、基准和维护规则。
 
-包版本和入口由 [`catalog/packages.json`](https://github.com/gmkits/gmkit/blob/main/packages/ts-docs/catalog/packages.json) 维护。新增能力以实际发布制品和测试结果为准，目录登记不代表安全认证或标准合规结论。
+包版本和入口由 [`catalog/packages.json`](https://github.com/gmkits/gmkit/blob/main/docs/site/catalog/packages.json) 维护。新增能力以实际发布制品和测试结果为准，目录登记不代表安全认证或标准合规结论。
+
+## 文档源码位置
+
+站点源码固定在 `docs/site`；根目录 `docs` 还保存不依赖站点构建的项目级策略文件。算法包只放在 `packages`，应用只放在 `apps`，文档门户不是 npm 或 Maven 发布包。移动源码目录不会改变 `gmkit.cn` 上的页面 URL。

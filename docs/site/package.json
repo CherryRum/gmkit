@@ -1,5 +1,5 @@
 {
-  "name": "gmkitx-docs",
+  "name": "gmkit-docs-site",
   "version": "0.10.1",
   "private": true,
   "description": "Documentation portal for GMKit Java and TypeScript packages",

@@ -19,10 +19,10 @@ GMKitX 只提供 SHA-1/256/384/512 和对应 HMAC；**不提供 AES、RSA、ECDS
 | RSA-OAEP | Web Crypto `crypto.subtle` |
 | SM2/SM3/SM4/ZUC | `gmkitx` |
 
-仓库 `packages/ts-docs/examples/node/international-crypto.mjs` 会真实运行 AES-GCM 与 RSA-OAEP 往返：
+仓库 `docs/site/examples/node/international-crypto.mjs` 会真实运行 AES-GCM 与 RSA-OAEP 往返：
 
 ```bash
-node packages/ts-docs/examples/node/international-crypto.mjs
+node docs/site/examples/node/international-crypto.mjs
 ```
 
 ## AES-GCM

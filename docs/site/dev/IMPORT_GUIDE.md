@@ -95,7 +95,7 @@ CDN 加载还应使用 CSP、固定版本和可信供应链策略。SRI 哈希�
 ```bash
 npm run build -w packages/ts
 npm run audit:pack -w packages/ts
-npm run docs:test-examples --workspace packages/ts-docs
+npm run docs:test-examples --workspace docs/site
 ```
 
 `gmkit-release.mjs` 会加载 ESM、CommonJS 和 IIFE 三种真实构建产物，验证固定摘要、算法主路径、空 userId 回落及全部旧兼容别名。

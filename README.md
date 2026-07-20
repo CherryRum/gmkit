@@ -1,6 +1,6 @@
 # GMKit - 国密算法多语言工具库
 
-GMKit 是一个 Java + TypeScript monorepo，维护 JVM 后端与前端/Node.js 侧的国密算法实现。项目目标不是让两个语言共享完全相同的 ABI，而是通过共享互操作向量和明确的协议边界，保证常用密文、签名、摘要和 MAC 能跨语言验证。
+GMKit 是一个 Java + TypeScript monorepo，维护 JVM 后端与前端/Node.js 侧的国密算法实现。两个语言拥有独立 API，通过共享互操作向量核对已登记的密文、签名、摘要和 MAC 协议字段；测试结论只覆盖向量和场景中明确列出的参数。
 
 当前 `0.x` 版本为公开测试版，允许在 CHANGELOG 和迁移说明明确记录后调整接口；进入 `1.x` 后才按正式稳定版本承诺兼容窗口。
 
@@ -10,7 +10,9 @@ GMKit 是一个 Java + TypeScript monorepo，维护 JVM 后端与前端/Node.js 
 gmkit/
 ├── packages/
 │   ├── ts/        # npm 包 gmkitx；SM2/SM3/SM4/ZUC/SHA，纯 TypeScript
-│   ├── ts-docs/   # VuePress 文档站
+├── docs/
+│   ├── site/      # VuePress 全项目文档门户与可执行示例
+│   └── API_STABILITY.md # 项目级 API 稳定性策略
 │   └── java/      # Maven 多模块；主包 gmkit，SM9 独立 JNI/GmSSL 模块
 ├── apps/
 │   └── gmkit-studio/  # Vue3 + Vite 工具站；V5 三栏工具工作台
@@ -75,7 +77,7 @@ SM9 Java native runtime 可在需要时本地构建：
 - [Java 包说明](packages/java/README.md)
 - [共享向量说明](vectors/README.md)
 - [API 稳定性策略](docs/API_STABILITY.md)
-- [VuePress 技术文档](packages/ts-docs/README.md)
+- [VuePress 文档门户](docs/site/README.md)
 - [GMKit Studio V5 工具站](apps/gmkit-studio/README.md)
 
 ## 许可证
