@@ -18,9 +18,52 @@ tag:
 
 # Java SM9 API
 
-`cn.gmkit:gmkit-sm9` 通过 JNI 调用随 JAR 分发的 GmSSL 本地动态库（native runtime），支持签名/验签、基于身份的加解密、PEM 导入导出和流式签名上下文；不支持 SM9 密钥交换。
+`cn.gmkit:gmkit-sm9` 通过 JNI 调用随 JAR 分发的 GmSSL 本地动态库（native），支持签名/验签、基于身份的加解密、PEM 导入导出和流式签名上下文；不支持 SM9 密钥交换。
 
 SM9 把身份字符串直接纳入密钥派生，适合已有 KGC、身份登记和主公钥分发体系的协议。采用前应确认对端实现、五个目标平台、身份规范化规则、KGC 隔离方式和合规要求；如果系统只有普通公私钥与证书体系，不能仅凭 API 可用就把它替换成 SM9。
+
+## 依赖与运行平台
+
+SM9 位于独立制品，不包含在 `cn.gmkit:gmkit` 主包中：
+
+```xml
+<dependency>
+  <groupId>cn.gmkit</groupId>
+  <artifactId>gmkit-sm9</artifactId>
+  <version>0.10.1</version>
+</dependency>
+```
+
+运行时要求 Java 8 或更高版本。聚合 JAR 内置以下五个平台的 JNI bridge 与 GmSSL 动态库；其他操作系统或 CPU 组合会报告 `unsupported`：
+
+<ApiTable label="SM9 内置平台" min-width="52rem">
+
+| 平台标识 | 操作系统 | CPU |
+|:--|:--|:--|
+| `linux-x86_64` | Linux | x86-64 |
+| `linux-aarch64` | Linux | ARM64 |
+| `darwin-x86_64` | macOS | Intel x86-64 |
+| `darwin-aarch64` | macOS | Apple Silicon |
+| `windows-x86_64` | Windows | x86-64 |
+
+</ApiTable>
+
+## 八个公开类型
+
+<ApiTable label="Java SM9 类型分工" min-width="68rem">
+
+| 类型 | 保存的能力 | 是否需要关闭 |
+|:--|:--|:--:|
+| `SM9` | 可用性诊断和一次性门面方法 | 否 |
+| `SM9SignMasterKey` | KGC 签名主密钥或可分发的签名主公钥 | 是 |
+| `SM9SignKey` | 与身份派生关系对应的用户签名私钥 | 是 |
+| `SM9Signature` | 可增量更新的签名/验签上下文 | 是 |
+| `SM9EncMasterKey` | KGC 加密主密钥或可分发的加密主公钥 | 是 |
+| `SM9EncKey` | 与身份绑定的用户解密私钥 | 是 |
+| `SM9Exception` | 参数、句柄、PEM、I/O 或 native 操作失败 | 否 |
+| `SM9UnsupportedPlatformException` | 平台不支持或动态库未能加载 | 否 |
+
+</ApiTable>
 
 ## 启动诊断
 
@@ -31,12 +74,16 @@ SM9.nativePlatform()
 SM9.nativeLoadErrorMessage()
 ```
 
+<ApiTable label="SM9 启动诊断" min-width="58rem">
+
 | 方法 | 返回 |
 |:--|:--|
 | `isAvailable()` | native 是否成功加载 |
-| `nativeVersion()` | GMKit native bridge 版本标识 |
+| `nativeVersion()` | bridge 基于的 GmSSL 版本标识；native 不可用时仍可读取 |
 | `nativePlatform()` | 如 `linux-x86_64`；无法映射时为 `unsupported` |
 | `nativeLoadErrorMessage()` | 已可用时为 null，否则为加载诊断 |
+
+</ApiTable>
 
 ```java
 if (!SM9.isAvailable()) {
@@ -46,7 +93,7 @@ if (!SM9.isAvailable()) {
 }
 ```
 
-不要等到首个业务请求才发现 native 不可用。应用启动健康检查应记录平台标识和加载错误，但不要记录密钥、PEM 口令或用户私钥。
+不要等到首个业务请求才发现 native 不可用。应用启动健康检查应记录平台标识和加载错误，但不要记录密钥、PEM 口令或用户私钥。诊断方法本身不会因为 native 缺失而抛错；生成密钥等实际操作会抛 `SM9UnsupportedPlatformException`。
 
 ## 门面方法
 
@@ -72,7 +119,22 @@ byte[] encrypt(
 byte[] decrypt(SM9EncKey encKey, byte[] ciphertext)
 ```
 
-门面会为一次性签名/验签自动创建并关闭 `SM9Signature`，但传入的密钥对象仍由调用方关闭。
+<ApiTable label="SM9 门面方法" min-width="72rem">
+
+| 方法 | 输入 | 返回/失败语义 |
+|:--|:--|:--|
+| `generateSignMasterKey` | 无 | 新的签名主密钥句柄；native 不可用或生成失败时抛异常 |
+| `generateEncMasterKey` | 无 | 新的加密主密钥句柄；native 不可用或生成失败时抛异常 |
+| `extractSignKey` | 非空主密钥、非空白 ID | 新的用户签名私钥句柄 |
+| `extractEncKey` | 非空主密钥、非空白 ID | 新的用户解密私钥句柄 |
+| `sign` | 非空签名私钥、非 `null` 数据 | DER 签名；空消息合法 |
+| `verify` | 主公钥、ID、数据、签名 | 数学验证通过为 `true`；签名、身份或消息不匹配为 `false` |
+| `encrypt` | 加密主公钥、接收方 ID、1–255 字节明文 | DER 密文 |
+| `decrypt` | 用户解密私钥、1–367 字节密文 | 原始明文字节 |
+
+</ApiTable>
+
+门面会为一次性签名/验签自动创建并关闭 `SM9Signature`，但传入的密钥对象仍由调用方关闭。门面不复制或接管密钥对象所有权。
 
 ## 签名密钥类型
 
@@ -103,6 +165,16 @@ void close()
 
 签名私钥 PEM 不携带可供应用校验的身份绑定信息。导入方法允许 `id` 为 null，此时 `getId()` 也返回 null；签名运算仍可执行，但验签方必须使用派生该私钥时的原始身份。应用应把身份与 PEM 作为同一条受保护记录保存，不能把 `id` 当作可任意替换的显示标签。
 
+<ApiTable label="SM9 签名密钥权限" min-width="68rem">
+
+| 对象来源 | 可派生用户私钥 | 可签名 | 可验签 | 可导出内容 |
+|:--|:--:|:--:|:--:|:--|
+| `SM9SignMasterKey.generate()` / 加密主密钥 PEM | 是 | 通过派生的 `SM9SignKey` | 是 | 加密主私钥 PEM、公开主密钥 PEM |
+| `importPublicMasterKeyPem()` | 否 | 否 | 是 | 公开主密钥 PEM |
+| `SM9SignKey` | 不适用 | 是 | 否 | 口令加密用户私钥 PEM |
+
+</ApiTable>
+
 ## 签名示例
 
 ```java
@@ -125,7 +197,7 @@ try (SM9SignMasterKey master = SM9.generateSignMasterKey();
 }
 ```
 
-验签数学上不成立返回 false；参数、句柄或 native 调用失败抛 `SM9Exception`。签名含随机性，不要把一次运行得到的签名字节写成所谓固定标准向量。
+签名、身份或消息不匹配时验签返回 `false`。`SM9Signature.verify` 将 native 返回码 `1` 解释为成功，其他返回码解释为 `false`；参数非法、句柄已关闭或调用 native 前的校验失败才抛 `SM9Exception`。签名含随机性，不要把一次运行得到的签名字节写成固定标准向量。
 
 ## 加密密钥类型
 
@@ -160,7 +232,17 @@ static SM9EncKey importEncryptedPrivateKeyInfoPem(
 void close()
 ```
 
-SM9 单次明文必须为 1–255 字节，单位是 UTF-8 编码后的实际字节数；DER 密文最多 367 字节。更大数据应使用混合加密：随机生成 16 字节 SM4 会话 key，用 SM4-GCM 等认证加密处理正文，只用 SM9 保护会话 key。算法、接收方身份、nonce、AAD、tag 和载荷版本都必须随密文保存。
+<ApiTable label="SM9 加密密钥权限" min-width="68rem">
+
+| 对象来源 | 可派生用户私钥 | 可加密 | 可解密 | 可导出内容 |
+|:--|:--:|:--:|:--:|:--|
+| `SM9EncMasterKey.generate()` / 加密主密钥 PEM | 是 | 是 | 通过派生的 `SM9EncKey` | 加密主私钥 PEM、公开主密钥 PEM |
+| `importPublicMasterKeyPem()` | 否 | 是 | 否 | 公开主密钥 PEM |
+| `SM9EncKey` | 不适用 | 否 | 是 | 口令加密用户私钥 PEM |
+
+</ApiTable>
+
+SM9 单次明文必须为 1–255 字节；API 接收 `byte[]`，因此单位始终是实际字节数。若业务先把 `String` 转成 UTF-8，应检查编码后的数组长度，而不是 Java 字符数。DER 密文必须为 1–367 字节。更大数据应使用混合加密：随机生成 16 字节 SM4 会话 key，用 SM4-GCM 等认证加密处理正文，只用 SM9 保护会话 key。算法、接收方身份、nonce、AAD、tag 和载荷版本都必须随密文保存。
 
 ```java
 byte[] plaintext =
@@ -209,6 +291,21 @@ void close()
 
 `doSign=true` 初始化签名模式，false 初始化验签模式。`reset` 可在同一未关闭句柄上开始新操作；`update` 的零长度区间合法，越界区间抛异常。
 
+<ApiTable label="SM9Signature 状态变化" min-width="68rem">
+
+| 调用 | 前置条件 | 返回/后续状态 |
+|:--|:--|:--|
+| `new SM9Signature(true)` | native 可用 | 新签名上下文 |
+| `new SM9Signature(false)` | native 可用 | 新验签上下文 |
+| `update(data)` | `data != null` | 返回当前对象，可链式调用；空数组不改变状态 |
+| `update(data, offset, length)` | 区间位于数组内 | 处理指定区间；`length == 0` 合法 |
+| `sign(signKey)` | 签名模式、私钥未关闭 | 返回 DER 签名 |
+| `verify(signature, master, id)` | 验签模式、主公钥未关闭 | 返回 `true`/`false` |
+| `reset(doSign)` | 上下文未关闭 | 丢弃上一轮状态并选择新模式 |
+| `close()` | 任意 | 释放句柄；重复调用安全 |
+
+</ApiTable>
+
 ```java
 byte[] data = new byte[8192];
 try (SM9SignMasterKey master = SM9.generateSignMasterKey();
@@ -225,14 +322,14 @@ try (SM9SignMasterKey master = SM9.generateSignMasterKey();
 }
 ```
 
-上下文有 native 可变状态，不能跨线程并发使用。
+一次 `sign` 或 `verify` 后，如需在同一对象上开始下一条消息，应先调用 `reset(...)`。上下文有 native 可变状态，不能跨线程并发使用；不同任务应各自创建上下文。
 
 ## PEM 与身份
 
-- PEM 文件路径和口令必须非空白；I/O、口令或格式错误抛 `SM9Exception`。
+- PEM 文件路径和口令必须非空白且不能包含 `\0`；I/O、口令或格式错误抛 `SM9Exception`。API 接受 `String` 路径，不接受 `Path` 重载。
 - 主私钥和用户私钥只提供口令加密 PEM 导出；公开主密钥可独立导出。
-- 用户 ID 使用 Java String 的 UTF-8 字节，首尾空格属于身份并会保留，全空白 ID 被拒绝。
-- `SM9SignKey` 导入时的 id 是可空元数据；`SM9EncKey` 解密时必须持有原始 id。PEM 本身不替应用维护“身份—私钥”映射。
+- 用户 ID 使用 Java `String` 的 UTF-8 字节，首尾空格属于身份并会保留，全空白 ID 被拒绝；ID 的二进制长度单独传给 native，因此内嵌 `\0` 也会作为身份字节参与运算。
+- `SM9SignKey` 导入时的 id 是可空元数据，签名过程不读取它；`SM9EncKey` 导入也暂不验证 id，但解密时必须持有原始非空白 id。PEM 本身不替应用维护“身份—私钥”映射。
 - 不要把用户 ID、文件路径或口令自动 trim 后再调用，否则可能改变身份或目标文件。
 - 生产口令不应硬编码在源码或日志中。
 
@@ -276,9 +373,23 @@ try (SM9SignMasterKey verifierKey =
 - close 后再次操作抛 `SM9Exception`。
 - 先关闭子密钥还是主密钥没有隐式级联；每个对象都应独立关闭。
 
-`SM9Exception` 和 `SM9UnsupportedPlatformException` 都提供 `(String message)` 与 `(String message, Throwable cause)` 构造器。后者继承前者，用于明确的平台/native 不支持场景。
+`extractKey()` 返回独立 native 句柄，关闭主密钥不会自动关闭已经派生的用户私钥，关闭用户私钥也不会关闭主密钥。不要依赖垃圾回收释放这些资源。
+
+两个公开异常类型的签名如下：
+
+```java
+public SM9Exception(String message);
+public SM9Exception(String message, Throwable cause);
+
+public SM9UnsupportedPlatformException(String message);
+public SM9UnsupportedPlatformException(String message, Throwable cause);
+```
+
+`SM9UnsupportedPlatformException` 继承 `SM9Exception`，用于平台不在内置列表或本地库加载失败。其他参数、PEM、I/O、句柄与 native 操作问题使用 `SM9Exception`；两者都是非受检异常。
 
 ## 标准与发布证据
+
+<ApiTable label="SM9 三层验证证据" min-width="72rem">
 
 | 层级 | 实际执行内容 | 能证明什么 |
 |:--|:--|:--|
@@ -286,7 +397,11 @@ try (SM9SignMasterKey verifierKey =
 | Java/JNI | 正确与错误身份、消息篡改、IBE、长度上限、PEM、关闭后访问 | Java 参数、句柄和 native 桥接行为一致 |
 | 聚合 JAR | 五个平台分别运行打包产物，检查平台选择、签名、IBE 与 Unicode PEM | 发布物确实带有并加载当前平台 runtime |
 
-固定向量来自锁定提交的 [`tests/sm9test.c`](https://github.com/guanzhi/GmSSL/blob/d655c06b3a6b0fe8cff900f293bf0e5aac6eb0a2/tests/sm9test.c)。构建脚本在 JNI 测试之前执行 `ctest --output-on-failure --no-tests=error -R ^sm9$`；找不到测试或任一向量失败都会终止流水线。Java 生成的随机密钥、随机签名和随机密文只用于行为回归，不冒充固定标准向量。
+</ApiTable>
+
+固定向量来自锁定提交的 [`tests/sm9test.c`](https://github.com/guanzhi/GmSSL/blob/d655c06b3a6b0fe8cff900f293bf0e5aac6eb0a2/tests/sm9test.c)。`SM9 Native` Action 在 Linux x86-64、Linux ARM64、macOS Intel、macOS Apple Silicon、Windows x86-64 五个 job 中，先执行 `ctest --output-on-failure --no-tests=error -R ^sm9$`，再执行强制要求 native 可用的 Java/JNI 测试；找不到测试或任一向量失败都会终止 job。
+
+发布流水线还会把五个平台产物组装到同一个 JAR，再回到五个平台分别运行 `SM9PackagedRuntimeSmoke`。Java 生成的随机密钥、随机签名和随机密文只用于行为回归，不冒充固定标准向量。
 
 ## 可执行案例
 
@@ -301,6 +416,18 @@ try (SM9SignMasterKey verifierKey =
 <!-- @include: ../../../../packages/java/gmkit-sm9/src/test/java/cn/gmkit/sm9/SM9KeyPemTest.java#java-sm9-pem-example -->
 ```
 :::
+
+普通 Maven 测试在本机没有可用动态库时会跳过需要 native 的案例；要强制执行本地 GmSSL 向量和 JNI 测试，使用仓库脚本：
+
+```powershell
+./scripts/sm9-native.ps1 -Test
+```
+
+脚本会编译锁定版本的 GmSSL 和 JNI bridge，再按“上游固定向量 → Java/JNI”的顺序运行。只执行 `mvn -pl gmkit-sm9 test` 不能替代这项验证，除非同时提供动态库并设置 `gmkit.sm9.requireNative=true`。
+
+## 公共项覆盖
+
+本页覆盖 `SM9`、`SM9SignMasterKey`、`SM9SignKey`、`SM9Signature`、`SM9EncMasterKey`、`SM9EncKey`、`SM9Exception`、`SM9UnsupportedPlatformException` 八个公开顶层类型及全部公开成员。内部 loader、bridge、参数检查和消息类不属于公共 API。
 
 ## 相关页面
 
