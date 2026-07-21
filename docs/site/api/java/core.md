@@ -4,7 +4,7 @@ description: 说明 Java 编码、字节、Provider、安全上下文、格式�
 icon: toolbox
 order: 1
 category:
-  - API Reference
+  - API 说明书
   - Java
 tag:
   - 编码
@@ -219,8 +219,7 @@ invalidSm2RawSignatureEncoding
 
 错误消息文本不属于稳定的机器协议。应用应按异常类型和业务上下文处理，不要解析自然语言字符串。
 
-## Reference
+## 相关页面
 
-- [core Javadoc](/api/java/latest/cn/gmkit/core/package-summary.html)
 - [跨语言公共约定](/api/common.html)
 - [Java API 首页](/api/java/)

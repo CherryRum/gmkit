@@ -9,7 +9,6 @@ interface ApiVersion {
 interface ApiPackage {
   id: string;
   name: string;
-  latest: string;
   versions: ApiVersion[];
 }
 
@@ -38,7 +37,6 @@ function open(url: string) {
       <strong>{{ entry.name }}</strong>
       <select :aria-label="`${entry.name} API 版本`" @change="open(($event.target as HTMLSelectElement).value)">
         <option value="">选择版本</option>
-        <option :value="entry.latest">latest（main）</option>
         <option v-for="version in entry.versions" :key="version.version" :value="version.url">
           {{ version.version }}
         </option>

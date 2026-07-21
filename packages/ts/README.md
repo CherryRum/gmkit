@@ -59,7 +59,7 @@ if (sm3Digest('abc') !==
 ## 文档
 
 - [TypeScript API 说明书](https://gmkit.cn/api/typescript/)：按 common、SM2、SM3、SM4、ZUC、SHA 分页说明全部公共导出。
-- [TypeDoc latest](https://gmkit.cn/api/typescript/latest/)：当前源码的逐成员签名。
+- [已发布版本签名索引](https://gmkit.cn/api/#已发布版本签名索引)：核对与 npm 制品相同版本的逐成员签名。
 - [跨语言算法与协议](https://gmkit.cn/algorithms/)：Java/TypeScript 默认值和协议差异。
 - [安全边界](https://gmkit.cn/guide/security.html)：上线前检查随机源、密钥、IV/nonce、认证和错误处理。
 

@@ -63,8 +63,8 @@ SM9 的密钥和签名上下文持有 native 资源，必须使用 try-with-reso
 
 ## 文档
 
-- [Java API 说明书](https://gmkit.cn/api/java/)：按 core、SM2、SM3、SM4、ZUC、SM9、integration 分页说明全部公共类型。
-- [Javadoc latest](https://gmkit.cn/api/java/latest/)：当前源码的逐成员签名。
+- [Java API 说明书](https://gmkit.cn/api/java/)：按 core、SM2、SM3、SM4、ZUC、SM9、SM2 + SM4 混合加密分页说明全部公共类型。
+- [已发布版本签名索引](https://gmkit.cn/api/#已发布版本签名索引)：核对与 Maven 制品相同版本的逐成员签名。
 - [跨语言算法与协议](https://gmkit.cn/algorithms/)：Java/TypeScript 默认值和协议差异。
 - [安全边界](https://gmkit.cn/guide/security.html)：上线前检查 Provider、随机源、密钥、nonce、认证和异常处理。
 

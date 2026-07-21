@@ -4,7 +4,7 @@ description: 说明 SM2、SM2Util、选项 Builder、密钥、签名、密文转
 icon: key
 order: 2
 category:
-  - API Reference
+  - API 说明书
   - Java
 tag:
   - SM2
@@ -430,8 +430,7 @@ String s2Hex()
 
 byte[] getter 返回防御性复制。发起方和响应方必须镜像角色、双方身份、静态/临时密钥位置和 `keyBits`；TypeScript 的 `keyLength` 单位是 byte，而 Java `keyBits` 单位是 bit。
 
-## Reference
+## 相关页面
 
-- [SM2 Javadoc](/api/java/latest/cn/gmkit/sm2/package-summary.html)
 - [跨语言 SM2 协议与向量](/algorithms/SM2.html)
 - [core 格式与安全上下文](/api/java/core.html)

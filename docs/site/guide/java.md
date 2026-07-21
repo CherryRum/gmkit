@@ -131,6 +131,6 @@ SM2 sm2 = new SM2(context);
 - [Java API 说明书](/api/java/)
 - [Java 核心公共 API](/api/java/core.html)
 - [Java SM9 API](/api/java/sm9.html)
-- [Java 集成便利 API](/api/java/integration.html)
+- [Java SM2 + SM4 混合加密 API](/api/java/integration.html)
 - [常见问题与故障排查](/guide/troubleshooting.html)
 - [安全边界](/guide/security.html)

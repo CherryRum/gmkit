@@ -4,7 +4,7 @@ description: 说明 gmkitx SM3 摘要、HMAC、输出编码、增量状态与 re
 icon: fingerprint
 order: 3
 category:
-  - API Reference
+  - API 说明书
   - TypeScript
 tag:
   - SM3
@@ -109,8 +109,7 @@ if (state.getOutputFormat() !== OutputFormat.BASE64) {
 - 摘要输出不是加密，无法从摘要恢复原文。
 - 比较敏感摘要或 MAC 时先解码为字节，再调用 `constantTimeEqual`。
 
-## Reference
+## 相关页面
 
-- [SM3 TypeDoc](/api/typescript/latest/)
 - [跨语言 SM3 协议与固定向量](/algorithms/SM3.html)
 - [编码与敏感值比较](/api/typescript/common.html)

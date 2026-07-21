@@ -60,9 +60,7 @@ export default defineUserConfig({
           { text: 'Java 说明书', link: '/api/java/' },
           { text: '公共约定', link: '/api/common' },
           { text: 'API 总览', link: '/api/' },
-          { text: 'TypeDoc latest', link: '/api/typescript/latest/' },
-          { text: 'Javadoc latest', link: '/api/java/latest/' },
-          { text: '版本 Reference', link: '/api/#版本化-reference' },
+          { text: '已发布版本签名索引', link: '/api/#已发布版本签名索引' },
         ],
       },
       {
@@ -117,7 +115,6 @@ export default defineUserConfig({
             '/api/',
             '/api/typescript/',
             '/api/java/',
-            '/api/public-api',
             '/api/common',
           ],
         },
@@ -135,10 +132,6 @@ export default defineUserConfig({
             '/api/typescript/sha',
           ],
         },
-        {
-          text: '生成 Reference',
-          children: ['/api/typescript/latest/'],
-        },
       ],
       '/api/java/': [
         {
@@ -151,12 +144,8 @@ export default defineUserConfig({
             '/api/java/sm4',
             '/api/java/zuc',
             '/api/java/sm9',
-            '/api/java/integration',
+            { text: 'SM2 + SM4 混合加密', link: '/api/java/integration' },
           ],
-        },
-        {
-          text: '生成 Reference',
-          children: ['/api/java/latest/'],
         },
       ],
       '/algorithms/': [
@@ -216,6 +205,7 @@ export default defineUserConfig({
             '/maintenance/publishing',
             '/maintenance/documentation-deployment',
             '/maintenance/release-audit',
+            { text: '公共 API 覆盖数据', link: '/api/public-api' },
           ],
         },
         {

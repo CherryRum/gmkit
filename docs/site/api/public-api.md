@@ -1,15 +1,15 @@
 ---
-title: 公开 API 清单
-description: 审计 gmkitx 根导出与 GMKit Java 公共顶层类型的兼容性边界和说明书归属。
+title: 公共 API 覆盖数据
+description: 供维护者核对 gmkitx 根导出与 GMKit Java 公共顶层类型的兼容性边界。
 icon: list
 order: 1
-category: [API Reference]
+category: [项目维护]
 tag: [API, TypeScript, Java]
 ---
 
-# 公开 API 清单
+# 公共 API 覆盖数据
 
-本页列出 `gmkitx` 根入口和 Java 发布 JAR 的公共类型。它用于审计“哪些名称已经对外暴露”，不是使用说明书。参数、默认值、错误和示例分别进入 [TypeScript API 说明书](/api/typescript/) 或 [Java API 说明书](/api/java/)；精确签名再由 [TypeDoc](/api/typescript/latest/) 和 [Javadoc](/api/java/latest/) 核对。
+本页是文档门禁使用的维护数据，列出 `gmkitx` 根入口和 Java 发布 JAR 的公共类型。使用方法、默认值、失败行为和示例请阅读 [TypeScript API 说明书](/api/typescript/) 或 [Java API 说明书](/api/java/)；普通接入不需要逐项阅读本页。
 
 ## 边界定义
 
@@ -143,7 +143,7 @@ Java 与 TypeScript 独立版本化。共享向量只冻结指定协议字段，
 | `SM2Sm4Hybrid` | 生成随机 SM4 key，用 SM4 处理数据并用 SM2 加密会话 key |
 | `SM2Sm4HybridPayload` | 保存加密 key、密文、IV、AAD、tag、mode 和 padding |
 
-它是 Java 便利封装，不是跨语言序列化格式。跨系统传输前仍需定义 JSON/二进制 schema、字段编码和版本。
+它是 Java 混合加密值对象，不是跨语言序列化格式。跨系统传输前仍需定义 JSON/二进制 schema、字段编码和版本。
 
 ### `cn.gmkit.sm9`
 

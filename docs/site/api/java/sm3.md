@@ -4,7 +4,7 @@ description: 说明 SM3 与 SM3Util 的字节、字符串、Charset、Hex 和 Ba
 icon: fingerprint
 order: 3
 category:
-  - API Reference
+  - API 说明书
   - Java
 tag:
   - SM3
@@ -98,8 +98,7 @@ if (!"b57fb50bbc8ad6f9b11129cf1ec67cf0c658f0d4b597ae3f05a64eaa4a22d312"
 - 空消息是合法摘要输入；业务是否允许空值应在调用前校验。
 - API 不维护可变消息状态，`SM3` 实例无需 reset 或 close。
 
-## Reference
+## 相关页面
 
-- [SM3 Javadoc](/api/java/latest/cn/gmkit/sm3/package-summary.html)
 - [跨语言 SM3 固定向量](/algorithms/SM3.html)
 - [核心编码与敏感值比较](/api/java/core.html)

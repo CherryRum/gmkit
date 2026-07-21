@@ -4,7 +4,7 @@ description: 说明 Java SM4 模式、填充、AEAD、选项 Builder、结果对
 icon: lock
 order: 4
 category:
-  - API Reference
+  - API 说明书
   - Java
 tag:
   - SM4
@@ -213,8 +213,7 @@ CBC 不提供完整性；新协议优先 GCM/CCM。
 - ZERO 会移除尾部零字节，不能无损表示任意二进制。
 - `SM4CipherResult` 不是稳定跨语言 schema，传输前应固定字段编码和协议版本。
 
-## Reference
+## 相关页面
 
-- [SM4 Javadoc](/api/java/latest/cn/gmkit/sm4/package-summary.html)
 - [跨语言 SM4 模式和 AEAD](/algorithms/SM4.html)
 - [安全上下文](/api/java/core.html#provider-与安全上下文)

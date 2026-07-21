@@ -25,7 +25,7 @@ tag:
   <a class="doc-path-card" href="/maintenance/publishing.html">
     <span class="doc-path-label">发布制品</span>
     <strong>版本与发布流程</strong>
-    <small>同步 npm、Maven、tag、变更记录和版本化 API Reference。</small>
+    <small>同步 npm、Maven、tag、变更记录和版本签名索引。</small>
   </a>
   <a class="doc-path-card" href="/maintenance/documentation-deployment.html">
     <span class="doc-path-label">更新站点</span>

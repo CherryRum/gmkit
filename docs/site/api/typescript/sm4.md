@@ -4,7 +4,7 @@ description: 说明 gmkitx SM4 全部模式、填充、AEAD、结果对象、类
 icon: lock
 order: 4
 category:
-  - API Reference
+  - API 说明书
   - TypeScript
 tag:
   - SM4
@@ -218,8 +218,7 @@ if (cipher.decrypt(encrypted, { aad: 'header' }) !== 'class API') {
 - `sm4Decrypt` 只适合 UTF-8 文本；二进制使用 `sm4DecryptBytes`。
 - 结果对象不是稳定的跨语言 JSON schema；传输前应固定字段名、编码和版本。
 
-## Reference
+## 相关页面
 
-- [SM4 TypeDoc](/api/typescript/latest/)
 - [跨语言 SM4 模式与示例](/algorithms/SM4.html)
 - [公共编码与错误约定](/api/common.html)

@@ -45,7 +45,7 @@ GMKit 可以在不扩大密码核心包依赖的前提下，增加日期、节�
   <a class="doc-path-card" href="/maintenance/publishing.html">
     <span class="doc-path-label">正式发布</span>
     <strong>发布流程</strong>
-    <small>同步制品版本、变更记录、tag、API Reference 和站点部署。</small>
+    <small>同步制品版本、变更记录、tag、版本签名索引和站点部署。</small>
   </a>
   <a class="doc-path-card" href="/maintenance/reports/validation-model.html">
     <span class="doc-path-label">声明能力</span>

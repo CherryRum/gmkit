@@ -4,7 +4,7 @@ description: 说明 ZUC、ZUCUtil、密钥流、EEA3、EIA3 和各接口长度�
 icon: signal
 order: 5
 category:
-  - API Reference
+  - API 说明书
   - Java
 tag:
   - ZUC
@@ -173,8 +173,7 @@ if (!"1b3d0f74".equals(mac)) {
 - TypeScript `zucGenerateKeystream` 返回 `Uint32Array`；Java `keystreamWords` 返回 `int[]`，序列化时都应按无符号大端 word 处理。
 - EIA3 验证 MAC 时先 Hex 解码，再使用 `Bytes.constantTimeEquals`。
 
-## Reference
+## 相关页面
 
-- [ZUC Javadoc](/api/java/latest/cn/gmkit/zuc/package-summary.html)
 - [跨语言 ZUC/EEA3/EIA3 向量](/algorithms/ZUC.html)
 - [核心编码工具](/api/java/core.html)

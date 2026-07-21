@@ -3,7 +3,7 @@ title: Java API 说明书
 description: 按 core、SM2、SM3、SM4、ZUC、SM9 和集成类型查阅 Java 公共 API。
 icon: coffee
 category:
-  - API Reference
+  - API 说明书
   - Java
 tag:
   - Java
@@ -13,7 +13,7 @@ tag:
 
 # Java API 说明书
 
-GMKit Java 由主包 `cn.gmkit:gmkit` 和独立 SM9 包 `cn.gmkit:gmkit-sm9` 组成。本说明书解释实例式/静态式入口、重载差异、Builder 默认值、异常和资源生命周期；逐成员精确签名见 [Javadoc Reference](/api/java/latest/)。
+GMKit Java 由主包 `cn.gmkit:gmkit` 和独立 SM9 包 `cn.gmkit:gmkit-sm9` 组成。本说明书解释实例式/静态式入口、重载差异、Builder 默认值、异常和资源生命周期。
 
 ## Maven 依赖
 
@@ -71,7 +71,7 @@ if (!byInstance.equals(byUtility)) {
 | `cn.gmkit.sm4` | [SM4 API](/api/java/sm4.html) | 工作模式、填充、AEAD、结果对象 |
 | `cn.gmkit.zuc` | [ZUC API](/api/java/zuc.html) | ZUC-128、EEA3、EIA3 |
 | `cn.gmkit.sm9` | [SM9 API](/api/java/sm9.html) | JNI 诊断、密钥、签名、IBE、PEM、生命周期 |
-| `cn.gmkit.integration` | [集成 API](/api/java/integration.html) | SM2 + SM4 便利封装 |
+| `cn.gmkit.integration` | [SM2 + SM4 混合加密 API](/api/java/integration.html) | 会话密钥封装与结构化载荷 |
 
 ## 字符串、字节与异常总则
 
@@ -96,10 +96,6 @@ SM2 sm2 = new SM2(context);
 
 完整 Provider 与全局注册语义见 [核心 API](/api/java/core.html#provider-与安全上下文)。
 
-## 版本与 Reference
+## 已发布版本签名
 
-- [Javadoc latest](/api/java/latest/)：当前 `main`。
-- `/api/java/versions/<version>/`：已发布版本快照。
-- [公开 API 清单](/api/public-api.html)：两个 JAR 的 46 个公开顶层类型。
-
-线上问题应先选择与 Maven 制品相同版本的快照；`latest` 可能领先正式发布版本。
+需要核对历史制品的逐成员签名时，从 [已发布版本签名索引](/api/#已发布版本签名索引) 选择与 Maven 制品相同的版本。当前页面及各算法页负责解释用途、约束和异常行为。

@@ -4,7 +4,7 @@ description: 说明 Java SM9 平台诊断、句柄、签名、IBE、PEM、文件
 icon: id-card
 order: 6
 category:
-  - API Reference
+  - API 说明书
   - Java
 tag:
   - SM9
@@ -219,8 +219,7 @@ try (SM9SignMasterKey master = SM9.generateSignMasterKey();
 
 `SM9Exception` 和 `SM9UnsupportedPlatformException` 都提供 `(String message)` 与 `(String message, Throwable cause)` 构造器。后者继承前者，用于明确的平台/native 不支持场景。
 
-## Reference
+## 相关页面
 
-- [SM9 Javadoc](/api/java/latest/cn/gmkit/sm9/package-summary.html)
 - [SM9 平台与验证边界](/algorithms/SM9.html)
 - [Java API 首页](/api/java/)

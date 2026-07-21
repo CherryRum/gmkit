@@ -1,10 +1,10 @@
 ---
-title: Java 集成便利 API
+title: Java SM2 + SM4 混合加密 API
 description: 说明 SM2Sm4Hybrid、混合载荷字段、编码 getter 和序列化稳定性边界。
 icon: boxes-stacked
 order: 7
 category:
-  - API Reference
+  - API 说明书
   - Java
 tag:
   - SM2
@@ -12,9 +12,9 @@ tag:
   - 混合加密
 ---
 
-# Java 集成便利 API
+# Java SM2 + SM4 混合加密 API
 
-`SM2Sm4Hybrid` 为后端提供 SM2 + SM4 混合加密：生成一次性 SM4 会话 key，用 SM4 处理业务数据，再用 SM2 公钥加密会话 key。它是 Java 便利对象，不是已定义的跨语言 wire format。
+`SM2Sm4Hybrid` 执行 SM2 + SM4 混合加密：生成一次性 SM4 会话 key，用 SM4 处理业务数据，再用 SM2 公钥加密会话 key。返回对象只是 Java 值对象，不是已经定义的跨语言数据格式。
 
 ## 构造和默认值
 
@@ -173,9 +173,8 @@ SM2Sm4HybridPayload payload =
 - 该对象不包含 key id、证书链或密钥轮换信息，应用需在外层协议补充。
 - TypeScript 对端需要使用 SM2/SM4 API 逐字段实现相同流程，不能直接反序列化成 Java 对象。
 
-## Reference
+## 相关页面
 
-- [integration Javadoc](/api/java/latest/cn/gmkit/integration/package-summary.html)
 - [Java SM2 API](/api/java/sm2.html)
 - [Java SM4 API](/api/java/sm4.html)
 - [公共混合加密边界](/api/common.html#java-混合加密)

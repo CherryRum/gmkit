@@ -25,7 +25,7 @@ GMKit 的 Java 与 TypeScript 包都提供 SM2 密钥生成、公钥派生与压
 | 密钥交换 | `sm2KeyExchange` | `keyExchange`、`keyExchangeWithConfirmation`、`confirmResponder` |
 | 对象式/静态式 | `SM2` 类与 `sm2` 命名空间 | `SM2` 实例与 `SM2Util` 静态入口 |
 
-具体重载见 [TypeDoc](/api/typescript/latest/) 和 [Javadoc](/api/java/latest/cn/gmkit/sm2/package-summary.html)。新 TypeScript 代码优先使用带 `sm2` 前缀的具名函数；无前缀旧名仅为兼容保留。
+具体用法见 [TypeScript SM2 API](/api/typescript/sm2.html) 和 [Java SM2 API](/api/java/sm2.html)。新 TypeScript 代码优先使用带 `sm2` 前缀的具名函数；无前缀旧名仅为兼容保留。
 
 ## 密钥与编码
 

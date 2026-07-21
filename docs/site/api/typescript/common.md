@@ -4,7 +4,7 @@ description: 说明 gmkitx 常量、类型、编码、随机源、环境、ASN.1
 icon: toolbox
 order: 1
 category:
-  - API Reference
+  - API 说明书
   - TypeScript
 tag:
   - 编码
@@ -216,8 +216,7 @@ if (!bytesToHex(der).startsWith('30')) throw new Error('DER must be a SEQUENCE')
 
 弃用只影响类型提示，不改变当前运行时。新代码不要继续引入这些无算法前缀的名称。
 
-## 精确 Reference
+## 相关页面
 
-- [工具函数与类型 TypeDoc](/api/typescript/latest/)
 - [跨语言公共约定](/api/common.html)
 - [API 稳定性规则](https://github.com/gmkits/gmkit/blob/main/docs/API_STABILITY.md)

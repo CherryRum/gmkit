@@ -4,7 +4,7 @@ description: 说明 gmkitx SM2 密钥、压缩公钥、加解密、raw/DER 签�
 icon: key
 order: 2
 category:
-  - API Reference
+  - API 说明书
   - TypeScript
 tag:
   - SM2
@@ -354,8 +354,7 @@ if (!verifier.verify('class API', signature)) {
 }
 ```
 
-## Reference 与协议页
+## 相关页面
 
-- [SM2 TypeDoc](/api/typescript/latest/)
 - [跨语言 SM2 协议与向量](/algorithms/SM2.html)
 - [签名格式转换工具](/api/typescript/common.html#asn-1-与-sm2-签名)

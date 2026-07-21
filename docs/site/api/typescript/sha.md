@@ -4,7 +4,7 @@ description: 说明 gmkitx SHA-1、SHA-256、SHA-384、SHA-512、HMAC 和增量�
 icon: fingerprint
 order: 7
 category:
-  - API Reference
+  - API 说明书
   - TypeScript
 tag:
   - SHA
@@ -127,8 +127,7 @@ if (base64.length === 0) throw new Error('static class digest failed');
 - SHA/HMAC 不能直接替代密码哈希或 KDF。
 - Java 主包没有 `cn.gmkit.sha` 封装；跨语言 Java 端使用 JDK `MessageDigest`/`Mac`。
 
-## Reference
+## 相关页面
 
-- [SHA TypeDoc](/api/typescript/latest/)
 - [SHA 算法与 Java JDK 对照](/algorithms/SHA.html)
 - [编码与敏感值比较](/api/typescript/common.html)

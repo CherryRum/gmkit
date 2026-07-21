@@ -163,4 +163,4 @@ GmSSL 自身的 `tests/sm9test.c` 负责低层域运算、点运算、配对和�
 - `.github/workflows/sm9-native.yml`
 - `.github/workflows/publish-java.yml`
 - `packages/java/gmkit-sm9/src/test/java/cn/gmkit/sm9/`
-- [Java SM9 Javadoc](/api/java/latest/cn/gmkit/sm9/package-summary.html)
+- [Java SM9 API 说明书](/api/java/sm9.html)

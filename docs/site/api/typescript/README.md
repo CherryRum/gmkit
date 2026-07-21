@@ -3,7 +3,7 @@ title: TypeScript API 说明书
 description: 按公共工具、SM2、SM3、SM4、ZUC 和 SHA 查阅 gmkitx 全部根导出。
 icon: code
 category:
-  - API Reference
+  - API 说明书
   - TypeScript
 tag:
   - TypeScript
@@ -13,7 +13,7 @@ tag:
 
 # TypeScript API 说明书
 
-`gmkitx` 是从一个根入口发布的 TypeScript/JavaScript 密码工具包。本说明书解释怎样选择公开入口、字符串和字节如何转换、默认值是什么，以及失败时会返回 `false` 还是抛出异常。逐符号类型定义见 [TypeDoc Reference](/api/typescript/latest/)。
+`gmkitx` 是从一个根入口发布的 TypeScript/JavaScript 密码工具包。本说明书解释怎样选择公开入口、字符串和字节如何转换、默认值是什么，以及失败时会返回 `false` 还是抛出异常。
 
 ## 安装与运行环境
 
@@ -103,10 +103,6 @@ const digest = GMKit.sm3Digest('abc');
 - 自动识别优先把形态合法的偶数长度字符串当作 Hex。稳定协议应显式传 `InputFormat`。
 - 公开边界只有包根入口和 `gmkitx/package.json`；`src/*`、`dist/*` 深度导入不受兼容承诺保护。
 
-## 版本与精确签名
+## 已发布版本签名
 
-- [TypeDoc latest](/api/typescript/latest/)：当前 `main`。
-- `/api/typescript/versions/<version>/`：已发布版本快照。
-- [公开 API 清单](/api/public-api.html)：全部根导出及弃用名称。
-
-线上问题应先选择与 npm 制品相同版本的快照；`latest` 可能领先正式发布版本。
+需要核对历史制品的逐成员类型时，从 [已发布版本签名索引](/api/#已发布版本签名索引) 选择与 npm 制品相同的版本。当前页面及各算法页负责解释用途、约束和错误处理。

@@ -4,7 +4,7 @@ description: 说明 gmkitx ZUC-128、字节与字长度、EEA3、EIA3、ZUC 类�
 icon: signal
 order: 5
 category:
-  - API Reference
+  - API 说明书
   - TypeScript
 tag:
   - ZUC
@@ -231,8 +231,7 @@ generateKeyword(): number
 
 `initialize` 只接受两个 16 字节数组，`generateKeyword` 每次推进状态并返回一个无符号 32-bit word。普通业务代码优先使用高层密钥流 API；直接管理 `ZUCState` 时不得在不同消息之间复用已推进的状态。
 
-## Reference
+## 相关页面
 
-- [ZUC TypeDoc](/api/typescript/latest/)
 - [跨语言 ZUC/EEA3/EIA3 参数与向量](/algorithms/ZUC.html)
 - [公共编码约定](/api/typescript/common.html)
