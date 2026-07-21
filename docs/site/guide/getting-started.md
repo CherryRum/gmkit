@@ -16,13 +16,11 @@ tag:
 
 GMKit 的 Java 与 TypeScript 制品独立发布。两端可以通过共享向量核对协议字段，但包名、函数签名、异常类型和运行时依赖并不相同。
 
-## 先做三个选择
+## 先确认目标
 
-| 问题 | 选择 |
-|:--|:--|
-| 代码运行在哪里？ | 浏览器、Node.js、小程序进入 [TypeScript 快速入门](/guide/typescript.html)；JVM 服务进入 [Java 快速入门](/guide/java.html) |
-| 要解决什么问题？ | 签名/公钥加密看 SM2；摘要/HMAC 看 SM3；认证加密看 SM4-GCM/CCM；3GPP 场景看 ZUC；Java 标识密码看 SM9 |
-| 是否需要跨语言互操作？ | 需要时先固定协议字段，再使用 [共享互操作向量](/standards/interop-vectors.html) 验证，不从相似 API 名称推断兼容 |
+- 浏览器、Node.js 和小程序使用 [TypeScript 快速入门](/guide/typescript.html)；JVM 服务使用 [Java 快速入门](/guide/java.html)。
+- 签名与公钥加密使用 SM2；摘要与 HMAC 使用 SM3；认证加密优先评估 SM4-GCM/CCM；3GPP 场景使用 ZUC；Java 标识密码场景再评估 SM9。
+- 跨语言互操作必须固定协议字段，并用 [共享互操作向量](/standards/interop-vectors.html) 验证，不能从相似方法名推断兼容。
 
 ## 运行环境矩阵
 
@@ -43,21 +41,6 @@ GMKit 的 Java 与 TypeScript 制品独立发布。两端可以通过共享向�
 3. 修改消息、AAD、tag 或签名后，认证一定失败。
 4. 文本与任意二进制分别走 UTF-8 API 和字节 API。
 5. 使用的依赖版本、mode、编码和身份字段已经写入应用协议或配置。
-
-## 选择语言
-
-<div class="doc-path-grid doc-path-grid-compact">
-  <a class="doc-path-card" href="/guide/typescript.html">
-    <span class="doc-path-label">gmkitx 0.10.1</span>
-    <strong>TypeScript / JavaScript</strong>
-    <small>具名导出、命名空间、类、ESM/CJS/IIFE、RNG 与二进制 API。</small>
-  </a>
-  <a class="doc-path-card" href="/guide/java.html">
-    <span class="doc-path-label">cn.gmkit 0.10.1</span>
-    <strong>Java</strong>
-    <small>Maven、实例式/静态式 API、Provider、安全上下文、SM9 native。</small>
-  </a>
-</div>
 
 ## 上线前的下一步
 
