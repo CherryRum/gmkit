@@ -83,11 +83,12 @@ String hmacBase64(byte[] key, String data, Charset charset)
 HMAC key 只接受 `byte[]`，避免把 Hex key 和文本 key 混为一谈；Hex key 先用 `HexCodec.decodeStrict`。
 
 ```java
-byte[] key = "secret-key".getBytes(java.nio.charset.StandardCharsets.UTF_8);
-String mac = SM3Util.hmacHex(key, "hmac-payload");
-if (!"b57fb50bbc8ad6f9b11129cf1ec67cf0c658f0d4b597ae3f05a64eaa4a22d312"
-        .equals(mac)) {
-    throw new IllegalStateException("HMAC-SM3 vector mismatch");
+byte[] key = "merchant-demo-key".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+String message = "order=GMKIT-DEMO-0001&amount=88.00";
+String tampered = "order=GMKIT-DEMO-0001&amount=99.00";
+String mac = SM3Util.hmacHex(key, message);
+if (mac.equals(SM3Util.hmacHex(key, tampered))) {
+    throw new IllegalStateException("tampered order must produce a different MAC");
 }
 ```
 

@@ -18,6 +18,8 @@ tag:
 
 `SM4` 是可注入 `GmSecurityContext` 的实例入口，`SM4Util` 是静态入口。两者支持 ECB、CBC、CTR、CFB、OFB、GCM、CCM，并统一返回 `SM4CipherResult`。
 
+新协议优先使用 GCM/CCM，让解密端在返回明文前验证 tag。ECB 只用于既有格式；CBC/CTR/CFB/OFB 若接收不可信数据，必须由协议另行提供完整性保护。
+
 ## 构造和密钥生成
 
 ```java
@@ -169,7 +171,8 @@ byte[] key =
     HexCodec.decodeStrict("0123456789abcdeffedcba9876543210", "SM4 key");
 byte[] nonce =
     HexCodec.decodeStrict("000102030405060708090a0b", "SM4 nonce");
-byte[] aad = Texts.utf8("gmkit-api-v1");
+byte[] aad = Texts.utf8("tenant=demo;schema=1");
+String message = "order=GMKIT-DEMO-0001&amount=88.00";
 
 SM4Options options = SM4Options.builder()
     .mode(SM4CipherMode.GCM)
@@ -180,14 +183,22 @@ SM4Options options = SM4Options.builder()
     .build();
 
 SM4 sm4 = new SM4();
-SM4CipherResult encrypted = sm4.encrypt(key, Texts.utf8("secret"), options);
+SM4CipherResult encrypted = sm4.encrypt(key, Texts.utf8(message), options);
 if (!encrypted.hasTag()) {
     throw new IllegalStateException("GCM tag missing");
 }
 String plaintext = sm4.decryptToUtf8(key, encrypted, options);
-if (!"secret".equals(plaintext)) {
+if (!message.equals(plaintext)) {
     throw new IllegalStateException("SM4-GCM round-trip failed");
 }
+
+byte[] tamperedTag = encrypted.tag();
+tamperedTag[0] ^= 0x01;
+SM4CipherResult tampered =
+    new SM4CipherResult(encrypted.ciphertext(), tamperedTag);
+org.junit.jupiter.api.Assertions.assertThrows(
+    GmkitException.class,
+    () -> sm4.decryptToUtf8(key, tampered, options));
 ```
 
 如果 AAD、nonce、ciphertext 或 tag 被修改，解密抛 `GmkitException`，不会返回未经认证的明文。
@@ -203,8 +214,9 @@ SM4Options options = SM4Options.builder()
     .iv(HexCodec.decodeStrict(
         "000102030405060708090a0b0c0d0e0f", "SM4 IV"))
     .build();
-SM4CipherResult result = SM4Util.encrypt(key, "文本消息", options);
-if (!"文本消息".equals(SM4Util.decryptToUtf8(key, result, options))) {
+String message = "order=GMKIT-DEMO-0001&amount=88.00";
+SM4CipherResult result = SM4Util.encrypt(key, message, options);
+if (!message.equals(SM4Util.decryptToUtf8(key, result, options))) {
     throw new IllegalStateException("SM4-CBC round-trip failed");
 }
 ```

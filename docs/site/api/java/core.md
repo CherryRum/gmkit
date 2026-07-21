@@ -18,6 +18,8 @@ tag:
 
 `cn.gmkit.core` 提供所有算法共享的严格编码、字节操作、文本转换、Provider、安全上下文、格式枚举和异常类型。
 
+这些类型用于明确协议边界，不替代算法入口的长度和安全校验。新代码应优先使用显式 `InputFormat`/`OutputFormat`；只有接收无法修改的旧输入时才使用自动识别。
+
 ## Hex 与 Base64
 
 ### `HexCodec`
@@ -62,6 +64,11 @@ String hex = ByteEncodings.encode(bytes, OutputFormat.HEX);
 if (!"00ff8041".equals(hex)) {
     throw new IllegalStateException("encoding mismatch");
 }
+
+// 非法 Hex 必须抛错，不能静默截断或替换。
+org.junit.jupiter.api.Assertions.assertThrows(
+    GmkitException.class,
+    () -> HexCodec.decodeStrict("0xz1", "payload"));
 ```
 
 ## 文本与字节
