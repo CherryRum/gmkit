@@ -1,6 +1,6 @@
 ---
 title: TypeScript 公共类型与工具
-description: 说明 gmkitx 常量、类型、编码、随机源、环境、ASN.1、字节工具和兼容别名。
+description: 逐项说明 gmkitx 的常量、编码、随机源、环境、字节、ASN.1 工具和兼容别名。
 pageInfo: false
 contributors: false
 editLink: false
@@ -18,9 +18,71 @@ tag:
 
 # TypeScript 公共类型与工具
 
-本页覆盖 `gmkitx` 根入口中不属于单一算法的公开导出。所有字符串和字节转换都显式说明编码；稳定协议不要依赖自动猜测。
+本页覆盖 `gmkitx` 根入口中不属于单一算法的公开导出：格式常量、输入类型、Hex/Base64/UTF-8、字节运算、随机源、环境探测和 SM2 签名 ASN.1 转换。
 
-## 公共输入类型
+这些函数大多不保存状态，但 `setTextCodec`、`configureRNG` 和 `setCustomRNG` 会改变当前模块实例的全局配置。应用应在启动阶段统一配置，不要在并发请求中反复切换。
+
+::: tip 本页适用范围
+以下签名和行为按 `gmkitx 0.10.1` 说明。`BytesLike` 只表示“字符串或字节”，字符串究竟是 UTF-8、Hex 还是 Base64，仍由每个 API 参数决定。
+:::
+
+## 导入示例
+
+```ts
+import {
+  CipherMode,
+  DEFAULT_USER_ID,
+  InputFormat,
+  OID,
+  OutputFormat,
+  PaddingMode,
+  SM2CipherMode,
+  asn1ToXml,
+  autoDecodeString,
+  base64ToBytes,
+  bytes4ToUint32BE,
+  bytesToBase64,
+  bytesToHex,
+  bytesToString,
+  clearCustomRNG,
+  configureRNG,
+  constantTimeEqual,
+  decodeInput,
+  decodeSignature,
+  derToRaw,
+  encodeOutput,
+  encodeSignature,
+  getEnvReport,
+  getRandomBytes,
+  hasCustomRNG,
+  hexToBytes,
+  isBase64String,
+  isHexString,
+  normalizeInput,
+  rawToDer,
+  rotl,
+  setCustomRNG,
+  setTextCodec,
+  signatureToXml,
+  stringToBytes,
+  uint32ToBytes4BE,
+  xor,
+} from 'gmkitx';
+
+import type {
+  BytesLike,
+  CipherModeType,
+  EnvReport,
+  InputFormatType,
+  OutputFormatType,
+  PaddingModeType,
+  RNGPolicy,
+  SM2CipherModeType,
+  TextCodec,
+} from 'gmkitx';
+```
+
+## 公共类型
 
 ```ts
 type BytesLike = string | Uint8Array;
@@ -29,57 +91,119 @@ type InputFormatType = 'hex' | 'base64';
 type PaddingModeType = 'pkcs7' | 'none' | 'zero';
 type CipherModeType = 'ecb' | 'cbc' | 'ctr' | 'cfb' | 'ofb' | 'gcm' | 'ccm';
 type SM2CipherModeType = 'C1C3C2' | 'C1C2C3';
+type RNGPolicy = 'strict' | 'warn' | 'allow';
 ```
 
-`BytesLike` 中字符串的含义由具体参数决定：消息字符串通常是 UTF-8，key/IV/密文字符串通常是 Hex 或由 `inputFormat` 指定的编码。不要仅凭 TypeScript 类型推断字符串编码。
+<ApiTable label="TypeScript 公共类型" min-width="64rem">
 
-## 格式常量
-
-| 导出 | 成员 | 用途 |
+| 类型 | 解决的问题 | 不能推断的内容 |
 |:--|:--|:--|
-| `OutputFormat` | `HEX`, `BASE64` | 控制字符串输出；对应 `OutputFormatType` |
-| `InputFormat` | `HEX`, `BASE64` | 控制字符串输入；对应 `InputFormatType` |
-| `PaddingMode` | `PKCS7`, `NONE`, `ZERO` | SM4 填充；对应 `PaddingModeType` |
-| `CipherMode` | `ECB`, `CBC`, `CTR`, `CFB`, `OFB`, `GCM`, `CCM` | SM4 工作模式；对应 `CipherModeType` |
-| `SM2CipherMode` | `C1C3C2`, `C1C2C3` | SM2 密文排列；对应 `SM2CipherModeType` |
-| `OID` | `SM2`, `SM2_SM3`, `SM3`, `SM4`, `EC_PUBLIC_KEY` | 算法标识；历史 EC OID 只用于识别兼容产物 |
-| `DEFAULT_USER_ID` | `1234567812345678` | SM2 兼容默认身份；空字符串也回落到该值 |
+| `BytesLike` | 允许 API 同时接收编码字符串和原始字节 | 字符串编码、长度单位、是否可为空 |
+| `OutputFormatType` | 限定 Hex/Base64 输出 | 不改变底层密码结果 |
+| `InputFormatType` | 限定 Hex/Base64 输入 | 不代表 UTF-8 文本 |
+| `PaddingModeType` | 限定 SM4 ECB/CBC 填充 | 流式/AEAD 模式会忽略 padding |
+| `CipherModeType` | 限定 SM4 工作模式 | IV、nonce、tag 的具体约束 |
+| `SM2CipherModeType` | 限定 SM2 密文分段顺序 | 不改变公钥点编码 |
+| `RNGPolicy` | 指定缺少系统 CSPRNG 时的行为 | 不检测自定义 RNG 的随机质量 |
 
-`PaddingMode.ZERO` 无法区分原文末尾零字节和填充，不能用于需要无损恢复任意二进制的全新协议。`CipherMode.ECB` 只为兼容保留。
+</ApiTable>
 
-## Hex、Base64 与 UTF-8
+例如 `sm3Digest('00ff')` 把参数视为 UTF-8 文本，而 `sm4Encrypt('00ff…', ...)` 的 key 字符串必须是 Hex。阅读具体 API 的参数表，不要根据 `BytesLike` 猜编码。
 
-这组函数只负责确定性的编码转换，适合协议字段和日志边界；它们不加密数据，也不会自动判断一个普通字符串是否“看起来像”Hex。
+## 格式、模式和 OID 常量
 
-| 签名 | 返回 | 失败条件 |
-|:--|:--|:--|
-| `hexToBytes(hex: string): Uint8Array` | Hex 解码后的字节 | 奇数长度、非 Hex 字符 |
-| `bytesToHex(bytes: Uint8Array): string` | 小写 Hex | 参数不是字节数组 |
-| `base64ToBytes(base64: string): Uint8Array` | RFC 4648 Base64 字节 | 非法字符、长度或非规范填充 |
-| `bytesToBase64(bytes: Uint8Array): string` | 标准 Base64 | 参数不是字节数组 |
-| `stringToBytes(str: string): Uint8Array` | UTF-8 字节 | 注入 codec 违反约定 |
-| `bytesToString(bytes: Uint8Array): string` | UTF-8 文本 | 任意二进制可能产生替换字符 |
+### 字符串常量对象
 
 ```ts
-import {
-  base64ToBytes,
-  bytesToBase64,
-  bytesToHex,
-  hexToBytes,
-  stringToBytes,
-} from 'gmkitx';
+OutputFormat.HEX      // 'hex'
+OutputFormat.BASE64   // 'base64'
 
-const bytes = hexToBytes('00ff8041');
-if (bytesToHex(bytes) !== '00ff8041') throw new Error('Hex round-trip failed');
-if (bytesToBase64(bytes) !== 'AP+AQQ==') throw new Error('Base64 mismatch');
-if (bytesToHex(base64ToBytes('AP+AQQ==')) !== '00ff8041') {
-  throw new Error('Base64 round-trip failed');
+InputFormat.HEX       // 'hex'
+InputFormat.BASE64    // 'base64'
+
+PaddingMode.PKCS7     // 'pkcs7'
+PaddingMode.NONE      // 'none'
+PaddingMode.ZERO      // 'zero'
+
+CipherMode.ECB        // 'ecb'
+CipherMode.CBC        // 'cbc'
+CipherMode.CTR        // 'ctr'
+CipherMode.CFB        // 'cfb'
+CipherMode.OFB        // 'ofb'
+CipherMode.GCM        // 'gcm'
+CipherMode.CCM        // 'ccm'
+
+SM2CipherMode.C1C3C2  // 'C1C3C2'
+SM2CipherMode.C1C2C3  // 'C1C2C3'
+```
+
+<ApiTable label="格式与模式常量" min-width="64rem">
+
+| 导出 | 用途 | 重要边界 |
+|:--|:--|:--|
+| `OutputFormat` | 控制公开 API 的字符串输出 | Hex 为小写；Base64 使用标准字符表和填充 |
+| `InputFormat` | 指明字符串输入编码 | 不包含 UTF-8，UTF-8 由消息参数自身定义 |
+| `PaddingMode` | SM4 ECB/CBC 填充 | ZERO 无法还原原文尾部零字节 |
+| `CipherMode` | SM4 七种工作模式 | ECB 只兼容旧协议；GCM/CCM 才带认证 |
+| `SM2CipherMode` | SM2 `C1/C2/C3` 排列 | 默认 C1C3C2；旧格式可能使用 C1C2C3 |
+
+</ApiTable>
+
+### `OID`
+
+```ts
+OID.SM2           // '1.2.156.10197.1.301'
+OID.SM2_SM3       // '1.2.156.10197.1.501'
+OID.SM3           // '1.2.156.10197.1.401'
+OID.SM4           // '1.2.156.10197.1.104'
+OID.EC_PUBLIC_KEY // '1.2.840.10045.2.1'
+```
+
+`OID` 只提供标识字符串，不解析证书、SubjectPublicKeyInfo 或私钥容器。`EC_PUBLIC_KEY` 用于识别历史通用 EC 标识，不能据此断定曲线一定是 SM2。
+
+### `DEFAULT_USER_ID`
+
+```ts
+DEFAULT_USER_ID === '1234567812345678'
+```
+
+这是当前 SM2 签名兼容默认身份。签名和验签省略 `userId` 时使用它；当前实现传空字符串也会回落到这个值。协议需要独立身份时传非空 UTF-8 `userId`，并确保双方逐字节一致。
+
+## Hex 编码
+
+### `hexToBytes`
+
+```ts
+hexToBytes(hex: string): Uint8Array
+```
+
+把 Hex 文本解码为新字节数组。接受大小写和可选 `0x`/`0X` 前缀，不裁剪空白。空字符串或只有 `0x` 时返回空数组。
+
+::: note 奇数长度会在左侧补一个半字节 0
+`hexToBytes('f')` 返回 `0f`，`hexToBytes('abc')` 返回 `0a bc`。需要固定宽度的 key、IV、签名字段仍应先校验精确字符数；不要把这个兼容行为当作协议补齐规则。
+:::
+
+非 Hex 字符会抛出 `Error`。
+
+### `bytesToHex`
+
+```ts
+bytesToHex(bytes: Uint8Array): string
+```
+
+按原顺序返回小写 Hex；每个字节固定两个字符，空数组返回空字符串。函数按公开类型假定参数是 `Uint8Array`，不承担运行时结构校验。
+
+```ts
+import { bytesToHex, hexToBytes } from 'gmkitx';
+
+const binary = hexToBytes('00ff8041');
+if (bytesToHex(binary) !== '00ff8041') {
+  throw new Error('Hex round-trip failed');
 }
-if (bytesToHex(stringToBytes('国密')) !== 'e59bbde5af86') {
-  throw new Error('UTF-8 mismatch');
+if (bytesToHex(hexToBytes('abc')) !== '0abc') {
+  throw new Error('odd-length Hex compatibility changed');
 }
 
-// 非法 Hex 必须失败，不能静默截断或替换。
 let rejected = false;
 try {
   hexToBytes('0xz1');
@@ -89,92 +213,81 @@ try {
 if (!rejected) throw new Error('invalid Hex must be rejected');
 ```
 
-## 统一输入输出
+## Base64 编码
 
-当调用方已经从协议知道输入编码时使用 `decodeInput`；只有兼容无法修改的旧输入时才使用 `autoDecodeString`。新协议应始终携带明确的格式字段。
+### 完整签名
 
 ```ts
+bytesToBase64(bytes: Uint8Array): string
+base64ToBytes(base64: string): Uint8Array
+```
+
+<ApiTable label="Base64 规则" min-width="62rem">
+
+| 行为 | `bytesToBase64` | `base64ToBytes` |
+|:--|:--|:--|
+| 字符表 | 标准 RFC 4648 `A-Z a-z 0-9 + /` | 只接受同一标准字符表 |
+| 尾部 `=` | 始终生成规范填充 | 允许规范填充，也允许完全省略尾部填充 |
+| 空白 | 不生成 | 忽略空格、Tab、CR、LF |
+| Base64URL | 不生成 | 拒绝 `-`、`_` |
+| 非零 pad bits | 不适用 | 拒绝，避免多个非规范文本映射到同一字节 |
+| 空输入 | 返回空字符串 | 返回空数组 |
+
+</ApiTable>
+
+```ts
+import { base64ToBytes, bytesToBase64, bytesToHex, hexToBytes } from 'gmkitx';
+
+const binary = hexToBytes('00ff8041');
+if (bytesToBase64(binary) !== 'AP+AQQ==') {
+  throw new Error('Base64 encoding mismatch');
+}
+if (bytesToHex(base64ToBytes('AP+AQQ')) !== '00ff8041') {
+  throw new Error('unpadded Base64 decoding mismatch');
+}
+
+// QR== 的 pad bits 非零，不是同一字节的规范表示。
+let rejected = false;
+try {
+  base64ToBytes('QR==');
+} catch {
+  rejected = true;
+}
+if (!rejected) throw new Error('non-canonical Base64 must be rejected');
+```
+
+## UTF-8 与自定义 `TextCodec`
+
+### 文本转换函数
+
+```ts
+stringToBytes(str: string): Uint8Array
+bytesToString(bytes: Uint8Array): string
 normalizeInput(data: string | Uint8Array): Uint8Array
-decodeInput(data: BytesLike, inputFormat: InputFormatType = 'hex'): Uint8Array
-encodeOutput(bytes: Uint8Array, outputFormat: OutputFormatType = 'hex'): string
-autoDecodeString(str: string): Uint8Array
-isHexString(str: string): boolean
-isBase64String(str: string): boolean
 ```
 
-| API | 精确语义 |
-|:--|:--|
-| `normalizeInput` | 字符串按 UTF-8；`Uint8Array` 原样返回，不猜 Hex |
-| `decodeInput` | 字节原样返回；字符串严格按显式格式解码，默认 Hex |
-| `encodeOutput` | 默认小写 Hex，可指定标准 Base64 |
-| `autoDecodeString` | 先尝试 Hex，再尝试 Base64；都不匹配时抛错 |
-| `isHexString` | 非空、偶数长度且仅含 Hex 字符时为 true |
-| `isBase64String` | 非空且是规范 Base64 时为 true |
+`stringToBytes` 使用自定义 codec、原生 `TextEncoder`、Node `TextEncoder` 或内部 UTF-8 fallback；`bytesToString` 按相同优先级解码。默认解码是宽松 UTF-8，非法序列会产生 U+FFFD 替换字符，不适合无损承载任意二进制。
+
+`normalizeInput` 是算法消息入口的公共规则：字符串转 UTF-8；`Uint8Array` 原样返回同一引用，不复制，也不猜测 Hex。
 
 ```ts
-import { InputFormat, OutputFormat, decodeInput, encodeOutput } from 'gmkitx';
+import { bytesToHex, bytesToString, normalizeInput, stringToBytes } from 'gmkitx';
 
-const bytes = decodeInput('AP+AQQ==', InputFormat.BASE64);
-if (encodeOutput(bytes, OutputFormat.HEX) !== '00ff8041') {
-  throw new Error('encoding mismatch');
+const utf8 = stringToBytes('国密🔐');
+if (bytesToHex(utf8) !== 'e59bbde5af86f09f9490') {
+  throw new Error('UTF-8 encoding mismatch');
+}
+if (bytesToString(utf8) !== '国密🔐') {
+  throw new Error('UTF-8 decoding mismatch');
+}
+
+const original = Uint8Array.of(0x00, 0xff);
+if (normalizeInput(original) !== original) {
+  throw new Error('byte input should be returned by reference');
 }
 ```
 
-## 字节和整数工具
-
-这些工具用于实现二进制协议和固定宽度算法步骤，不负责数组越界、业务长度或数值范围之外的协议校验。
-
-| 签名 | 说明 |
-|:--|:--|
-| `xor(a: Uint8Array, b: Uint8Array): Uint8Array` | 等长数组逐字节异或；长度不同抛错 |
-| `rotl(value: number, shift: number): number` | 32-bit 循环左移并返回无符号整数 |
-| `bytes4ToUint32BE(bytes: Uint8Array, offset = 0): number` | 从 offset 读取四字节大端整数 |
-| `uint32ToBytes4BE(value: number): Uint8Array` | 写出四字节大端整数 |
-| `constantTimeEqual(a, b): boolean` | null/undefined/长度不同返回 false；等长时扫描全部字节 |
-
-`constantTimeEqual` 只避免源码中按内容提前退出；JavaScript JIT 和宿主运行时不保证严格恒时。它适合比较摘要、MAC 和 tag，不负责校验结构。
-
-## 随机源与运行环境
-
-随机源配置影响 SM2/SM4 等需要随机数的操作。服务启动时应先选择策略；测试注入的确定性 RNG 必须在用例结束后清除。
-
-```ts
-type RNGPolicy = 'strict' | 'warn' | 'allow';
-
-configureRNG(policy: RNGPolicy): void
-setRNGPolicy(policy: RNGPolicy): void
-setCustomRNG(fn: (length: number) => Uint8Array): void
-clearCustomRNG(): void
-hasCustomRNG(): boolean
-getRandomBytes(length = 32): Uint8Array
-getEnvReport(): EnvReport
-```
-
-随机源优先级为自定义 RNG、`crypto.getRandomValues`、CommonJS `node:crypto.randomBytes`、兼容降级源。默认 policy 是 `warn`：
-
-| policy | 缺少 CSPRNG 时 |
-|:--|:--|
-| `strict` | 立即抛错；安全环境推荐 |
-| `warn` | 警告一次后使用非安全兼容源 |
-| `allow` | 静默使用非安全兼容源 |
-
-`setRNGPolicy` 是 `configureRNG` 的兼容别名。`getRandomBytes` 只接受正安全整数；自定义 RNG 必须返回精确长度的 `Uint8Array`。
-
-```ts
-import { configureRNG, getEnvReport, setCustomRNG } from 'gmkitx';
-
-configureRNG('strict');
-const env = getEnvReport();
-// 受限平台应注入自身的 CSPRNG：
-// setCustomRNG((length) => platformSecureRandom(length));
-if (!env.hasWebCrypto && !env.hasNodeCrypto) {
-  console.warn('当前宿主需要注入安全随机源');
-}
-```
-
-`EnvReport` 包含 `hasBigInt`、`hasTextEncoder`、`hasTextDecoder`、`hasWebCrypto`、`hasNodeCrypto`。它只报告能力是否存在，不检测随机数质量。
-
-## 自定义文本编解码
+### `TextCodec` 与 `setTextCodec`
 
 ```ts
 type TextCodec = {
@@ -185,62 +298,384 @@ type TextCodec = {
 setTextCodec(codec: TextCodec): void
 ```
 
-只在缺少标准 `TextEncoder`/`TextDecoder` 的宿主中注入。实现必须是 UTF-8，并正确处理代理对、非 BMP 字符和非法字节序列；不能用 `charCodeAt` 直接截成单字节。
+这个入口供缺少标准 `TextEncoder`/`TextDecoder` 的小程序或嵌入式宿主注入 UTF-8 实现。调用后会清除内部编码器缓存，并影响后续所有字符串算法输入。
 
-## ASN.1 与 SM2 签名
+<ApiTable label="自定义 TextCodec 约定" min-width="60rem">
 
-这里的 ASN.1 能力用于 SM2 raw/DER 签名转换和受限诊断输出，不是证书、私钥容器或任意 ASN.1 schema 的解析器。
+| 项目 | 要求 |
+|:--|:--|
+| `encode` | 接收 JavaScript 字符串，返回 `Uint8Array` UTF-8；正确处理代理对和非 BMP 字符 |
+| `decode` | 接收 UTF-8 字节，返回字符串；明确约定非法序列策略 |
+| 生命周期 | 模块级持续生效；当前没有清除函数，可再次 `setTextCodec` 替换 |
+| 校验时机 | setter 不验证返回类型；错误会在后续编码/解码调用中暴露 |
+
+</ApiTable>
+
+现代浏览器和 Node 通常不需要调用它。不要使用 `charCodeAt` 截低 8 位冒充 UTF-8，否则中文、emoji 和签名摘要都会跨端不一致。
+
+## 显式输入与输出编码
+
+### 完整签名
 
 ```ts
-encodeSignature(r: string | Uint8Array, s: string | Uint8Array): Uint8Array
-decodeSignature(signature: Uint8Array): { r: string; s: string }
+decodeInput(
+  data: string | Uint8Array,
+  inputFormat: 'hex' | 'base64' = 'hex',
+): Uint8Array
+
+encodeOutput(
+  bytes: Uint8Array,
+  outputFormat: 'hex' | 'base64' = 'hex',
+): string
+
+autoDecodeString(str: string): Uint8Array
+isHexString(str: string): boolean
+isBase64String(str: string): boolean
+```
+
+<ApiTable label="通用编解码函数" min-width="70rem">
+
+| API | 用途 | 精确行为 |
+|:--|:--|:--|
+| `decodeInput` | 协议已经知道输入编码 | 字符串严格按指定格式；字节输入原样返回，并忽略 `inputFormat` |
+| `encodeOutput` | 把字节写成协议字符串 | `base64` 时 Base64；其余运行时值当前回落为 Hex |
+| `autoDecodeString` | 读取没有格式字段的旧数据 | 非空全 Hex 字符时优先 Hex，否则尝试规范 Base64，最后按 Hex 抛错 |
+| `isHexString` | 语法探测 | 非空且全部为 Hex 字符即 true；奇数长度也 true，不接受 `0x` |
+| `isBase64String` | 语法探测 | 非空规范 Base64 才 true；允许可忽略空白和省略尾部填充 |
+
+</ApiTable>
+
+`encodeOutput` 的 TypeScript 类型只允许 `hex`/`base64`，但运行时没有对其他值抛错，而是返回 Hex。跨边界接收动态配置时先自行校验，不要依赖这个回落行为。
+
+```ts
+import { InputFormat, OutputFormat, decodeInput, encodeOutput } from 'gmkitx';
+
+const bytes = decodeInput('AP+AQQ==', InputFormat.BASE64);
+if (encodeOutput(bytes, OutputFormat.HEX) !== '00ff8041') {
+  throw new Error('explicit encoding conversion failed');
+}
+```
+
+### 自动识别的歧义
+
+```ts
+import { autoDecodeString, bytesToHex } from 'gmkitx';
+
+// 'ABC' 同时可能是业务文本或无填充 Base64，但因为全是 Hex 字符，会按 0a bc 解码。
+if (bytesToHex(autoDecodeString('ABC')) !== '0abc') {
+  throw new Error('auto-decode precedence changed');
+}
+```
+
+新协议应始终携带明确编码字段并调用 `decodeInput`。`autoDecodeString` 只用于无法修改的历史输入。
+
+## 字节与 32-bit 整数工具
+
+### 完整签名
+
+```ts
+xor(a: Uint8Array, b: Uint8Array): Uint8Array
+rotl(value: number, shift: number): number
+bytes4ToUint32BE(bytes: Uint8Array, offset?: number): number
+uint32ToBytes4BE(value: number): Uint8Array
+constantTimeEqual(
+  a: Uint8Array | null | undefined,
+  b: Uint8Array | null | undefined,
+): boolean
+```
+
+<ApiTable label="字节与整数工具行为" min-width="72rem">
+
+| API | 返回值 | 校验与副作用 |
+|:--|:--|:--|
+| `xor` | 新的等长异或数组 | 长度不同抛错；不修改输入 |
+| `rotl` | 无符号 32-bit 循环左移结果 | JavaScript 把 value/shift 转为 32-bit，shift 实际按低 5 bit 使用 |
+| `bytes4ToUint32BE` | `0`–`0xffffffff` | 不做边界校验；调用方保证 offset 起至少还有 4 字节 |
+| `uint32ToBytes4BE` | 固定 4 字节大端数组 | 写出 value 的低 32-bit 位模式；调用方先校验协议数值范围 |
+| `constantTimeEqual` | 内容相同为 true | null/undefined/长度不同为 false；等长时扫描全部字节 |
+
+</ApiTable>
+
+```ts
+import {
+  bytes4ToUint32BE,
+  constantTimeEqual,
+  uint32ToBytes4BE,
+  xor,
+} from 'gmkitx';
+
+const left = Uint8Array.of(0x00, 0xff);
+const right = Uint8Array.of(0xff, 0x0f);
+if (!constantTimeEqual(xor(left, right), Uint8Array.of(0xff, 0xf0))) {
+  throw new Error('xor mismatch');
+}
+
+const encoded = uint32ToBytes4BE(0x89abcdef);
+if (bytes4ToUint32BE(encoded) !== 0x89abcdef) {
+  throw new Error('uint32 big-endian round-trip failed');
+}
+```
+
+`constantTimeEqual` 只避免源码中按内容提前结束；JavaScript JIT 和宿主运行时不保证严格恒时。它适合比较固定长度摘要、MAC 和 tag，但调用方仍应先验证外部数据的编码与期望长度。
+
+## 随机源
+
+### 策略与完整签名
+
+```ts
+configureRNG(policy: RNGPolicy): void
+
+/** @deprecated 使用 configureRNG */
+setRNGPolicy(policy: RNGPolicy): void
+
+setCustomRNG(fn: (length: number) => Uint8Array): void
+clearCustomRNG(): void
+hasCustomRNG(): boolean
+getRandomBytes(length: number = 32): Uint8Array
+```
+
+随机源按以下顺序选择：
+
+1. `setCustomRNG` 注入的函数；
+2. `globalThis.crypto.getRandomValues`，大于 65,536 字节时自动分块；
+3. 可用 CommonJS `require` 的 Node `crypto.randomBytes`；
+4. 非密码学安全的兼容降级源。
+
+<ApiTable label="RNGPolicy 行为" min-width="58rem">
+
+| policy | 系统 CSPRNG 不可用时 | 适用场景 |
+|:--|:--|:--|
+| `strict` | `getRandomBytes` 抛出 `Error` | 生产环境推荐 |
+| `warn` | 只警告一次，再返回非安全兼容随机数 | 当前默认，保留旧宿主可运行性 |
+| `allow` | 不警告，直接返回非安全兼容随机数 | 只适合明确接受风险的非安全场景 |
+
+</ApiTable>
+
+`configureRNG` 修改模块级策略，但不立即探测随机源；调用 `getRandomBytes` 时才决定。自定义 RNG 优先级最高，即使 policy 是 `strict` 也会先使用它。库只能检查自定义函数的类型和返回长度，不能判断其是否为 CSPRNG。
+
+### 生产启动检查
+
+```ts
+import { configureRNG, getRandomBytes, hasCustomRNG } from 'gmkitx';
+
+configureRNG('strict');
+if (hasCustomRNG()) {
+  throw new Error('unexpected custom RNG in production');
+}
+const nonce = getRandomBytes(12);
+if (nonce.length !== 12) throw new Error('RNG length mismatch');
+```
+
+### 受限宿主与测试注入
+
+```ts
+import { clearCustomRNG, getRandomBytes, setCustomRNG } from 'gmkitx';
+
+// 确定性函数只用于测试；生产实现必须改为宿主平台的 CSPRNG。
+setCustomRNG((length) => new Uint8Array(length).fill(0x42));
+try {
+  const key = getRandomBytes(16);
+  if (key.length !== 16) throw new Error('custom RNG length mismatch');
+} finally {
+  // 临时测试注入必须清除，避免污染其他用例。
+  clearCustomRNG();
+}
+```
+
+`setCustomRNG` 不是伪随机种子接口。它要求函数每次返回精确长度的 `Uint8Array`；类型或长度不符由 `getRandomBytes` 抛错。`getRandomBytes` 的 length 必须是正安全整数，`0`、负数、小数、NaN 和 Infinity 都会失败。
+
+## 环境探测
+
+```ts
+type EnvReport = {
+  hasBigInt: boolean;
+  hasTextEncoder: boolean;
+  hasTextDecoder: boolean;
+  hasWebCrypto: boolean;
+  hasNodeCrypto: boolean;
+};
+
+getEnvReport(): EnvReport
+```
+
+<ApiTable label="EnvReport 字段" min-width="62rem">
+
+| 字段 | 为 true 的条件 | 不代表什么 |
+|:--|:--|:--|
+| `hasBigInt` | 存在全局 `BigInt` | 不检测运算性能 |
+| `hasTextEncoder` | 存在全局或可加载的 Node `TextEncoder` | 不反映自定义 `TextCodec` |
+| `hasTextDecoder` | 存在全局或可加载的 Node `TextDecoder` | 不反映非法 UTF-8 策略 |
+| `hasWebCrypto` | 存在 `crypto.getRandomValues` | 不检测具体实现质量 |
+| `hasNodeCrypto` | 当前 CommonJS 环境可用 `require('node:crypto').randomBytes` | Node ESM 中可能为 false，即使 WebCrypto 可用 |
+
+</ApiTable>
+
+`getEnvReport` 是只读快照，不修改 RNG 或文本配置，也不包含 `hasCustomRNG`；自定义 RNG 状态用 `hasCustomRNG()` 查询。
+
+```ts
+import { getEnvReport } from 'gmkitx';
+
+const env = getEnvReport();
+if (!env.hasWebCrypto && !env.hasNodeCrypto) {
+  console.warn('当前宿主需要注入并验证平台 CSPRNG');
+}
+```
+
+## SM2 签名 ASN.1 / DER
+
+这六个根导出只处理 SM2 raw/DER 签名转换和诊断文本，不是证书、PKCS、密钥容器或任意 ASN.1 schema 的通用解析器。
+
+### 签名转换函数
+
+```ts
+encodeSignature(
+  r: string | Uint8Array,
+  s: string | Uint8Array,
+): Uint8Array
+
+decodeSignature(signature: Uint8Array): {
+  r: string;
+  s: string;
+}
+
 rawToDer(rawSignature: string | Uint8Array): Uint8Array
 derToRaw(derSignature: Uint8Array): string
-asn1ToXml(data: Uint8Array, indent = 0): string
+```
+
+<ApiTable label="SM2 签名 DER 工具" min-width="72rem">
+
+| API | 输入 | 返回 | 关键校验 |
+|:--|:--|:--|:--|
+| `encodeSignature` | 非空 r、s；字符串必须为偶数长度 Hex | DER SEQUENCE 字节 | 去除冗余前导 0，必要时补正号 00；不强制 32 字节上限 |
+| `decodeSignature` | DER 字节 | 最小宽度的小写 Hex `{r,s}` | 只接受一个根 SEQUENCE、恰好两个正 INTEGER、无尾随数据、规范长度/整数 |
+| `rawToDer` | 64 字节，或恰好 128 Hex 字符的 `r || s` | DER 字节 | raw 长度必须固定 |
+| `derToRaw` | DER 字节 | 128 个小写 Hex 字符 | r、s 各不得超过 32 字节，不足左补 0 |
+
+</ApiTable>
+
+`decodeSignature` 返回的 r/s 不保证各有 64 个字符。例如整数 1 返回 `'01'`。需要固定宽度 raw 签名时使用 `derToRaw`。
+
+```ts
+import {
+  bytesToHex,
+  decodeSignature,
+  derToRaw,
+  rawToDer,
+} from 'gmkitx';
+
+const raw = `${'01'.padStart(64, '0')}${'02'.padStart(64, '0')}`;
+const der = rawToDer(raw);
+if (derToRaw(der) !== raw) throw new Error('raw/DER conversion failed');
+if (!bytesToHex(der).startsWith('30')) throw new Error('DER must start with SEQUENCE');
+
+const parts = decodeSignature(der);
+if (parts.r !== '01' || parts.s !== '02') {
+  throw new Error('DER INTEGER decoding mismatch');
+}
+
+// 根 SEQUENCE 后出现尾随字节必须失败。
+let rejected = false;
+try {
+  derToRaw(Uint8Array.from([...der, 0x00]));
+} catch {
+  rejected = true;
+}
+if (!rejected) throw new Error('trailing DER data must be rejected');
+```
+
+### 诊断 XML
+
+```ts
+asn1ToXml(data: Uint8Array, indent: number = 0): string
+
 signatureToXml(
-  signature: BytesLike,
+  signature: string | Uint8Array,
   options?: {
     signatureFormat?: 'raw' | 'der' | 'auto';
-    inputFormat?: InputFormatType;
+    inputFormat?: 'hex' | 'base64';
   },
 ): string
 ```
 
-- `rawToDer` 接收 64 字节或 128 个 Hex 字符的 `r || s`。
-- `derToRaw` 返回 128 个小写 Hex 字符。
-- DER 解析拒绝无限长度、非最短整数/长度、截断、尾随数据和过深嵌套。
-- `asn1ToXml`、`signatureToXml` 只用于诊断，不是 X.509、PKCS 或通用 XML 交换格式。
+<ApiTable label="ASN.1 诊断输出" min-width="70rem">
+
+| API | 默认值 | 用途与限制 |
+|:--|:--|:--|
+| `asn1ToXml` | `indent = 0` | 展示一个或多个连续 DER TLV；检查边界、规范长度和最多 64 层嵌套，但不理解证书 schema |
+| `signatureToXml` | raw + Hex | 展示 SM2 r、s 和 DER TLV；`auto` 只根据首字节是否为 `0x30` 判断 raw/DER |
+
+</ApiTable>
+
+`indent` 必须是 0–64 的安全整数。`signatureFormat: 'auto'` 存在结构歧义：如果 raw 签名第一个字节恰好为 `0x30`，会先按 DER 处理。协议已知格式时总是显式传 `raw` 或 `der`。
 
 ```ts
-import { bytesToHex, derToRaw, rawToDer } from 'gmkitx';
+import { signatureToXml } from 'gmkitx';
 
 const raw = `${'01'.padStart(64, '0')}${'02'.padStart(64, '0')}`;
-const der = rawToDer(raw);
-if (derToRaw(der) !== raw) throw new Error('signature conversion failed');
-if (!bytesToHex(der).startsWith('30')) throw new Error('DER must be a SEQUENCE');
+const xml = signatureToXml(raw, {
+  signatureFormat: 'raw',
+  inputFormat: 'hex',
+});
+if (!xml.includes('<SM2Signature>')
+  || !xml.includes('<r>01</r>')
+  || !xml.includes('<s>02</s>')) {
+  throw new Error('signature XML diagnostic output mismatch');
+}
 ```
 
-## 兼容别名
+XML 仅供调试和人工查看，不是稳定交换格式，也不提供 XML→签名的反向 API。
 
-以下根导出仍可运行，但已标记 `@deprecated`：
+## 弃用兼容名称
 
-| 旧名称 | 替代名称 |
-|:--|:--|
-| `generateKeyPair` | `sm2GenerateKeyPair` |
-| `getPublicKeyFromPrivateKey` | `sm2GetPublicKeyFromPrivateKey` |
-| `compressPublicKey` | `sm2CompressPublicKey` |
-| `decompressPublicKey` | `sm2DecompressPublicKey` |
-| `sign` | `sm2Sign` |
-| `verify` | `sm2Verify` |
-| `keyExchange` | `sm2KeyExchange` |
-| `digest` | `sm3Digest` |
-| `hmac` | `sm3Hmac` |
+以下根导出仍可运行，但类型声明已标记 `@deprecated`。它们没有算法前缀，容易在同一文件中混淆来源；新代码使用右侧名称。
 
-弃用只影响类型提示，不改变当前运行时。新代码不要继续引入这些无算法前缀的名称。
+<ApiTable label="TypeScript 弃用兼容名称" min-width="56rem">
+
+| 旧名称 | 替代名称 | 说明页 |
+|:--|:--|:--|
+| `generateKeyPair` | `sm2GenerateKeyPair` | [SM2](/api/typescript/sm2.html) |
+| `getPublicKeyFromPrivateKey` | `sm2GetPublicKeyFromPrivateKey` | [SM2](/api/typescript/sm2.html) |
+| `compressPublicKey` | `sm2CompressPublicKey` | [SM2](/api/typescript/sm2.html) |
+| `decompressPublicKey` | `sm2DecompressPublicKey` | [SM2](/api/typescript/sm2.html) |
+| `sign` | `sm2Sign` | [SM2](/api/typescript/sm2.html) |
+| `verify` | `sm2Verify` | [SM2](/api/typescript/sm2.html) |
+| `keyExchange` | `sm2KeyExchange` | [SM2](/api/typescript/sm2.html) |
+| `digest` | `sm3Digest` | [SM3](/api/typescript/sm3.html) |
+| `hmac` | `sm3Hmac` | [SM3](/api/typescript/sm3.html) |
+| `setRNGPolicy` | `configureRNG` | 本页“随机源” |
+
+</ApiTable>
+
+弃用只影响迁移提示，不改变当前运行结果。`sha1`/`SHA1` 也已弃用，但它们是旧算法而非无前缀别名，使用边界见 [TypeScript SHA API](/api/typescript/sha.html)。
+
+## 失败处理速查
+
+<ApiTable label="TypeScript 公共工具失败行为" min-width="72rem">
+
+| API 家族 | 抛错场景 | 不会自动做的事 |
+|:--|:--|:--|
+| Hex/Base64 | 非法字符、Base64 长度/填充/pad bits 非规范 | 不识别 Base64URL，不校验业务字段宽度 |
+| `decodeInput` | 字符串编码非法、格式枚举非法 | 字节输入不复制，且忽略格式参数 |
+| `encodeOutput` | 公开类型内通常不抛错 | 非法运行时格式当前回落 Hex |
+| 字节工具 | `xor` 长度不同 | 32-bit 工具不检查 offset/数值业务范围 |
+| RNG | policy/length 非法、自定义返回错误、strict 下无 CSPRNG | 不评估自定义 RNG 熵质量 |
+| ASN.1 签名 | raw 长度、DER 标签/长度/整数/边界非法 | 不解析证书、密钥容器或任意 ASN.1 schema |
+
+</ApiTable>
+
+## 本页覆盖的公共 API
+
+- 类型：`BytesLike`、`OutputFormatType`、`InputFormatType`、`PaddingModeType`、`CipherModeType`、`SM2CipherModeType`、`RNGPolicy`、`TextCodec`、`EnvReport`。
+- 常量：`OutputFormat`、`InputFormat`、`PaddingMode`、`CipherMode`、`SM2CipherMode`、`OID`、`DEFAULT_USER_ID`。
+- 编码：`hexToBytes`、`bytesToHex`、`base64ToBytes`、`bytesToBase64`、`stringToBytes`、`bytesToString`、`normalizeInput`、`decodeInput`、`encodeOutput`、`autoDecodeString`、`isHexString`、`isBase64String`、`setTextCodec`。
+- 字节：`xor`、`rotl`、`bytes4ToUint32BE`、`uint32ToBytes4BE`、`constantTimeEqual`。
+- 随机与环境：`configureRNG`、`setRNGPolicy`、`setCustomRNG`、`clearCustomRNG`、`hasCustomRNG`、`getRandomBytes`、`getEnvReport`。
+- ASN.1：`encodeSignature`、`decodeSignature`、`rawToDer`、`derToRaw`、`asn1ToXml`、`signatureToXml`。
+- 无算法前缀兼容名称：`generateKeyPair`、`getPublicKeyFromPrivateKey`、`compressPublicKey`、`decompressPublicKey`、`sign`、`verify`、`keyExchange`、`digest`、`hmac`。
 
 ## 可执行案例
 
-下面的编码失败断言和 ASN.1 往返直接来自文档测试，站点构建会校验引用区域存在，测试任务会执行同一文件。
+下面的测试源码覆盖显式编码、非法 Hex 和 raw/DER 签名往返。站点检查会确认引用区域存在，文档示例任务会执行同一文件。
 
 ::: details 查看测试源码
 ```js
@@ -250,5 +685,7 @@ if (!bytesToHex(der).startsWith('30')) throw new Error('DER must be a SEQUENCE')
 
 ## 相关页面
 
-- [跨语言公共约定](/api/common.html)
+- [跨语言编码、错误与安全约定](/api/common.html)
+- [TypeScript SM2 API](/api/typescript/sm2.html)
+- [TypeScript SM4 API](/api/typescript/sm4.html)
 - [API 稳定性规则](https://github.com/gmkits/gmkit/blob/main/docs/API_STABILITY.md)
