@@ -6,6 +6,7 @@ param(
     [string]$Configuration = 'Release',
     [string]$Generator = '',
     [string]$CMake = 'cmake',
+    [string]$CTest = 'ctest',
     [string]$Maven = 'mvn',
     [switch]$Clean,
     [switch]$Stage,
@@ -204,6 +205,9 @@ Write-Host "Build root          : $BuildRoot"
 Require-Command git
 Require-Command $CMake
 Require-Command $Maven
+if ($Test) {
+    Require-Command $CTest
+}
 
 if ($Clean -and (Test-Path -LiteralPath $BuildRoot)) {
     Write-Host "==> 清理 $BuildRoot"
@@ -311,6 +315,16 @@ if ($PackageRuntime) {
 }
 
 if ($Test) {
+    # GmSSL 的 sm9 用例执行固定的 ks/ds/ke/de 派生向量。先验证上游实现，
+    # 再运行 JNI 层测试，避免“测试程序已编译但从未执行”的假阳性。
+    Invoke-External $CTest @(
+        '--test-dir', $gmsslBuild,
+        '--build-config', $Configuration,
+        '--output-on-failure',
+        '--no-tests=error',
+        '-R', '^sm9$'
+    )
+
     $testBridge = Join-Path $runtimeDir $nativeInfo.Bridge
     Invoke-External $Maven @(
         '-f', (Join-Path $javaRoot 'pom.xml'),
