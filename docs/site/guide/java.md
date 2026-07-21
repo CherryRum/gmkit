@@ -43,6 +43,8 @@ if (!expected.equals(actual)) {
 
 ## 2. 选择实例式或静态式入口
 
+<ApiTable label="Java API 入口选择" min-width="62rem">
+
 | 需求 | 推荐入口 |
 |:--|:--|
 | 复用 `GmSecurityContext` 或固定 Provider/SecureRandom | `SM2`、`SM4` 实例 |
@@ -50,12 +52,13 @@ if (!expected.equals(actual)) {
 | ZUC、EEA3、EIA3 | `ZUC` 或 `ZUCUtil` 静态入口 |
 | SM9 | `SM9` 门面和实现 `AutoCloseable` 的句柄类型 |
 
+</ApiTable>
+
 实例类没有声明线程安全。并发任务使用独立实例，或只调用没有共享状态的静态工具。
 
 ## 3. 签名与认证加密闭环
 
 ```java
-import cn.gmkit.core.HexCodec;
 import cn.gmkit.core.SM4CipherMode;
 import cn.gmkit.core.SM4Padding;
 import cn.gmkit.sm2.SM2;
@@ -65,6 +68,7 @@ import cn.gmkit.sm2.SM2VerifyOptions;
 import cn.gmkit.sm4.SM4;
 import cn.gmkit.sm4.SM4CipherResult;
 import cn.gmkit.sm4.SM4Options;
+import java.security.SecureRandom;
 
 SM2 sm2 = new SM2();
 SM2KeyPair keys = sm2.generateKeyPair();
@@ -91,22 +95,36 @@ if (sm2.verify(
     throw new IllegalStateException("tampered order must not verify");
 }
 
-byte[] sm4Key = new SM4().generateKey();
+SM4 sm4 = new SM4();
+byte[] sm4Key = sm4.generateKey();
+byte[] nonce = new byte[12];
+new SecureRandom().nextBytes(nonce);
 SM4Options options = SM4Options.builder()
     .mode(SM4CipherMode.GCM)
     .padding(SM4Padding.NONE)
-    .iv(HexCodec.decodeStrict("000102030405060708090a0b", "nonce"))
+    .iv(nonce)
     .aad("tenant=demo;schema=1".getBytes("UTF-8"))
     .tagLength(16)
     .build();
-SM4CipherResult encrypted = new SM4().encrypt(sm4Key, message, options);
-String decrypted = new SM4().decryptToUtf8(sm4Key, encrypted, options);
+SM4CipherResult encrypted = sm4.encrypt(sm4Key, message, options);
+String decrypted = sm4.decryptToUtf8(sm4Key, encrypted, options);
 if (!message.equals(decrypted)) {
     throw new IllegalStateException("SM4-GCM round-trip failed");
 }
+
+byte[] tamperedTag = encrypted.tag();
+tamperedTag[0] ^= 0x01;
+SM4CipherResult tampered =
+    new SM4CipherResult(encrypted.ciphertext(), tamperedTag);
+try {
+    sm4.decryptToUtf8(sm4Key, tampered, options);
+    throw new IllegalStateException("tampered tag must be rejected");
+} catch (cn.gmkit.core.GmkitException expected) {
+    // 预期：认证失败，不返回明文。
+}
 ```
 
-示例中的固定 nonce 只为展示参数，生产环境必须在相同 key 下保证 nonce 唯一。Java 8 项目也可以使用 `StandardCharsets.UTF_8` 代替字符串字符集名称。
+示例为每次加密生成新的 12 字节 nonce，并同时验证错误 tag 必须失败。生产环境还必须在相同 key 下保证 nonce 唯一。Java 8 项目也可以使用 `StandardCharsets.UTF_8` 代替字符串字符集名称。
 
 ## Provider 与安全上下文
 

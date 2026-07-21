@@ -94,7 +94,7 @@ export default defineUserConfig({
           text: '入门路径',
           children: [
             '/guide/',
-            '/guide/getting-started',
+            { text: '接入环境与验收', link: '/guide/getting-started' },
             '/guide/typescript',
             '/guide/java',
           ],

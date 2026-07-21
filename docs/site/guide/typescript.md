@@ -112,11 +112,30 @@ const encrypted = sm4Encrypt(key, message, options);
 if (sm4Decrypt(key, encrypted, options) !== message) {
   throw new Error('SM4-GCM round-trip failed');
 }
+
+if (!encrypted.tag) {
+  throw new Error('SM4-GCM result is missing its tag');
+}
+const tampered = {
+  ...encrypted,
+  tag: `${encrypted.tag[0] === '0' ? '1' : '0'}${encrypted.tag.slice(1)}`,
+};
+let rejected = false;
+try {
+  sm4Decrypt(key, tampered, options);
+} catch {
+  rejected = true;
+}
+if (!rejected) {
+  throw new Error('tampered GCM tag must be rejected');
+}
 ```
 
-协议中必须同时保存或传输 nonce、AAD 约定、tag、编码和版本。相同 SM4 key 下不得重用 GCM nonce。
+这段代码同时验证正向往返和错误 tag：认证失败时必须抛错，不能返回明文。协议中应同时保存或传输 nonce、AAD 约定、tag、编码和版本；相同 SM4 key 下不得重用 GCM nonce。
 
 ## 导入方式怎么选
+
+<ApiTable label="TypeScript 导入方式" min-width="64rem">
 
 | 方式 | 适用场景 | 示例 |
 |:--|:--|:--|
@@ -124,6 +143,8 @@ if (sm4Decrypt(key, encrypted, options) !== message) {
 | 算法命名空间 | 需要统一注入或分组管理 | `sm2.sign`、`sm4.encrypt` |
 | 类 | 保存密钥/配置或使用增量状态 | `SM2`、`SM3`、`SM4`、`SHA256` |
 | 默认导出 | IIFE/UMD 和旧整体导入兼容 | `GMKit.sm3Digest` |
+
+</ApiTable>
 
 旧的 `sign`、`digest`、`generateKeyPair` 等无算法前缀名称已弃用，新代码不要继续引入。
 
