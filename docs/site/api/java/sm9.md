@@ -16,7 +16,9 @@ tag:
 
 # Java SM9 API
 
-`cn.gmkit:gmkit-sm9` 通过 JNI 调用随 JAR 分发的 GmSSL native runtime，支持签名/验签、基于身份的加解密、PEM 导入导出和流式签名上下文；不支持 SM9 密钥交换。
+`cn.gmkit:gmkit-sm9` 通过 JNI 调用随 JAR 分发的 GmSSL 本地动态库（native runtime），支持签名/验签、基于身份的加解密、PEM 导入导出和流式签名上下文；不支持 SM9 密钥交换。
+
+SM9 把身份字符串直接纳入密钥派生，适合已有 KGC、身份登记和主公钥分发体系的协议。采用前应确认对端实现、五个目标平台、身份规范化规则、KGC 隔离方式和合规要求；如果系统只有普通公私钥与证书体系，不能仅凭 API 可用就把它替换成 SM9。
 
 ## 启动诊断
 
@@ -85,7 +87,7 @@ static SM9SignMasterKey importPublicMasterKeyPem(String file)
 void close()
 ```
 
-完整主密钥用于 KGC 派生用户签名私钥；只含公开部分的导入对象用于验签，不应用来派生私钥。
+完整主密钥由 KGC 保存，用于派生用户签名私钥；只含公开部分的导入对象可分发给验签方，不能派生用户私钥。
 
 ### `SM9SignKey`
 
@@ -97,13 +99,16 @@ static SM9SignKey importEncryptedPrivateKeyInfoPem(
 void close()
 ```
 
-导入用户私钥时必须同时提供原始身份。身份不是 PEM 外的可替换标签；签名私钥、验签身份和派生身份必须逐字节一致。
+签名私钥 PEM 不携带可供应用校验的身份绑定信息。导入方法允许 `id` 为 null，此时 `getId()` 也返回 null；签名运算仍可执行，但验签方必须使用派生该私钥时的原始身份。应用应把身份与 PEM 作为同一条受保护记录保存，不能把 `id` 当作可任意替换的显示标签。
 
 ## 签名示例
 
 ```java
-byte[] data = "SM9 签名消息".getBytes(java.nio.charset.StandardCharsets.UTF_8);
-String id = "alice@example";
+byte[] data = "order=GMKIT-DEMO-0001&amount=88.00"
+    .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+byte[] tampered = "order=GMKIT-DEMO-0001&amount=99.00"
+    .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+String id = "warehouse@gmkit.cn";
 
 try (SM9SignMasterKey master = SM9.generateSignMasterKey();
      SM9SignKey userKey = SM9.extractSignKey(master, id)) {
@@ -111,10 +116,14 @@ try (SM9SignMasterKey master = SM9.generateSignMasterKey();
     if (!SM9.verify(master, id, data, signature)) {
         throw new IllegalStateException("SM9 verification failed");
     }
+    if (SM9.verify(master, "other@gmkit.cn", data, signature)
+            || SM9.verify(master, id, tampered, signature)) {
+        throw new IllegalStateException("SM9 accepted changed identity or message");
+    }
 }
 ```
 
-验签不通过返回 false；参数、句柄或 native 调用失败抛异常。
+验签数学上不成立返回 false；参数、句柄或 native 调用失败抛 `SM9Exception`。签名含随机性，不要把一次运行得到的签名字节写成所谓固定标准向量。
 
 ## 加密密钥类型
 
@@ -134,7 +143,7 @@ static SM9EncMasterKey importPublicMasterKeyPem(String file)
 void close()
 ```
 
-完整主密钥由 KGC 派生用户解密私钥；公开主密钥可分发给加密方。
+完整主密钥由 KGC 保存并派生用户解密私钥；公开主密钥可分发给加密方，公开部分不能派生用户私钥。
 
 ### `SM9EncKey`
 
@@ -149,12 +158,13 @@ static SM9EncKey importEncryptedPrivateKeyInfoPem(
 void close()
 ```
 
-SM9 单次明文最多 255 字节，DER 密文最多 367 字节。更大数据应使用混合加密：随机生成 SM4 key 加密正文，只用 SM9 封装会话 key。
+SM9 单次明文必须为 1–255 字节，单位是 UTF-8 编码后的实际字节数；DER 密文最多 367 字节。更大数据应使用混合加密：随机生成 16 字节 SM4 会话 key，用 SM4-GCM 等认证加密处理正文，只用 SM9 保护会话 key。算法、接收方身份、nonce、AAD、tag 和载荷版本都必须随密文保存。
 
 ```java
 byte[] plaintext =
-    "SM9 IBE".getBytes(java.nio.charset.StandardCharsets.UTF_8);
-String id = "bob@example";
+    "order=GMKIT-DEMO-0001&amount=88.00"
+        .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+String id = "warehouse@gmkit.cn";
 
 try (SM9EncMasterKey master = SM9.generateEncMasterKey();
      SM9EncKey userKey = SM9.extractEncKey(master, id)) {
@@ -162,6 +172,20 @@ try (SM9EncMasterKey master = SM9.generateEncMasterKey();
     byte[] decrypted = SM9.decrypt(userKey, ciphertext);
     if (!java.util.Arrays.equals(plaintext, decrypted)) {
         throw new IllegalStateException("SM9 IBE round-trip failed");
+    }
+}
+```
+
+对 256 字节输入，API 会在进入 native 前抛 `SM9Exception`：
+
+```java
+try (SM9EncMasterKey master = SM9.generateEncMasterKey()) {
+    byte[] tooLong = new byte[SM9EncMasterKey.MAX_PLAINTEXT_SIZE + 1];
+    try {
+        SM9.encrypt(master, "warehouse@gmkit.cn", tooLong);
+        throw new IllegalStateException("256-byte plaintext must fail");
+    } catch (SM9Exception expected) {
+        // 预期：SM9 IBE 只接受 1–255 字节。
     }
 }
 ```
@@ -206,8 +230,40 @@ try (SM9SignMasterKey master = SM9.generateSignMasterKey();
 - PEM 文件路径和口令必须非空白；I/O、口令或格式错误抛 `SM9Exception`。
 - 主私钥和用户私钥只提供口令加密 PEM 导出；公开主密钥可独立导出。
 - 用户 ID 使用 Java String 的 UTF-8 字节，首尾空格属于身份并会保留，全空白 ID 被拒绝。
+- `SM9SignKey` 导入时的 id 是可空元数据；`SM9EncKey` 解密时必须持有原始 id。PEM 本身不替应用维护“身份—私钥”映射。
 - 不要把用户 ID、文件路径或口令自动 trim 后再调用，否则可能改变身份或目标文件。
 - 生产口令不应硬编码在源码或日志中。
+
+下面的测试式示例把 KGC 持有的主私钥留在生成端，只向验签端交付公开主密钥，同时把身份和用户私钥作为一条记录保存：
+
+```java
+java.nio.file.Path directory = java.nio.file.Files.createTempDirectory("gmkit-sm9-");
+java.nio.file.Path publicPem = directory.resolve("sign-master-public.pem");
+java.nio.file.Path userPem = directory.resolve("warehouse-sign-key.pem");
+String id = "warehouse@gmkit.cn";
+String testPassword = "manual-test-only"; // 仅限测试；生产环境从密钥系统读取。
+byte[] message = "order=GMKIT-DEMO-0001&amount=88.00"
+    .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+try (SM9SignMasterKey master = SM9.generateSignMasterKey();
+     SM9SignKey userKey = master.extractKey(id)) {
+    master.exportPublicMasterKeyPem(publicPem.toString());
+    userKey.exportEncryptedPrivateKeyInfoPem(testPassword, userPem.toString());
+}
+
+try (SM9SignMasterKey verifierKey =
+         SM9SignMasterKey.importPublicMasterKeyPem(publicPem.toString());
+     SM9SignKey importedUserKey =
+         SM9SignKey.importEncryptedPrivateKeyInfoPem(
+             testPassword, userPem.toString(), id)) {
+    byte[] signature = SM9.sign(importedUserKey, message);
+    if (!SM9.verify(verifierKey, id, message, signature)) {
+        throw new IllegalStateException("imported SM9 keys do not match");
+    }
+}
+```
+
+示例里的随机主密钥和随机签名没有固定字面值；断言验证的是 PEM 往返与身份绑定。实际测试应在 `finally` 中删除临时文件；业务代码还应采用受控目录、最小文件权限和明确的密钥销毁策略。
 
 ## 生命周期与异常
 
@@ -219,6 +275,16 @@ try (SM9SignMasterKey master = SM9.generateSignMasterKey();
 - 先关闭子密钥还是主密钥没有隐式级联；每个对象都应独立关闭。
 
 `SM9Exception` 和 `SM9UnsupportedPlatformException` 都提供 `(String message)` 与 `(String message, Throwable cause)` 构造器。后者继承前者，用于明确的平台/native 不支持场景。
+
+## 标准与发布证据
+
+| 层级 | 实际执行内容 | 能证明什么 |
+|:--|:--|:--|
+| GmSSL 上游 | 固定版本 `sm9test.c` 的 `ks`、`ds`、`ke`、`de` 派生向量 | 底层 SM9 运算与固定向量一致 |
+| Java/JNI | 正确与错误身份、消息篡改、IBE、长度上限、PEM、关闭后访问 | Java 参数、句柄和 native 桥接行为一致 |
+| 聚合 JAR | 五个平台分别运行打包产物，检查平台选择、签名、IBE 与 Unicode PEM | 发布物确实带有并加载当前平台 runtime |
+
+固定向量来自锁定提交的 [`tests/sm9test.c`](https://github.com/guanzhi/GmSSL/blob/d655c06b3a6b0fe8cff900f293bf0e5aac6eb0a2/tests/sm9test.c)。构建脚本在 JNI 测试之前执行 `ctest --output-on-failure --no-tests=error -R ^sm9$`；找不到测试或任一向量失败都会终止流水线。Java 生成的随机密钥、随机签名和随机密文只用于行为回归，不冒充固定标准向量。
 
 ## 相关页面
 

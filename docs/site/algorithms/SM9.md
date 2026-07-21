@@ -9,7 +9,9 @@ tag: [SM9, Java, JNI, GmSSL]
 
 # SM9 标识密码算法
 
-SM9 当前只由 Java 模块 `cn.gmkit:gmkit-sm9:0.10.1` 提供。该模块通过 JNI 调用 GmSSL，包含签名/验签、基于身份的加密/解密、PEM 导入导出和流式签名上下文；不提供密钥交换。`gmkitx` 没有 SM9 导出、WASM 占位或浏览器降级实现。
+SM9 当前只由 Java 模块 `cn.gmkit:gmkit-sm9:0.10.1` 提供。该模块通过 JNI 调用 GmSSL 本地动态库（native runtime），包含签名/验签、基于身份的加密/解密、PEM 导入导出和流式签名上下文；不提供密钥交换。`gmkitx` 没有 SM9 导出、WASM 占位或浏览器降级实现。
+
+采用 SM9 需要的不只是算法库。项目应先确认对端协议与实现、KGC 主密钥隔离、身份登记和注销、公开主密钥分发、目标平台运行库以及适用的合规要求。下文只说明 GMKit 能验证的算法与工程边界，不替项目完成这些制度和基础设施决策。
 
 完整句柄类型、诊断、签名、IBE、PEM、路径和大小限制见 [Java SM9 API](/api/java/sm9.html)。
 
@@ -76,8 +78,9 @@ KGC 保存签名主密钥私有部分并为身份派生用户签名私钥。验�
 import cn.gmkit.sm9.*;
 import java.nio.charset.StandardCharsets;
 
-String id = "alice@example.com";
-byte[] message = "GMKit SM9 signature check".getBytes(StandardCharsets.UTF_8);
+String id = "warehouse@gmkit.cn";
+byte[] message = "order=GMKIT-DEMO-0001&amount=88.00".getBytes(StandardCharsets.UTF_8);
+byte[] tampered = "order=GMKIT-DEMO-0001&amount=99.00".getBytes(StandardCharsets.UTF_8);
 
 try (SM9SignMasterKey master = SM9.generateSignMasterKey();
      SM9SignKey signKey = master.extractKey(id)) {
@@ -85,8 +88,9 @@ try (SM9SignMasterKey master = SM9.generateSignMasterKey();
     if (!SM9.verify(master, id, message, signature)) {
         throw new IllegalStateException("SM9 verify failed");
     }
-    if (SM9.verify(master, "bob@example.com", message, signature)) {
-        throw new IllegalStateException("SM9 accepted a different identity");
+    if (SM9.verify(master, "other@gmkit.cn", message, signature)
+            || SM9.verify(master, id, tampered, signature)) {
+        throw new IllegalStateException("SM9 accepted changed input");
     }
 }
 ```
@@ -100,8 +104,8 @@ import cn.gmkit.sm9.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-String id = "bob@example.com";
-byte[] plaintext = "GMKit SM9 IBE check".getBytes(StandardCharsets.UTF_8);
+String id = "warehouse@gmkit.cn";
+byte[] plaintext = "order=GMKIT-DEMO-0001&amount=88.00".getBytes(StandardCharsets.UTF_8);
 
 try (SM9EncMasterKey master = SM9.generateEncMasterKey();
      SM9EncKey encKey = master.extractKey(id)) {
@@ -113,7 +117,7 @@ try (SM9EncMasterKey master = SM9.generateEncMasterKey();
 }
 ```
 
-单次明文必须为 1 到 255 字节；解密接受的 DER 密文最多 367 字节。更大数据应采用混合加密：随机生成会话 key，用认证加密处理业务数据，再用 SM9 保护会话 key，并明确保存算法、身份和载荷版本。
+单次明文必须为 1–255 字节，以编码后的实际字节数计；解密接受的 DER 密文最多 367 字节。更大数据应采用混合加密：随机生成 16 字节 SM4 会话 key，用 SM4-GCM 等认证加密处理业务数据，再用 SM9 保护会话 key，并明确保存算法、身份、nonce、AAD、tag 和载荷版本。
 
 ## 身份、PEM 与路径
 
@@ -156,9 +160,19 @@ try (SM9SignMasterKey master = SM9.generateSignMasterKey();
 
 ## 验证证据边界
 
-发布流水线固定 GmSSL `v3.1.1` commit `d655c06b3a6b0fe8cff900f293bf0e5aac6eb0a2`，分别构建五个平台 runtime，再用聚合 JAR 验证自动平台选择、签名、验签、加解密、PEM 和资源释放。
+发布流水线固定 GmSSL `v3.1.1` commit `d655c06b3a6b0fe8cff900f293bf0e5aac6eb0a2`。验证分为三层，不能用其中一层替代另外两层：
 
-GmSSL 自身的 `tests/sm9test.c` 负责低层域运算、点运算、配对和固定派生向量。Java 公共 API 不接受原始 `ks/ke/ds/de` 内存结构，因此 Java 层的随机密钥 round-trip 只能证明 JNI、PEM 和生命周期路径，不应描述成固定国标向量。
+<ApiTable label="SM9 三层验证证据" min-width="48rem">
+
+| 层级 | 测试内容 | 结论边界 |
+|:--|:--|:--|
+| 1. GmSSL 固定向量 | 五个平台先执行上游 `sm9test.c` 中的 `ks`、`ds`、`ke`、`de` 派生向量 | 证明锁定版本的底层实现通过其固定向量 |
+| 2. Java/JNI 行为 | 签名、错误身份、消息与签名篡改、IBE、1/255/256 字节边界、PEM 和句柄关闭 | 证明 Java 参数到 native 的桥接与错误语义 |
+| 3. 聚合 JAR | 五个平台下载同一个聚合 JAR，验证平台自动选择、签名、IBE 和 Unicode PEM | 证明实际发布物包含并能加载对应平台 runtime |
+
+</ApiTable>
+
+固定向量的可核查来源是锁定提交的 [`tests/sm9test.c`](https://github.com/guanzhi/GmSSL/blob/d655c06b3a6b0fe8cff900f293bf0e5aac6eb0a2/tests/sm9test.c)。Java 公共 API 不暴露原始 `ks/ke/ds/de` 内存结构，因此 Java 层随机生成的密钥、签名和密文只能证明 API 行为，不能描述成固定国标向量。
 
 - `.github/workflows/sm9-native.yml`
 - `.github/workflows/publish-java.yml`
