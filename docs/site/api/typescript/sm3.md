@@ -1,6 +1,6 @@
 ---
 title: TypeScript SM3 API
-description: 说明 gmkitx SM3 摘要、HMAC、输出编码、增量状态与 reset 行为。
+description: 逐项说明 gmkitx 的 SM3 摘要、HMAC、增量状态、输出编码和复用行为。
 pageInfo: false
 contributors: false
 editLink: false
@@ -17,20 +17,104 @@ tag:
 
 # TypeScript SM3 API
 
-SM3 接收任意字节消息并输出 256-bit（32 字节）摘要。`gmkitx` 提供一次性摘要、HMAC-SM3 和可复用的增量 `SM3` 类。
+SM3 把任意长度消息映射为固定 256 bit（32 字节）摘要。`gmkitx` 提供一次性摘要、HMAC-SM3、自动复用的 `SM3` 类，以及命名空间中的低层增量状态。
 
-## 一次性函数
+摘要只能判断内容是否一致，不能证明消息来自谁。需要共享密钥认证时使用 HMAC-SM3；需要数字签名时使用 SM2。
+
+::: tip 本页适用范围
+以下签名和默认值按 `gmkitx 0.10.1` 说明。字符串消息与字符串 HMAC key 均按 UTF-8 编码，不会自动解释为 Hex。
+:::
+
+## 导入与入口选择
+
+```ts
+import {
+  OutputFormat,
+  SM3,
+  constantTimeEqual,
+  hexToBytes,
+  sm3,
+  sm3Digest,
+  sm3Hmac,
+} from 'gmkitx';
+
+import type { SM3Options } from 'gmkitx';
+```
+
+<ApiTable label="SM3 入口选择" min-width="54rem">
+
+| 使用方式 | 入口 | 适用场景 | 调用后的状态 |
+|:--|:--|:--|:--|
+| 一次性摘要 | `sm3Digest` / `sm3.digest` | 已经拿到整段消息 | 不保存状态 |
+| 一次性 HMAC | `sm3Hmac` / `sm3.hmac` | 已经拿到完整 key 和消息 | 不保存状态 |
+| 增量封装 | `new SM3()` | 分块读取文件、网络流或大消息 | `digest()` 后自动清空消息状态 |
+| 低层增量状态 | `new sm3.SM3HashState()` | 需要直接取得 32 字节摘要 | `digestBytes()` 后保持完成状态，必须手动 `reset()` |
+
+</ApiTable>
+
+根入口中的无前缀 `digest`、`hmac` 是弃用别名，分别改用 `sm3Digest`、`sm3Hmac`。命名空间还保留 `sm3.sm3Digest` 兼容名称，新代码使用 `sm3.digest`。
+
+## 输入与输出约定
+
+<ApiTable label="SM3 输入输出约定" min-width="52rem">
+
+| 位置 | `string` | `Uint8Array` | 备注 |
+|:--|:--|:--|:--|
+| `data` | UTF-8 文本 | 原始消息字节 | 空消息合法 |
+| HMAC `key` | UTF-8 文本 | 原始 key 字节 | 不自动识别 Hex/Base64 |
+| 默认输出 | 64 个小写 Hex 字符 | 不适用 | 表示 32 字节摘要 |
+| Base64 输出 | 44 个标准 Base64 字符 | 不适用 | 末尾通常包含 `=` 填充 |
+
+</ApiTable>
+
+同一可见字符串只有在两端使用相同字符编码时才会得到相同摘要。二进制协议应直接传 `Uint8Array`，不要先经过字符串转换。
+
+## 一次性摘要
+
+### 公开签名
 
 ```ts
 interface SM3Options {
-  outputFormat?: OutputFormatType;
+  outputFormat?: 'hex' | 'base64';
 }
 
 sm3Digest(
   data: string | Uint8Array,
   options?: SM3Options,
 ): string
+```
 
+| 参数 | 必填 | 默认值 | 说明 |
+|:--|:--:|:--|:--|
+| `data` | 是 | 无 | UTF-8 字符串或原始字节 |
+| `options.outputFormat` | 否 | `OutputFormat.HEX` | `hex` 或 `base64` |
+
+函数总是返回字符串。空字符串会计算标准 SM3 空消息摘要；输出格式不是 `hex`/`base64` 时抛出 `Error`。
+
+```ts
+import { OutputFormat, sm3Digest } from 'gmkitx';
+
+// 使用公开固定向量确认依赖、UTF-8 和输出编码均正确。
+const expected = '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0';
+const actual = sm3Digest('abc');
+if (actual !== expected) throw new Error('SM3 vector mismatch');
+
+// outputFormat 只改变结果编码，不改变摘要字节。
+const base64 = sm3Digest('abc', { outputFormat: OutputFormat.BASE64 });
+if (base64 !== 'Zsfw9GLu7dnR8tRr3BDk4kFnxIdc8veiKX2gK49LqOA=') {
+  throw new Error('SM3 Base64 output mismatch');
+}
+
+// 字符串按 UTF-8 计算，字节输入原样计算。
+const utf8 = new TextEncoder().encode('abc');
+if (sm3Digest(utf8) !== actual) throw new Error('SM3 UTF-8 mismatch');
+```
+
+## HMAC-SM3
+
+### 公开签名
+
+```ts
 sm3Hmac(
   key: string | Uint8Array,
   data: string | Uint8Array,
@@ -38,88 +122,180 @@ sm3Hmac(
 ): string
 ```
 
-| 参数 | 语义 |
-|:--|:--|
-| `data` 字符串 | 按 UTF-8 编码后计算 |
-| `data` 字节 | 原样参与计算 |
-| `key` 字符串 | HMAC key 按 UTF-8 编码，不按 Hex 猜测 |
-| `outputFormat` | 默认 `OutputFormat.HEX`；可选标准 Base64 |
+HMAC-SM3 用共享密钥认证消息内容。key 超过 64 字节时会先做一次 SM3；较短 key 会按 HMAC 规则补齐到 64 字节。API 接受空 key，但业务协议不应使用低熵、可猜测或空密钥。
 
-`sm3` 命名空间中的 `digest`、`hmac` 与顶层函数行为相同。根入口的无前缀 `digest`、`hmac` 是弃用兼容别名。
+<ApiTable label="HMAC-SM3 参数" min-width="48rem">
+
+| 参数 | 必填 | 默认值 | 说明 |
+|:--|:--:|:--|:--|
+| `key` | 是 | 无 | UTF-8 字符串或原始 key 字节 |
+| `data` | 是 | 无 | UTF-8 字符串或原始消息字节 |
+| `options.outputFormat` | 否 | `hex` | 返回 Hex 或 Base64 字符串 |
+
+</ApiTable>
 
 ```ts
-import { OutputFormat, sm3Digest, sm3Hmac } from 'gmkitx';
+import {
+  constantTimeEqual,
+  hexToBytes,
+  sm3Hmac,
+} from 'gmkitx';
 
-const digest = sm3Digest('abc');
-if (digest !== '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0') {
-  throw new Error('SM3 vector mismatch');
-}
-
+const key = 'merchant-demo-key';
 const message = 'order=GMKIT-DEMO-0001&amount=88.00';
 const tampered = 'order=GMKIT-DEMO-0001&amount=99.00';
-const macHex = sm3Hmac('merchant-demo-key', message);
-const macBase64 = sm3Hmac('merchant-demo-key', message, {
-  outputFormat: OutputFormat.BASE64,
-});
-if (macHex.length !== 64 || macBase64.length === 0) {
-  throw new Error('SM3-HMAC output mismatch');
+
+const expectedMac = sm3Hmac(key, message);
+const receivedMac = sm3Hmac(key, message);
+
+// 比较解码后的字节，避免直接用字符串提前结束比较。
+if (!constantTimeEqual(hexToBytes(expectedMac), hexToBytes(receivedMac))) {
+  throw new Error('HMAC-SM3 verification failed');
 }
-if (sm3Hmac('merchant-demo-key', tampered) === macHex) {
+
+// 修改消息后必须产生不同 MAC。
+const tamperedMac = sm3Hmac(key, tampered);
+if (constantTimeEqual(hexToBytes(expectedMac), hexToBytes(tamperedMac))) {
   throw new Error('tampered message must produce a different MAC');
 }
 ```
 
-空消息是合法摘要输入。非法 `outputFormat` 会抛出 `Error`。HMAC 验证时应对解码后的 MAC 使用 `constantTimeEqual`，不要直接比较不可信字符串。
+库没有单独的 `verifyHmac` 函数。接收外部 MAC 时，应先按协议指定的 Hex/Base64 解码为字节，确认长度为 32 字节，再用 `constantTimeEqual` 比较。
 
 ## `SM3` 增量类
 
-```ts
-new SM3(outputFormat?: OutputFormatType)
+### 公开成员
 
-SM3.digest(data, options?): string
-SM3.hmac(key, data, options?): string
+```ts
+new SM3(outputFormat?: 'hex' | 'base64')
+
+SM3.digest(
+  data: string | Uint8Array,
+  options?: SM3Options,
+): string
+
+SM3.hmac(
+  key: string | Uint8Array,
+  data: string | Uint8Array,
+  options?: SM3Options,
+): string
 
 update(data: string | Uint8Array): this
 digest(options?: SM3Options): string
 reset(): this
-setOutputFormat(format: OutputFormatType): void
-getOutputFormat(): OutputFormatType
+setOutputFormat(format: 'hex' | 'base64'): void
+getOutputFormat(): 'hex' | 'base64'
 ```
 
-增量实例只缓存不足一个 64 字节分组的尾部，适合流式处理大消息。`digest()` 完成计算后会自动重置内部消息状态，因此同一个实例可以开始下一条消息；实例输出格式继续保留。
+`SM3.digest`、`SM3.hmac` 是一次性函数的静态写法。实例方法用于分块摘要：完整的 64 字节分组会立即处理，内部最多保留 63 字节尾块，因此内存占用不随累计消息长度线性增长。
+
+<ApiTable label="SM3 实例状态变化" min-width="58rem">
+
+| 调用 | 消息状态 | 输出格式状态 | 返回值 |
+|:--|:--|:--|:--|
+| `update(data)` | 追加消息 | 不变 | 当前实例，可链式调用 |
+| `digest()` | 完成摘要后自动重置 | 保留 | 摘要字符串 |
+| `digest({ outputFormat })` | 完成摘要后自动重置 | 实例默认值不变 | 本次使用指定格式 |
+| `reset()` | 丢弃累计消息 | 保留 | 当前实例 |
+| `setOutputFormat(format)` | 不变 | 修改实例默认值 | `void` |
+
+</ApiTable>
+
+如果 `digest({ outputFormat })` 收到非法输出格式，它会在完成摘要之前抛错，当前累计消息仍可继续使用或手动重置。实例不是并发对象；多个异步任务应各自创建实例。
 
 ```ts
 import { OutputFormat, SM3, sm3Digest } from 'gmkitx';
 
-const state = new SM3(OutputFormat.HEX);
-state.update('a').update(Uint8Array.of(0x62, 0x63));
-if (state.digest() !== sm3Digest('abc')) {
-  throw new Error('incremental SM3 mismatch');
+const hasher = new SM3(OutputFormat.HEX);
+
+// 分三段追加，结果应与一次性摘要相同。
+hasher.update('order=')
+  .update('GMKIT-DEMO-0001')
+  .update('&amount=88.00');
+const incremental = hasher.digest();
+const oneShot = sm3Digest('order=GMKIT-DEMO-0001&amount=88.00');
+if (incremental !== oneShot) throw new Error('incremental SM3 mismatch');
+
+// digest() 已重置消息状态，但实例默认输出格式仍保留。
+if (hasher.update('abc').digest() !== sm3Digest('abc')) {
+  throw new Error('SM3 instance reuse failed');
+}
+if (hasher.getOutputFormat() !== OutputFormat.HEX) {
+  throw new Error('SM3 output format was not retained');
 }
 
-// digest() 已自动 reset，可以复用同一实例。
-if (state.update('abc').digest() !== sm3Digest('abc')) {
-  throw new Error('SM3 reuse failed');
-}
-
-state.setOutputFormat(OutputFormat.BASE64);
-if (state.getOutputFormat() !== OutputFormat.BASE64) {
-  throw new Error('output format was not retained');
+// reset() 用于主动放弃尚未完成的消息。
+hasher.update('discard this message').reset();
+if (hasher.update('abc').digest() !== sm3Digest('abc')) {
+  throw new Error('SM3 reset failed');
 }
 ```
 
-`reset()` 可在放弃当前未完成消息时显式清空状态。JavaScript 对象不应由多个异步任务并发更新；需要并行计算时为每条消息创建独立实例。
+## 低层 `SM3HashState`
 
-## 摘要与密码的边界
+`SM3HashState` 通过 `sm3` 命名空间公开，不是根级具名导出。一般业务使用 `SM3` 类即可；需要直接取得原始 32 字节摘要时才使用低层状态。
 
-- SM3 摘要不能提供消息来源认证；需要共享密钥认证时使用 HMAC-SM3。
-- 不要用一次 SM3 或 HMAC 直接保存用户密码；应使用带 salt 和成本参数的密码哈希。
-- 摘要输出不是加密，无法从摘要恢复原文。
-- 比较敏感摘要或 MAC 时先解码为字节，再调用 `constantTimeEqual`。
+```ts
+new sm3.SM3HashState()
+
+update(data: string | Uint8Array): this
+digestBytes(): Uint8Array
+reset(): this
+```
+
+它与 `SM3` 类最重要的差异是：`digestBytes()` 完成后不会自动重置。再次调用 `digestBytes()`，或在未 `reset()` 时继续 `update()`，都会抛出 `Error`。
+
+```ts
+import { sm3, sm3Digest } from 'gmkitx';
+
+const state = new sm3.SM3HashState();
+const rawDigest = state.update('a').update('bc').digestBytes();
+if (rawDigest.length !== 32) throw new Error('SM3 raw digest length mismatch');
+
+// 低层状态已完成，必须显式 reset 后才能复用。
+let finalizedRejected = false;
+try {
+  state.update('next message');
+} catch {
+  finalizedRejected = true;
+}
+if (!finalizedRejected) throw new Error('finalized SM3 state must reject update');
+
+state.reset();
+const reused = state.update('abc').digestBytes();
+if (Array.from(reused, (value) => value.toString(16).padStart(2, '0')).join('')
+  !== sm3Digest('abc')) {
+  throw new Error('SM3HashState reuse failed');
+}
+```
+
+## 安全使用边界
+
+- SM3 摘要不是加密，无法从摘要恢复原文，但也不能证明消息来源。
+- HMAC key 应由安全随机源生成并独立管理，不要直接使用用户密码或固定短文本。
+- 不要用一次 SM3/HMAC 保存登录密码；使用带 salt 和成本参数的密码哈希方案。
+- 对外部 MAC 先校验编码和长度，再进行不提前结束的字节比较。
+- JavaScript 对象不适合由多个并发任务共同更新；流式任务一条消息对应一个状态实例。
+
+## 失败处理速查
+
+| API | 失败行为 | 常见原因 |
+|:--|:--|:--|
+| `sm3Digest` / `sm3Hmac` | 抛出 `Error` | 输入类型或 `outputFormat` 非法 |
+| `SM3.update` | 抛出 `Error` | 运行时传入非字符串/字节输入 |
+| `SM3.digest` | 抛出 `Error` | 本次输出格式非法；失败时消息状态保留 |
+| `SM3HashState.update` | 抛出 `Error` | 状态已完成且未 reset |
+| `SM3HashState.digestBytes` | 抛出 `Error` | 同一 reset 周期重复完成摘要 |
+
+## 本页覆盖的公共 API
+
+- 根导出：`sm3Digest`、`sm3Hmac`、`SM3`、`SM3Options`。
+- 命名空间成员：`sm3.digest`、`sm3.hmac`、`sm3.SM3`、`sm3.SM3HashState` 和兼容名称 `sm3.sm3Digest`。
+- 弃用根别名：`digest`、`hmac`。
 
 ## 可执行案例
 
-下面的固定摘要、增量复用和 HMAC 篡改断言直接来自文档测试。
+下面的测试源码覆盖固定摘要、增量实例复用和 HMAC 篡改断言。站点检查会确认引用区域存在，文档示例任务会执行同一文件。
 
 ::: details 查看测试源码
 ```js
@@ -131,3 +307,4 @@ if (state.getOutputFormat() !== OutputFormat.BASE64) {
 
 - [跨语言 SM3 协议与固定向量](/algorithms/SM3.html)
 - [编码与敏感值比较](/api/typescript/common.html)
+- [TypeScript SM2 API](/api/typescript/sm2.html)：使用 SM3 绑定身份的数字签名
