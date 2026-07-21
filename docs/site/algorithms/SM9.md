@@ -1,6 +1,6 @@
 ---
 title: SM9 标识密码算法
-description: 说明 Java SM9 独立模块的签名、IBE、native runtime、平台和资源生命周期。
+description: 说明 Java SM9 的采用前提、身份与密钥角色、平台限制和标准验证证据。
 icon: key
 order: 5
 category: [算法]
@@ -9,23 +9,85 @@ tag: [SM9, Java, JNI, GmSSL]
 
 # SM9 标识密码算法
 
-SM9 当前只由 Java 模块 `cn.gmkit:gmkit-sm9:0.10.1` 提供。该模块通过 JNI 调用 GmSSL 本地动态库（native runtime），包含签名/验签、基于身份的加密/解密、PEM 导入导出和流式签名上下文；不提供密钥交换。`gmkitx` 没有 SM9 导出、WASM 占位或浏览器降级实现。
+SM9 使用身份字符串参与密钥派生和密码运算。GMKit 当前只通过 Java 制品 `cn.gmkit:gmkit-sm9:0.10.1` 提供签名、验签、基于身份的加密（IBE）、PEM 和流式签名；底层由 JNI 调用随 JAR 分发的 GmSSL 本地动态库。`gmkitx` 不提供 SM9、WASM 占位或浏览器降级实现。
 
-采用 SM9 需要的不只是算法库。项目应先确认对端协议与实现、KGC 主密钥隔离、身份登记和注销、公开主密钥分发、目标平台运行库以及适用的合规要求。下文只说明 GMKit 能验证的算法与工程边界，不替项目完成这些制度和基础设施决策。
+<div class="doc-path-grid doc-path-grid-compact">
+  <a class="doc-path-card" href="/api/java/sm9.html">
+    <span class="doc-path-label">Java · gmkit-sm9</span>
+    <strong>SM9 API 说明书</strong>
+    <small>依赖、平台诊断、句柄、签名、IBE、PEM、文件路径、限制和可执行案例。</small>
+  </a>
+  <a class="doc-path-card" href="#验证证据">
+    <span class="doc-path-label">GmSSL v3.1.1</span>
+    <strong>标准对标证据</strong>
+    <small>固定派生向量、Java/JNI 行为和五平台聚合 JAR 分三层验收。</small>
+  </a>
+</div>
 
-完整句柄类型、诊断、签名、IBE、PEM、路径和大小限制见 [Java SM9 API](/api/java/sm9.html)。
+## 采用前先回答五个问题
 
-## 依赖与平台
+<ApiTable label="SM9 采用前提" min-width="72rem">
 
-```xml
-<dependency>
-  <groupId>cn.gmkit</groupId>
-  <artifactId>gmkit-sm9</artifactId>
-  <version>0.10.1</version>
-</dependency>
-```
+| 主题 | 项目必须明确的答案 | GMKit 不负责的部分 |
+|:--|:--|:--|
+| 对端协议 | 对端实现、身份字节、签名/密文/PEM 格式 | 不保证未测试实现自动互操作 |
+| KGC | 主私钥生成、隔离、备份、轮换和审计 | 不提供 KGC 服务或 HSM 托管 |
+| 身份体系 | 登记、派生、分发、注销和重新签发 | 不提供身份目录与吊销协议 |
+| 部署平台 | OS/CPU、JAR 内 runtime、临时目录和加载策略 | 不提供纯 Java 回退 |
+| 合规与运营 | 适用标准、准入要求、灾备和密钥职责分离 | 文档与测试不构成认证结论 |
 
-单个 JAR 包含以下 runtime；运行时只解压和加载当前平台资源：
+</ApiTable>
+
+SM9 的接入成本主要来自密钥基础设施、身份治理、对端生态和本地动态库运维。是否采用应依据协议要求和部署条件评估，不应只因 API 可以调用就引入。
+
+## 身份与密钥角色
+
+<ApiTable label="SM9 身份与密钥角色" min-width="70rem">
+
+| 角色 | 是否保密 | 可以做什么 | 不可以做什么 |
+|:--|:--:|:--|:--|
+| KGC 主私钥 | 是 | 为身份派生用户私钥；导出时使用口令加密 PEM | 不能分发给普通验签方或加密方 |
+| 公开主密钥 | 否 | 验证身份签名，或为指定身份执行 IBE 加密 | 不能派生用户私钥 |
+| 身份绑定的用户私钥 | 是 | 执行该身份的签名或 IBE 解密 | 不能改绑到另一个身份 |
+| 身份字符串 | 通常公开 | 参与派生、验签和加解密 | 不能在协议不同层随意 trim、改大小写或归一化 |
+
+</ApiTable>
+
+身份按 UTF-8 原样转换。首尾空格会进入身份字节，全空白身份会被拒绝；派生、验签和 IBE 两端必须使用完全相同的字节。中文、emoji 和非 BMP 字符由 Java/JNI 测试覆盖，业务协议仍应明确 Unicode 规范化策略。
+
+## 功能和数据边界
+
+<ApiTable label="SM9 功能与限制" min-width="70rem">
+
+| 能力 | 当前行为 | 需要写入协议的内容 |
+|:--|:--|:--|
+| 签名 | DER 编码，含随机性 | 身份 UTF-8、消息字节、签名字段编码 |
+| IBE | 单次明文 1–255 字节 | 接收身份、密文编码、载荷版本 |
+| IBE 解密 | 接受的 DER 密文最多 367 字节 | 超限与解析失败的统一错误处理 |
+| PEM | 私有材料只提供口令加密 PEM；公开主密钥使用公开 PEM | 口令策略、文件权限、路径编码和轮换 |
+| 流式签名 | 多次 update 后 sign/verify，可 reset 复用 | 分块顺序；并发任务不共享上下文 |
+| 密钥交换 | 当前不提供 | 不能从 IBE API 推断存在密钥交换协议 |
+
+</ApiTable>
+
+签名或加密结果含随机性，不应把一次随机输出写成固定标准向量。测试应检查成功、错误身份、篡改消息、篡改签名或密文，以及资源关闭后的失败行为。
+
+## 大数据采用混合加密
+
+IBE 的 255 字节上限适合保护短会话材料，不适合直接处理文件或长业务报文。大数据流程应明确分层：
+
+1. 生成随机 16 字节 SM4 会话 key。
+2. 使用 SM4-GCM 或 CCM 认证加密业务数据。
+3. 使用接收方身份和 SM9 公开主密钥保护会话 key。
+4. 在载荷中记录版本、身份、SM4 mode、nonce、AAD、ciphertext、tag 和 SM9 密文编码。
+
+这里描述的是协议构成，不是稳定序列化格式。调用方需要定义字段顺序、长度、编码和升级规则。
+
+## 受支持平台
+
+单个 JAR 包含五组 runtime，启动时只解压和加载当前平台资源：
+
+<ApiTable label="SM9 本地动态库平台" min-width="68rem">
 
 | 平台标识 | GmSSL 动态库 | JNI 桥接库 |
 |:--|:--|:--|
@@ -35,146 +97,31 @@ SM9 当前只由 Java 模块 `cn.gmkit:gmkit-sm9:0.10.1` 提供。该模块通�
 | `darwin-aarch64` | `libgmssl.3.dylib` | `libgmkitsm9.dylib` |
 | `windows-x86_64` | `gmssl.dll` | `gmkitsm9.dll` |
 
-其他操作系统或 CPU 架构会返回不支持错误。加载顺序为：
+</ApiTable>
 
-1. `-Dgmkit.sm9.native.path=<桥接库绝对路径>`；同目录存在 GmSSL 动态库时先尝试加载。
-2. `System.loadLibrary("gmkitsm9")`，使用系统库路径。
-3. 从 JAR 的 `native/{platform}/` 解压 GmSSL 与 JNI 文件到临时目录后加载。
+其他 OS/CPU 组合返回不支持错误，不会自动改用纯 Java 或其他算法。正式环境应在启动阶段检查可用性、平台标识和加载错误；测试环境要求 SM9 时，`isAvailable() == false` 必须使测试失败，不能计为成功跳过。
 
-## 可用性诊断
+## 句柄与 PEM 边界
 
-```java
-import cn.gmkit.sm9.SM9;
+- 主密钥、用户私钥和签名上下文持有 native handle，使用 try-with-resources；`close()` 可重复调用。
+- 关闭后再次操作会抛 `SM9Exception`。不要把同一句柄交给多个都负责关闭它的组件。
+- PEM 口令和路径按 UTF-8 处理；Windows native 使用宽字符文件 API。口令或路径包含 NUL 时拒绝。
+- 公开主密钥可以分发，主私钥和用户私钥只能以受控方式保存；口令加密 PEM 不替代文件权限、密钥托管和审计。
 
-if (!SM9.isAvailable()) {
-    throw new IllegalStateException(
-        "SM9 unavailable on " + SM9.nativePlatform() + ": " + SM9.nativeLoadErrorMessage());
-}
-System.out.println("SM9 bridge=" + SM9.nativeVersion() + ", platform=" + SM9.nativePlatform());
-```
+## 验证证据
 
-`nativeVersion()` 是 GMKit JNI 桥接版本标识，不应当作系统 GmSSL 命令行版本。正式测试若要求 SM9 可用，必须让 `isAvailable() == false` 导致测试失败，不能当作成功跳过。
+构建固定 GmSSL `v3.1.1` commit `d655c06b3a6b0fe8cff900f293bf0e5aac6eb0a2`。三层测试回答不同问题，不能互相替代：
 
-## 公共类型与职责
+<ApiTable label="SM9 三层验证证据" min-width="72rem">
 
-| 类型 | 职责 | 资源所有权 |
-|:--|:--|:--|
-| `SM9` | 一次性门面：生成/派生、签名验签、IBE 加解密、运行时诊断 | 门面内部签名上下文自动关闭；传入密钥仍由调用方关闭 |
-| `SM9SignMasterKey` | 签名主密钥或公开主密钥；派生用户签名私钥 | `AutoCloseable` |
-| `SM9SignKey` | 绑定身份的用户签名私钥 | `AutoCloseable` |
-| `SM9EncMasterKey` | 加密主密钥或公开主密钥；派生解密私钥并执行 IBE 加密 | `AutoCloseable` |
-| `SM9EncKey` | 绑定身份的用户解密私钥 | `AutoCloseable` |
-| `SM9Signature` | 可分块 update、reset、sign/verify 的 native 上下文 | `AutoCloseable` |
-| `SM9Exception` | 参数、PEM、native 操作和已关闭句柄错误 | 运行时异常 |
-| `SM9UnsupportedPlatformException` | 当前 OS/CPU 无内置或外部 runtime | `SM9Exception` 子类 |
-
-所有持有 native handle 的对象都应使用 try-with-resources。`close()` 可重复调用；关闭后再次执行操作会抛出 `SM9Exception`。
-
-## 签名与验签
-
-KGC 保存签名主密钥私有部分并为身份派生用户签名私钥。验签方只需要签名公开主密钥、签名者身份、消息和签名。
-
-```java
-import cn.gmkit.sm9.*;
-import java.nio.charset.StandardCharsets;
-
-String id = "warehouse@gmkit.cn";
-byte[] message = "order=GMKIT-DEMO-0001&amount=88.00".getBytes(StandardCharsets.UTF_8);
-byte[] tampered = "order=GMKIT-DEMO-0001&amount=99.00".getBytes(StandardCharsets.UTF_8);
-
-try (SM9SignMasterKey master = SM9.generateSignMasterKey();
-     SM9SignKey signKey = master.extractKey(id)) {
-    byte[] signature = SM9.sign(signKey, message);
-    if (!SM9.verify(master, id, message, signature)) {
-        throw new IllegalStateException("SM9 verify failed");
-    }
-    if (SM9.verify(master, "other@gmkit.cn", message, signature)
-            || SM9.verify(master, id, tampered, signature)) {
-        throw new IllegalStateException("SM9 accepted changed input");
-    }
-}
-```
-
-签名输出是 DER 编码。签名含随机性，不应固定完整字面值；测试应覆盖正确身份、错误身份、篡改消息和篡改签名。
-
-## IBE 加密与解密
-
-```java
-import cn.gmkit.sm9.*;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-
-String id = "warehouse@gmkit.cn";
-byte[] plaintext = "order=GMKIT-DEMO-0001&amount=88.00".getBytes(StandardCharsets.UTF_8);
-
-try (SM9EncMasterKey master = SM9.generateEncMasterKey();
-     SM9EncKey encKey = master.extractKey(id)) {
-    byte[] ciphertext = SM9.encrypt(master, id, plaintext);
-    byte[] output = SM9.decrypt(encKey, ciphertext);
-    if (!Arrays.equals(plaintext, output)) {
-        throw new IllegalStateException("SM9 decrypt mismatch");
-    }
-}
-```
-
-单次明文必须为 1–255 字节，以编码后的实际字节数计；解密接受的 DER 密文最多 367 字节。更大数据应采用混合加密：随机生成 16 字节 SM4 会话 key，用 SM4-GCM 等认证加密处理业务数据，再用 SM9 保护会话 key，并明确保存算法、身份、nonce、AAD、tag 和载荷版本。
-
-## 身份、PEM 与路径
-
-- 身份字符串按 UTF-8 原样转换，首尾空格不会裁剪；全空白身份会拒绝。派生、签名验证和 IBE 加解密必须使用相同身份字节。
-- 中文、emoji 和非 BMP 身份由 native 测试覆盖。不要在协议不同层分别做大小写转换或 Unicode 归一化。
-- 主私钥和用户私钥只提供口令加密 PEM；公开主密钥使用公开 PEM。导入用户私钥时仍需传入对应身份。
-- PEM 口令和路径按 UTF-8 处理；Windows native 使用宽字符文件 API。口令或路径含 NUL 会拒绝。
-
-| 对象 | 私有 PEM | 公开 PEM |
-|:--|:--|:--|
-| `SM9SignMasterKey` | `export/importEncryptedMasterKeyInfoPem` | `export/importPublicMasterKeyPem` |
-| `SM9SignKey` | `export/importEncryptedPrivateKeyInfoPem` | 不适用 |
-| `SM9EncMasterKey` | `export/importEncryptedMasterKeyInfoPem` | `export/importPublicMasterKeyPem` |
-| `SM9EncKey` | `export/importEncryptedPrivateKeyInfoPem` | 不适用 |
-
-公开主密钥用于验签或加密，不包含派生用户私钥所需的主私钥部分。不要把同一对象引用同时交给多个会关闭它的组件。
-
-## 流式签名
-
-`SM9Signature` 支持多次 `update`，完成后可通过 `reset(true/false)` 切换并复用上下文。分块边界不应改变最终验签结果。
-
-```java
-import cn.gmkit.sm9.*;
-import java.nio.charset.StandardCharsets;
-
-byte[] data = "part-1|part-2".getBytes(StandardCharsets.UTF_8);
-String id = "stream@example.com";
-try (SM9SignMasterKey master = SM9.generateSignMasterKey();
-     SM9SignKey key = master.extractKey(id);
-     SM9Signature signer = new SM9Signature(true);
-     SM9Signature verifier = new SM9Signature(false)) {
-    signer.update(data, 0, 6).update(data, 6, data.length - 6);
-    byte[] signature = signer.sign(key);
-    verifier.update(data);
-    if (!verifier.verify(signature, master, id)) {
-        throw new IllegalStateException("streaming SM9 verify failed");
-    }
-}
-```
-
-## 验证证据边界
-
-发布流水线固定 GmSSL `v3.1.1` commit `d655c06b3a6b0fe8cff900f293bf0e5aac6eb0a2`。验证分为三层，不能用其中一层替代另外两层：
-
-<ApiTable label="SM9 三层验证证据" min-width="48rem">
-
-| 层级 | 测试内容 | 结论边界 |
-|:--|:--|:--|
-| 1. GmSSL 固定向量 | 五个平台先执行上游 `sm9test.c` 中的 `ks`、`ds`、`ke`、`de` 派生向量 | 证明锁定版本的底层实现通过其固定向量 |
-| 2. Java/JNI 行为 | 签名、错误身份、消息与签名篡改、IBE、1/255/256 字节边界、PEM 和句柄关闭 | 证明 Java 参数到 native 的桥接与错误语义 |
-| 3. 聚合 JAR | 五个平台下载同一个聚合 JAR，验证平台自动选择、签名、IBE 和 Unicode PEM | 证明实际发布物包含并能加载对应平台 runtime |
+| 层级 | 实际执行内容 | 能证明什么 | 不能证明什么 |
+|:--|:--|:--|:--|
+| GmSSL 固定向量 | 五个平台先运行上游 `sm9test.c` 的 `ks`、`ds`、`ke`、`de` 派生向量 | 锁定版本的底层 SM9 派生运算通过其固定结果 | 不能证明 Java 参数桥接或 JAR 打包正确 |
+| Java/JNI 行为 | 签名、错误身份、篡改、IBE、1/255/256 字节边界、PEM、Unicode 与句柄关闭 | Java 参数到 native 的转换和失败语义 | 随机输出不能冒充固定国标向量 |
+| 聚合 JAR | 五个平台使用同一发布 JAR，验证自动选平台、签名、IBE 和 Unicode PEM | 发布物包含并能加载对应 runtime | 不能替代业务 KGC、身份和合规评审 |
 
 </ApiTable>
 
-固定向量的可核查来源是锁定提交的 [`tests/sm9test.c`](https://github.com/guanzhi/GmSSL/blob/d655c06b3a6b0fe8cff900f293bf0e5aac6eb0a2/tests/sm9test.c)。Java 公共 API 不暴露原始 `ks/ke/ds/de` 内存结构，因此 Java 层随机生成的密钥、签名和密文只能证明 API 行为，不能描述成固定国标向量。
+固定结果的可核查来源是锁定提交的 [`tests/sm9test.c`](https://github.com/guanzhi/GmSSL/blob/d655c06b3a6b0fe8cff900f293bf0e5aac6eb0a2/tests/sm9test.c)。Java 公共 API 不暴露原始 `ks/ke/ds/de` 内存结构，因此标准派生向量在 GmSSL 层执行，Java 层专门验证公开 API 行为和边界。
 
-- `.github/workflows/sm9-native.yml`
-- `.github/workflows/publish-java.yml`
-- `packages/java/gmkit-sm9/src/test/java/cn/gmkit/sm9/`
-- [Java SM9 API 说明书](/api/java/sm9.html)
+完整可运行案例与测试对应关系见 [Java SM9 API 说明书](/api/java/sm9.html#可执行案例)。
