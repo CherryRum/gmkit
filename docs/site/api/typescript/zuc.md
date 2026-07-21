@@ -17,6 +17,8 @@ tag:
 
 `gmkitx` 当前实现 ZUC-128、3GPP 128-EEA3 和 128-EIA3，不支持 ZUC-256。ZUC 是流密码，普通 `zucEncrypt`/`zucDecryptBytes` 不提供完整性保护。
 
+EEA3/EIA3 面向明确采用 3GPP 参数的通信协议；普通应用若只需要认证加密，应优先选择 SM4-GCM/CCM，而不是自行组合 ZUC 与 MAC。
+
 ## 通用加解密
 
 ```ts

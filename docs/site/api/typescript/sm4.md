@@ -111,40 +111,52 @@ type SM4AEADResult = SM4CipherResult;
 ```ts
 import {
   CipherMode,
+  InputFormat,
   OutputFormat,
-  hexToBytes,
-  sm4DecryptBytes,
+  sm4Decrypt,
   sm4Encrypt,
 } from 'gmkitx';
 
 const key = '0123456789abcdeffedcba9876543210';
-const plaintext = hexToBytes('00112233445566778899aabbccddeeff');
+const message = 'order=GMKIT-DEMO-0001&amount=88.00';
 const options = {
   mode: CipherMode.GCM,
   iv: '000102030405060708090a0b',
-  aad: 'gmkit-api-v1',
+  aad: 'tenant=demo;schema=1',
   tagLength: 16,
   outputFormat: OutputFormat.BASE64,
 } as const;
 
-const encrypted = sm4Encrypt(key, plaintext, options);
+const encrypted = sm4Encrypt(key, message, options);
 if (!encrypted.tag || encrypted.format !== OutputFormat.BASE64) {
   throw new Error('GCM result is incomplete');
 }
-const decrypted = sm4DecryptBytes(key, encrypted, options);
-if (decrypted.some((value, index) => value !== plaintext[index])) {
+if (sm4Decrypt(key, encrypted, options) !== message) {
   throw new Error('SM4-GCM round-trip failed');
 }
+
+// tag 被改动后必须抛错，不能返回未认证明文。
+const tampered = {
+  ...encrypted,
+  tag: `${encrypted.tag[0] === 'A' ? 'B' : 'A'}${encrypted.tag.slice(1)}`,
+};
+let rejected = false;
+try {
+  sm4Decrypt(key, tampered, options);
+} catch {
+  rejected = true;
+}
+if (!rejected) throw new Error('tampered tag must be rejected');
 ```
 
 传入完整结果对象时，解密会按 `result.format` 解码 ciphertext 和 tag。若协议把 tag 分开保存：
 
 ```ts
-const decrypted = sm4DecryptBytes(key, encrypted.ciphertext, {
+const decrypted = sm4Decrypt(key, encrypted.ciphertext, {
   ...options,
-  inputFormat: OutputFormat.BASE64,
+  inputFormat: InputFormat.BASE64,
   tag: encrypted.tag,
-  tagFormat: OutputFormat.BASE64,
+  tagFormat: InputFormat.BASE64,
 });
 ```
 
@@ -166,8 +178,9 @@ const options = {
   padding: PaddingMode.PKCS7,
   iv: '000102030405060708090a0b0c0d0e0f',
 } as const;
-const encrypted = sm4Encrypt(key, '需要加密的文本', options);
-if (sm4Decrypt(key, encrypted, options) !== '需要加密的文本') {
+const message = 'order=GMKIT-DEMO-0001&amount=88.00';
+const encrypted = sm4Encrypt(key, message, options);
+if (sm4Decrypt(key, encrypted, options) !== message) {
   throw new Error('SM4-CBC round-trip failed');
 }
 ```
@@ -207,8 +220,10 @@ const cipher = SM4.GCM(
   '0123456789abcdeffedcba9876543210',
   '000102030405060708090a0b',
 );
-const encrypted = cipher.encrypt('class API', { aad: 'header' });
-if (cipher.decrypt(encrypted, { aad: 'header' }) !== 'class API') {
+const message = 'order=GMKIT-DEMO-0001&amount=88.00';
+const aad = 'tenant=demo;schema=1';
+const encrypted = cipher.encrypt(message, { aad });
+if (cipher.decrypt(encrypted, { aad }) !== message) {
   throw new Error('SM4 class round-trip failed');
 }
 ```

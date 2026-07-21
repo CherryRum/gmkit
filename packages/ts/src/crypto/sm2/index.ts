@@ -362,7 +362,14 @@ function requireStandardCurveParams(curveParams?: SM2CurveParams): void {
   }
 }
 
-/** 解密为原始字节；二进制协议不应经过 UTF-8 字符串转换。 */
+/**
+ * 使用 SM2 私钥解密并返回原始字节；二进制协议不应经过 UTF-8 字符串转换。
+ * @param privateKey - 32 字节私钥或对应 Hex 字符串
+ * @param encryptedData - Hex/Base64 密文字符串或原始密文字节
+ * @param options - 密文排列与字符串输入编码；省略时自动识别编码和排列
+ * @returns 通过 C3 完整性校验的原始明文字节
+ * @throws 私钥、编码、曲线点、密文结构或 C3 校验无效时抛出错误
+ */
 export function decryptBytes(
   privateKey: BytesLike,
   encryptedData: BytesLike,

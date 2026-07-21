@@ -1028,7 +1028,14 @@ export function decrypt(
   return bytesToString(decryptBytes(key, encryptedData, options));
 }
 
-/** 解密为原始字节；使用文本入口会对结果执行 UTF-8 解码。 */
+/**
+ * 使用 SM4 解密为原始字节；文本入口会额外执行 UTF-8 解码。
+ * @param key - 固定 16 字节的密钥或 32 个 Hex 字符
+ * @param encryptedData - 字符串、原始密文字节或带 tag 的结构化结果
+ * @param options - mode、padding、IV/nonce、AAD、tag 与输入编码
+ * @returns 解密并完成填充/AEAD 校验后的原始字节
+ * @throws 参数长度、编码、padding 或 AEAD 认证无效时抛出错误
+ */
 export function decryptBytes(
   key: BytesLike,
   encryptedData: BytesLike | SM4CipherResult,

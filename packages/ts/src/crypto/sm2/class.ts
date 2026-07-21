@@ -47,13 +47,13 @@ export class SM2 {
   private publicKey?: string;
   /** 私钥（十六进制字符串，32 字节） */
   private privateKey?: string;
-  /** 自定义椭圆曲线参数 */
+  /** 标准曲线参数兼容声明；不同于标准值的参数会被拒绝。 */
   private curveParams?: SM2CurveParams;
 
   /**
    * 创建新的 SM2 实例
    * @param keyPair - 可选的密钥对（公钥和/或私钥）
-   * @param curveParams - 可选的自定义椭圆曲线参数
+   * @param curveParams - 可选的标准曲线兼容声明；不支持自定义曲线
    */
   constructor(keyPair?: Partial<KeyPair>, curveParams?: SM2CurveParams) {
     if (keyPair?.privateKey && keyPair.publicKey) {
@@ -69,7 +69,7 @@ export class SM2 {
 
   /**
    * 生成新的密钥对
-   * @param curveParams - 可选的自定义椭圆曲线参数
+   * @param curveParams - 可选的标准曲线兼容声明；不支持自定义曲线
    * @returns 带有生成的密钥对的新 SM2 实例
    */
   static generateKeyPair(curveParams?: SM2CurveParams): SM2 {
@@ -80,7 +80,7 @@ export class SM2 {
   /**
    * 从私钥创建 SM2 实例
    * @param privateKey - 私钥（十六进制字符串）
-   * @param curveParams - 可选的自定义椭圆曲线参数
+   * @param curveParams - 可选的标准曲线兼容声明；不支持自定义曲线
    * @returns 新的 SM2 实例
    */
   static fromPrivateKey(privateKey: string, curveParams?: SM2CurveParams): SM2 {
@@ -91,7 +91,7 @@ export class SM2 {
   /**
    * 从公钥创建 SM2 实例
    * @param publicKey - 公钥（十六进制字符串）
-   * @param curveParams - 可选的自定义椭圆曲线参数
+   * @param curveParams - 可选的标准曲线兼容声明；不支持自定义曲线
    * @returns 新的 SM2 实例
    */
   static fromPublicKey(publicKey: string, curveParams?: SM2CurveParams): SM2 {
@@ -144,7 +144,13 @@ export class SM2 {
     return decryptFunc(privateKey, encryptedData, options);
   }
 
-  /** 解密任意二进制明文，不经过 UTF-8 解码。 */
+  /**
+   * 解密任意二进制明文，不经过 UTF-8 解码。
+   * @param encryptedData - Hex/Base64 密文字符串或原始密文字节
+   * @param options - 密文排列与字符串输入编码；省略时按函数入口的默认规则处理
+   * @returns 通过 C3 完整性校验的原始明文字节
+   * @throws 私钥缺失，或密文格式、曲线点、C3 校验无效时抛出错误
+   */
   decryptBytes(encryptedData: BytesLike, options?: SM2DecryptOptions): Uint8Array {
     const privateKey = this.getPrivateKey();
     return decryptBytesFunc(privateKey, encryptedData, options);
@@ -174,15 +180,16 @@ export class SM2 {
   }
 
   /**
-   * 设置自定义曲线参数
-   * @param curveParams - 自定义椭圆曲线参数
+   * 设置标准曲线参数兼容声明。传入不同于标准 SM2 曲线的值后，签名或验签会拒绝执行。
+   * @param curveParams - 标准 SM2 曲线参数
    */
   setCurveParams(curveParams: SM2CurveParams): void {
     this.curveParams = curveParams;
   }
 
   /**
-   * 获取曲线参数
+   * 获取构造或设置时保存的曲线参数声明。
+   * @returns 参数声明的原对象；未设置时返回 undefined
    */
   getCurveParams(): SM2CurveParams | undefined {
     return this.curveParams;

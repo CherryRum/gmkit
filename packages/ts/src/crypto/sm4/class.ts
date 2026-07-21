@@ -67,7 +67,8 @@ export class SM4 {
   }
 
   /**
-   * 获取初始化向量
+   * 获取当前初始化向量或 nonce。
+   * @returns 构造或 setIV 时保存的值；ECB 或未设置时返回 undefined
    */
   getIV(): BytesLike | undefined {
     return this.iv;
@@ -82,7 +83,8 @@ export class SM4 {
   }
 
   /**
-   * 获取当前加密模式
+   * 获取当前加密模式。
+   * @returns 当前 mode；构造时省略则为 `ecb`
    */
   getMode(): CipherModeType {
     return this.mode;
@@ -99,7 +101,8 @@ export class SM4 {
   }
 
   /**
-   * 获取当前填充模式
+   * 获取当前填充模式。
+   * @returns 当前 padding；构造时省略则为 `pkcs7`
    */
   getPadding(): PaddingModeType {
     return this.padding;
@@ -137,7 +140,13 @@ export class SM4 {
     return decryptFunc(this.key, encryptedData, mergedOptions);
   }
 
-  /** 解密任意二进制明文，不经过 UTF-8 解码。 */
+  /**
+   * 解密任意二进制明文，不经过 UTF-8 解码。
+   * @param encryptedData - 字符串、原始密文字节或带 tag 的结构化结果
+   * @param options - 本次调用覆盖项，包括 AAD、tag 和输入编码
+   * @returns 解密并完成填充/AEAD 校验后的原始字节
+   * @throws key、IV/nonce、tag、padding 或认证校验无效时抛出错误
+   */
   decryptBytes(encryptedData: BytesLike | SM4CipherResult, options?: Partial<FuncSM4DecryptOptions>): Uint8Array {
     const mergedOptions: FuncSM4DecryptOptions = {
       mode: this.mode,
@@ -152,6 +161,7 @@ export class SM4 {
    * 以 ECB 模式创建实例
    * @param key - 十六进制密钥
    * @param padding - 填充模式（默认：PKCS7）
+   * @returns 配置为 ECB 的新实例
    */
   static ECB(key: BytesLike, padding: PaddingModeType = PaddingMode.PKCS7): SM4 {
     return new SM4(key, { mode: CipherMode.ECB, padding });
@@ -162,6 +172,7 @@ export class SM4 {
    * @param key - 十六进制密钥
    * @param iv - 十六进制初始化向量
    * @param padding - 填充模式（默认：PKCS7）
+   * @returns 配置为 CBC 的新实例
    */
   static CBC(key: BytesLike, iv: BytesLike, padding: PaddingModeType = PaddingMode.PKCS7): SM4 {
     return new SM4(key, { mode: CipherMode.CBC, padding, iv });
@@ -171,6 +182,7 @@ export class SM4 {
    * 以 CTR 模式创建实例
    * @param key - 十六进制密钥
    * @param iv - 十六进制计数器/随机数
+   * @returns 配置为 CTR 且不填充的新实例
    */
   static CTR(key: BytesLike, iv: BytesLike): SM4 {
     return new SM4(key, { mode: CipherMode.CTR, padding: PaddingMode.NONE, iv });
@@ -180,6 +192,7 @@ export class SM4 {
    * 以 CFB 模式创建实例
    * @param key - 十六进制密钥
    * @param iv - 十六进制初始化向量
+   * @returns 配置为 CFB 且不填充的新实例
    */
   static CFB(key: BytesLike, iv: BytesLike): SM4 {
     return new SM4(key, { mode: CipherMode.CFB, padding: PaddingMode.NONE, iv });
@@ -189,6 +202,7 @@ export class SM4 {
    * 以 OFB 模式创建实例
    * @param key - 十六进制密钥
    * @param iv - 十六进制初始化向量
+   * @returns 配置为 OFB 且不填充的新实例
    */
   static OFB(key: BytesLike, iv: BytesLike): SM4 {
     return new SM4(key, { mode: CipherMode.OFB, padding: PaddingMode.NONE, iv });
@@ -198,6 +212,7 @@ export class SM4 {
    * 以 GCM 模式创建实例
    * @param key - 十六进制密钥
    * @param iv - 十六进制初始化向量（24 个字符 = 12 字节）
+   * @returns 配置为 GCM 且不填充的新实例
    */
   static GCM(key: BytesLike, iv: BytesLike): SM4 {
     return new SM4(key, { mode: CipherMode.GCM, padding: PaddingMode.NONE, iv });
@@ -207,6 +222,7 @@ export class SM4 {
    * 以 CCM 模式创建实例
    * @param key - 十六进制密钥
    * @param nonce - 十六进制 nonce（14-26 个字符 = 7-13 字节）
+   * @returns 配置为 CCM 且不填充的新实例
    */
   static CCM(key: BytesLike, nonce: BytesLike): SM4 {
     return new SM4(key, { mode: CipherMode.CCM, padding: PaddingMode.NONE, iv: nonce });

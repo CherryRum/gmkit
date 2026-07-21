@@ -78,6 +78,7 @@ export class ZUCState {
   /** FSM 寄存器 R2 */
   private r2: number;
 
+  /** 创建尚未初始化的底层状态；调用 generateKeyword 前必须先调用 initialize。 */
   constructor() {
     this.lfsr = new Uint32Array(16);
     this.r1 = 0;

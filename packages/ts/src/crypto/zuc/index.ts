@@ -84,6 +84,7 @@ export function encrypt(
  * @param key 128-bit key (16 bytes or 32 hex chars) / 128 位密钥
  * @param iv 128-bit IV (16 bytes or 32 hex chars) / 128 位初始向量
  * @param ciphertext Encrypted data (hex or base64 string, auto-detected) / 加密的数据（十六进制或 base64，自动检测）
+ * @param options 字符串输入编码；省略时优先识别 Hex，再识别 Base64
  * @returns Decrypted data as string / 解密后的数据
  *
  * @example
@@ -99,7 +100,15 @@ export function decrypt(
   return bytesToString(decryptBytes(key, iv, ciphertext, options));
 }
 
-/** 解密为原始字节；文本 API 无法无损表示任意二进制数据。 */
+/**
+ * 使用 ZUC-128 解密为原始字节；文本 API 无法无损表示任意二进制数据。
+ * @param key - 16 字节密钥或 32 个 Hex 字符
+ * @param iv - 16 字节 IV 或 32 个 Hex 字符
+ * @param ciphertext - Hex/Base64 字符串或原始密文字节
+ * @param options - 字符串输入编码；省略时自动识别
+ * @returns 与密文等长的原始明文字节
+ * @throws key、IV、编码或长度无效时抛出错误
+ */
 export function decryptBytes(
   key: BytesLike,
   iv: BytesLike,
@@ -143,7 +152,11 @@ export function getKeystreamWords(
 
 /**
  * 生成 ZUC-128 密钥流（按字节长度）
+ * @param key - 16 字节密钥或 32 个 Hex 字符
+ * @param iv - 16 字节 IV 或 32 个 Hex 字符
  * @param length - 需要生成的字节长度
+ * @returns 固定返回小写 Hex，字符数为 length 的两倍
+ * @throws key、IV 或 length 无效时抛出错误
  */
 export function getKeystream(
   key: BytesLike,
@@ -183,6 +196,14 @@ export function eea3(
 
 /**
  * 按 3GPP EEA3 规范加密消息。旧 {@link eea3} 继续返回字对齐密钥流以保持兼容。
+ * @param key - 16 字节保密密钥
+ * @param count - 32 位计数值
+ * @param bearer - 0 到 31 的承载标识
+ * @param direction - 方向标志，只能为 0 或 1
+ * @param message - 待加密消息；字符串按 UTF-8
+ * @param bitLength - 参与加密的消息 bit 数；省略时使用全部字节
+ * @returns 小写 Hex 密文；末字节未使用 bit 清零
+ * @throws 参数范围或 bitLength 无效时抛出错误
  */
 export function eea3Encrypt(
   key: BytesLike,
@@ -212,6 +233,7 @@ export function eea3Encrypt(
  * @param bearer - 5 位承载标识
  * @param direction - 1 位方向标志（0 表示上行，1 表示下行）
  * @param message - 待认证的消息
+ * @param bitLength - 参与认证的消息 bit 数；省略时使用全部字节
  * @returns 32 位 MAC-I（十六进制字符串）
  */
 export function eia3(
