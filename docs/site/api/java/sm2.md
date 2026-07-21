@@ -24,7 +24,7 @@ tag:
 | 常量 | 值/含义 |
 |:--|:--|
 | `DEFAULT_USER_ID` | `1234567812345678`，兼容默认身份 |
-| `GM_2023_USER_ID` | 空字符串常量；当前 Builder 传空仍回落兼容默认值 |
+| `GM_2023_USER_ID` | 已弃用。当前 Builder 会把空字符串映射为 `DEFAULT_USER_ID`，因此该常量没有独立语义 |
 | `CURVE_NAME` | `sm2p256v1` |
 | `SM3_DIGEST_LENGTH` | 32 字节 |
 
@@ -174,13 +174,11 @@ if (!java.util.Arrays.equals(binary, decrypted)) {
 SM2SignOptions.builder()
     .signatureFormat(SM2SignatureFormat.RAW) // 默认 RAW
     .userId(SM2.DEFAULT_USER_ID)             // null/空字符串回落默认值
-    .skipZComputation(false)                 // 默认计算 Z
     .securityContext(GmSecurityContexts.defaults())
     .build()
 
 SM2SignatureFormat signatureFormat()
 String userId()
-boolean skipZComputation()
 GmSecurityContext securityContext()
 ```
 
@@ -190,15 +188,13 @@ GmSecurityContext securityContext()
 SM2VerifyOptions.builder()
     .signatureFormat(SM2SignatureInputFormat.AUTO) // 默认 AUTO
     .userId(SM2.DEFAULT_USER_ID)
-    .skipZComputation(false)
     .build()
 
 SM2SignatureInputFormat signatureFormat()
 String userId()
-boolean skipZComputation()
 ```
 
-签名端和验签端的 user ID、Z 计算语义和消息字节必须一致。当前 Builder 无法表达真实空 ID；传 null 或空字符串都会使用兼容默认身份。
+签名端和验签端的 user ID 与消息字节必须一致。当前 Builder 无法表达真实空 ID；传 null 或空字符串都会使用兼容默认身份。`skipZComputation(boolean)` 与对应 getter 仍为二进制兼容保留，但已经弃用，只能迁移明确采用 no-Z 约定的旧协议。
 
 ## 签名重载矩阵
 
@@ -241,22 +237,24 @@ String signBase64(
 
 ```java
 SM2KeyPair keys = SM2Util.generateKeyPair();
+String message = "order=GMKIT-DEMO-0001&amount=88.00";
+String tampered = "order=GMKIT-DEMO-0001&amount=99.00";
 SM2SignOptions signOptions = SM2SignOptions.builder()
     .signatureFormat(SM2SignatureFormat.DER)
-    .userId("alice@example")
+    .userId("merchant@gmkit.cn")
     .build();
 SM2VerifyOptions verifyOptions = SM2VerifyOptions.builder()
     .signatureFormat(SM2SignatureInputFormat.DER)
-    .userId("alice@example")
+    .userId("merchant@gmkit.cn")
     .build();
 
 String signature = SM2Util.signBase64(
-    keys.privateKey(), "需要签名的消息", signOptions);
+    keys.privateKey(), message, signOptions);
 if (!SM2Util.verify(
-        keys.publicKey(), "需要签名的消息", signature, verifyOptions)) {
+        keys.publicKey(), message, signature, verifyOptions)) {
     throw new IllegalStateException("SM2 verification failed");
 }
-if (SM2Util.verify(keys.publicKey(), "篡改消息", signature, verifyOptions)) {
+if (SM2Util.verify(keys.publicKey(), tampered, signature, verifyOptions)) {
     throw new IllegalStateException("tampered message must not verify");
 }
 ```
@@ -333,7 +331,15 @@ byte[] computeEWithoutZ(byte[] message)
 byte[] computeEWithoutZ(String message, Charset charset)
 ```
 
-`SM2Util.signDigest` 另有 `(privateKeyHex, eHash, signatureFormat, securityContext)`。跳过 Z 不符合标准身份绑定流程，只能用于双方明确约定的兼容协议。
+`SM2Util.signDigest` 另有 `(privateKeyHex, eHash, signatureFormat, securityContext)`。
+
+| 路径 | e 的计算 | 定位 |
+|:--|:--|:--|
+| 标准 SM2 | `SM3(Z || M)` | 默认路径；与 Bouncy Castle `SM2Signer` 双向互操作 |
+| 旧 no-Z 兼容 | `SM3(M)` | 非标准且已弃用；只迁移既有旧协议 |
+| 预计算 e | 调用方直接传入 | `signDigest` / `verifyDigest` 高级接口；调用方负责摘要协议正确性 |
+
+`signWithoutZ`、`verifyWithoutZ`、`computeEWithoutZ` 及 `skipZComputation` 方法族已经弃用。它们不调用 Bouncy Castle `SM2Signer`，也不能作为性能优化使用。标准签名会计算 Z；身份不同必须验签失败。预计算 e 则完全信任调用方输入，不能与 no-Z 混为一种语义。
 
 ## 签名与密文格式工具
 

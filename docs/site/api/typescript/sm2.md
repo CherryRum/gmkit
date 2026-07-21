@@ -185,9 +185,18 @@ sm2Verify(
 | `outputFormat` | `hex` | raw/DER 字节外层再编码成 Hex 或 Base64 |
 | `inputFormat` | 自动识别 | 字符串优先 Hex；跨系统调用建议显式传 |
 | `userId` | `DEFAULT_USER_ID` | 省略或空字符串都使用 `1234567812345678` |
-| `skipZComputation` | false | true 不符合标准 SM2 身份绑定流程，只用于明确的兼容场景 |
+| `skipZComputation` | false | 已弃用。`true` 仅用于迁移采用 `SM3(M)` 的旧协议 |
 
-签名端和验签端必须使用相同的 user ID、Z 计算方式、消息字节和签名格式。签名数学上无效、消息被篡改或 user ID 不一致通常返回 `false`；格式、范围或密钥非法会抛错。
+默认签名计算 `e = SM3(Z || M)`，其中 Z 绑定 user ID、曲线参数和公钥。签名端和验签端必须使用相同的 user ID、消息字节和签名格式。消息被篡改、user ID 不一致或签名数学上无效时返回 `false`；格式、范围或密钥非法会抛错。
+
+### 标准签名与旧 no-Z 兼容
+
+| 路径 | e 的计算 | 使用边界 |
+|:--|:--|:--|
+| 标准 SM2 | `SM3(Z || M)` | 默认路径；新协议和跨库互操作都应使用 |
+| 旧 no-Z 兼容 | `SM3(M)` | 非标准；只迁移双方已经采用相同约定的旧协议 |
+
+`skipZComputation: true` 不是性能选项，也不等同于“调用方传入预计算 e”。它会改用项目内部的摘要签名实现；Bouncy Castle 1.83 的标准 `SM2Signer` 没有跳过 Z 的公开选项，因此两者不能互验。TypeScript 当前没有公开的预计算 e 签名入口。
 
 ```ts
 import {
@@ -199,19 +208,21 @@ import {
 } from 'gmkitx';
 
 const keys = sm2GenerateKeyPair();
-const signature = sm2Sign(keys.privateKey, '需要签名的消息', {
-  userId: 'alice@example',
+const message = 'order=GMKIT-DEMO-0001&amount=88.00';
+const tampered = 'order=GMKIT-DEMO-0001&amount=99.00';
+const signature = sm2Sign(keys.privateKey, message, {
+  userId: 'merchant@gmkit.cn',
   signatureFormat: 'der',
   outputFormat: OutputFormat.BASE64,
 });
-const valid = sm2Verify(keys.publicKey, '需要签名的消息', signature, {
-  userId: 'alice@example',
+const valid = sm2Verify(keys.publicKey, message, signature, {
+  userId: 'merchant@gmkit.cn',
   signatureFormat: 'der',
   inputFormat: InputFormat.BASE64,
 });
 if (!valid) throw new Error('SM2 verification failed');
-if (sm2Verify(keys.publicKey, '被篡改的消息', signature, {
-  userId: 'alice@example',
+if (sm2Verify(keys.publicKey, tampered, signature, {
+  userId: 'merchant@gmkit.cn',
   signatureFormat: 'der',
   inputFormat: InputFormat.BASE64,
 })) {

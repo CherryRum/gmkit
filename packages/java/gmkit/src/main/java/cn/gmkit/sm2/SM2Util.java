@@ -26,6 +26,12 @@ public final class SM2Util {
     /**
      * 2023 版规范下可选的空用户标识。
      */
+    /**
+     * 历史空用户标识常量。
+     *
+     * @deprecated 当前选项 Builder 会把空字符串映射为兼容默认身份，不能表达独立的空用户标识
+     */
+    @Deprecated
     public static final String GM_2023_USER_ID = SM2.GM_2023_USER_ID;
 
     /**
@@ -490,13 +496,15 @@ public final class SM2Util {
     }
 
     /**
-     * 直接按不含 Z 的 e 值语义对消息签名。
+     * 按旧 no-Z 约定计算 {@code e = SM3(M)} 后签名。
      *
      * @param privateKeyHex 私钥十六进制字符串
      * @param message 原文消息
      * @param signatureFormat 输出签名格式
      * @return 签名字节数组
+     * @deprecated 非标准旧协议兼容入口；新协议应使用标准 {@code SM3(Z || M)} 签名
      */
+    @Deprecated
     public static byte[] signWithoutZ(String privateKeyHex, byte[] message, SM2SignatureFormat signatureFormat) {
         return DEFAULT.signWithoutZ(privateKeyHex, message, signatureFormat);
     }
@@ -597,14 +605,16 @@ public final class SM2Util {
     }
 
     /**
-     * 按不含 Z 的 e 值语义验签。
+     * 按旧 no-Z 约定计算 {@code e = SM3(M)} 后验签。
      *
      * @param publicKeyHex 公钥十六进制字符串
      * @param message 原文消息
      * @param signature 签名字节数组
      * @param signatureFormat 签名输入格式
      * @return 验签结果
+     * @deprecated 非标准旧协议兼容入口；新协议应使用标准 {@code SM3(Z || M)} 验签
      */
+    @Deprecated
     public static boolean verifyWithoutZ(
         String publicKeyHex,
         byte[] message,
@@ -664,22 +674,26 @@ public final class SM2Util {
     }
 
     /**
-     * 直接对消息做 SM3 摘要，作为不含 Z 的 e 值。
+     * 按旧 no-Z 约定计算 {@code e = SM3(M)}。
      *
      * @param message 原文消息
      * @return e 值
+     * @deprecated 非标准旧协议兼容入口；需要预计算 e 时应明确实现协议规定的摘要过程
      */
+    @Deprecated
     public static byte[] computeEWithoutZ(byte[] message) {
         return DEFAULT.computeEWithoutZ(message);
     }
 
     /**
-     * 使用指定字符集编码消息后，直接计算不含 Z 的 e 值。
+     * 使用指定字符集编码消息后，按旧 no-Z 约定计算 {@code e = SM3(M)}。
      *
      * @param message 原文消息
      * @param charset 字符集；传入 {@code null} 时默认使用 UTF-8
      * @return e 值
+     * @deprecated 非标准旧协议兼容入口；需要预计算 e 时应明确实现协议规定的摘要过程
      */
+    @Deprecated
     public static byte[] computeEWithoutZ(String message, Charset charset) {
         return DEFAULT.computeEWithoutZ(message, charset);
     }

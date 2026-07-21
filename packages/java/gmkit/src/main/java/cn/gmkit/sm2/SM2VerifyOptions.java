@@ -48,10 +48,12 @@ public final class SM2VerifyOptions {
     }
 
     /**
-     * 是否按跳过 Z 值的兼容语义验签。
+     * 返回是否按旧 no-Z 兼容语义验签。
      *
-     * @return 跳过时返回 {@code true}；默认返回 {@code false}
+     * @return 按 {@code e = SM3(M)} 验签时返回 {@code true}；默认返回 {@code false}
+     * @deprecated 该语义不属于标准 SM2 身份绑定流程，仅用于迁移既有旧协议
      */
+    @Deprecated
     public boolean skipZComputation() {
         return skipZComputation;
     }
@@ -90,11 +92,13 @@ public final class SM2VerifyOptions {
         }
 
         /**
-         * 设置是否跳过 Z 值计算。
+         * 设置是否启用旧 no-Z 兼容语义。
          *
-         * @param skipZComputation 为 {@code true} 时按直接 e 值语义验签
+         * @param skipZComputation 为 {@code true} 时按 {@code e = SM3(M)} 验签；标准 SM2 应保持 {@code false}
          * @return 当前构建器
+         * @deprecated 该语义不属于标准 SM2 身份绑定流程，仅用于迁移既有旧协议
          */
+        @Deprecated
         public Builder skipZComputation(boolean skipZComputation) {
             this.skipZComputation = skipZComputation;
             return this;
