@@ -86,7 +86,9 @@ SM9.nativeLoadErrorMessage()
 </ApiTable>
 
 ```java
+// 1. 检查本地动态库：应用启动时确认当前平台可以加载 SM9。
 if (!SM9.isAvailable()) {
+    // 2. 诊断失败：记录平台和加载原因，但不记录任何密钥材料。
     throw new IllegalStateException(
         "SM9 unavailable on " + SM9.nativePlatform()
             + ": " + SM9.nativeLoadErrorMessage());
@@ -178,18 +180,25 @@ void close()
 ## 签名示例
 
 ```java
+// 1. 准备身份与消息：正常订单和篡改金额分别保存为 UTF-8 字节。
 byte[] data = "order=GMKIT-DEMO-0001&amount=88.00"
     .getBytes(java.nio.charset.StandardCharsets.UTF_8);
 byte[] tampered = "order=GMKIT-DEMO-0001&amount=99.00"
     .getBytes(java.nio.charset.StandardCharsets.UTF_8);
 String id = "warehouse@gmkit.cn";
 
+// 2. 创建 KGC 主密钥并派生身份签名私钥，句柄由 try-with-resources 关闭。
 try (SM9SignMasterKey master = SM9.generateSignMasterKey();
      SM9SignKey userKey = SM9.extractSignKey(master, id)) {
+    // 3. SM9 签名：使用与 id 绑定的用户私钥。
     byte[] signature = SM9.sign(userKey, data);
+
+    // 4. SM9 验签：相同身份和原消息必须验证成功。
     if (!SM9.verify(master, id, data, signature)) {
         throw new IllegalStateException("SM9 verification failed");
     }
+
+    // 5. 失败断言：身份或消息任一变化都必须验证失败。
     if (SM9.verify(master, "other@gmkit.cn", data, signature)
             || SM9.verify(master, id, tampered, signature)) {
         throw new IllegalStateException("SM9 accepted changed identity or message");
@@ -245,15 +254,22 @@ void close()
 SM9 单次明文必须为 1–255 字节；API 接收 `byte[]`，因此单位始终是实际字节数。若业务先把 `String` 转成 UTF-8，应检查编码后的数组长度，而不是 Java 字符数。DER 密文必须为 1–367 字节。更大数据应使用混合加密：随机生成 16 字节 SM4 会话 key，用 SM4-GCM 等认证加密处理正文，只用 SM9 保护会话 key。算法、接收方身份、nonce、AAD、tag 和载荷版本都必须随密文保存。
 
 ```java
+// 1. 准备接收方身份和不超过 255 字节的订单明文。
 byte[] plaintext =
     "order=GMKIT-DEMO-0001&amount=88.00"
         .getBytes(java.nio.charset.StandardCharsets.UTF_8);
 String id = "warehouse@gmkit.cn";
 
+// 2. 创建 KGC 加密主密钥并派生接收方身份私钥。
 try (SM9EncMasterKey master = SM9.generateEncMasterKey();
      SM9EncKey userKey = SM9.extractEncKey(master, id)) {
+    // 3. SM9 IBE 加密：使用主公钥能力和接收方身份保护明文。
     byte[] ciphertext = SM9.encrypt(master, id, plaintext);
+
+    // 4. SM9 IBE 解密：使用身份私钥恢复原始订单字节。
     byte[] decrypted = SM9.decrypt(userKey, ciphertext);
+
+    // 5. 成功断言：解密结果必须与原始明文一致。
     if (!java.util.Arrays.equals(plaintext, decrypted)) {
         throw new IllegalStateException("SM9 IBE round-trip failed");
     }
@@ -263,8 +279,12 @@ try (SM9EncMasterKey master = SM9.generateEncMasterKey();
 对 256 字节输入，API 会在进入 native 前抛 `SM9Exception`：
 
 ```java
+// 1. 创建 KGC 加密主密钥，句柄由 try-with-resources 关闭。
 try (SM9EncMasterKey master = SM9.generateEncMasterKey()) {
+    // 2. 构造超长输入：比单次 IBE 上限多 1 字节。
     byte[] tooLong = new byte[SM9EncMasterKey.MAX_PLAINTEXT_SIZE + 1];
+
+    // 3. 长度失败断言：256 字节明文必须在进入本地运算前被拒绝。
     try {
         SM9.encrypt(master, "warehouse@gmkit.cn", tooLong);
         throw new IllegalStateException("256-byte plaintext must fail");
@@ -307,15 +327,22 @@ void close()
 </ApiTable>
 
 ```java
+// 1. 准备分块消息：8192 字节分成两个 4096 字节片段。
 byte[] data = new byte[8192];
+
+// 2. 创建 KGC 密钥、身份私钥、签名上下文和验签上下文。
 try (SM9SignMasterKey master = SM9.generateSignMasterKey();
      SM9SignKey userKey = master.extractKey("stream@example");
      SM9Signature signer = new SM9Signature(true);
      SM9Signature verifier = new SM9Signature(false)) {
+    // 3. 流式签名：按顺序追加两个片段，再生成签名。
     signer.update(data, 0, 4096).update(data, 4096, 4096);
     byte[] signature = signer.sign(userKey);
 
+    // 4. 流式验签：验签端追加完整消息并使用相同身份。
     verifier.update(data);
+
+    // 5. 成功断言：分块签名必须验证成功。
     if (!verifier.verify(signature, master, "stream@example")) {
         throw new IllegalStateException("stream verification failed");
     }
@@ -336,6 +363,7 @@ try (SM9SignMasterKey master = SM9.generateSignMasterKey();
 下面的测试式示例把 KGC 持有的主私钥留在生成端，只向验签端交付公开主密钥，同时把身份和用户私钥作为一条记录保存：
 
 ```java
+// 1. 准备 PEM 路径、身份、测试口令和订单消息。
 java.nio.file.Path directory = java.nio.file.Files.createTempDirectory("gmkit-sm9-");
 java.nio.file.Path publicPem = directory.resolve("sign-master-public.pem");
 java.nio.file.Path userPem = directory.resolve("warehouse-sign-key.pem");
@@ -344,18 +372,24 @@ String testPassword = "manual-test-only"; // 仅限测试；生产环境从密�
 byte[] message = "order=GMKIT-DEMO-0001&amount=88.00"
     .getBytes(java.nio.charset.StandardCharsets.UTF_8);
 
+// 2. 生成 KGC 签名主密钥，并派生身份私钥。
 try (SM9SignMasterKey master = SM9.generateSignMasterKey();
      SM9SignKey userKey = master.extractKey(id)) {
+    // 3. 导出 PEM：公开主密钥明文导出，身份私钥使用口令加密。
     master.exportPublicMasterKeyPem(publicPem.toString());
     userKey.exportEncryptedPrivateKeyInfoPem(testPassword, userPem.toString());
 }
 
+// 4. 重新导入公开主密钥和口令加密身份私钥。
 try (SM9SignMasterKey verifierKey =
          SM9SignMasterKey.importPublicMasterKeyPem(publicPem.toString());
      SM9SignKey importedUserKey =
          SM9SignKey.importEncryptedPrivateKeyInfoPem(
              testPassword, userPem.toString(), id)) {
+    // 5. SM9 签名：使用重新导入的身份私钥。
     byte[] signature = SM9.sign(importedUserKey, message);
+
+    // 6. SM9 验签断言：导入的主公钥必须验证同一身份的签名。
     if (!SM9.verify(verifierKey, id, message, signature)) {
         throw new IllegalStateException("imported SM9 keys do not match");
     }

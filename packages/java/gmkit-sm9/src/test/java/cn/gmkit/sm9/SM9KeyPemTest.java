@@ -81,26 +81,33 @@ class SM9KeyPemTest {
     @Test
     void signUserKeyEncryptedPemRoundTripShouldSign(@TempDir Path dir) {
         // #region java-sm9-pem-example
+        // 1. 准备身份、订单消息和临时 PEM 文件路径。
         byte[] message =
             "order=GMKIT-DEMO-0001&amount=88.00".getBytes(StandardCharsets.UTF_8);
         String id = "warehouse@gmkit.cn";
         String keyFile = dir.resolve("sign_user.pem").toString();
         String mpkFile = dir.resolve("sign_mpk3.pem").toString();
 
+        // 2. 生成 KGC 签名主密钥，并导出可分发的主公钥 PEM。
         try (SM9SignMasterKey master = SM9.generateSignMasterKey()) {
             master.exportPublicMasterKeyPem(mpkFile);
+
+            // 3. 派生身份私钥，并使用口令加密后写入 PEM。
             try (SM9SignKey signKey = master.extractKey(id)) {
                 signKey.exportEncryptedPrivateKeyInfoPem(PASSWORD, keyFile);
             }
         }
 
+        // 4. 重新导入加密身份私钥，并用它签名订单消息。
         byte[] signature;
         try (SM9SignKey reloaded =
                      SM9SignKey.importEncryptedPrivateKeyInfoPem(PASSWORD, keyFile, id)) {
             signature = SM9.sign(reloaded, message);
         }
 
+        // 5. 导入主公钥 PEM，使用相同身份完成验签。
         try (SM9SignMasterKey pub = SM9SignMasterKey.importPublicMasterKeyPem(mpkFile)) {
+            // 6. 成功断言：重新加载后的私钥签名必须验证成功。
             assertTrue(SM9.verify(pub, id, message, signature));
         }
         // #endregion java-sm9-pem-example

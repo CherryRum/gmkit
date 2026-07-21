@@ -66,9 +66,12 @@ GMKit Java 当前版本为 `0.10.1`，由主包 `cn.gmkit:gmkit` 和独立 SM9 �
 ```java
 import cn.gmkit.sm3.SM3Util;
 
+// 1. 计算摘要：使用标准输入 abc 计算 SM3。
 String expected =
         "66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0";
 String actual = SM3Util.digestHex("abc");
+
+// 2. 固定向量断言：摘要必须与标准结果完全一致。
 if (!expected.equals(actual)) {
     throw new IllegalStateException("SM3 vector mismatch: " + actual);
 }
@@ -97,9 +100,12 @@ SM2、SM3、SM4 同时提供实例类和 `*Util` 静态类；ZUC 的两个公开
 import cn.gmkit.sm3.SM3;
 import cn.gmkit.sm3.SM3Util;
 
+// 1. 创建实例式入口，并分别计算同一条消息的摘要。
 SM3 sm3 = new SM3();
 String byInstance = sm3.digestHex("abc");
 String byUtility = SM3Util.digestHex("abc");
+
+// 2. 入口一致性断言：实例式与静态式结果必须相同。
 if (!byInstance.equals(byUtility)) {
     throw new IllegalStateException("SM3 entry points disagree");
 }
@@ -177,11 +183,16 @@ import cn.gmkit.core.GmSecurityContext;
 import cn.gmkit.sm2.SM2;
 import java.security.SecureRandom;
 
+// 1. 创建安全上下文：显式注入随机源并禁止修改全局 Provider 列表。
 GmSecurityContext context = GmSecurityContext.builder()
         .secureRandom(new SecureRandom())
         .registerProvider(false)
         .build();
+
+// 2. 创建 SM2 实例：后续密码运算复用同一上下文。
 SM2 sm2 = new SM2(context);
+
+// 3. 上下文断言：实例必须持有调用方提供的对象。
 if (sm2.securityContext() != context) {
     throw new IllegalStateException("security context mismatch");
 }
@@ -198,15 +209,19 @@ import cn.gmkit.sm2.SM2SignOptions;
 import cn.gmkit.sm2.SM2Util;
 import cn.gmkit.sm2.SM2VerifyOptions;
 
+// 1. 准备输入：正常订单与金额被修改的接收消息分别保存。
 SM2KeyPair keys = SM2Util.generateKeyPair();
 String message = "order=GMKIT-DEMO-0001&amount=88.00";
 String received = "order=GMKIT-DEMO-0001&amount=99.00";
 String userId = "merchant@gmkit.cn";
+
+// 2. SM2 签名：签名端固定 userId。
 String signature = SM2Util.signHex(
         keys.privateKey(),
         message,
         SM2SignOptions.builder().userId(userId).build());
 
+// 3. SM2 验签：合法但不匹配的消息返回 false，非法输入才抛错。
 boolean verified;
 try {
     verified = SM2Util.verify(
@@ -218,6 +233,8 @@ try {
     // 编码、密钥或参数非法；不要把敏感输入写进日志。
     throw new IllegalStateException("invalid SM2 verification input", invalidInput);
 }
+
+// 4. 篡改断言：金额变化后不得验证成功。
 if (verified) {
     throw new IllegalStateException("tampered order must not verify");
 }

@@ -114,16 +114,20 @@ import java.util.Arrays;
 String expected =
         "66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0";
 
-// 公开固定向量：SM3("abc")。
+// 1. 计算 SM3 摘要：使用标准输入 abc 和默认 UTF-8。
 String actual = SM3Util.digestHex("abc");
+
+// 2. 固定向量断言：摘要必须与标准结果完全一致。
 if (!expected.equals(actual)) {
     throw new IllegalStateException("SM3 vector mismatch");
 }
 
-// String 默认使用 UTF-8；等价字节输入必须得到同一摘要。
+// 3. 计算文本与字节摘要：显式构造等价的 UTF-8 输入。
 SM3 sm3 = new SM3();
 byte[] fromText = sm3.digest("abc");
 byte[] fromBytes = sm3.digest("abc".getBytes(StandardCharsets.UTF_8));
+
+// 4. 输入等价断言：字符串与 UTF-8 字节必须得到相同摘要。
 if (!Arrays.equals(fromText, fromBytes)) {
     throw new IllegalStateException("SM3 UTF-8 mismatch");
 }
@@ -169,22 +173,26 @@ import cn.gmkit.core.HexCodec;
 import cn.gmkit.sm3.SM3Util;
 import java.nio.charset.StandardCharsets;
 
+// 1. 准备认证输入：正常订单与篡改金额使用同一 HMAC key。
 byte[] key = "merchant-demo-key".getBytes(StandardCharsets.UTF_8);
 String message = "order=GMKIT-DEMO-0001&amount=88.00";
 String tampered = "order=GMKIT-DEMO-0001&amount=99.00";
 
+// 2. 计算发送端和接收端 HMAC-SM3。
 String expectedMac = SM3Util.hmacHex(key, message);
 String receivedMac = SM3Util.hmacHex(key, message);
 
-// 比较解码后的字节，避免使用普通字符串比较处理认证值。
+// 3. 成功断言：解码后使用常量时间字节比较。
 if (!Bytes.constantTimeEquals(
         HexCodec.decodeStrict(expectedMac),
         HexCodec.decodeStrict(receivedMac))) {
     throw new IllegalStateException("HMAC-SM3 verification failed");
 }
 
-// 金额被修改后必须产生不同的 MAC。
+// 4. 计算篡改消息 HMAC：金额变化后重新计算认证值。
 String tamperedMac = SM3Util.hmacHex(key, tampered);
+
+// 5. 失败断言：篡改消息的认证值不得通过比较。
 if (Bytes.constantTimeEquals(
         HexCodec.decodeStrict(expectedMac),
         HexCodec.decodeStrict(tamperedMac))) {

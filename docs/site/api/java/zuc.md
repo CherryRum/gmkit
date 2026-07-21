@@ -84,16 +84,21 @@ static String keystreamWordsHex(String keyHex, String ivHex, int lengthWords);
 Java 的 `int` 有符号，但 `keystreamWords` 中每个元素保存的是原样 32-bit 位模式。需要十进制展示时可用 `Integer.toUnsignedLong(word)`；跨语言序列化时按大端 4 字节写出，不要输出有符号十进制文本。
 
 ```java
+// 1. 准备固定向量：ZUC-128 的 key 和 IV 都为 16 字节全零。
 String zero = "00000000000000000000000000000000";
 
-// lengthBytes=8，因此结果恰好是 8 字节、16 个 Hex 字符。
+// 2. 生成字节密钥流：lengthBytes=8，结果为 16 个 Hex 字符。
 String byBytes = ZUC.keystreamHex(zero, zero, 8);
+
+// 3. 字节向量断言：前 8 字节必须匹配标准结果。
 if (!"27bede74018082da".equals(byBytes)) {
     throw new IllegalStateException("ZUC byte-stream vector mismatch");
 }
 
-// lengthWords=2 也产生 8 字节，但参数单位不同。
+// 4. 生成 word 密钥流：lengthWords=2，同样产生 8 字节。
 String byWords = ZUC.keystreamWordsHex(zero, zero, 2);
+
+// 5. 单位换算断言：两种长度表示必须得到相同密钥流。
 if (!byBytes.equals(byWords)) {
     throw new IllegalStateException("ZUC word-stream vector mismatch");
 }
@@ -135,14 +140,20 @@ static String decryptBase64ToUtf8(
 空消息合法，返回空数组或空字符串。`byte[]` API 不修改输入数组。`decrypt*ToUtf8` 只适合原文确实是 UTF-8 的情况；任意二进制内容应使用 `decrypt(byte[], ...)`。
 
 ```java
+// 1. 准备参数：ZUC-128 使用 16 字节 key、16 字节 IV 和原始二进制明文。
 byte[] key = HexCodec.decodeStrict(
         "000102030405060708090a0b0c0d0e0f", "ZUC key");
 byte[] iv = HexCodec.decodeStrict(
         "101112131415161718191a1b1c1d1e1f", "ZUC IV");
 byte[] plaintext = new byte[] {0x00, (byte) 0xff, (byte) 0x80, 0x41};
 
+// 2. ZUC 加密：明文与密钥流异或，输出等长密文。
 byte[] ciphertext = ZUC.encrypt(key, iv, plaintext);
+
+// 3. ZUC 解密：相同 key/IV 再次生成密钥流并恢复明文。
 byte[] recovered = ZUC.decrypt(key, iv, ciphertext);
+
+// 4. 往返断言：解密结果的每个字节都必须与明文一致。
 if (!java.util.Arrays.equals(plaintext, recovered)) {
     throw new IllegalStateException("ZUC binary round-trip failed");
 }
@@ -193,9 +204,10 @@ static byte[] eea3Encrypt(
 `eea3` 返回字对齐密钥流，是为现有调用保留的低层入口；要得到消息密文应使用 `eea3Encrypt`。`bitLength` 从消息首 bit 起算，每字节先处理最高位。
 
 ```java
+// 1. 准备 EEA3 消息：8 字节输入按 64 bit 完整处理。
 byte[] message = HexCodec.decodeStrict("5bad724710ba1c56", "EEA3 message");
 
-// 64 bit 恰好覆盖整个 8 字节消息。
+// 2. EEA3 加密：使用 COUNT、BEARER 和 DIRECTION 生成协议密文。
 byte[] encrypted = ZUC.eea3Encrypt(
         "000102030405060708090a0b0c0d0e0f",
         0x01234567,
@@ -203,6 +215,8 @@ byte[] encrypted = ZUC.eea3Encrypt(
         0,
         message,
         64);
+
+// 3. 输出长度断言：64 bit 消息必须产生 8 字节密文。
 if (encrypted.length != 8) {
     throw new IllegalStateException("EEA3 output length mismatch");
 }
@@ -251,6 +265,7 @@ static String eia3(
 </ApiTable>
 
 ```java
+// 1. 计算 EIA3 完整性标签：使用固定协议字段和 64 bit 消息。
 String mac = ZUC.eia3(
         "000102030405060708090a0b0c0d0e0f",
         0x01234567,
@@ -258,13 +273,17 @@ String mac = ZUC.eia3(
         0,
         HexCodec.decodeStrict("5bad724710ba1c56", "EIA3 message"),
         64);
+
+// 2. 固定向量断言：MAC-I 必须等于标准的 32-bit 结果。
 if (!"1b3d0f74".equals(mac)) {
     throw new IllegalStateException("EIA3 vector mismatch");
 }
 
-// 接收外部 MAC-I 时先解码，再做常量时间比较。
+// 3. 准备接收值：把计算值和外部 MAC-I 都解码为 4 字节。
 byte[] expectedMac = HexCodec.decodeStrict(mac, "expected MAC-I");
 byte[] receivedMac = HexCodec.decodeStrict("1b3d0f74", "received MAC-I");
+
+// 4. 完整性校验：使用常量时间字节比较。
 if (!Bytes.constantTimeEquals(expectedMac, receivedMac)) {
     throw new IllegalStateException("EIA3 verification failed");
 }

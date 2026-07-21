@@ -76,15 +76,23 @@ public static String normalize(String input, String label)
 `normalize` 会移除字符串中所有 `Character.isWhitespace` 识别的空白，并去掉开头的 `0x`/`0X`；它不转小写，也不检查剩余字符是不是 Hex。完整解码使用 `decodeStrict`。
 
 ```java
+// 1. 清理 Hex 文本：移除空白和 0x 前缀，但保留字母大小写。
 String normalized = HexCodec.normalize(" 0xAA BB ", "payload");
+
+// 2. 清理结果断言：normalize 不负责改成小写。
 if (!"AABB".equals(normalized)) {
     throw new IllegalStateException("Hex normalization mismatch");
 }
+
+// 3. 严格 Hex 解码：确认字符合法且长度为偶数。
 byte[] bytes = HexCodec.decodeStrict(normalized, "payload");
+
+// 4. Hex 往返断言：encode 固定返回小写文本。
 if (!"aabb".equals(HexCodec.encode(bytes))) {
     throw new IllegalStateException("Hex round-trip mismatch");
 }
 
+// 5. 非法输入断言：奇数长度 Hex 必须抛出 GmkitException。
 org.junit.jupiter.api.Assertions.assertThrows(
     GmkitException.class,
     () -> HexCodec.decodeStrict("abc", "payload"));
@@ -119,17 +127,25 @@ public static boolean looksLikeBase64(String input)
 </ApiTable>
 
 ```java
+// 1. Base64 解码：允许省略尾部 padding。
 byte[] bytes = Base64Codec.decode("AP+AQQ", "payload");
+
+// 2. 解码结果断言：原始字节必须等于 00 ff 80 41。
 if (!"00ff8041".equals(HexCodec.encode(bytes))) {
     throw new IllegalStateException("unpadded Base64 mismatch");
 }
+
+// 3. 语法探测断言：格式探测仍要求四字符对齐。
 if (Base64Codec.isBase64("AP+AQQ")) {
     throw new IllegalStateException("format probe must remain four-character aligned");
 }
+
+// 4. Base64 编码断言：输出必须恢复规范 padding。
 if (!"AP+AQQ==".equals(Base64Codec.encode(bytes))) {
     throw new IllegalStateException("canonical Base64 output mismatch");
 }
 
+// 5. 非规范输入断言：pad bits 非零时必须抛错。
 org.junit.jupiter.api.Assertions.assertThrows(
     GmkitException.class,
     () -> Base64Codec.decode("QR==", "payload"));
@@ -163,15 +179,21 @@ public static byte[] decodeAuto(String input, String label)
 自动识别遇到全 Hex 字符时不会回退 Base64。`"abc"` 会先被判断为 Hex 候选，再因为奇数长度抛错。稳定协议应把格式作为显式字段并调用 `decode(..., InputFormat, ...)`。
 
 ```java
+// 1. Base64 解码：显式声明协议字段的输入格式。
 byte[] bytes = ByteEncodings.decode(
     "AP+AQQ==",
     InputFormat.BASE64,
     "payload");
+
+// 2. Hex 编码：把相同原始字节写成另一种协议文本。
 String hex = ByteEncodings.encode(bytes, OutputFormat.HEX);
+
+// 3. 转换结果断言：输出必须等于预期的小写 Hex。
 if (!"00ff8041".equals(hex)) {
     throw new IllegalStateException("encoding mismatch");
 }
 
+// 4. 自动识别失败断言：abc 先按奇数长度 Hex 处理并抛错。
 org.junit.jupiter.api.Assertions.assertThrows(
     GmkitException.class,
     () -> ByteEncodings.decodeAuto("abc", "payload"));
@@ -204,10 +226,15 @@ public static String text(byte[] input, Charset charset)
 JDK 字符串解码会按 Charset 默认替换策略处理无法映射的字节；任意二进制不要经过 `Texts.utf8(byte[])`。图片、压缩包、密钥和密文保留为 `byte[]`。
 
 ```java
+// 1. UTF-8 编码：将中文和 emoji 转换为原始字节。
 byte[] utf8 = Texts.utf8("国密🔐");
+
+// 2. 编码结果断言：字节序列必须与标准 UTF-8 一致。
 if (!"e59bbde5af86f09f9490".equals(HexCodec.encode(utf8))) {
     throw new IllegalStateException("UTF-8 encoding mismatch");
 }
+
+// 3. UTF-8 解码断言：原始字节必须恢复同一字符串。
 if (!"国密🔐".equals(Texts.utf8(utf8))) {
     throw new IllegalStateException("UTF-8 round-trip mismatch");
 }
@@ -244,18 +271,25 @@ public static byte[] copyOfRange(byte[] input, int from, int to)
 `concat((byte[][]) null)` 会因 varargs 数组本身为 null 抛 `NullPointerException`；只有数组中的 null 元素会被跳过。`copyOfRange` 还可能抛出 JDK 的 `NullPointerException`、`IllegalArgumentException` 或 `ArrayIndexOutOfBoundsException`。
 
 ```java
+// 1. 拼接字节：null 元素被跳过，其他数组保持原顺序。
 byte[] first = new byte[] {0x00, (byte) 0xff};
 byte[] second = new byte[] {0x41};
 byte[] merged = Bytes.concat(first, null, second);
+
+// 2. 拼接结果断言：输出必须等于 00 ff 41。
 if (!"00ff41".equals(HexCodec.encode(merged))) {
     throw new IllegalStateException("byte concat mismatch");
 }
 
+// 3. 范围复制：超出源数组的尾部按 JDK 规则补零。
 byte[] padded = Bytes.copyOfRange(new byte[] {1, 2}, 1, 4);
+
+// 4. 范围结果断言：结果必须等于 02 00 00。
 org.junit.jupiter.api.Assertions.assertArrayEquals(
     new byte[] {2, 0, 0},
     padded);
 
+// 5. 常量时间比较断言：相同的等长字节数组必须返回 true。
 org.junit.jupiter.api.Assertions.assertTrue(
     Bytes.constantTimeEquals(
         HexCodec.decodeStrict("aabb", "left"),
@@ -319,10 +353,15 @@ public static Provider registerIfNeeded(Provider provider)
 容器、应用服务器和有统一安全基线的进程应由启动层管理 Provider。库内部运算通常也可以直接向 JCA/BC API 传一个未全局注册的 Provider 实例。
 
 ```java
+// 1. 创建隔离 Provider：不修改 JVM 全局 Provider 列表。
 Provider isolated = BcProviders.create();
+
+// 2. Provider 名称断言：Bouncy Castle 的名称必须为 BC。
 if (!"BC".equals(isolated.getName())) {
     throw new IllegalStateException("unexpected Provider");
 }
+
+// 3. 默认 Provider 断言：已注册或临时创建的实例必须可用。
 if (BcProviders.getIfPresent() == null
     && BcProviders.defaultProvider() == null) {
     throw new IllegalStateException("default Provider unavailable");
@@ -361,14 +400,18 @@ public static final class Builder {
 Builder setter 都返回同一 Builder，可链式调用。`build()` 后继续修改 Builder 不影响已构建 context。
 
 ```java
+// 1. 准备依赖：创建未注册 Provider 和 SecureRandom 实例。
 Provider provider = BcProviders.create();
 SecureRandom random = new SecureRandom();
+
+// 2. 构建安全上下文：保存依赖并禁止全局注册。
 GmSecurityContext context = GmSecurityContext.builder()
     .provider(provider)
     .secureRandom(random)
     .registerProvider(false)
     .build();
 
+// 3. 上下文断言：getter 必须返回同一对象引用和注册策略。
 if (context.provider() != provider
     || context.secureRandom() != random
     || context.registerProvider()) {
@@ -477,10 +520,12 @@ GMKit 的参数、编码、加解密和签名包装错误优先使用这个非�
 不是所有错误都会被包装：`Arrays.copyOfRange` 的范围异常、Provider 全局注册的 `SecurityException`、内存错误等 JDK 异常可能直接传播。业务不要通过解析 message 判断错误类型。
 
 ```java
+// 1. 触发编码错误：严格 Hex 解码必须拒绝非 Hex 文本。
 try {
     HexCodec.decodeStrict("not-hex", "payload");
     throw new IllegalStateException("invalid Hex was accepted");
 } catch (GmkitException ex) {
+    // 2. 诊断信息断言：包装异常必须保留可读消息。
     if (ex.getMessage() == null) {
         throw new IllegalStateException("missing diagnostic message", ex);
     }

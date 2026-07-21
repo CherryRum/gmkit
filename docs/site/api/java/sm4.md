@@ -156,10 +156,12 @@ boolean hasTag();
 `iv()`、`aad()`、`tag()` 每次返回防御性副本；未设置时返回 `null`。`hasTag()` 只有在 tag 非 `null` 且长度大于 0 时才返回 `true`。`tagLength()` 返回 Builder 中的原值，未设置时仍是 `null`，不会直接显示运行时默认的 16。
 
 ```java
+// 1. 准备 GCM 参数：nonce 为 12 字节，AAD 使用 UTF-8。
 byte[] nonce = HexCodec.decodeStrict(
         "000102030405060708090a0b", "SM4 nonce");
 byte[] aad = Texts.utf8("tenant=demo;schema=1");
 
+// 2. 构建选项：显式固定 GCM、NoPadding 和 16 字节 tag。
 SM4Options gcm = SM4Options.builder()
         .mode(SM4CipherMode.GCM)
         .padding(SM4Padding.NONE) // GCM 实际总是 NoPadding，显式写出便于审阅
@@ -278,6 +280,7 @@ String tagBase64();
 ## GCM：成功与篡改失败
 
 ```java
+// 1. 准备参数：固定测试 key、12 字节 nonce、订单明文和业务 AAD。
 byte[] key = HexCodec.decodeStrict(
         "0123456789abcdeffedcba9876543210", "SM4 key");
 byte[] nonce = HexCodec.decodeStrict(
@@ -285,6 +288,7 @@ byte[] nonce = HexCodec.decodeStrict(
 byte[] aad = Texts.utf8("tenant=demo;schema=1");
 String message = "order=GMKIT-DEMO-0001&amount=88.00";
 
+// 2. 构建 GCM 选项：tag 长度固定为 16 字节。
 SM4Options options = SM4Options.builder()
         .mode(SM4CipherMode.GCM)
         .padding(SM4Padding.NONE)
@@ -293,22 +297,30 @@ SM4Options options = SM4Options.builder()
         .tagLength(16)
         .build();
 
+// 3. SM4-GCM 加密：结果包含 ciphertext 和认证 tag。
 SM4 sm4 = new SM4();
 SM4CipherResult encrypted = sm4.encrypt(key, message, options);
+
+// 4. 加密结果断言：tag 必须存在且长度为 16 字节。
 if (!encrypted.hasTag() || encrypted.tag().length != 16) {
     throw new IllegalStateException("SM4-GCM tag missing");
 }
 
+// 5. SM4-GCM 解密：使用相同 key、nonce 和 AAD 恢复文本。
 String plaintext = sm4.decryptToUtf8(key, encrypted, options);
+
+// 6. 成功断言：解密结果必须等于订单原文。
 if (!message.equals(plaintext)) {
     throw new IllegalStateException("SM4-GCM round-trip failed");
 }
 
-// 修改 tag 后，解密必须抛出 GmkitException，不能返回未认证明文。
+// 7. 构造篡改结果：复制 tag 后修改第一个字节。
 byte[] tamperedTag = encrypted.tag();
 tamperedTag[0] ^= 0x01;
 SM4CipherResult tampered =
         new SM4CipherResult(encrypted.ciphertext(), tamperedTag);
+
+// 8. 失败断言：篡改 tag 后必须抛错，不能返回未认证明文。
 try {
     sm4.decryptToUtf8(key, tampered, options);
     throw new IllegalStateException("tampered tag must be rejected");
@@ -322,6 +334,7 @@ try {
 ## CBC：兼容模式示例
 
 ```java
+// 1. 准备参数：CBC 使用 16 字节 IV 和 PKCS7 padding。
 byte[] key = HexCodec.decodeStrict(
         "0123456789abcdeffedcba9876543210", "SM4 key");
 SM4Options options = SM4Options.builder()
@@ -331,12 +344,20 @@ SM4Options options = SM4Options.builder()
                 "000102030405060708090a0b0c0d0e0f", "SM4 IV"))
         .build();
 
+// 2. SM4-CBC 加密：结果只包含密文，不包含认证 tag。
 String message = "order=GMKIT-DEMO-0001&amount=88.00";
-SM4CipherResult result = SM4Util.encrypt(key, message, options);
-if (result.hasTag()) {
+SM4CipherResult encrypted = SM4Util.encrypt(key, message, options);
+
+// 3. 模式结果断言：CBC 不得返回 AEAD tag。
+if (encrypted.hasTag()) {
     throw new IllegalStateException("CBC must not return an AEAD tag");
 }
-if (!message.equals(SM4Util.decryptToUtf8(key, result, options))) {
+
+// 4. SM4-CBC 解密：使用相同 key 和 IV 恢复文本。
+String decrypted = SM4Util.decryptToUtf8(key, encrypted, options);
+
+// 5. 往返断言：解密结果必须等于订单原文。
+if (!message.equals(decrypted)) {
     throw new IllegalStateException("SM4-CBC round-trip failed");
 }
 ```

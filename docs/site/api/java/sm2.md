@@ -120,15 +120,22 @@ String privateKey();
 该构造器只是字符串容器，不会立即验证密钥。库生成的值符合上表格式；外部输入会在执行加密、解密或签名时校验。
 
 ```java
+// 1. 生成密钥对：默认返回非压缩公钥。
 SM2 sm2 = new SM2();
 SM2KeyPair keys = sm2.generateKeyPair();
 
+// 2. 派生公钥：从私钥重新计算同一非压缩曲线点。
 String derived = sm2.getPublicKeyFromPrivateKey(keys.privateKey(), false);
+
+// 3. 派生结果断言：重新计算的公钥必须与密钥对一致。
 if (!keys.publicKey().equals(derived)) {
     throw new IllegalStateException("SM2 public key derivation failed");
 }
 
+// 4. 压缩公钥：把非压缩曲线点转换为 33 字节格式。
 String compressed = sm2.compressPublicKey(keys.publicKey());
+
+// 5. 解压公钥断言：恢复后必须表示同一个曲线点。
 if (!keys.publicKey().equals(sm2.decompressPublicKey(compressed))) {
     throw new IllegalStateException("SM2 public key conversion failed");
 }
@@ -289,14 +296,20 @@ String decryptToString(
 `decrypt` 返回原始明文字节；`decryptToUtf8` 按 UTF-8 解码；`decryptToString` 的 `charset == null` 也回退 UTF-8。C1 曲线点、密文结构或 C3 完整性检查失败会抛 `GmkitException`，不会返回部分明文。
 
 ```java
+// 1. 准备二进制输入：包含 NUL、非 ASCII 字节和普通字符。
 SM2 sm2 = new SM2();
 SM2KeyPair keys = sm2.generateKeyPair();
 byte[] binary = new byte[] {0x00, (byte) 0xff, (byte) 0x80, 0x41};
 
+// 2. SM2 加密：公钥加密原始字节，密文使用 Base64 和 C1C3C2。
 String ciphertext = sm2.encryptBase64(
         keys.publicKey(), binary, SM2CipherMode.C1C3C2);
+
+// 3. SM2 解密：私钥按相同排列恢复原始字节。
 byte[] recovered = sm2.decrypt(
         keys.privateKey(), ciphertext, SM2CipherMode.C1C3C2);
+
+// 4. 往返断言：恢复的每个字节都必须与明文一致。
 if (!java.util.Arrays.equals(binary, recovered)) {
     throw new IllegalStateException("SM2 binary round-trip failed");
 }
@@ -401,25 +414,34 @@ String signBase64(
 `SM2Util` 提供后九个带 options 的静态重载；它没有 `sign(privateKeyHex, byte[])` 简写。`options == null` 使用 RAW、默认 user ID、标准 Z 和默认安全上下文。字符串消息默认 UTF-8，显式 `charset == null` 也回退 UTF-8。空消息可以签名，`null` 消息会抛异常。
 
 ```java
+// 1. 准备输入：正常订单、篡改订单和签名身份分别保存。
 SM2KeyPair keys = SM2Util.generateKeyPair();
 String message = "order=GMKIT-DEMO-0001&amount=88.00";
 String tampered = "order=GMKIT-DEMO-0001&amount=99.00";
 String userId = "merchant@gmkit.cn";
 
+// 2. 配置签名：内部格式固定为 DER，userId 参与 Z 值计算。
 SM2SignOptions signOptions = SM2SignOptions.builder()
         .signatureFormat(SM2SignatureFormat.DER)
         .userId(userId)
         .build();
+
+// 3. 配置验签：格式和 userId 必须与签名端一致。
 SM2VerifyOptions verifyOptions = SM2VerifyOptions.builder()
         .signatureFormat(SM2SignatureInputFormat.DER)
         .userId(userId)
         .build();
 
+// 4. SM2 签名：输出使用 Base64 文本编码。
 String signature = SM2Util.signBase64(
         keys.privateKey(), message, signOptions);
+
+// 5. SM2 验签：原消息必须验证成功。
 if (!SM2Util.verify(keys.publicKey(), message, signature, verifyOptions)) {
     throw new IllegalStateException("SM2 signature verification failed");
 }
+
+// 6. 篡改断言：金额变化后必须验证失败。
 if (SM2Util.verify(keys.publicKey(), tampered, signature, verifyOptions)) {
     throw new IllegalStateException("tampered order must not verify");
 }
@@ -703,12 +725,13 @@ String s2Hex();
 ### 带确认标签的顺序
 
 ```java
+// 1. 生成长期与临时密钥：Alice 和 Bob 每方各有两组密钥。
 SM2KeyPair aliceStatic = SM2Util.generateKeyPair(false);
 SM2KeyPair aliceEphemeral = SM2Util.generateKeyPair(false);
 SM2KeyPair bobStatic = SM2Util.generateKeyPair(false);
 SM2KeyPair bobEphemeral = SM2Util.generateKeyPair(false);
 
-// 1. 响应方 Bob 先计算共享 key、S1 和 S2，并把 S1 发给 Alice。
+// 2. 响应方计算：Bob 生成共享 key、S1 和 S2，并把 S1 发给 Alice。
 SM2KeyExchangeResult bob = SM2Util.keyExchangeWithConfirmation(
         bobStatic.privateKey(),
         bobEphemeral.privateKey(),
@@ -721,7 +744,7 @@ SM2KeyExchangeResult bob = SM2Util.keyExchangeWithConfirmation(
                 .peerId("merchant@gmkit.cn")
                 .build());
 
-// 2. 发起方 Alice 把收到的 S1 放入 confirmationTag，验证后得到 key 和 S2。
+// 3. 发起方计算：Alice 验证收到的 S1，并生成共享 key 和 S2。
 SM2KeyExchangeResult alice = SM2Util.keyExchangeWithConfirmation(
         aliceStatic.privateKey(),
         aliceEphemeral.privateKey(),
@@ -735,11 +758,12 @@ SM2KeyExchangeResult alice = SM2Util.keyExchangeWithConfirmation(
                 .confirmationTag(bob.s1())
                 .build());
 
+// 4. 共享密钥断言：双方派生的 128-bit key 必须一致。
 if (!java.util.Arrays.equals(alice.key(), bob.key())) {
     throw new IllegalStateException("SM2 shared key mismatch");
 }
 
-// 3. Alice 把 S2 发回 Bob；Bob 用常量时间比较确认。
+// 5. 响应方确认：Alice 返回 S2，Bob 使用常量时间比较完成确认。
 if (!SM2Util.confirmResponder(bob.s2(), alice.s2())) {
     throw new IllegalStateException("SM2 responder confirmation failed");
 }

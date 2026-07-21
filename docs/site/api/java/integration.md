@@ -227,11 +227,15 @@ SM4Padding padding();
 ## 默认 GCM：成功与篡改失败
 
 ```java
+// 1. 准备参数：生成接收方 SM2 密钥对和订单明文。
 SM2KeyPair keys = SM2Util.generateKeyPair();
 SM2Sm4Hybrid hybrid = new SM2Sm4Hybrid();
 String message = "order=GMKIT-DEMO-0001&amount=88.00";
 
+// 2. 混合加密：默认使用随机 SM4 key、12 字节 nonce 和 GCM。
 SM2Sm4HybridPayload payload = hybrid.encrypt(keys.publicKey(), message);
+
+// 3. 载荷字段断言：GCM 解密所需的 mode、IV 和 tag 必须齐全。
 if (payload.mode() != SM4CipherMode.GCM
         || !payload.hasIv()
         || payload.iv().length != 12
@@ -240,12 +244,15 @@ if (payload.mode() != SM4CipherMode.GCM
     throw new IllegalStateException("hybrid GCM metadata mismatch");
 }
 
+// 4. 混合解密：SM2 私钥恢复会话 key，再解密订单明文。
 String recovered = hybrid.decryptToUtf8(keys.privateKey(), payload);
+
+// 5. 成功断言：解密结果必须等于订单原文。
 if (!message.equals(recovered)) {
     throw new IllegalStateException("hybrid round-trip failed");
 }
 
-// 改动 tag 后，GCM 必须拒绝返回明文。
+// 6. 构造篡改载荷：复制 tag 后修改第一个字节。
 byte[] tamperedTag = payload.tag();
 tamperedTag[0] ^= 0x01;
 SM2Sm4HybridPayload tampered = new SM2Sm4HybridPayload(
@@ -257,6 +264,7 @@ SM2Sm4HybridPayload tampered = new SM2Sm4HybridPayload(
         payload.mode(),
         payload.padding());
 
+// 7. 失败断言：篡改 tag 后必须拒绝解密，不能返回明文。
 try {
     hybrid.decrypt(keys.privateKey(), tampered);
     throw new IllegalStateException("tampered hybrid payload must fail");
@@ -268,6 +276,7 @@ try {
 ### 绑定业务上下文 AAD
 
 ```java
+// 1. 配置 AAD：租户和 schema 可公开，但必须参与 GCM 认证。
 SM4Options options = SM4Options.builder()
         .mode(SM4CipherMode.GCM)
         .padding(SM4Padding.NONE)
@@ -275,6 +284,7 @@ SM4Options options = SM4Options.builder()
         .tagLength(16)
         .build();
 
+// 2. 混合加密：订单明文与固定 AAD 一同进入认证加密流程。
 SM2Sm4HybridPayload payload = hybrid.encrypt(
         keys.publicKey(),
         Texts.utf8("order=GMKIT-DEMO-0001&amount=88.00"),
