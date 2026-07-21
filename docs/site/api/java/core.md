@@ -1,6 +1,6 @@
 ---
 title: Java 核心公共 API
-description: 说明 Java 编码、字节、Provider、安全上下文、格式枚举和公共异常类型。
+description: 逐项说明 Java 编码、字节、Provider、安全上下文、格式枚举、消息和公共异常。
 pageInfo: false
 contributors: false
 editLink: false
@@ -18,220 +18,535 @@ tag:
 
 # Java 核心公共 API
 
-`cn.gmkit.core` 提供所有算法共享的严格编码、字节操作、文本转换、Provider、安全上下文、格式枚举和异常类型。
+`cn.gmkit.core` 是 Java 各算法共享的基础层，包含 18 个公共顶层类型：严格编码、字节数组、文本、Bouncy Castle Provider、安全上下文、格式枚举、双语消息和统一运行时异常。
 
-这些类型用于明确协议边界，不替代算法入口的长度和安全校验。新代码应优先使用显式 `InputFormat`/`OutputFormat`；只有接收无法修改的旧输入时才使用自动识别。
+这些类型负责公共边界，不替代算法自己的长度和安全校验。例如 `HexCodec` 能把任意偶数长度 Hex 解码为字节，但 SM4 入口仍会把 key 限定为 16 字节。
 
-## Hex 与 Base64
+::: tip 本页适用范围
+以下签名和行为按 `cn.gmkit:gmkit:0.10.1` 说明。Java 最低版本为 8。示例使用 JUnit 5 断言；普通应用可换成自己的测试框架。
+:::
 
-### `HexCodec`
+## 导入
 
 ```java
-static byte[] decodeStrict(String input, String label)
-static String encode(byte[] input)
-static boolean isHex(String input)
-static String normalize(String input)
-static String normalize(String input, String label)
+import cn.gmkit.core.Base64Codec;
+import cn.gmkit.core.BcProviders;
+import cn.gmkit.core.ByteEncodings;
+import cn.gmkit.core.Bytes;
+import cn.gmkit.core.Checks;
+import cn.gmkit.core.GmSecurityContext;
+import cn.gmkit.core.GmSecurityContexts;
+import cn.gmkit.core.GmkitException;
+import cn.gmkit.core.HexCodec;
+import cn.gmkit.core.InputFormat;
+import cn.gmkit.core.Messages;
+import cn.gmkit.core.OutputFormat;
+import cn.gmkit.core.SM2CipherMode;
+import cn.gmkit.core.SM2SignatureFormat;
+import cn.gmkit.core.SM2SignatureInputFormat;
+import cn.gmkit.core.SM4CipherMode;
+import cn.gmkit.core.SM4Padding;
+import cn.gmkit.core.Texts;
 ```
 
-- `decodeStrict` 接受大小写 Hex 和允许的 `0x` 前缀，拒绝 null、奇数长度和非法字符。
-- `encode` 返回不带前缀的小写 Hex。
-- `isHex` 只判断编码形态，不验证字段长度。
-- `normalize` 去除允许的前缀并转小写；带 label 的重载用于生成可定位的错误消息。
+## `HexCodec`
 
-### `Base64Codec`
+### 完整公开签名
 
 ```java
-static byte[] decode(String input, String label)
-static String encode(byte[] input)
-static boolean isBase64(String input)
-static boolean looksLikeBase64(String input)
+public static byte[] decodeStrict(String input, String label)
+public static String encode(byte[] input)
+public static boolean isHex(String input)
+public static String normalize(String input)
+public static String normalize(String input, String label)
 ```
 
-`decode` 使用标准 RFC 4648 Base64，拒绝非法字符、长度和填充。`isBase64` 执行严格判断；`looksLikeBase64` 只用于自动识别候选，不能替代协议格式字段。
+<ApiTable label="HexCodec 成员" min-width="72rem">
 
-### `ByteEncodings`
+| 方法 | 用途 | 返回值 | 失败或边界 |
+|:--|:--|:--|:--|
+| `decodeStrict` | 解码协议 Hex 字段 | 新 `byte[]` | null/空白、去前缀后为空、奇数长度或非 Hex 时抛 `GmkitException` |
+| `encode` | 把字节写成协议文本 | 不带前缀的小写 Hex | input 为 null 时抛 `GmkitException` |
+| `isHex` | 只判断字符集合 | `boolean` | null/空串为 false；奇数长度也可能为 true；不接受 `0x` |
+| `normalize(input)` | 使用默认错误标签清理输入 | 清理后的文本 | null/空白/只有前缀时抛错 |
+| `normalize(input, label)` | 使用业务字段名清理输入 | 清理后的文本 | 同上；label 只进入消息 |
+
+</ApiTable>
+
+`normalize` 会移除字符串中所有 `Character.isWhitespace` 识别的空白，并去掉开头的 `0x`/`0X`；它不转小写，也不检查剩余字符是不是 Hex。完整解码使用 `decodeStrict`。
 
 ```java
-static String encode(byte[] input, OutputFormat outputFormat)
-static byte[] decode(String input, InputFormat inputFormat, String label)
-static byte[] decodeAuto(String input, String label)
+String normalized = HexCodec.normalize(" 0xAA BB ", "payload");
+if (!"AABB".equals(normalized)) {
+    throw new IllegalStateException("Hex normalization mismatch");
+}
+byte[] bytes = HexCodec.decodeStrict(normalized, "payload");
+if (!"aabb".equals(HexCodec.encode(bytes))) {
+    throw new IllegalStateException("Hex round-trip mismatch");
+}
+
+org.junit.jupiter.api.Assertions.assertThrows(
+    GmkitException.class,
+    () -> HexCodec.decodeStrict("abc", "payload"));
 ```
 
-`InputFormat` 和 `OutputFormat` 枚举成员均为 `HEX`、`BASE64`。`decodeAuto` 优先识别 Hex；稳定协议应调用显式格式重载。
+不要先用 `isHex` 代替 `decodeStrict`：`isHex("abc")` 为 true，但严格解码会因为长度为奇数而失败。
+
+## `Base64Codec`
+
+### 完整公开签名
 
 ```java
-byte[] bytes = ByteEncodings.decode("AP+AQQ==", InputFormat.BASE64, "payload");
+public static byte[] decode(String input, String label)
+public static String encode(byte[] input)
+public static boolean isBase64(String input)
+public static boolean looksLikeBase64(String input)
+```
+
+`isBase64` 当前直接调用 `looksLikeBase64`，两者返回完全相同。后者名字强调它是无分配的格式探测，不是解码结果。
+
+<ApiTable label="Base64Codec 规则" min-width="70rem">
+
+| 行为 | `decode` | `encode` | `isBase64` / `looksLikeBase64` |
+|:--|:--|:--|:--|
+| 标准字符表 | 只接受 RFC 4648 `+`、`/` | 只生成标准 Base64 | 只接受标准字符表 |
+| 尾部填充 | 允许规范 `=`，也允许完全省略 | 始终生成规范 `=` | 总长度必须是 4 的倍数 |
+| 空白 | 只裁剪首尾空白，内部空白非法 | 不生成空白 | 只裁剪首尾空白 |
+| pad bits | 必须为 0 | 规范生成 | 必须为 0 |
+| 空输入 | 抛 `GmkitException` | 空数组返回空字符串 | false |
+| Base64URL | 拒绝 `-`、`_` | 不生成 | false |
+
+</ApiTable>
+
+```java
+byte[] bytes = Base64Codec.decode("AP+AQQ", "payload");
+if (!"00ff8041".equals(HexCodec.encode(bytes))) {
+    throw new IllegalStateException("unpadded Base64 mismatch");
+}
+if (Base64Codec.isBase64("AP+AQQ")) {
+    throw new IllegalStateException("format probe must remain four-character aligned");
+}
+if (!"AP+AQQ==".equals(Base64Codec.encode(bytes))) {
+    throw new IllegalStateException("canonical Base64 output mismatch");
+}
+
+org.junit.jupiter.api.Assertions.assertThrows(
+    GmkitException.class,
+    () -> Base64Codec.decode("QR==", "payload"));
+```
+
+`QR==` 的未使用 pad bits 非零，因此会被拒绝。严格规范化避免两个不同文本静默解码为同一字节。
+
+## `ByteEncodings`
+
+### 完整公开签名
+
+```java
+public static String encode(byte[] input, OutputFormat outputFormat)
+public static byte[] decode(
+    String input,
+    InputFormat inputFormat,
+    String label)
+public static byte[] decodeAuto(String input, String label)
+```
+
+<ApiTable label="ByteEncodings 成员" min-width="70rem">
+
+| 方法 | 默认值 | 精确语义 |
+|:--|:--|:--|
+| `encode` | outputFormat 为 null 时 `HEX` | 委托 `HexCodec` 或 `Base64Codec`；input 为 null 时抛错 |
+| `decode` | inputFormat 为 null 时自动识别 | 显式 HEX/BASE64 时直接委托相应 codec |
+| `decodeAuto` | Hex 优先 | 首尾先 trim；Hex 允许内部空白；Base64 自动识别要求四字符对齐 |
+
+</ApiTable>
+
+自动识别遇到全 Hex 字符时不会回退 Base64。`"abc"` 会先被判断为 Hex 候选，再因为奇数长度抛错。稳定协议应把格式作为显式字段并调用 `decode(..., InputFormat, ...)`。
+
+```java
+byte[] bytes = ByteEncodings.decode(
+    "AP+AQQ==",
+    InputFormat.BASE64,
+    "payload");
 String hex = ByteEncodings.encode(bytes, OutputFormat.HEX);
 if (!"00ff8041".equals(hex)) {
     throw new IllegalStateException("encoding mismatch");
 }
 
-// 非法 Hex 必须抛错，不能静默截断或替换。
 org.junit.jupiter.api.Assertions.assertThrows(
     GmkitException.class,
-    () -> HexCodec.decodeStrict("0xz1", "payload"));
+    () -> ByteEncodings.decodeAuto("abc", "payload"));
 ```
 
-## 文本与字节
+## `Texts`
 
-### `Texts`
+### 完整公开签名
 
 ```java
-static final Charset UTF_8
-static byte[] utf8(String input)
-static String utf8(byte[] input)
-static byte[] bytes(String input, Charset charset)
-static String text(byte[] input, Charset charset)
+public static final Charset UTF_8
+
+public static byte[] utf8(String input)
+public static String utf8(byte[] input)
+public static byte[] bytes(String input, Charset charset)
+public static String text(byte[] input, Charset charset)
 ```
 
-无 Charset 重载固定使用 UTF-8。任意二进制不要调用 `utf8(byte[])`；解密二进制应保留 `byte[]`。
+<ApiTable label="Texts 成员" min-width="66rem">
 
-### `Bytes`
+| 方法 | charset 为 null 时 | 返回与错误 |
+|:--|:--|:--|
+| `utf8(String)` | 固定 UTF-8 | 新字节数组；input null 抛 `GmkitException` |
+| `utf8(byte[])` | 固定 UTF-8 | 新字符串；input null 抛 `GmkitException` |
+| `bytes(String, Charset)` | UTF-8 | 按显式 charset 编码 |
+| `text(byte[], Charset)` | UTF-8 | 按显式 charset 解码 |
+
+</ApiTable>
+
+JDK 字符串解码会按 Charset 默认替换策略处理无法映射的字节；任意二进制不要经过 `Texts.utf8(byte[])`。图片、压缩包、密钥和密文保留为 `byte[]`。
 
 ```java
-static byte[] clone(byte[] input)
-static byte[] requireNonNull(byte[] input, String label)
-static byte[] requireNonEmpty(byte[] input, String label)
-static byte[] requireLength(byte[] input, int expectedLength, String label)
-static byte[] concat(byte[]... arrays)
-static boolean constantTimeEquals(byte[] left, byte[] right)
-static byte[] copyOfRange(byte[] input, int from, int to)
+byte[] utf8 = Texts.utf8("国密🔐");
+if (!"e59bbde5af86f09f9490".equals(HexCodec.encode(utf8))) {
+    throw new IllegalStateException("UTF-8 encoding mismatch");
+}
+if (!"国密🔐".equals(Texts.utf8(utf8))) {
+    throw new IllegalStateException("UTF-8 round-trip mismatch");
+}
 ```
 
-`clone`、`concat`、`copyOfRange` 返回新数组。`constantTimeEquals` 对 null 或不同长度返回 false；等长时扫描全部字节，适合比较摘要、MAC 和 tag。
+## `Bytes`
 
-### `Checks`
+### 完整公开签名
 
 ```java
-static <T> T requireNonNull(T value, String label)
-static String requireNonBlank(String value, String label)
-static <T> T defaultIfNull(T value, T defaultValue)
-static byte[] requireNonEmpty(byte[] value, String label)
-static boolean hasBytes(byte[] value)
+public static byte[] clone(byte[] input)
+public static byte[] requireNonNull(byte[] input, String label)
+public static byte[] requireNonEmpty(byte[] input, String label)
+public static byte[] requireLength(byte[] input, int expectedLength, String label)
+public static byte[] concat(byte[]... arrays)
+public static boolean constantTimeEquals(byte[] left, byte[] right)
+public static byte[] copyOfRange(byte[] input, int from, int to)
 ```
 
-这些方法用于统一参数校验。它们不会校验密码字段的算法长度；例如 SM4 key 仍应由算法入口校验为 16 字节。
+<ApiTable label="Bytes 成员" min-width="72rem">
 
-## Provider 与安全上下文
+| 方法 | 返回值 / 副作用 | null、长度和范围行为 |
+|:--|:--|:--|
+| `clone` | 新数组 | input 为 null 时返回 null |
+| `requireNonNull` | 返回原数组，不复制 | null 抛 `GmkitException` |
+| `requireNonEmpty` | 返回原数组，不复制 | null 或零长度抛 `GmkitException` |
+| `requireLength` | 返回原数组，不复制 | null 或长度不等于 expectedLength 时抛 `GmkitException` |
+| `concat` | 新数组 | null 元素被跳过；总长度超 `Integer.MAX_VALUE` 抛 `GmkitException` |
+| `constantTimeEquals` | `boolean`，不修改输入 | 任一 null 或长度不同为 false；两个空数组为 true |
+| `copyOfRange` | 新数组 | 直接遵循 `Arrays.copyOfRange`，to 超过源长度时尾部补零 |
 
-### `BcProviders`
+</ApiTable>
+
+`concat((byte[][]) null)` 会因 varargs 数组本身为 null 抛 `NullPointerException`；只有数组中的 null 元素会被跳过。`copyOfRange` 还可能抛出 JDK 的 `NullPointerException`、`IllegalArgumentException` 或 `ArrayIndexOutOfBoundsException`。
 
 ```java
-static Provider create()
-static Provider getIfPresent()
-static Provider defaultProvider()
-static Provider ensureRegistered()
-static Provider registerIfNeeded(Provider provider)
+byte[] first = new byte[] {0x00, (byte) 0xff};
+byte[] second = new byte[] {0x41};
+byte[] merged = Bytes.concat(first, null, second);
+if (!"00ff41".equals(HexCodec.encode(merged))) {
+    throw new IllegalStateException("byte concat mismatch");
+}
+
+byte[] padded = Bytes.copyOfRange(new byte[] {1, 2}, 1, 4);
+org.junit.jupiter.api.Assertions.assertArrayEquals(
+    new byte[] {2, 0, 0},
+    padded);
+
+org.junit.jupiter.api.Assertions.assertTrue(
+    Bytes.constantTimeEquals(
+        HexCodec.decodeStrict("aabb", "left"),
+        HexCodec.decodeStrict("aabb", "right")));
 ```
 
-| API | 是否修改 JVM 全局 Provider 列表 |
-|:--|:--:|
-| `create` | 否，创建独立 BC Provider |
-| `getIfPresent` | 否，只查询 |
-| `defaultProvider` | 否，返回可直接传给 JCA 的默认实例 |
-| `ensureRegistered` | 是，缺少时注册 |
-| `registerIfNeeded` | 可能，按传入实例注册 |
+`constantTimeEquals` 对等长数组扫描全部字节，但 JVM、JIT 和硬件仍不提供绝对恒时保证。外部 MAC/tag 先校验固定长度，再调用比较。
 
-容器、应用服务器和有集中安全策略的进程应由应用统一管理 Provider，避免库代码隐式修改全局顺序。
+## `Checks`
 
-### `GmSecurityContext`
+### 完整公开签名
 
 ```java
-static Builder builder()
-Provider provider()
-SecureRandom secureRandom()
-boolean registerProvider()
-
-Builder provider(Provider provider)
-Builder secureRandom(SecureRandom secureRandom)
-Builder registerProvider(boolean registerProvider)
-GmSecurityContext build()
+public static <T> T requireNonNull(T value, String label)
+public static String requireNonBlank(String value, String label)
+public static <T> T defaultIfNull(T value, T defaultValue)
+public static byte[] requireNonEmpty(byte[] value, String label)
+public static boolean hasBytes(byte[] value)
 ```
 
-Builder 默认使用 BC Provider、新建 `SecureRandom`、`registerProvider=true`。构建后的上下文不可变，但其中的 `SecureRandom` 本身仍是有状态对象。`provider()` 在注册策略为 true 时才确保全局注册。
+<ApiTable label="Checks 成员" min-width="68rem">
 
-### `GmSecurityContexts`
+| 方法 | 成功返回 | 失败行为 |
+|:--|:--|:--|
+| `requireNonNull` | 原对象 | null 抛 `GmkitException` |
+| `requireNonBlank` | `String.trim()` 后的字符串 | null 或 trim 后为空抛 `GmkitException` |
+| `defaultIfNull` | 非 null 原值，否则 defaultValue | 两者都为 null 时返回 null |
+| `requireNonEmpty` | 原 byte[] | null 或空数组抛 `GmkitException` |
+| `hasBytes` | 非 null 且长度大于 0 时 true | 不抛错 |
+
+</ApiTable>
+
+这些方法统一基础参数语义，不校验算法长度、编码或熵。`requireNonBlank` 使用 Java 8 `String.trim()` 的定义，不等同于所有 Unicode 空白的完整判断。
+
+## `BcProviders`
+
+### 完整公开签名
 
 ```java
-static GmSecurityContext defaults()
-static GmSecurityContext withProvider(Provider provider)
-static GmSecurityContext withProviderAndRandom(
-    Provider provider,
-    SecureRandom secureRandom)
-static GmSecurityContext withSecureRandom(SecureRandom secureRandom)
+public static Provider create()
+public static Provider getIfPresent()
+public static Provider defaultProvider()
+public static Provider ensureRegistered()
+public static Provider registerIfNeeded(Provider provider)
 ```
 
-`withProvider` 和 `withProviderAndRandom` 不自动注册 Provider；`defaults`、`withSecureRandom` 使用默认 BC 并允许自动注册。
+<ApiTable label="Bouncy Castle Provider 管理" min-width="72rem">
+
+| 方法 | 是否修改 JVM 全局 Provider 列表 | 返回值 |
+|:--|:--:|:--|
+| `create` | 否 | 每次创建新的 `BouncyCastleProvider` |
+| `getIfPresent` | 否 | 已注册的名为 `BC` 的 Provider；没有时 null |
+| `defaultProvider` | 否 | 已注册 BC；没有时返回新建但未注册的实例 |
+| `ensureRegistered` | 是 | 双重检查后按需注册 BC，并返回可用实例 |
+| `registerIfNeeded` | 可能 | 按 provider name 查找；同名已存在时返回已有实例，否则注册传入实例 |
+
+</ApiTable>
+
+`registerIfNeeded` 返回值可能不是传入对象，因为 JVM 已有同名 Provider 时以已注册实例为准。Provider 注册改变整个 JVM，可能受安全策略限制并抛 `SecurityException`。
+
+容器、应用服务器和有统一安全基线的进程应由启动层管理 Provider。库内部运算通常也可以直接向 JCA/BC API 传一个未全局注册的 Provider 实例。
+
+```java
+Provider isolated = BcProviders.create();
+if (!"BC".equals(isolated.getName())) {
+    throw new IllegalStateException("unexpected Provider");
+}
+if (BcProviders.getIfPresent() == null
+    && BcProviders.defaultProvider() == null) {
+    throw new IllegalStateException("default Provider unavailable");
+}
+```
+
+## `GmSecurityContext`
+
+### 完整公开成员
+
+```java
+public static GmSecurityContext.Builder builder()
+public Provider provider()
+public SecureRandom secureRandom()
+public boolean registerProvider()
+
+public static final class Builder {
+    public Builder provider(Provider provider)
+    public Builder secureRandom(SecureRandom secureRandom)
+    public Builder registerProvider(boolean registerProvider)
+    public GmSecurityContext build()
+}
+```
+
+<ApiTable label="GmSecurityContext 默认值与状态" min-width="72rem">
+
+| 项目 | 默认值 | 说明 |
+|:--|:--|:--|
+| provider | `BcProviders.defaultProvider()` | 在 `build()` 时解析；传 null 也回落默认值 |
+| secureRandom | `new SecureRandom()` | 在 `build()` 时创建；传 null 也回落新实例 |
+| registerProvider | `true` | 只有调用 `provider()` 时才执行按需全局注册 |
+| 对象可变性 | context 字段不可变 | Provider 和 SecureRandom 对象本身仍有状态；getter 返回保存引用 |
+
+</ApiTable>
+
+Builder setter 都返回同一 Builder，可链式调用。`build()` 后继续修改 Builder 不影响已构建 context。
 
 ```java
 Provider provider = BcProviders.create();
 SecureRandom random = new SecureRandom();
-GmSecurityContext context =
-    GmSecurityContexts.withProviderAndRandom(provider, random);
-if (context.provider() != provider || context.secureRandom() != random) {
+GmSecurityContext context = GmSecurityContext.builder()
+    .provider(provider)
+    .secureRandom(random)
+    .registerProvider(false)
+    .build();
+
+if (context.provider() != provider
+    || context.secureRandom() != random
+    || context.registerProvider()) {
     throw new IllegalStateException("security context mismatch");
 }
 ```
 
-测试用确定性 `SecureRandom` 不得进入生产配置。
+生产 `SecureRandom` 应由可信 JDK/Provider 或平台安全模块提供。测试中的确定性实现不得进入生产配置。
 
-## 算法格式枚举
+## `GmSecurityContexts`
 
-| 类型 | 成员 | 说明 |
-|:--|:--|:--|
-| `SM2CipherMode` | `C1C3C2`, `C1C2C3` | `toBcMode()` 转成 Bouncy Castle 排列 |
-| `SM2SignatureFormat` | `RAW`, `DER` | 签名输出格式 |
-| `SM2SignatureInputFormat` | `RAW`, `DER`, `AUTO` | 验签输入格式 |
-| `SM4CipherMode` | `ECB`, `CBC`, `CTR`, `CFB`, `OFB`, `GCM`, `CCM` | `isStreamLike()` 对 CTR/CFB/OFB/GCM/CCM 返回 true |
-| `SM4Padding` | `PKCS7`, `NONE`, `ZERO` | ZERO 不能无损恢复原文尾部零字节 |
-
-这些枚举是协议字段，不应仅依赖两端默认值。TypeScript 与 Java 的枚举名称相似，但属于不同发布包和类型系统。
-
-## 异常与消息
-
-### `GmkitException`
+### 完整公开签名
 
 ```java
-new GmkitException(String message)
-new GmkitException(String message, Throwable cause)
+public static GmSecurityContext defaults()
+public static GmSecurityContext withProvider(Provider provider)
+public static GmSecurityContext withProviderAndRandom(
+    Provider provider,
+    SecureRandom secureRandom)
+public static GmSecurityContext withSecureRandom(SecureRandom secureRandom)
 ```
 
-主包参数、编码和密码操作失败使用该运行时异常；部分通用 JDK 参数检查仍可能抛标准异常。验签数学上不成立通常返回 false。
+<ApiTable label="GmSecurityContexts 工厂" min-width="72rem">
 
-### `Messages`
+| 工厂 | Provider | SecureRandom | 自动注册 |
+|:--|:--|:--|:--:|
+| `defaults` | 类初始化时取得的默认 BC | 同一默认 context 保存的实例 | 是 |
+| `withProvider` | 调用方提供；null 时回落默认 BC | 新 `SecureRandom` | 否 |
+| `withProviderAndRandom` | 调用方提供；null 时回落默认 BC | 调用方提供；null 时新建 | 否 |
+| `withSecureRandom` | 默认 BC | 调用方提供；null 时新建 | 是 |
 
-`Messages` 是公开的双语错误消息构造器，应用通常不需要直接调用：
+</ApiTable>
 
-```text
-bilingual
-nullValue
-emptyValue
-blankValue
-invalidHexEven
-invalidHex
-invalidBase64
-invalidHexOrBase64
-invalidBlankInput
-expectedLength
-multipleOf
-positiveValue
-sm2EncryptionFailed
-sm2DecryptionFailed
-sm2SigningFailed
-sm2InitiatorConfirmationTagRequired
-sm2UserIdTooLong
-invalidSm2Signature
-invalidSm2DerSignature
-invalidSm2RawSignatureLength
-invalidSm2RawSignatureEncoding
+`defaults()` 每次返回同一个 context，而其他三个工厂每次构建新 context。默认 context 内的 `SecureRandom` 也是共享引用；需要隔离的测试或租户配置应显式构建上下文。
+
+## 格式枚举
+
+### `InputFormat` 与 `OutputFormat`
+
+```java
+enum InputFormat  { HEX, BASE64 }
+enum OutputFormat { HEX, BASE64 }
 ```
 
-错误消息文本不属于稳定的机器协议。应用应按异常类型和业务上下文处理，不要解析自然语言字符串。
+两者名称相同但类型不同：输入枚举交给解码方法，输出枚举交给编码方法。null 的含义由具体 API 决定，不能一概视为自动识别。
+
+### SM2 枚举
+
+```java
+enum SM2CipherMode {
+    C1C3C2,
+    C1C2C3;
+    public SM2Engine.Mode toBcMode();
+}
+
+enum SM2SignatureFormat {
+    RAW,
+    DER
+}
+
+enum SM2SignatureInputFormat {
+    RAW,
+    DER,
+    AUTO
+}
+```
+
+<ApiTable label="SM2 格式枚举" min-width="66rem">
+
+| 类型 | 成员 | 用途 |
+|:--|:--|:--|
+| `SM2CipherMode` | `C1C3C2`, `C1C2C3` | 控制原始密文的 C1/C2/C3 排列；`toBcMode` 返回 BC 对应枚举 |
+| `SM2SignatureFormat` | `RAW`, `DER` | 控制签名输出；RAW 固定 64 字节 r||s |
+| `SM2SignatureInputFormat` | `RAW`, `DER`, `AUTO` | 控制验签输入解析；协议明确时不要依赖 AUTO |
+
+</ApiTable>
+
+### SM4 枚举
+
+```java
+enum SM4CipherMode {
+    ECB, CBC, CTR, CFB, OFB, GCM, CCM;
+    public boolean isStreamLike();
+}
+
+enum SM4Padding {
+    PKCS7, NONE, ZERO
+}
+```
+
+`isStreamLike()` 对 CTR、CFB、OFB、GCM、CCM 返回 true，对 ECB、CBC 返回 false。这里的 “stream-like” 表示不需要分组填充，不代表模式带完整性；只有 GCM/CCM 是 AEAD。
+
+`SM4Padding.ZERO` 解密会移除尾部零字节，不能用于需要无损恢复任意二进制的协议。
+
+## `GmkitException`
+
+```java
+public class GmkitException extends RuntimeException {
+    public GmkitException(String message)
+    public GmkitException(String message, Throwable cause)
+}
+```
+
+GMKit 的参数、编码、加解密和签名包装错误优先使用这个非受检异常。验签对“格式有效但数学上不匹配”通常返回 false；格式、key 或 Provider 配置非法仍可能抛异常。
+
+不是所有错误都会被包装：`Arrays.copyOfRange` 的范围异常、Provider 全局注册的 `SecurityException`、内存错误等 JDK 异常可能直接传播。业务不要通过解析 message 判断错误类型。
+
+```java
+try {
+    HexCodec.decodeStrict("not-hex", "payload");
+    throw new IllegalStateException("invalid Hex was accepted");
+} catch (GmkitException ex) {
+    if (ex.getMessage() == null) {
+        throw new IllegalStateException("missing diagnostic message", ex);
+    }
+}
+```
+
+## `Messages`
+
+`Messages` 构造中文在前、英文在后的诊断文本，格式通常为 `中文 / English`。应用一般不直接调用，但它是公共类型，因此所有方法如下。
+
+<ApiTable label="Messages 公共方法" min-width="78rem">
+
+| 签名 | 生成的消息用途 |
+|:--|:--|
+| `bilingual(String zh, String en)` | 直接拼接一条双语消息 |
+| `nullValue(String label)` | 参数为 null |
+| `emptyValue(String label)` | byte[] 等内容为空 |
+| `blankValue(String label)` | trim 后字符串为空 |
+| `invalidHexEven(String label)` | Hex 不是偶数长度 |
+| `invalidHex(String label)` | 含非 Hex 字符 |
+| `invalidBase64(String label)` | Base64 字符、长度、填充或 pad bits 非法 |
+| `invalidHexOrBase64(String label)` | 自动识别失败 |
+| `invalidBlankInput(String label)` | codec 输入 null 或空白 |
+| `expectedLength(String label, int expectedLength, int actualLength)` | 定长字节字段不匹配 |
+| `multipleOf(String label, int blockSize)` | 长度不是 blockSize 整数倍 |
+| `positiveValue(String label)` | 数值不为正 |
+| `sm2EncryptionFailed()` | SM2 加密包装失败 |
+| `sm2DecryptionFailed()` | SM2 解密包装失败 |
+| `sm2SigningFailed()` | SM2 签名包装失败 |
+| `sm2InitiatorConfirmationTagRequired()` | 密钥交换发起方缺少确认标签 |
+| `sm2UserIdTooLong()` | SM2 user ID 超过 16-bit ENTL 可表示范围 |
+| `invalidSm2Signature()` | 签名既不是合法 RAW 也不是合法 DER |
+| `invalidSm2DerSignature()` | DER 不是预期的 SEQUENCE `{r,s}` |
+| `invalidSm2RawSignatureLength(int expectedLength)` | RAW 签名长度错误 |
+| `invalidSm2RawSignatureEncoding()` | RAW→DER 转换失败 |
+
+</ApiTable>
+
+这些字符串用于人读诊断，不是稳定机器协议：标点、措辞和语言可能调整。日志可以保留异常类型与操作上下文，但不要拼入私钥、完整明文或密钥材料。
+
+## 失败处理速查
+
+<ApiTable label="Java core 失败行为" min-width="72rem">
+
+| API 家族 | 主要失败类型 | 容易忽略的边界 |
+|:--|:--|:--|
+| Hex/Base64 | `GmkitException` | Hex normalize 保留大小写；Base64 decode 与格式探测的无填充规则不同 |
+| `ByteEncodings` | `GmkitException` | null InputFormat 表示自动识别；null OutputFormat 表示 Hex |
+| `Texts` / `Checks` | `GmkitException` | 文本解码可能替换非法序列；校验成功返回原引用 |
+| `Bytes` | `GmkitException` 或 JDK 范围异常 | null concat 元素跳过；copyOfRange 可补零 |
+| Provider | `SecurityException` 等 JDK 异常 | 全局注册影响整个 JVM；同名 Provider 返回已有实例 |
+| 安全上下文 | 通常构建不抛错 | null 配置会回落默认；Provider 注册延迟到 `provider()` |
+
+</ApiTable>
+
+## 本页覆盖的公共 API
+
+- 编码：`HexCodec`、`Base64Codec`、`ByteEncodings`、`InputFormat`、`OutputFormat`。
+- 字节与文本：`Bytes`、`Checks`、`Texts`。
+- Provider 与随机源：`BcProviders`、`GmSecurityContext`、`GmSecurityContext.Builder`、`GmSecurityContexts`。
+- 算法格式：`SM2CipherMode`、`SM2SignatureFormat`、`SM2SignatureInputFormat`、`SM4CipherMode`、`SM4Padding`。
+- 异常与消息：`GmkitException`、`Messages`。
 
 ## 可执行案例
 
-下面的显式 Base64 解码、Hex 输出和非法 Hex 断言直接来自 JUnit 文档测试。
+下面的 JUnit 区域覆盖显式 Base64 解码、Hex 输出和非法 Hex 异常。Java 主包测试会编译并执行同一源码。
 
 ::: details 查看测试源码
 ```java
@@ -241,5 +556,7 @@ invalidSm2RawSignatureEncoding
 
 ## 相关页面
 
-- [跨语言公共约定](/api/common.html)
+- [跨语言编码、错误与安全约定](/api/common.html)
 - [Java API 首页](/api/java/)
+- [Java SM2 API](/api/java/sm2.html)
+- [Java SM4 API](/api/java/sm4.html)
