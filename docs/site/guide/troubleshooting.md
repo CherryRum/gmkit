@@ -1,6 +1,6 @@
 ---
 title: 常见问题与故障排查
-description: 按安装、编码、签名、AEAD、随机源、Provider 和 SM9 native 分类排查 GMKit 接入问题。
+description: 按安装、编码、签名、AEAD、随机源、Provider 和 SM9 本地动态库分类排查 GMKit 接入问题。
 icon: life-ring
 order: 7
 category:
@@ -17,12 +17,16 @@ tag:
 
 ## 安装或导入失败
 
+<ApiTable label="安装与导入故障" min-width="64rem">
+
 | 现象 | 检查 |
 |:--|:--|
 | Node.js 无法导入 `gmkitx` | Node.js 是否为 18+；是否从包根入口导入；lockfile 中是否安装了预期版本 |
 | 浏览器报 `TextEncoder`/`TextDecoder` 缺失 | 宿主是否满足 ES2020 与 UTF-8 API；受限平台是否按说明注入 codec |
 | Java 找不到算法或 Provider | 依赖树是否含主包及 Bouncy Castle；是否错误混用不同 BC 产物族 |
 | Javadoc/TypeDoc 与本地签名不同 | 主线构建可能领先正式制品；选择与 npm/Maven 制品相同的版本签名快照 |
+
+</ApiTable>
 
 ## Hex、Base64 或 UTF-8 不一致
 

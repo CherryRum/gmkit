@@ -12,9 +12,11 @@ tag:
 
 # 算法与协议能力
 
-本目录按算法组织文档。同一页面同时说明 Java 与 TypeScript 的实现范围、API 入口、参数默认值、编码约定、错误边界和验证依据。两端共享部分协议向量，但不共享源码、签名或异常类型。
+本目录只处理算法选择、协议字段、双语言差异和验证证据。函数签名、重载、默认值、异常和可执行案例集中在各语言 API 说明书，避免同一调用方法在多处重复维护。
 
 ## 当前支持矩阵
+
+<ApiTable label="GMKit 算法支持矩阵" min-width="68rem">
 
 | 能力 | Java `gmkit` | TypeScript `gmkitx` | 说明 |
 |:--|:--:|:--:|:--|
@@ -22,17 +24,19 @@ tag:
 | [SM3](/algorithms/SM3) | 支持 | 支持 | 摘要与 HMAC；TS 另有增量状态机 |
 | [SM4](/algorithms/SM4) | 支持 | 支持 | ECB、CBC、CTR、CFB、OFB、GCM、CCM |
 | [ZUC](/algorithms/ZUC) | 支持 | 支持 | ZUC-128、128-EEA3、128-EIA3 |
-| [SM9](/algorithms/SM9.html) | `gmkit-sm9` | 不提供 | Java API 通过 JNI 调用 JAR 内 GmSSL runtime |
+| [SM9](/algorithms/SM9.html) | `gmkit-sm9` | 不提供 | Java API 通过 JNI 调用 JAR 内 GmSSL 本地动态库 |
 | [SHA](/algorithms/SHA) | 使用 JDK | 支持 | `gmkitx` 提供 SHA-1/256/384/512 与 HMAC；Java 主包不封装 SHA |
+
+</ApiTable>
 
 “支持”只表示当前发布包存在对应 API，并由列出的测试覆盖；不等同于密码产品认证或对所有第三方实现的互操作承诺。
 
 ## 阅读顺序
 
-1. 先看算法页的支持矩阵和默认值，不要从相似函数名推断两端行为相同。
-2. 协议中显式保存 mode、padding、编码、`userId`、IV/nonce、tag 等字段。
-3. 用页面中的固定向量验证确定性操作，再验证随机签名、随机密文能被对端验签或解密。
-4. 查具体用法时进入 [TypeScript 说明书](/api/typescript/) 或 [Java 说明书](/api/java/)；核对已发布制品的逐成员签名时再进入 [版本签名索引](/api/#已发布版本签名索引)。
+1. 先按业务目标选择算法，再核对该算法页列出的协议字段和双语言差异。
+2. 把 mode、padding、编码、`userId`、IV/nonce、tag 和版本写入协议，而不是留给接收方猜测。
+3. 进入 [TypeScript 说明书](/api/typescript/) 或 [Java 说明书](/api/java/) 选择具体入口并运行成功、失败案例。
+4. 用固定向量验证确定性操作，再双向验证随机签名或密文；历史制品签名从 [版本签名索引](/api/#已发布版本签名索引) 核对。
 
 ## 共同约定
 

@@ -16,6 +16,8 @@ tag:
 
 ## 按目标选择
 
+<ApiTable label="第三方集成示例" min-width="70rem">
+
 | 目标 | 示例 | 当前验证重点 |
 |:--|:--|:--|
 | Java 项目已有 Hutool/Bouncy Castle | [Java 与 Hutool/Bouncy Castle](/integrations/java-hutool.html) | SM2 密文排列、签名格式、Provider 与迁移边界 |
@@ -24,6 +26,8 @@ tag:
 | Rust 服务对接 | [Rust](/integrations/rust.html) | `sm3`/`sm4` crate 版本与确定性结果 |
 | Node.js 使用国际算法 | [Web Crypto](/integrations/web-crypto.html) | Web Crypto 原生能力与 gmkitx 的职责边界 |
 | Java 与 TypeScript 互相验证 | [共享测试向量](/standards/interop-vectors.html) | 同一字段集合在两端得到相同确定性结果 |
+
+</ApiTable>
 
 ## 对接前先固定协议
 

@@ -43,12 +43,16 @@ setCustomRNG((length) => platformSecureRandom(length));
 
 ## IV 与 nonce
 
+<ApiTable label="IV 与 nonce 要求" min-width="58rem">
+
 | 模式 | 要求 |
 |:--|:--|
 | SM4-GCM | 同一 key 下 nonce 必须唯一；推荐 12 字节 |
 | SM4-CCM | 同一 key 下 nonce 必须唯一；长度 7-13 字节 |
 | SM4-CTR/CFB/OFB/CBC | 同一 key 下不得按会泄露模式的方式重复 IV；具体生成方式应写入协议 |
 | ZUC | 同一 key/IV 会产生相同密钥流，严禁复用 |
+
+</ApiTable>
 
 随机 nonce 需要评估碰撞概率；高吞吐系统更适合使用持久化计数器、分区前缀或经过证明的 nonce 分配方案。
 
@@ -61,7 +65,7 @@ setCustomRNG((length) => platformSecureRandom(length));
 
 ## JavaScript 运行环境
 
-JavaScript JIT、共享运行时和垃圾回收使严格常量时间和内存清除难以保证。对于侧信道威胁高、合规要求强或长期持有主密钥的系统，应评估经审计的 native 模块、受控 Java 服务或硬件密码模块。
+JavaScript JIT、共享运行时和垃圾回收使严格常量时间和内存清除难以保证。对于侧信道威胁高、合规要求强或长期持有主密钥的系统，应评估经审计的本地动态库（native）模块、受控 Java 服务或硬件密码模块。
 
 ## 漏洞报告
 

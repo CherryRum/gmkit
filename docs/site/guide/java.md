@@ -154,7 +154,7 @@ SM2 sm2 = new SM2(context);
 </dependency>
 ```
 
-应用启动时先检查 `SM9.isAvailable()`。SM9 主密钥、用户私钥和签名上下文持有 native 资源，必须使用 try-with-resources；不使用 SM9 时不要添加该模块。
+应用启动时先检查 `SM9.isAvailable()`。SM9 主密钥、用户私钥和签名上下文持有本地动态库（native）资源，必须使用 try-with-resources；不使用 SM9 时不要添加该模块。
 
 ## 接下来
 
