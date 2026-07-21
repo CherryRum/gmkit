@@ -213,11 +213,12 @@ import {
   sm4Encrypt,
 } from 'gmkitx';
 
+// 1. 准备参数：固定测试 key、订单明文和业务 AAD。
 const key = '0123456789abcdeffedcba9876543210';
 const message = 'order=GMKIT-DEMO-0001&amount=88.00';
 const aad = 'tenant=demo;schema=1';
 
-// 每次加密都生成新的 12 字节 nonce，并随密文保存。
+// 2. 生成 nonce：每次加密使用新的 12 字节值，并随密文保存。
 const nonce = getRandomBytes(12);
 const options = {
   mode: CipherMode.GCM,
@@ -227,20 +228,30 @@ const options = {
   outputFormat: OutputFormat.BASE64,
 } as const;
 
+// 3. SM4-GCM 加密：得到 Base64 编码的 ciphertext 和 tag。
 const encrypted = sm4Encrypt(key, message, options);
+
+// 4. 加密结果断言：tag 必须存在，输出格式必须与约定一致。
 if (!encrypted.tag || encrypted.format !== OutputFormat.BASE64) {
   throw new Error('SM4-GCM result is incomplete');
 }
-if (sm4Decrypt(key, encrypted, options) !== message) {
+
+// 5. SM4-GCM 解密：使用相同 key、nonce 和 AAD 恢复明文。
+const decrypted = sm4Decrypt(key, encrypted, options);
+
+// 6. 成功断言：解密结果必须等于订单原文。
+if (decrypted !== message) {
   throw new Error('SM4-GCM round-trip failed');
 }
 
-// 改动 tag 后必须抛错，不能返回未经认证的明文。
+// 7. 构造篡改结果：只修改 tag，其他字段保持不变。
 const tampered = {
   ...encrypted,
   tag: `${encrypted.tag[0] === 'A' ? 'B' : 'A'}${encrypted.tag.slice(1)}`,
 };
 let rejected = false;
+
+// 8. 失败断言：篡改 tag 后必须抛错，不能返回未经认证的明文。
 try {
   sm4Decrypt(key, tampered, options);
 } catch {
@@ -256,6 +267,7 @@ nonce 不需要保密，但必须与密文一起原样保存。相同 key 下重
 ```ts
 import { InputFormat, sm4Decrypt } from 'gmkitx';
 
+// 1. SM4-GCM 解密：密文和 tag 分开传输时分别声明输入格式。
 const plaintext = sm4Decrypt(key, encrypted.ciphertext, {
   mode: CipherMode.GCM,
   iv: nonce,
@@ -264,6 +276,8 @@ const plaintext = sm4Decrypt(key, encrypted.ciphertext, {
   tag: encrypted.tag,
   tagFormat: InputFormat.BASE64,
 });
+
+// 2. 成功断言：分离字段后仍应恢复相同明文。
 if (plaintext !== message) throw new Error('separated GCM fields failed');
 ```
 
@@ -274,6 +288,7 @@ if (plaintext !== message) throw new Error('separated GCM fields failed');
 ```ts
 import { CipherMode, getRandomBytes, sm4Decrypt, sm4Encrypt } from 'gmkitx';
 
+// 1. 准备参数：CCM 使用 12 字节 nonce、12 字节 tag 和固定 AAD。
 const key = '0123456789abcdeffedcba9876543210';
 const nonce = getRandomBytes(12);
 const message = 'order=GMKIT-DEMO-0001&amount=88.00';
@@ -285,11 +300,19 @@ const options = {
   tagLength: 12,
 } as const;
 
+// 2. SM4-CCM 加密：输出密文和认证 tag。
 const encrypted = sm4Encrypt(key, message, options);
+
+// 3. tag 长度断言：12 字节 tag 的 Hex 长度必须为 24。
 if (!encrypted.tag || encrypted.tag.length !== 24) {
   throw new Error('SM4-CCM tag length mismatch');
 }
-if (sm4Decrypt(key, encrypted, options) !== message) {
+
+// 4. SM4-CCM 解密：使用相同 nonce、AAD 和 tag 长度恢复明文。
+const decrypted = sm4Decrypt(key, encrypted, options);
+
+// 5. 成功断言：解密结果必须等于订单原文。
+if (decrypted !== message) {
   throw new Error('SM4-CCM round-trip failed');
 }
 ```
@@ -311,20 +334,28 @@ import {
   sm4Encrypt,
 } from 'gmkitx';
 
+// 1. 准备固定向量：key 和单分组明文都来自 SM4 标准样例。
 const key = '0123456789abcdeffedcba9876543210';
 const plaintext = hexToBytes('0123456789abcdeffedcba9876543210');
+
+// 2. SM4 单分组加密：ECB + NONE 只用于核对分组原语。
 const encrypted = sm4Encrypt(key, plaintext, {
   mode: CipherMode.ECB,
   padding: PaddingMode.NONE,
 });
 
+// 3. 加密向量断言：密文必须与标准结果一致。
 if (encrypted.ciphertext !== '681edf34d206965e86b3e94f536e4246') {
   throw new Error('SM4 standard block vector mismatch');
 }
+
+// 4. SM4 单分组解密：使用同一 key 恢复原始分组。
 const decrypted = sm4DecryptBytes(key, encrypted, {
   mode: CipherMode.ECB,
   padding: PaddingMode.NONE,
 });
+
+// 5. 解密向量断言：恢复的每个字节都必须与明文一致。
 if (decrypted.some((value, index) => value !== plaintext[index])) {
   throw new Error('SM4 block vector decryption failed');
 }
@@ -335,6 +366,7 @@ if (decrypted.some((value, index) => value !== plaintext[index])) {
 ```ts
 import { CipherMode, PaddingMode, getRandomBytes, sm4Decrypt, sm4Encrypt } from 'gmkitx';
 
+// 1. 准备参数：CBC 使用 16 字节随机 IV 和 PKCS7 padding。
 const key = '0123456789abcdeffedcba9876543210';
 const iv = getRandomBytes(16);
 const options = {
@@ -343,8 +375,15 @@ const options = {
   iv,
 } as const;
 const message = 'order=GMKIT-DEMO-0001&amount=88.00';
+
+// 2. SM4-CBC 加密：输出只包含密文，不包含认证 tag。
 const encrypted = sm4Encrypt(key, message, options);
-if (sm4Decrypt(key, encrypted, options) !== message) {
+
+// 3. SM4-CBC 解密：使用相同 key 和 IV 恢复文本。
+const decrypted = sm4Decrypt(key, encrypted, options);
+
+// 4. 往返断言：解密结果必须等于原文。
+if (decrypted !== message) {
   throw new Error('SM4-CBC round-trip failed');
 }
 ```
@@ -358,12 +397,18 @@ CTR 的 16 字节 `iv` 是初始大端计数器；CFB 使用完整 128 bit 反�
 ```ts
 import { CipherMode, sm4DecryptBytes, sm4Encrypt } from 'gmkitx';
 
+// 1. 准备二进制输入：包含 NUL、非 ASCII 字节和普通字符。
 const key = '0123456789abcdeffedcba9876543210';
 const iv = '000102030405060708090a0b0c0d0e0f';
 const binary = Uint8Array.of(0x00, 0xff, 0x80, 0x41);
+
+// 2. SM4-CTR 加密：二进制输入不经过 UTF-8 转换。
 const encrypted = sm4Encrypt(key, binary, { mode: CipherMode.CTR, iv });
+
+// 3. SM4-CTR 解密：使用字节返回接口恢复原始数据。
 const decrypted = sm4DecryptBytes(key, encrypted, { mode: CipherMode.CTR, iv });
 
+// 4. 二进制断言：长度和每个字节都必须一致。
 if (decrypted.length !== binary.length
   || decrypted.some((value, index) => value !== binary[index])) {
   throw new Error('SM4 binary round-trip failed');
@@ -429,14 +474,22 @@ CTR、CFB、OFB、GCM、CCM 工厂把 padding 保存为 `NONE`；运行时这些
 ```ts
 import { SM4, getRandomBytes } from 'gmkitx';
 
+// 1. 创建实例：为本次 GCM 加密生成新的 12 字节 nonce。
 const cipher = SM4.GCM(
   '0123456789abcdeffedcba9876543210',
   getRandomBytes(12),
 );
 const message = 'order=GMKIT-DEMO-0001&amount=88.00';
 const aad = 'tenant=demo;schema=1';
+
+// 2. SM4-GCM 加密：实例保存 key、mode 和 nonce，本次调用传入 AAD。
 const encrypted = cipher.encrypt(message, { aad });
-if (cipher.decrypt(encrypted, { aad }) !== message) {
+
+// 3. SM4-GCM 解密：使用同一实例和相同 AAD 恢复明文。
+const decrypted = cipher.decrypt(encrypted, { aad });
+
+// 4. 成功断言：解密结果必须等于订单原文。
+if (decrypted !== message) {
   throw new Error('SM4 class round-trip failed');
 }
 ```

@@ -50,8 +50,11 @@ npm install gmkitx@0.10.1
 ```ts
 import { sm3Digest } from 'gmkitx';
 
+// 1. 计算摘要：使用标准输入 abc 计算 SM3。
 const expected = '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0';
 const actual = sm3Digest('abc');
+
+// 2. 固定向量断言：摘要必须与标准结果完全一致。
 if (actual !== expected) {
   throw new Error(`SM3 vector mismatch: ${actual}`);
 }
@@ -89,8 +92,13 @@ import type { KeyPair, SM4Options } from 'gmkitx';
 ```ts
 import { sm2, sm3 } from 'gmkitx';
 
+// 1. 生成密钥：通过 SM2 命名空间取得算法入口。
 const keys = sm2.generateKeyPair();
+
+// 2. 计算摘要：通过 SM3 命名空间计算 abc 的摘要。
 const digest = sm3.digest('abc');
+
+// 3. 长度断言：SM3 的 Hex 输出固定为 64 个字符。
 if (digest.length !== 64) throw new Error('SM3 output length mismatch');
 ```
 
@@ -121,6 +129,7 @@ import { SM2, SM3, SM4, SHA256, ZUC } from 'gmkitx';
 ```ts
 import * as gmkit from 'gmkitx';
 
+// 1. 计算摘要：包命名空间中仍使用带算法前缀的公开名称。
 const digest = gmkit.sm3Digest('abc');
 ```
 
@@ -131,6 +140,7 @@ const digest = gmkit.sm3Digest('abc');
 ```ts
 import GMKit from 'gmkitx';
 
+// 1. 计算摘要：默认导出只用于整体对象兼容场景。
 const digest = GMKit.sm3Digest('abc');
 ```
 
@@ -168,11 +178,16 @@ import {
   hasCustomRNG,
 } from 'gmkitx';
 
+// 1. 启用严格随机策略：没有安全随机源时禁止继续运行。
 configureRNG('strict');
+
+// 2. 检查密码能力：至少存在一个可用的安全随机源。
 const env = getEnvReport();
 if (!env.hasWebCrypto && !env.hasNodeCrypto && !hasCustomRNG()) {
   throw new Error('no platform CSPRNG is configured');
 }
+
+// 3. 检查文本能力：缺失原生编码器时明确记录 fallback。
 if (!env.hasTextEncoder || !env.hasTextDecoder) {
   console.warn('当前宿主将使用内部 UTF-8 fallback，或需要注入 TextCodec');
 }
@@ -244,14 +259,18 @@ import {
   sm2Verify,
 } from 'gmkitx';
 
+// 1. 准备输入：正常订单与金额被修改的订单分开保存。
 const keys = sm2GenerateKeyPair();
 const message = 'order=GMKIT-DEMO-0001&amount=88.00';
 const receivedMessage = 'order=GMKIT-DEMO-0001&amount=99.00';
+
+// 2. SM2 签名：签名端固定 userId 和 DER 编码。
 const signature = sm2Sign(keys.privateKey, message, {
   userId: 'merchant@gmkit.cn',
   signatureFormat: 'der',
 });
 
+// 3. SM2 验签：合法但不匹配的消息返回 false，非法输入才抛错。
 let verified: boolean;
 try {
   verified = sm2Verify(keys.publicKey, receivedMessage, signature, {
@@ -262,6 +281,8 @@ try {
   // 非法 Hex、DER、密钥或参数进入这里；不要记录敏感输入原文。
   throw new Error('invalid SM2 verification input', { cause: error });
 }
+
+// 4. 篡改断言：金额变化后不得验证成功。
 if (verified) throw new Error('tampered order must not verify');
 ```
 

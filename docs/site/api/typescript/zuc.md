@@ -143,16 +143,22 @@ import {
   zucEncrypt,
 } from 'gmkitx';
 
+// 1. 准备参数：ZUC-128 使用 16 字节 key、16 字节 IV 和原始二进制明文。
 const key = '000102030405060708090a0b0c0d0e0f';
 const iv = getRandomBytes(16);
 const plaintext = Uint8Array.of(0x00, 0xff, 0x80, 0x41);
 
+// 2. ZUC 加密：密文输出显式固定为 Base64。
 const ciphertext = zucEncrypt(key, iv, plaintext, {
   outputFormat: OutputFormat.BASE64,
 });
+
+// 3. ZUC 解密：按 Base64 解码密文并返回原始字节。
 const decrypted = zucDecryptBytes(key, iv, ciphertext, {
   inputFormat: InputFormat.BASE64,
 });
+
+// 4. 往返断言：解密结果的长度和每个字节都必须与明文一致。
 if (decrypted.length !== plaintext.length
   || decrypted.some((value, index) => value !== plaintext[index])) {
   throw new Error('ZUC binary round-trip failed');
@@ -208,17 +214,24 @@ import {
   zucKeystreamWords,
 } from 'gmkitx';
 
+// 1. 准备固定向量：ZUC-128 的 key 和 IV 都为 16 字节全零。
 const key = '00'.repeat(16);
 const iv = '00'.repeat(16);
 
-// ZUC-128 全零 key/IV 的前两个标准密钥流字。
+// 2. 生成字节密钥流：8 byte 输出必须匹配前两个标准 word。
 if (zucKeystream(key, iv, 8) !== '27bede74018082da') {
   throw new Error('byte-length keystream vector mismatch');
 }
+
+// 3. 生成 word 密钥流：2 个 32-bit word 必须得到相同 8 字节结果。
 if (zucKeystreamWords(key, iv, 2) !== '27bede74018082da') {
   throw new Error('word-length keystream vector mismatch');
 }
+
+// 4. 生成原始 word 数组：底层 API 返回两个 Uint32 元素。
 const words = zucGenerateKeystream(key, iv, 2);
+
+// 5. 固定向量断言：数组长度和每个 word 都必须匹配标准结果。
 if (words.length !== 2
   || words[0] !== 0x27bede74
   || words[1] !== 0x018082da) {
@@ -279,6 +292,7 @@ eea3Encrypt(
 ```ts
 import { eea3Encrypt, hexToBytes } from 'gmkitx';
 
+// 1. 准备 EEA3 参数：只处理明文最高 5 bit。
 const key = '00'.repeat(16);
 const count = 0;
 const bearer = 0;
@@ -286,6 +300,7 @@ const direction = 0;
 const bitLength = 5;
 const plaintext = Uint8Array.of(0b1111_1000);
 
+// 2. EEA3 加密：消息与协议密钥流异或，返回 Hex 密文。
 const ciphertextHex = eea3Encrypt(
   key,
   count,
@@ -294,12 +309,14 @@ const ciphertextHex = eea3Encrypt(
   plaintext,
   bitLength,
 );
+
+// 3. bit 长度断言：未使用的低 3 bit 必须被清零。
 if (ciphertextHex.length !== 2
   || (Number.parseInt(ciphertextHex, 16) & 0b0000_0111) !== 0) {
   throw new Error('unused EEA3 bits must be zero');
 }
 
-// EEA3 是异或加密；解密时必须先把 Hex 密文还原为原始字节。
+// 4. EEA3 解密：先把 Hex 密文还原为字节，再执行同一异或运算。
 const recoveredHex = eea3Encrypt(
   key,
   count,
@@ -308,6 +325,8 @@ const recoveredHex = eea3Encrypt(
   hexToBytes(ciphertextHex),
   bitLength,
 );
+
+// 5. 解密断言：恢复结果的有效 5 bit 必须与原始明文一致。
 if (recoveredHex !== 'f8') throw new Error('EEA3 decryption failed');
 ```
 
@@ -333,7 +352,7 @@ EIA3 返回固定 32 bit MAC-I，即 8 个小写 Hex 字符。`bitLength` 省略
 ```ts
 import { constantTimeEqual, eia3, hexToBytes } from 'gmkitx';
 
-// 3GPP EIA3 1-bit 固定向量。
+// 1. 计算 EIA3 完整性标签：使用 3GPP 1-bit 固定向量。
 const mac = eia3(
   '00'.repeat(16),
   0,
@@ -342,10 +361,14 @@ const mac = eia3(
   Uint8Array.of(0),
   1,
 );
+
+// 2. 固定向量断言：MAC-I 必须等于标准的 32-bit 结果。
 if (mac !== 'c8a9595e') throw new Error('EIA3 vector mismatch');
 
-// 接收外部 MAC-I 时先校验为 4 字节，再做不提前结束的字节比较。
+// 3. 准备接收值：先把外部 MAC-I 从 Hex 解码为 4 字节。
 const received = hexToBytes('c8a9595e');
+
+// 4. 完整性校验：确认长度后进行常量时间字节比较。
 if (received.length !== 4 || !constantTimeEqual(hexToBytes(mac), received)) {
   throw new Error('EIA3 verification failed');
 }
@@ -389,17 +412,25 @@ ZUC.eia3(key, count, bearer, direction, message, bitLength?): string
 ```ts
 import { ZUC, getRandomBytes } from 'gmkitx';
 
+// 1. 创建实例：ZUC-128 使用固定 key 和本次消息的新 IV。
 const cipher = ZUC.ZUC128(
   '000102030405060708090a0b0c0d0e0f',
   getRandomBytes(16),
 );
 const message = 'order=GMKIT-DEMO-0001&amount=88.00';
+
+// 2. ZUC 加密：实例从保存的 key/IV 起点生成密钥流。
 const encrypted = cipher.encrypt(message);
-if (cipher.decrypt(encrypted) !== message) {
+
+// 3. ZUC 解密：同一 key/IV 再次生成密钥流并恢复明文。
+const decrypted = cipher.decrypt(encrypted);
+
+// 4. 往返断言：解密结果必须等于订单原文。
+if (decrypted !== message) {
   throw new Error('ZUC class round-trip failed');
 }
 
-// 下一条消息必须更换 IV；类不会自动更新它。
+// 5. 更新 IV：下一条消息必须更换 IV，类不会自动更新。
 cipher.setIV(getRandomBytes(16));
 ```
 
@@ -422,17 +453,24 @@ generateKeyword(): number
 ```ts
 import { ZUCState } from 'gmkitx';
 
+// 1. 初始化底层状态：key 和 IV 都为 16 字节全零。
 const state = new ZUCState();
 state.initialize(new Uint8Array(16), new Uint8Array(16));
+
+// 2. 生成第一个 word 并比对固定向量。
 if (state.generateKeyword() !== 0x27bede74) {
   throw new Error('ZUCState first word mismatch');
 }
+
+// 3. 生成第二个 word 并比对固定向量。
 if (state.generateKeyword() !== 0x018082da) {
   throw new Error('ZUCState second word mismatch');
 }
 
-// 重新 initialize 后回到同一密钥流起点。
+// 4. 重新初始化：相同 key/IV 必须回到同一密钥流起点。
 state.initialize(new Uint8Array(16), new Uint8Array(16));
+
+// 5. 重置断言：重新生成的第一个 word 必须与原结果一致。
 if (state.generateKeyword() !== 0x27bede74) {
   throw new Error('ZUCState reinitialize failed');
 }

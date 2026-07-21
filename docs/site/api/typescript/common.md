@@ -196,14 +196,20 @@ bytesToHex(bytes: Uint8Array): string
 ```ts
 import { bytesToHex, hexToBytes } from 'gmkitx';
 
+// 1. Hex 解码：将协议字符串还原为原始二进制。
 const binary = hexToBytes('00ff8041');
+
+// 2. Hex 往返断言：重新编码后必须得到相同的小写字符串。
 if (bytesToHex(binary) !== '00ff8041') {
   throw new Error('Hex round-trip failed');
 }
+
+// 3. 奇数长度断言：兼容逻辑会在左侧补 0。
 if (bytesToHex(hexToBytes('abc')) !== '0abc') {
   throw new Error('odd-length Hex compatibility changed');
 }
 
+// 4. 非法输入断言：出现非 Hex 字符时必须抛错。
 let rejected = false;
 try {
   hexToBytes('0xz1');
@@ -238,15 +244,20 @@ base64ToBytes(base64: string): Uint8Array
 ```ts
 import { base64ToBytes, bytesToBase64, bytesToHex, hexToBytes } from 'gmkitx';
 
+// 1. 准备二进制输入：包含 NUL、非 ASCII 字节和普通字符。
 const binary = hexToBytes('00ff8041');
+
+// 2. Base64 编码断言：结果必须使用标准字符表和规范 padding。
 if (bytesToBase64(binary) !== 'AP+AQQ==') {
   throw new Error('Base64 encoding mismatch');
 }
+
+// 3. Base64 解码断言：允许省略尾部 padding，但字节必须不变。
 if (bytesToHex(base64ToBytes('AP+AQQ')) !== '00ff8041') {
   throw new Error('unpadded Base64 decoding mismatch');
 }
 
-// QR== 的 pad bits 非零，不是同一字节的规范表示。
+// 4. 非规范输入断言：pad bits 非零的 QR== 必须被拒绝。
 let rejected = false;
 try {
   base64ToBytes('QR==');
@@ -273,14 +284,20 @@ normalizeInput(data: string | Uint8Array): Uint8Array
 ```ts
 import { bytesToHex, bytesToString, normalizeInput, stringToBytes } from 'gmkitx';
 
+// 1. UTF-8 编码：将中文和 emoji 转换为原始字节。
 const utf8 = stringToBytes('国密🔐');
+
+// 2. 编码结果断言：字节序列必须与标准 UTF-8 一致。
 if (bytesToHex(utf8) !== 'e59bbde5af86f09f9490') {
   throw new Error('UTF-8 encoding mismatch');
 }
+
+// 3. UTF-8 解码断言：原始字节必须恢复同一字符串。
 if (bytesToString(utf8) !== '国密🔐') {
   throw new Error('UTF-8 decoding mismatch');
 }
 
+// 4. 字节输入断言：normalizeInput 不复制 Uint8Array。
 const original = Uint8Array.of(0x00, 0xff);
 if (normalizeInput(original) !== original) {
   throw new Error('byte input should be returned by reference');
@@ -350,7 +367,10 @@ isBase64String(str: string): boolean
 ```ts
 import { InputFormat, OutputFormat, decodeInput, encodeOutput } from 'gmkitx';
 
+// 1. Base64 解码：显式声明输入格式并取得原始字节。
 const bytes = decodeInput('AP+AQQ==', InputFormat.BASE64);
+
+// 2. Hex 编码断言：转换后的协议字符串必须等于预期值。
 if (encodeOutput(bytes, OutputFormat.HEX) !== '00ff8041') {
   throw new Error('explicit encoding conversion failed');
 }
@@ -361,7 +381,7 @@ if (encodeOutput(bytes, OutputFormat.HEX) !== '00ff8041') {
 ```ts
 import { autoDecodeString, bytesToHex } from 'gmkitx';
 
-// 'ABC' 同时可能是业务文本或无填充 Base64，但因为全是 Hex 字符，会按 0a bc 解码。
+// 1. 自动解码：ABC 同时像 Hex 和 Base64，当前规则优先按 Hex 处理。
 if (bytesToHex(autoDecodeString('ABC')) !== '0abc') {
   throw new Error('auto-decode precedence changed');
 }
@@ -404,13 +424,19 @@ import {
   xor,
 } from 'gmkitx';
 
+// 1. 字节异或：两个等长数组逐字节异或并返回新数组。
 const left = Uint8Array.of(0x00, 0xff);
 const right = Uint8Array.of(0xff, 0x0f);
+
+// 2. 异或结果断言：结果必须等于 ff f0。
 if (!constantTimeEqual(xor(left, right), Uint8Array.of(0xff, 0xf0))) {
   throw new Error('xor mismatch');
 }
 
+// 3. 大端编码：将 32-bit 数值写成 4 字节数组。
 const encoded = uint32ToBytes4BE(0x89abcdef);
+
+// 4. 大端往返断言：重新读取后必须得到原数值。
 if (bytes4ToUint32BE(encoded) !== 0x89abcdef) {
   throw new Error('uint32 big-endian round-trip failed');
 }
@@ -458,11 +484,18 @@ getRandomBytes(length: number = 32): Uint8Array
 ```ts
 import { configureRNG, getRandomBytes, hasCustomRNG } from 'gmkitx';
 
+// 1. 启用严格随机策略：系统 CSPRNG 不可用时直接失败。
 configureRNG('strict');
+
+// 2. 注入状态断言：生产启动时不应遗留测试随机源。
 if (hasCustomRNG()) {
   throw new Error('unexpected custom RNG in production');
 }
+
+// 3. 生成 nonce：请求 12 字节安全随机数。
 const nonce = getRandomBytes(12);
+
+// 4. 长度断言：随机源必须返回精确请求长度。
 if (nonce.length !== 12) throw new Error('RNG length mismatch');
 ```
 
@@ -471,13 +504,16 @@ if (nonce.length !== 12) throw new Error('RNG length mismatch');
 ```ts
 import { clearCustomRNG, getRandomBytes, setCustomRNG } from 'gmkitx';
 
-// 确定性函数只用于测试；生产实现必须改为宿主平台的 CSPRNG。
+// 1. 注入测试随机源：固定输出只用于可重复测试。
 setCustomRNG((length) => new Uint8Array(length).fill(0x42));
 try {
+  // 2. 生成测试 key：确认自定义函数收到并返回精确长度。
   const key = getRandomBytes(16);
+
+  // 3. 长度断言：测试 key 必须为 16 字节。
   if (key.length !== 16) throw new Error('custom RNG length mismatch');
 } finally {
-  // 临时测试注入必须清除，避免污染其他用例。
+  // 4. 清理测试状态：无论断言是否成功都必须移除注入函数。
   clearCustomRNG();
 }
 ```
@@ -515,7 +551,10 @@ getEnvReport(): EnvReport
 ```ts
 import { getEnvReport } from 'gmkitx';
 
+// 1. 读取环境快照：不修改随机源或文本编码配置。
 const env = getEnvReport();
+
+// 2. 能力检查：缺少系统 CSPRNG 时提示宿主注入安全实现。
 if (!env.hasWebCrypto && !env.hasNodeCrypto) {
   console.warn('当前宿主需要注入并验证平台 CSPRNG');
 }
@@ -563,17 +602,27 @@ import {
   rawToDer,
 } from 'gmkitx';
 
+// 1. 准备 raw 签名：r 和 s 各占固定 32 字节。
 const raw = `${'01'.padStart(64, '0')}${'02'.padStart(64, '0')}`;
+
+// 2. raw 转 DER：把固定宽度 r || s 编码为 ASN.1 SEQUENCE。
 const der = rawToDer(raw);
+
+// 3. 往返断言：DER 转回 raw 后不得改变 r 和 s。
 if (derToRaw(der) !== raw) throw new Error('raw/DER conversion failed');
+
+// 4. DER 结构断言：首字节必须是 SEQUENCE 标签 30。
 if (!bytesToHex(der).startsWith('30')) throw new Error('DER must start with SEQUENCE');
 
+// 5. DER 解码：分别读取最小宽度的 r 和 s。
 const parts = decodeSignature(der);
+
+// 6. 整数结果断言：示例整数必须分别为 01 和 02。
 if (parts.r !== '01' || parts.s !== '02') {
   throw new Error('DER INTEGER decoding mismatch');
 }
 
-// 根 SEQUENCE 后出现尾随字节必须失败。
+// 7. 非法 DER 断言：根 SEQUENCE 后出现尾随字节必须失败。
 let rejected = false;
 try {
   derToRaw(Uint8Array.from([...der, 0x00]));
@@ -611,11 +660,16 @@ signatureToXml(
 ```ts
 import { signatureToXml } from 'gmkitx';
 
+// 1. 准备 raw 签名：r 和 s 使用固定测试整数。
 const raw = `${'01'.padStart(64, '0')}${'02'.padStart(64, '0')}`;
+
+// 2. 生成诊断 XML：显式声明 raw 签名和 Hex 输入。
 const xml = signatureToXml(raw, {
   signatureFormat: 'raw',
   inputFormat: 'hex',
 });
+
+// 3. XML 内容断言：根节点、r 和 s 都必须存在。
 if (!xml.includes('<SM2Signature>')
   || !xml.includes('<r>01</r>')
   || !xml.includes('<s>02</s>')) {

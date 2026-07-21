@@ -94,19 +94,25 @@ sm3Digest(
 ```ts
 import { OutputFormat, sm3Digest } from 'gmkitx';
 
-// 使用公开固定向量确认依赖、UTF-8 和输出编码均正确。
+// 1. 计算摘要：使用标准输入 abc 计算 Hex 格式 SM3。
 const expected = '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0';
 const actual = sm3Digest('abc');
+
+// 2. 固定向量断言：摘要必须与标准结果一致。
 if (actual !== expected) throw new Error('SM3 vector mismatch');
 
-// outputFormat 只改变结果编码，不改变摘要字节。
+// 3. Base64 编码：只改变摘要文本表示，不改变摘要字节。
 const base64 = sm3Digest('abc', { outputFormat: OutputFormat.BASE64 });
+
+// 4. Base64 结果断言：编码结果必须与同一摘要字节一致。
 if (base64 !== 'Zsfw9GLu7dnR8tRr3BDk4kFnxIdc8veiKX2gK49LqOA=') {
   throw new Error('SM3 Base64 output mismatch');
 }
 
-// 字符串按 UTF-8 计算，字节输入原样计算。
+// 5. 字节输入摘要：将 abc 显式编码为 UTF-8 后重新计算。
 const utf8 = new TextEncoder().encode('abc');
+
+// 6. 输入等价断言：UTF-8 字节与字符串输入必须得到相同摘要。
 if (sm3Digest(utf8) !== actual) throw new Error('SM3 UTF-8 mismatch');
 ```
 
@@ -141,20 +147,24 @@ import {
   sm3Hmac,
 } from 'gmkitx';
 
+// 1. 准备认证输入：正常订单与篡改金额使用同一 HMAC key。
 const key = 'merchant-demo-key';
 const message = 'order=GMKIT-DEMO-0001&amount=88.00';
 const tampered = 'order=GMKIT-DEMO-0001&amount=99.00';
 
+// 2. 计算 HMAC-SM3：发送端和接收端分别计算认证值。
 const expectedMac = sm3Hmac(key, message);
 const receivedMac = sm3Hmac(key, message);
 
-// 比较解码后的字节，避免直接用字符串提前结束比较。
+// 3. 成功断言：比较解码后的字节，避免字符串比较提前结束。
 if (!constantTimeEqual(hexToBytes(expectedMac), hexToBytes(receivedMac))) {
   throw new Error('HMAC-SM3 verification failed');
 }
 
-// 修改消息后必须产生不同 MAC。
+// 4. 计算篡改消息 HMAC：金额变化后重新计算认证值。
 const tamperedMac = sm3Hmac(key, tampered);
+
+// 5. 失败断言：篡改消息的认证值不得通过比较。
 if (constantTimeEqual(hexToBytes(expectedMac), hexToBytes(tamperedMac))) {
   throw new Error('tampered message must produce a different MAC');
 }
@@ -206,26 +216,33 @@ getOutputFormat(): 'hex' | 'base64'
 ```ts
 import { OutputFormat, SM3, sm3Digest } from 'gmkitx';
 
+// 1. 创建增量实例：输出格式固定为 Hex。
 const hasher = new SM3(OutputFormat.HEX);
 
-// 分三段追加，结果应与一次性摘要相同。
+// 2. 分块计算摘要：按业务字段顺序追加三段文本。
 hasher.update('order=')
   .update('GMKIT-DEMO-0001')
   .update('&amount=88.00');
 const incremental = hasher.digest();
 const oneShot = sm3Digest('order=GMKIT-DEMO-0001&amount=88.00');
+
+// 3. 增量结果断言：分块摘要必须与一次性摘要一致。
 if (incremental !== oneShot) throw new Error('incremental SM3 mismatch');
 
-// digest() 已重置消息状态，但实例默认输出格式仍保留。
+// 4. 自动重置断言：digest() 后同一实例可以处理下一条消息。
 if (hasher.update('abc').digest() !== sm3Digest('abc')) {
   throw new Error('SM3 instance reuse failed');
 }
+
+// 5. 格式保留断言：自动重置不得改变实例输出格式。
 if (hasher.getOutputFormat() !== OutputFormat.HEX) {
   throw new Error('SM3 output format was not retained');
 }
 
-// reset() 用于主动放弃尚未完成的消息。
+// 6. 主动重置：丢弃尚未完成的消息，再计算 abc。
 hasher.update('discard this message').reset();
+
+// 7. 主动重置断言：丢弃旧状态后必须得到标准 abc 摘要。
 if (hasher.update('abc').digest() !== sm3Digest('abc')) {
   throw new Error('SM3 reset failed');
 }
@@ -248,11 +265,14 @@ reset(): this
 ```ts
 import { sm3, sm3Digest } from 'gmkitx';
 
+// 1. 创建低层状态并分块计算 abc 的原始摘要字节。
 const state = new sm3.SM3HashState();
 const rawDigest = state.update('a').update('bc').digestBytes();
+
+// 2. 摘要长度断言：SM3 原始结果固定为 32 字节。
 if (rawDigest.length !== 32) throw new Error('SM3 raw digest length mismatch');
 
-// 低层状态已完成，必须显式 reset 后才能复用。
+// 3. 已完成状态断言：digestBytes() 后继续 update 必须抛错。
 let finalizedRejected = false;
 try {
   state.update('next message');
@@ -261,8 +281,11 @@ try {
 }
 if (!finalizedRejected) throw new Error('finalized SM3 state must reject update');
 
+// 4. 显式重置：低层状态必须手动 reset 后才能复用。
 state.reset();
 const reused = state.update('abc').digestBytes();
+
+// 5. 复用结果断言：重置后的原始字节必须匹配高层摘要。
 if (Array.from(reused, (value) => value.toString(16).padStart(2, '0')).join('')
   !== sm3Digest('abc')) {
   throw new Error('SM3HashState reuse failed');

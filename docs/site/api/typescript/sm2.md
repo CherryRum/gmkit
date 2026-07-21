@@ -62,7 +62,7 @@ import type {
   VerifyOptions,
 } from 'gmkitx';
 
-// 生产环境不允许在缺少系统 CSPRNG 时退回兼容随机源。
+// 1. 配置随机源：生产环境缺少系统 CSPRNG 时直接失败。
 configureRNG('strict');
 ```
 
@@ -164,21 +164,29 @@ import {
   sm2GetPublicKeyFromPrivateKey,
 } from 'gmkitx';
 
-// 默认生成 65 字节非压缩公钥。
+// 1. 生成密钥对：默认返回 32 字节私钥和 65 字节非压缩公钥。
 const keys = sm2GenerateKeyPair();
+
+// 2. 密钥长度断言：Hex 长度必须分别为 64 和 130。
 if (keys.privateKey.length !== 64 || keys.publicKey.length !== 130) {
   throw new Error('SM2 key length mismatch');
 }
 
-// 从私钥派生的公钥应与密钥对中的公钥一致。
+// 3. 派生公钥：从私钥重新计算非压缩公钥。
 const derived = sm2GetPublicKeyFromPrivateKey(keys.privateKey);
+
+// 4. 公钥断言：派生结果必须与密钥对中的公钥一致。
 if (derived !== keys.publicKey) {
   throw new Error('SM2 public key derivation failed');
 }
 
-// 压缩后为 33 字节，解压后恢复同一个曲线点。
+// 5. 压缩公钥：65 字节非压缩点转换为 33 字节压缩点。
 const compressed = sm2CompressPublicKey(keys.publicKey);
+
+// 6. 压缩长度断言：压缩公钥 Hex 长度必须为 66。
 if (compressed.length !== 66) throw new Error('compressed key length mismatch');
+
+// 7. 解压公钥：恢复非压缩点并比对同一个曲线点。
 if (sm2DecompressPublicKey(compressed) !== keys.publicKey) {
   throw new Error('SM2 public key round-trip failed');
 }
@@ -254,32 +262,45 @@ import {
   sm2GenerateKeyPair,
 } from 'gmkitx';
 
+// 1. 生成 SM2 密钥对并准备 UTF-8 订单明文。
 const keys = sm2GenerateKeyPair();
 const message = 'order=GMKIT-DEMO-0001&amount=88.00';
 
-// 文本按 UTF-8 加密；这里显式固定密文排列和外层编码。
+// 2. SM2 文本加密：显式固定 C1C3C2 排列和 Hex 编码。
 const ciphertext = sm2Encrypt(keys.publicKey, message, {
   mode: SM2CipherMode.C1C3C2,
   outputFormat: OutputFormat.HEX,
 });
+
+// 3. SM2 文本解密：使用相同排列和编码恢复 UTF-8 文本。
 const restored = sm2Decrypt(keys.privateKey, ciphertext, {
   mode: SM2CipherMode.C1C3C2,
   inputFormat: InputFormat.HEX,
 });
+
+// 4. 文本往返断言：解密结果必须等于订单原文。
 if (restored !== message) throw new Error('SM2 text round-trip failed');
 
-// 二进制必须走字节返回接口，不能先转换为字符串。
+// 5. 准备二进制输入：包含无法安全经过普通文本转换的字节。
 const binary = Uint8Array.of(0x00, 0xff, 0x80, 0x41);
+
+// 6. SM2 二进制加密：原始字节直接进入加密函数。
 const binaryCiphertext = sm2Encrypt(keys.publicKey, binary);
+
+// 7. SM2 二进制解密：使用字节返回接口恢复原始数据。
 const binaryRestored = sm2DecryptBytes(keys.privateKey, binaryCiphertext);
+
+// 8. 二进制往返断言：长度和每个字节都必须一致。
 if (binaryRestored.length !== binary.length
   || binaryRestored.some((value, index) => value !== binary[index])) {
   throw new Error('SM2 binary round-trip failed');
 }
 
-// 修改密文最后一个字节后，C3 完整性校验必须失败并抛错。
+// 9. 构造篡改密文：修改最后一个字节以破坏 C3 完整性校验。
 const damaged = `${ciphertext.slice(0, -2)}${ciphertext.endsWith('00') ? '01' : '00'}`;
 let rejected = false;
+
+// 10. 失败断言：篡改密文必须抛错，不能返回部分明文。
 try {
   sm2Decrypt(keys.privateKey, damaged, { inputFormat: InputFormat.HEX });
 } catch {
@@ -366,26 +387,30 @@ import {
   sm2Verify,
 } from 'gmkitx';
 
+// 1. 准备输入：正常订单、篡改订单和签名身份分别保存。
 const keys = sm2GenerateKeyPair();
 const message = 'order=GMKIT-DEMO-0001&amount=88.00';
 const tampered = 'order=GMKIT-DEMO-0001&amount=99.00';
 const userId = 'merchant@gmkit.cn';
 
-// DER 决定签名内部结构，Base64 决定外层字符串编码。
+// 2. SM2 签名：DER 决定内部结构，Base64 决定外层字符串编码。
 const signature = sm2Sign(keys.privateKey, message, {
   userId,
   signatureFormat: 'der',
   outputFormat: OutputFormat.BASE64,
 });
 
+// 3. SM2 验签：使用相同消息、身份、签名格式和外层编码。
 const valid = sm2Verify(keys.publicKey, message, signature, {
   userId,
   signatureFormat: 'der',
   inputFormat: InputFormat.BASE64,
 });
+
+// 4. 成功断言：原消息必须验证成功。
 if (!valid) throw new Error('SM2 verification failed');
 
-// 修改消息或身份都必须返回 false。
+// 5. 消息篡改断言：金额变化后必须返回 false。
 if (sm2Verify(keys.publicKey, tampered, signature, {
   userId,
   signatureFormat: 'der',
@@ -393,6 +418,8 @@ if (sm2Verify(keys.publicKey, tampered, signature, {
 })) {
   throw new Error('tampered message must not verify');
 }
+
+// 6. 身份篡改断言：userId 不同必须返回 false。
 if (sm2Verify(keys.publicKey, message, signature, {
   userId: 'warehouse@gmkit.cn',
   signatureFormat: 'der',
@@ -484,12 +511,15 @@ sm2KeyExchange(params: SM2KeyExchangeParams): SM2KeyExchangeResult
 ```ts
 import { sm2GenerateKeyPair, sm2KeyExchange } from 'gmkitx';
 
-// 长期密钥绑定参与方身份；临时密钥每个会话重新生成。
+// 1. 生成长期密钥：分别绑定 Alice 和 Bob 的稳定身份。
 const alice = sm2GenerateKeyPair();
 const bob = sm2GenerateKeyPair();
+
+// 2. 生成临时密钥：每次密钥交换会话都使用新的临时密钥对。
 const aliceTemp = sm2GenerateKeyPair();
 const bobTemp = sm2GenerateKeyPair();
 
+// 3. 发起方计算：Alice 使用自己的私钥和 Bob 的两个公钥派生结果。
 const resultA = sm2KeyExchange({
   privateKey: alice.privateKey,
   publicKey: alice.publicKey,
@@ -501,6 +531,8 @@ const resultA = sm2KeyExchange({
   isInitiator: true,
   keyLength: 32,
 });
+
+// 4. 响应方计算：Bob 镜像身份、密钥和角色顺序。
 const resultB = sm2KeyExchange({
   privateKey: bob.privateKey,
   publicKey: bob.publicKey,
@@ -513,7 +545,7 @@ const resultB = sm2KeyExchange({
   keyLength: 32,
 });
 
-// 双方应得到同一 32 字节共享密钥和相同确认值。
+// 5. 密钥与确认值断言：双方必须得到同一 32 字节密钥和相同确认值。
 if (resultA.sharedKey.length !== 64
   || resultA.sharedKey !== resultB.sharedKey
   || resultA.s1 !== resultB.s1
@@ -598,15 +630,18 @@ keyExchange(
 ```ts
 import { SM2 } from 'gmkitx';
 
+// 1. 准备实例：私钥实例负责签名，公钥实例只负责验签。
 const message = 'order=GMKIT-DEMO-0001&amount=88.00';
 const owner = SM2.generateKeyPair();
 const verifier = SM2.fromPublicKey(owner.getPublicKey());
 
-// 私钥实例负责签名，公钥实例只负责验签。
+// 2. SM2 签名：由持有私钥的 owner 创建 DER 签名。
 const signature = owner.sign(message, {
   userId: 'merchant@gmkit.cn',
   signatureFormat: 'der',
 });
+
+// 3. SM2 验签：公钥实例使用相同 userId 验证签名。
 if (!verifier.verify(message, signature, {
   userId: 'merchant@gmkit.cn',
   signatureFormat: 'der',
@@ -614,7 +649,7 @@ if (!verifier.verify(message, signature, {
   throw new Error('SM2 class verification failed');
 }
 
-// 公钥实例没有私钥，调用签名方法必须抛错。
+// 4. 缺少私钥断言：公钥实例调用签名方法必须抛错。
 let missingPrivateKeyRejected = false;
 try {
   verifier.sign(message);

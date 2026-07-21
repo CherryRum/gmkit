@@ -40,8 +40,11 @@ const { sm3Digest: sm3DigestCjs } = require('gmkitx');
 ```ts
 import { sm3Digest } from 'gmkitx';
 
+// 1. 计算摘要：使用标准输入 abc 计算 SM3。
 const actual = sm3Digest('abc');
 const expected = '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0';
+
+// 2. 固定向量断言：摘要必须与标准结果完全一致。
 if (actual !== expected) {
   throw new Error(`SM3 vector mismatch: ${actual}`);
 }
@@ -54,7 +57,10 @@ if (actual !== expected) {
 ```ts
 import { configureRNG, getEnvReport, hasCustomRNG } from 'gmkitx';
 
+// 1. 启用严格随机策略：没有安全随机源时直接失败。
 configureRNG('strict');
+
+// 2. 检查环境：Web Crypto、Node Crypto、自定义随机源至少可用一个。
 const env = getEnvReport();
 if (!env.hasWebCrypto && !env.hasNodeCrypto && !hasCustomRNG()) {
   throw new Error('当前运行环境没有可用的 CSPRNG');
@@ -78,21 +84,29 @@ import {
   sm4Encrypt,
 } from 'gmkitx';
 
+// 1. 准备输入：正常订单、篡改订单和签名身份必须明确区分。
 const message = 'order=GMKIT-DEMO-0001&amount=88.00';
 const changedMessage = 'order=GMKIT-DEMO-0001&amount=99.00';
 const userId = 'merchant@gmkit.cn';
 
+// 2. 生成 SM2 密钥对：私钥签名，公钥验签。
 const keys = sm2GenerateKeyPair();
+
+// 3. SM2 签名：userId 参与 Z 值计算，签名编码固定为 DER。
 const signature = sm2Sign(keys.privateKey, message, {
   userId,
   signatureFormat: 'der',
 });
+
+// 4. SM2 验签：原消息和相同 userId 必须验证成功。
 if (!sm2Verify(keys.publicKey, message, signature, {
   userId,
   signatureFormat: 'der',
 })) {
   throw new Error('SM2 verification failed');
 }
+
+// 5. SM2 篡改断言：金额变化后必须验证失败。
 if (sm2Verify(keys.publicKey, changedMessage, signature, {
   userId,
   signatureFormat: 'der',
@@ -100,6 +114,7 @@ if (sm2Verify(keys.publicKey, changedMessage, signature, {
   throw new Error('tampered order must not verify');
 }
 
+// 6. 准备 SM4-GCM 参数：每次加密使用新的 16 字节密钥和 12 字节 nonce。
 const key = bytesToHex(getRandomBytes(16));
 const nonce = bytesToHex(getRandomBytes(12));
 const options = {
@@ -108,19 +123,29 @@ const options = {
   iv: nonce,
   aad: 'tenant=demo;schema=1',
 } as const;
+
+// 7. SM4-GCM 加密：结果包含 ciphertext 和认证 tag。
 const encrypted = sm4Encrypt(key, message, options);
-if (sm4Decrypt(key, encrypted, options) !== message) {
+
+// 8. SM4-GCM 解密：必须使用相同的 nonce 与 AAD。
+const decrypted = sm4Decrypt(key, encrypted, options);
+
+// 9. 成功断言：解密结果必须等于原文，且 tag 不得缺失。
+if (decrypted !== message) {
   throw new Error('SM4-GCM round-trip failed');
 }
-
 if (!encrypted.tag) {
   throw new Error('SM4-GCM result is missing its tag');
 }
+
+// 10. 构造篡改密文：只修改 tag，其他参数保持不变。
 const tampered = {
   ...encrypted,
   tag: `${encrypted.tag[0] === '0' ? '1' : '0'}${encrypted.tag.slice(1)}`,
 };
 let rejected = false;
+
+// 11. 失败断言：认证失败必须抛错，不能返回未认证明文。
 try {
   sm4Decrypt(key, tampered, options);
 } catch {

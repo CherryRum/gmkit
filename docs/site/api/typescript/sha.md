@@ -131,16 +131,20 @@ import {
   sha512,
 } from 'gmkitx';
 
-// 标准固定向量用来确认算法、UTF-8 和输出编码没有偏差。
+// 1. 计算 SHA-256 摘要并比对标准 abc 向量。
 if (sha256('abc')
   !== 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad') {
   throw new Error('SHA-256 vector mismatch');
 }
+
+// 2. 计算 SHA-384 摘要并比对标准 abc 向量。
 if (sha384('abc')
   !== 'cb00753f45a35e8bb5a03d699ac65007272c32ab0eded163'
     + '1a8b605a43ff5bed8086072ba1e7cc2358baeca134c825a7') {
   throw new Error('SHA-384 vector mismatch');
 }
+
+// 3. 计算 SHA-512 摘要并比对标准 abc 向量。
 if (sha512('abc')
   !== 'ddaf35a193617abacc417349ae20413112e6fa4e89a97ea2'
     + '0a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd'
@@ -148,12 +152,12 @@ if (sha512('abc')
   throw new Error('SHA-512 vector mismatch');
 }
 
-// SHA-1 断言仅用于确认旧协议兼容，不代表推荐新系统使用。
+// 4. 计算 SHA-1 摘要：只确认旧协议兼容，不用于新协议设计。
 if (sha1('abc') !== 'a9993e364706816aba3e25717850c26c9cd0d89d') {
   throw new Error('legacy SHA-1 vector mismatch');
 }
 
-// outputFormat 只改变摘要的文本编码。
+// 5. Base64 编码断言：outputFormat 只改变摘要文本表示。
 if (sha256('abc', { outputFormat: OutputFormat.BASE64 })
   !== 'ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0=') {
   throw new Error('SHA-256 Base64 output mismatch');
@@ -207,18 +211,24 @@ import {
   hmacSha512,
 } from 'gmkitx';
 
-// RFC 4231 测试用例 1：固定 key 与消息不改写为业务数据。
+// 1. 准备固定向量：RFC 4231 的 key 与消息保持原样。
 const vectorKey = hexToBytes('0b'.repeat(20));
 const vectorMessage = 'Hi There';
+
+// 2. 计算 HMAC-SHA-256 并比对 RFC 4231 结果。
 if (hmacSha256(vectorKey, vectorMessage)
   !== 'b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7') {
   throw new Error('HMAC-SHA-256 vector mismatch');
 }
+
+// 3. 计算 HMAC-SHA-384 并比对 RFC 4231 结果。
 if (hmacSha384(vectorKey, vectorMessage)
   !== 'afd03944d84895626b0825f4ab46907f15f9dadbe4101ec6'
     + '82aa034c7cebc59cfaea9ea9076ede7f4af152e8b2fa9cb6') {
   throw new Error('HMAC-SHA-384 vector mismatch');
 }
+
+// 4. 计算 HMAC-SHA-512 并比对 RFC 4231 结果。
 if (hmacSha512(vectorKey, vectorMessage)
   !== '87aa7cdea5ef619d4ff0b4241a1d6cb02379f4e2ce4ec278'
     + '7ad0b30545e17cde' + 'daa833b7d6b8a702038b274eaea3f4e4'
@@ -226,15 +236,21 @@ if (hmacSha512(vectorKey, vectorMessage)
   throw new Error('HMAC-SHA-512 vector mismatch');
 }
 
+// 5. 准备业务认证输入：正常订单与篡改金额使用同一 key。
 const key = 'merchant-demo-key';
 const message = 'order=GMKIT-DEMO-0001&amount=88.00';
 const tampered = 'order=GMKIT-DEMO-0001&amount=99.00';
+
+// 6. 计算发送端和接收端 HMAC-SHA-256，并解码为原始字节。
 const expectedMac = hexToBytes(hmacSha256(key, message));
 const receivedMac = hexToBytes(hmacSha256(key, message));
 
+// 7. 成功断言：相同消息的认证值必须通过常量时间比较。
 if (!constantTimeEqual(expectedMac, receivedMac)) {
   throw new Error('HMAC-SHA-256 verification failed');
 }
+
+// 8. 失败断言：金额变化后的认证值不得通过比较。
 if (constantTimeEqual(expectedMac, hexToBytes(hmacSha256(key, tampered)))) {
   throw new Error('tampered order must not pass HMAC verification');
 }
@@ -289,28 +305,35 @@ getOutputFormat(): 'hex' | 'base64'
 ```ts
 import { OutputFormat, SHA256, sha256 } from 'gmkitx';
 
+// 1. 创建增量 SHA-256 实例：默认输出格式固定为 Hex。
 const hasher = new SHA256(OutputFormat.HEX);
 
-// 三次 update 与一次性传入完整订单必须得到相同摘要。
+// 2. 分块计算摘要：按订单字段顺序追加三段文本。
 hasher.update('order=')
   .update('GMKIT-DEMO-0001')
   .update('&amount=88.00');
 const incremental = hasher.digest();
 const oneShot = sha256('order=GMKIT-DEMO-0001&amount=88.00');
+
+// 3. 增量结果断言：分块摘要必须与一次性摘要一致。
 if (incremental !== oneShot) throw new Error('incremental SHA-256 mismatch');
 
-// digest() 已清空消息状态，同一实例可以处理下一条消息。
+// 4. 自动重置断言：digest() 后同一实例可以处理下一条消息。
 if (hasher.update('abc').digest() !== sha256('abc')) {
   throw new Error('SHA-256 instance reuse failed');
 }
+
+// 5. 格式保留断言：自动重置不得改变实例输出格式。
 if (hasher.getOutputFormat() !== OutputFormat.HEX) {
   throw new Error('SHA-256 output format was not retained');
 }
 
-// reset() 主动放弃尚未完成的消息，但不改变输出格式。
+// 6. 主动重置：丢弃尚未完成的消息，并切换为 Base64 输出。
 hasher.update('discard this message').reset();
 hasher.setOutputFormat(OutputFormat.BASE64);
 const base64 = hasher.update('abc').digest();
+
+// 7. 复用结果断言：实例结果必须与静态方法一致。
 if (base64 !== SHA256.digest('abc', OutputFormat.BASE64)) {
   throw new Error('SHA-256 Base64 reuse failed');
 }
