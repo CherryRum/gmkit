@@ -67,16 +67,20 @@ import {
   hexToBytes,
 } from 'gmkitx';
 
+// 1. Base64 解码：将协议字段还原为原始字节。
 const bytes = decodeInput('AP+AQQ==', InputFormat.BASE64);
+
+// 2. 编码断言：重新编码为 Hex 后必须保留全部二进制内容。
 if (encodeOutput(bytes, OutputFormat.HEX) !== '00ff8041') {
   throw new Error('encoding mismatch');
 }
 
-// 奇数长度 Hex 是兼容行为：左侧补一个 0，而不是拒绝输入。
+// 3. 兼容行为断言：奇数长度 Hex 会在左侧补 0，而不是拒绝输入。
 if (bytesToHex(hexToBytes('abc')) !== '0abc') {
   throw new Error('odd-length Hex rule changed');
 }
 
+// 4. 非法输入断言：包含非 Hex 字符的输入必须抛出异常。
 let rejected = false;
 try {
   hexToBytes('0xz1');
@@ -103,18 +107,26 @@ if (!rejected) throw new Error('invalid Hex must be rejected');
 </ApiTable>
 
 ```java
+// 1. 清理 Hex 文本：移除空白和可选的 0x 前缀。
 String normalized = HexCodec.normalize(" 0xAA BB ", "payload");
+
+// 2. 清理结果断言：normalize 保留原有字母大小写。
 if (!"AABB".equals(normalized)) {
     throw new IllegalStateException("Hex normalization mismatch");
 }
+
+// 3. Base64 解码：将协议字段还原为原始字节。
 byte[] bytes = ByteEncodings.decode(
     "AP+AQQ==",
     InputFormat.BASE64,
     "payload");
+
+// 4. 编码断言：重新编码为 Hex 后必须保留全部二进制内容。
 if (!"00ff8041".equals(HexCodec.encode(bytes))) {
     throw new IllegalStateException("encoding mismatch");
 }
 
+// 5. 非法输入断言：奇数长度 Hex 不能被 decodeAuto 静默接受。
 org.junit.jupiter.api.Assertions.assertThrows(
     GmkitException.class,
     () -> ByteEncodings.decodeAuto("abc", "payload"));
@@ -150,9 +162,14 @@ Java 的 `decodeAuto("abc")` 会先认定输入具有 Hex 形态，再因字符�
 ```ts
 import { configureRNG, getEnvReport, setCustomRNG } from 'gmkitx';
 
+// 1. 设置策略：正式环境缺少 CSPRNG 时立即拒绝继续运行。
 configureRNG('strict');
+
+// 2. 检查环境：读取 Web Crypto 与 Node.js 安全随机源能力。
 const report = getEnvReport();
-// 平台有专用安全随机 API 时：setCustomRNG((length) => platformRandom(length));
+
+// 3. 注入提示：受限平台应接入自己的安全随机 API。
+// setCustomRNG((length) => platformRandom(length));
 if (!report.hasWebCrypto && !report.hasNodeCrypto) {
   console.warn('需要通过 setCustomRNG 注入平台 CSPRNG');
 }
@@ -182,8 +199,13 @@ import cn.gmkit.core.GmSecurityContexts;
 import cn.gmkit.sm2.SM2;
 import java.security.SecureRandom;
 
+// 1. 创建安全上下文：由应用提供 SecureRandom 实例。
 GmSecurityContext context = GmSecurityContexts.withSecureRandom(new SecureRandom());
+
+// 2. 创建算法实例：SM2 的随机操作使用同一个安全上下文。
 SM2 sm2 = new SM2(context);
+
+// 3. 配置断言：算法实例必须保留调用方提供的上下文。
 if (sm2.securityContext() != context) {
     throw new IllegalStateException("security context mismatch");
 }

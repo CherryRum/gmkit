@@ -30,18 +30,28 @@ import (
 )
 
 func main() {
+    // 1. SM3 摘要：计算标准输入 abc 的摘要。
     digest := sm3.Sum([]byte("abc"))
+
+    // 2. SM3 向量断言：结果必须等于公开固定值。
     if hex.EncodeToString(digest[:]) != "66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0" {
         panic("SM3 vector mismatch")
     }
 
+    // 3. 准备 SM4 单分组向量：固定 16 字节 key 和 plaintext。
     key, _ := hex.DecodeString("0123456789abcdeffedcba9876543210")
-    plain, _ := hex.DecodeString("0123456789abcdeffedcba9876543210")
+    plaintext, _ := hex.DecodeString("0123456789abcdeffedcba9876543210")
+
+    // 4. 创建 SM4 分组原语：这里只验证单分组，不包含模式和填充。
     block, err := sm4.NewCipher(key)
     if err != nil { panic(err) }
-    output := make([]byte, block.BlockSize())
-    block.Encrypt(output, plain)
-    if hex.EncodeToString(output) != "681edf34d206965e86b3e94f536e4246" {
+    ciphertext := make([]byte, block.BlockSize())
+
+    // 5. SM4 单分组加密：把固定 plaintext 写入 ciphertext。
+    block.Encrypt(ciphertext, plaintext)
+
+    // 6. SM4 向量断言：单分组密文必须等于公开固定值。
+    if hex.EncodeToString(ciphertext) != "681edf34d206965e86b3e94f536e4246" {
         panic("SM4 vector mismatch")
     }
     fmt.Println("Go vectors passed")

@@ -31,17 +31,27 @@ npm run docs:test-examples
 ```python
 from gmssl import func, sm3, sm4
 
+# 1. SM3 摘要：计算标准输入 abc 的摘要。
 digest = sm3.sm3_hash(func.bytes_to_list(b"abc"))
 expected_sm3 = "66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0"
+
+# 2. SM3 向量断言：结果必须等于公开固定值。
 if digest != expected_sm3:
     raise AssertionError(f"SM3 vector mismatch: {digest}")
 
+# 3. 准备 SM4 单分组向量：固定 16 字节 key 和 plaintext。
 key = bytes.fromhex("0123456789abcdeffedcba9876543210")
-plain = bytes.fromhex("0123456789abcdeffedcba9876543210")
+plaintext = bytes.fromhex("0123456789abcdeffedcba9876543210")
+
+# 4. 初始化 SM4 加密方向：这里只验证单分组结果。
 cipher = sm4.CryptSM4()
 cipher.set_key(key, sm4.SM4_ENCRYPT)
-encrypted = bytes(cipher.crypt_ecb(plain))
-if encrypted[:16].hex() != "681edf34d206965e86b3e94f536e4246":
+
+# 5. SM4 加密：gmssl 会为 ECB 调用自动加入填充。
+ciphertext = bytes(cipher.crypt_ecb(plaintext))
+
+# 6. SM4 向量断言：只比较固定输入对应的第一个密文分组。
+if ciphertext[:16].hex() != "681edf34d206965e86b3e94f536e4246":
     raise AssertionError("SM4 vector mismatch")
 ```
 

@@ -29,23 +29,33 @@ node docs/site/examples/node/international-crypto.mjs
 ## AES-GCM
 
 ```js
+// 1. 准备参数：生成 256-bit AES key 原始字节。
 const encoder = new TextEncoder();
 const keyBytes = crypto.getRandomValues(new Uint8Array(32));
-const key = await crypto.subtle.importKey('raw', keyBytes, 'AES-GCM', false, ['encrypt', 'decrypt']);
-const iv = crypto.getRandomValues(new Uint8Array(12));
-const message = encoder.encode('authenticated payload');
 
+// 2. 导入密钥：限制该 CryptoKey 只能用于 AES-GCM 加解密。
+const key = await crypto.subtle.importKey('raw', keyBytes, 'AES-GCM', false, ['encrypt', 'decrypt']);
+
+// 3. 准备明文：为本次加密生成 12 字节随机 IV。
+const iv = crypto.getRandomValues(new Uint8Array(12));
+const plaintext = encoder.encode('authenticated payload');
+
+// 4. AES-GCM 加密：返回 ciphertext || tag 的组合结果。
 const ciphertextWithTag = await crypto.subtle.encrypt(
   { name: 'AES-GCM', iv, tagLength: 128 },
   key,
-  message,
+  plaintext,
 );
-const plaintext = await crypto.subtle.decrypt(
+
+// 5. AES-GCM 解密：使用相同 key、IV 和 tag 长度恢复明文。
+const decrypted = await crypto.subtle.decrypt(
   { name: 'AES-GCM', iv, tagLength: 128 },
   key,
   ciphertextWithTag,
 );
-if (new TextDecoder().decode(plaintext) !== 'authenticated payload') {
+
+// 6. 成功断言：解密文本必须与加密前一致。
+if (new TextDecoder().decode(decrypted) !== 'authenticated payload') {
   throw new Error('AES-GCM round-trip failed');
 }
 ```
@@ -55,6 +65,7 @@ Web Crypto 将 GCM tag 附在密文尾部。跨语言协议必须固定这个布
 ## RSA-OAEP
 
 ```js
+// 1. 生成密钥：创建只用于 RSA-OAEP 加解密的 2048-bit 密钥对。
 const keys = await crypto.subtle.generateKey(
   {
     name: 'RSA-OAEP',
@@ -65,10 +76,18 @@ const keys = await crypto.subtle.generateKey(
   false,
   ['encrypt', 'decrypt'],
 );
-const message = new TextEncoder().encode('session key');
-const ciphertext = await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, keys.publicKey, message);
-const plaintext = await crypto.subtle.decrypt({ name: 'RSA-OAEP' }, keys.privateKey, ciphertext);
-if (new TextDecoder().decode(plaintext) !== 'session key') {
+
+// 2. 准备明文：RSA-OAEP 只封装短小的会话密钥数据。
+const plaintext = new TextEncoder().encode('session key');
+
+// 3. RSA-OAEP 加密：使用公钥封装会话密钥。
+const ciphertext = await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, keys.publicKey, plaintext);
+
+// 4. RSA-OAEP 解密：使用匹配的私钥恢复会话密钥。
+const decrypted = await crypto.subtle.decrypt({ name: 'RSA-OAEP' }, keys.privateKey, ciphertext);
+
+// 5. 成功断言：恢复结果必须与原会话密钥一致。
+if (new TextDecoder().decode(decrypted) !== 'session key') {
   throw new Error('RSA-OAEP round-trip failed');
 }
 ```

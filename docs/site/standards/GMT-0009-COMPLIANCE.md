@@ -42,12 +42,19 @@ options?.userId || DEFAULT_USER_ID
 ```ts
 import { sm2GenerateKeyPair, sm2Sign, sm2Verify } from 'gmkitx';
 
+// 1. 准备参数：生成 SM2 密钥对，并显式固定非空 userId。
 const { privateKey, publicKey } = sm2GenerateKeyPair();
 const userId = 'example-service-v1';
 const message = '可验证消息';
+
+// 2. SM2 签名：签名计算包含当前 userId 对应的 Z。
 const signature = sm2Sign(privateKey, message, { userId });
 
-if (!sm2Verify(publicKey, message, signature, { userId })) {
+// 3. SM2 验签：验签端必须使用相同消息和 userId。
+const verified = sm2Verify(publicKey, message, signature, { userId });
+
+// 4. 验签断言：标准 SM2 签名必须验证成功。
+if (!verified) {
   throw new Error('SM2 signature verification failed');
 }
 ```

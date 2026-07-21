@@ -31,13 +31,21 @@ use sm3::{Digest, Sm3};
 use sm4::cipher::{BlockCipherEncrypt, KeyInit};
 use sm4::Sm4;
 
+// 1. SM3 摘要：计算标准输入 abc 的摘要。
 let digest = Sm3::digest(b"abc");
+
+// 2. SM3 向量断言：结果必须等于公开固定值。
 assert_eq!(digest[..], hex!("66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0"));
 
+// 3. 准备 SM4 单分组向量：固定 16 字节 key 和 plaintext。
 let cipher = Sm4::new(&hex!("0123456789abcdeffedcba9876543210").into());
-let mut block = hex!("0123456789abcdeffedcba9876543210").into();
-cipher.encrypt_block(&mut block);
-assert_eq!(block[..], hex!("681edf34d206965e86b3e94f536e4246"));
+let mut ciphertext = hex!("0123456789abcdeffedcba9876543210").into();
+
+// 4. SM4 单分组加密：原地把 plaintext 分组改写为 ciphertext。
+cipher.encrypt_block(&mut ciphertext);
+
+// 5. SM4 向量断言：单分组密文必须等于公开固定值。
+assert_eq!(ciphertext[..], hex!("681edf34d206965e86b3e94f536e4246"));
 ```
 
 `sm4` crate 提供分组原语，不自动替你设计 CBC/GCM、填充或密文封装。业务应选成熟 mode/AEAD crate，并为完整协议做互操作测试。

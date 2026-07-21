@@ -74,20 +74,27 @@ import {
   sm4Encrypt,
 } from 'gmkitx';
 
+// 1. SM3 摘要：计算标准输入 abc 的摘要。
 const sm3 = sm3Digest('abc');
+
+// 2. SM3 向量断言：结果必须等于公开固定值。
 if (sm3 !== '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0') {
   throw new Error(`SM3 vector mismatch: ${sm3}`);
 }
 
-const sm4 = sm4Encrypt(
+// 3. SM4 单分组加密：关闭填充，验证底层分组原语结果。
+const sm4Result = sm4Encrypt(
   '0123456789abcdeffedcba9876543210',
   hexToBytes('0123456789abcdeffedcba9876543210'),
   { mode: CipherMode.ECB, padding: PaddingMode.NONE },
 );
-if (sm4.ciphertext !== '681edf34d206965e86b3e94f536e4246') {
-  throw new Error(`SM4 vector mismatch: ${sm4.ciphertext}`);
+
+// 4. SM4 向量断言：只比较固定单分组密文。
+if (sm4Result.ciphertext !== '681edf34d206965e86b3e94f536e4246') {
+  throw new Error(`SM4 vector mismatch: ${sm4Result.ciphertext}`);
 }
 
+// 5. EIA3 完整性运算：按固定 COUNT、BEARER、DIRECTION 和 bitLength 计算 MAC。
 const mac = eia3(
   '000102030405060708090a0b0c0d0e0f',
   0x01234567,
@@ -96,6 +103,8 @@ const mac = eia3(
   hexToBytes('5bad724710ba1c56'),
   64,
 );
+
+// 6. EIA3 向量断言：MAC 必须等于共享固定值。
 if (mac !== '1b3d0f74') {
   throw new Error(`EIA3 vector mismatch: ${mac}`);
 }
@@ -110,11 +119,15 @@ import cn.gmkit.core.HexCodec;
 import cn.gmkit.sm3.SM3Util;
 import cn.gmkit.zuc.ZUC;
 
+// 1. SM3 摘要：计算标准输入 abc 的 Hex 摘要。
 String sm3 = SM3Util.digestHex("abc");
+
+// 2. SM3 向量断言：结果必须等于公开固定值。
 if (!"66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0".equals(sm3)) {
     throw new IllegalStateException("SM3 vector mismatch: " + sm3);
 }
 
+// 3. EIA3 完整性运算：按固定 COUNT、BEARER、DIRECTION 和 bitLength 计算 MAC。
 String mac = ZUC.eia3(
     "000102030405060708090a0b0c0d0e0f",
     0x01234567,
@@ -122,6 +135,8 @@ String mac = ZUC.eia3(
     0,
     HexCodec.decodeStrict("5bad724710ba1c56", "EIA3 message"),
     64);
+
+// 4. EIA3 向量断言：MAC 必须等于共享固定值。
 if (!"1b3d0f74".equals(mac)) {
     throw new IllegalStateException("EIA3 vector mismatch: " + mac);
 }
