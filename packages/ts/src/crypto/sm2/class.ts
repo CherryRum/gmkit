@@ -71,6 +71,7 @@ export class SM2 {
    * 生成新的密钥对
    * @param curveParams - 可选的标准曲线兼容声明；不支持自定义曲线
    * @returns 带有生成的密钥对的新 SM2 实例
+   * @throws 当前运行环境无法提供符合策略的随机源时抛出错误
    */
   static generateKeyPair(curveParams?: SM2CurveParams): SM2 {
     const keyPair = generateKeyPairFunc();
@@ -127,6 +128,7 @@ export class SM2 {
    * @param data - 要加密的数据（字符串或 Uint8Array）
    * @param options - 加密选项（密文模式、输出格式等）
    * @returns 加密后的数据（默认十六进制字符串）
+   * @throws 公钥、明文、随机源或选项无效时抛出错误
    */
   encrypt(data: string | Uint8Array, options?: SM2EncryptOptions): string {
     const publicKey = this.getPublicKey();
@@ -138,6 +140,7 @@ export class SM2 {
    * @param encryptedData - 加密的数据（十六进制字符串或 Uint8Array）
    * @param options - 解密选项（密文模式、输入格式等）
    * @returns 解密后的数据（字符串）
+   * @throws 私钥缺失，或密文格式、曲线点、C3 校验无效时抛出错误
    */
   decrypt(encryptedData: BytesLike, options?: SM2DecryptOptions): string {
     const privateKey = this.getPrivateKey();
@@ -161,6 +164,7 @@ export class SM2 {
    * @param data - 要签名的数据（字符串或 Uint8Array）
    * @param options - 签名选项（签名格式、用户 ID 等）
    * @returns 签名（默认十六进制字符串，r || s 格式）
+   * @throws 私钥缺失，或消息、随机源、曲线参数、输出选项无效时抛出错误
    */
   sign(data: string | Uint8Array, options?: Omit<FuncSignOptions, 'curveParams'>): string {
     const privateKey = this.getPrivateKey();
@@ -172,7 +176,8 @@ export class SM2 {
    * @param data - 原始数据（字符串或 Uint8Array）
    * @param signature - 签名（十六进制字符串）
    * @param options - 验签选项（签名格式、用户 ID 等）
-   * @returns 签名是否有效
+   * @returns 签名数学上有效且身份、消息均匹配时返回 true，否则返回 false
+   * @throws 公钥、签名编码、曲线参数或选项格式无效时抛出错误
    */
   verify(data: string | Uint8Array, signature: string, options?: Omit<FuncVerifyOptions, 'curveParams'>): boolean {
     const publicKey = this.getPublicKey();
@@ -203,6 +208,7 @@ export class SM2 {
    * @param isInitiator - 是否为发起方
    * @param options - 可选参数
    * @returns 密钥交换结果
+   * @throws 任一密钥、身份、角色或派生长度无效，或确认标签不匹配时抛出错误
    *
    * @example
    * ```typescript

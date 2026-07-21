@@ -230,6 +230,14 @@ CBC 不提供完整性；新协议优先 GCM/CCM。
 - ZERO 会移除尾部零字节，不能无损表示任意二进制。
 - `SM4CipherResult` 不是稳定跨语言 schema，传输前应固定字段编码和协议版本。
 
+## 可执行案例
+
+下面的 GCM 往返与篡改 tag 失败断言直接来自 JUnit 文档测试。
+
+```java
+<!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-sm4-example -->
+```
+
 ## 相关页面
 
 - [跨语言 SM4 模式和 AEAD](/algorithms/SM4.html)

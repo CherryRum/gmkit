@@ -176,6 +176,14 @@ if (!"1b3d0f74".equals(mac)) {
 - TypeScript `zucGenerateKeystream` 返回 `Uint32Array`；Java `keystreamWords` 返回 `int[]`，序列化时都应按无符号大端 word 处理。
 - EIA3 验证 MAC 时先 Hex 解码，再使用 `Bytes.constantTimeEquals`。
 
+## 可执行案例
+
+下面的 byte 长度固定向量和非法 key 失败断言直接来自 JUnit 文档测试。
+
+```java
+<!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-zuc-example -->
+```
+
 ## 相关页面
 
 - [跨语言 ZUC/EEA3/EIA3 向量](/algorithms/ZUC.html)

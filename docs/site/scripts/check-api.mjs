@@ -39,6 +39,59 @@ function collectNames(value, names = new Set()) {
   return names;
 }
 
+function commentSummary(comment) {
+  return (comment?.summary ?? []).map(({ text = '' }) => text).join('').trim();
+}
+
+function blockTagText(comment, tag) {
+  return (comment?.blockTags ?? [])
+    .filter((entry) => entry.tag === tag)
+    .flatMap((entry) => entry.content ?? [])
+    .map(({ text = '' }) => text)
+    .join('')
+    .trim();
+}
+
+function isVoidType(type) {
+  return type?.type === 'intrinsic' && (type.name === 'void' || type.name === 'never');
+}
+
+function requiresFailureDocumentation(signature) {
+  if ((signature.parameters?.length ?? 0) === 0) return false;
+  return /encrypt|decrypt|sign|verify|digest|hmac|keystream|exchange|decode|random|keypair/i.test(signature.name);
+}
+
+function checkTypeDocSemantics(reflection, parents = []) {
+  const qualifiedName = [...parents, reflection.name].filter(Boolean).join('.');
+  if (reflection.variant === 'signature') {
+    if (commentSummary(reflection.comment).length < 4) {
+      failures.push(`TypeDoc 调用签名缺少用途摘要: ${qualifiedName}`);
+    }
+    for (const parameter of reflection.parameters ?? []) {
+      if (commentSummary(parameter.comment).length < 2) {
+        failures.push(`TypeDoc 参数缺少说明: ${qualifiedName}(${parameter.name})`);
+      }
+    }
+    const isConstructor = reflection.kind === 16384 || parents.at(-1) === 'constructor';
+    if (!isConstructor && !isVoidType(reflection.type) && !blockTagText(reflection.comment, '@returns')) {
+      failures.push(`TypeDoc 非 void 调用缺少 @returns: ${qualifiedName}`);
+    }
+    if (requiresFailureDocumentation(reflection)) {
+      const returns = blockTagText(reflection.comment, '@returns');
+      const booleanFailure = reflection.type?.type === 'intrinsic'
+        && reflection.type.name === 'boolean'
+        && /false|失败|无效/.test(returns);
+      if (!blockTagText(reflection.comment, '@throws') && !booleanFailure) {
+        failures.push(`TypeDoc 密码操作缺少异常或 false 语义: ${qualifiedName}`);
+      }
+    }
+  }
+  for (const child of reflection.children ?? []) checkTypeDocSemantics(child, [...parents, reflection.name]);
+  for (const signature of reflection.signatures ?? []) checkTypeDocSemantics(signature, [...parents, reflection.name]);
+  if (reflection.getSignature) checkTypeDocSemantics(reflection.getSignature, [...parents, reflection.name]);
+  if (reflection.setSignature) checkTypeDocSemantics(reflection.setSignature, [...parents, reflection.name]);
+}
+
 const rootPackage = JSON.parse(await readFile(path.join(repoRoot, 'package.json'), 'utf8'));
 const tsPackage = JSON.parse(await readFile(path.join(repoRoot, 'packages', 'ts', 'package.json'), 'utf8'));
 const docsPackage = JSON.parse(await readFile(path.join(docsRoot, 'package.json'), 'utf8'));
@@ -140,6 +193,31 @@ const documentedNames = collectNames(tsReflection);
 const tsEntry = await readFile(path.join(repoRoot, 'packages', 'ts', 'src', 'index.ts'), 'utf8');
 for (const exported of publicExportNames(tsEntry)) {
   if (!documentedNames.has(exported)) failures.push(`TypeDoc 缺少公开导出: ${exported}`);
+}
+for (const reflection of tsReflection.children ?? []) checkTypeDocSemantics(reflection);
+
+const manualCoverage = JSON.parse(await readFile(path.join(docsRoot, 'api', 'manual-coverage.json'), 'utf8'));
+if (manualCoverage.schemaVersion !== 2
+    || manualCoverage.memberCoverage?.typescript !== 'typedoc-public-members') {
+  failures.push('公共 API 覆盖数据未启用 TypeScript 成员级检查');
+}
+const tsManualPage = new Map();
+const tsManualContents = new Map();
+for (const [relativePage, symbols] of Object.entries(manualCoverage.typescript ?? {})) {
+  const content = await readFile(path.join(docsRoot, relativePage), 'utf8');
+  tsManualContents.set(relativePage, content);
+  for (const symbol of symbols) tsManualPage.set(symbol, relativePage);
+}
+for (const reflection of tsReflection.children ?? []) {
+  const relativePage = tsManualPage.get(reflection.name);
+  const content = tsManualContents.get(relativePage);
+  if (!relativePage || !content) continue;
+  for (const member of reflection.children ?? []) {
+    const memberName = member.name === 'constructor' ? reflection.name : member.name;
+    if (!new RegExp(`\\b${memberName.replaceAll('$', '\\$')}\\b`).test(content)) {
+      failures.push(`${relativePage} 缺少 TypeScript 公共成员: ${reflection.name}.${member.name}`);
+    }
+  }
 }
 
 const publicApi = path.join(docsRoot, '.vuepress', 'public', 'api');

@@ -135,6 +135,14 @@ if (base64.length === 0) throw new Error('static class digest failed');
 - SHA/HMAC 不能直接替代密码哈希或 KDF。
 - Java 主包没有 `cn.gmkit.sha` 封装；跨语言 Java 端使用 JDK `MessageDigest`/`Mac`。
 
+## 可执行案例
+
+下面的 SHA-256 固定摘要、增量复用和 HMAC 篡改断言直接来自文档测试。
+
+```js
+<!-- @include: ../../examples/node/public-api-manual.mjs#ts-sm3-sha-example -->
+```
+
 ## 相关页面
 
 - [SHA 算法与 Java JDK 对照](/algorithms/SHA.html)

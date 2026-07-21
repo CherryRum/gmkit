@@ -286,6 +286,18 @@ try (SM9SignMasterKey verifierKey =
 
 固定向量来自锁定提交的 [`tests/sm9test.c`](https://github.com/guanzhi/GmSSL/blob/d655c06b3a6b0fe8cff900f293bf0e5aac6eb0a2/tests/sm9test.c)。构建脚本在 JNI 测试之前执行 `ctest --output-on-failure --no-tests=error -R ^sm9$`；找不到测试或任一向量失败都会终止流水线。Java 生成的随机密钥、随机签名和随机密文只用于行为回归，不冒充固定标准向量。
 
+## 可执行案例
+
+第一段覆盖签名、错误身份、消息篡改、IBE 和 256 字节失败；第二段覆盖口令加密用户私钥与公开主密钥的 PEM 往返。两段都由需要 native runtime 的 JUnit 测试执行。
+
+```java
+<!-- @include: ../../../../packages/java/gmkit-sm9/src/test/java/cn/gmkit/sm9/SM9ManualExamplesTest.java#java-sm9-example -->
+```
+
+```java
+<!-- @include: ../../../../packages/java/gmkit-sm9/src/test/java/cn/gmkit/sm9/SM9KeyPemTest.java#java-sm9-pem-example -->
+```
+
 ## 相关页面
 
 - [SM9 平台与验证边界](/algorithms/SM9.html)

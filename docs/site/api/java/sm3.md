@@ -100,6 +100,18 @@ if (mac.equals(SM3Util.hmacHex(key, tampered))) {
 - 空消息是合法摘要输入；业务是否允许空值应在调用前校验。
 - API 不维护可变消息状态，`SM3` 实例无需 reset 或 close。
 
+## 可执行案例
+
+下面的固定摘要和 HMAC 篡改断言直接来自 JUnit 文档测试。
+
+```java
+<!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-sm3-example -->
+```
+
+```java
+<!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-sm3-hmac-example -->
+```
+
 ## 相关页面
 
 - [跨语言 SM3 固定向量](/algorithms/SM3.html)

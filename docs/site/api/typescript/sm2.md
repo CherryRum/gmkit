@@ -357,6 +357,14 @@ if (!verifier.verify('class API', signature)) {
 }
 ```
 
+## 可执行案例
+
+下面的成功验签与篡改失败断言直接来自文档测试。
+
+```js
+<!-- @include: ../../examples/node/public-api-manual.mjs#ts-sm2-example -->
+```
+
 ## 相关页面
 
 - [跨语言 SM2 协议与向量](/algorithms/SM2.html)

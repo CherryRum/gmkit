@@ -119,7 +119,7 @@ if (!Arrays.equals(input, ZUC.decrypt(key, iv, cipher))) {
 
 ## 128-EEA3 固定向量
 
-以下输入来自 3GPP TS 35.221 test set 2，消息有效长度为 800 bit。`eea3` 只返回旧兼容密钥流，真正处理消息应调用 `eea3Encrypt`。
+以下输入来自 3GPP TS 35.221 test set 2，消息有效长度为 800 bit。`eea3` 只返回旧兼容密钥流；需要按 bit 长度加密消息时调用 `eea3Encrypt`。
 
 ```ts
 import { eea3Encrypt, hexToBytes } from 'gmkitx';

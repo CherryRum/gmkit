@@ -121,6 +121,7 @@ export class SHA256 extends SHABase {
    * @param data - 输入数据
    * @param outputFormat - 输出格式（默认 hex）
    * @returns 哈希摘要
+   * @throws 输入类型或输出格式无效时抛出错误
    */
   static digest(data: string | Uint8Array, outputFormat: OutputFormatType = OutputFormat.HEX): string {
     assertOutputFormat(outputFormat);
@@ -153,6 +154,7 @@ export class SHA384 extends SHABase {
    * @param data - 输入数据
    * @param outputFormat - 输出格式（默认 hex）
    * @returns 哈希摘要
+   * @throws 输入类型或输出格式无效时抛出错误
    */
   static digest(data: string | Uint8Array, outputFormat: OutputFormatType = OutputFormat.HEX): string {
     assertOutputFormat(outputFormat);
@@ -185,6 +187,7 @@ export class SHA512 extends SHABase {
    * @param data - 输入数据
    * @param outputFormat - 输出格式（默认 hex）
    * @returns 哈希摘要
+   * @throws 输入类型或输出格式无效时抛出错误
    */
   static digest(data: string | Uint8Array, outputFormat: OutputFormatType = OutputFormat.HEX): string {
     assertOutputFormat(outputFormat);
@@ -221,6 +224,7 @@ export class SHA1 extends SHABase {
    * @param data - 输入数据
    * @param outputFormat - 输出格式（默认 hex）
    * @returns 哈希摘要
+   * @throws 输入类型或输出格式无效时抛出错误
    */
   static digest(data: string | Uint8Array, outputFormat: OutputFormatType = OutputFormat.HEX): string {
     assertOutputFormat(outputFormat);

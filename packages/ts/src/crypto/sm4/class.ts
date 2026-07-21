@@ -113,6 +113,7 @@ export class SM4 {
    * @param data - 待加密的数据
    * @param options - 本次调用覆盖选项（如 aad/tagLength/outputFormat）
    * @returns 十六进制密文；AEAD 模式下返回包含密文与标签的对象
+   * @throws key、IV/nonce、mode、padding、AAD 或 tag 长度组合无效时抛出错误
    */
   encrypt(data: string | Uint8Array, options?: Partial<FuncSM4Options>): SM4CipherResult {
     const mergedOptions: FuncSM4Options = {
@@ -129,6 +130,7 @@ export class SM4 {
    * @param encryptedData - 十六进制密文或 AEAD 模式的密文结果
    * @param options - 本次调用覆盖选项（如 aad/tag/inputFormat）
    * @returns 解密得到的明文字符串
+   * @throws key、IV/nonce、tag、padding、输入编码或认证校验无效时抛出错误
    */
   decrypt(encryptedData: BytesLike | SM4CipherResult, options?: Partial<FuncSM4DecryptOptions>): string {
     const mergedOptions: FuncSM4DecryptOptions = {

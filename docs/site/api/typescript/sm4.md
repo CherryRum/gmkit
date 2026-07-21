@@ -238,6 +238,14 @@ if (cipher.decrypt(encrypted, { aad }) !== message) {
 - `sm4Decrypt` 只适合 UTF-8 文本；二进制使用 `sm4DecryptBytes`。
 - 结果对象不是稳定的跨语言 JSON schema；传输前应固定字段名、编码和版本。
 
+## 可执行案例
+
+下面的 GCM 往返和认证失败断言直接来自文档测试。
+
+```js
+<!-- @include: ../../examples/node/public-api-manual.mjs#ts-sm4-example -->
+```
+
 ## 相关页面
 
 - [跨语言 SM4 模式与示例](/algorithms/SM4.html)

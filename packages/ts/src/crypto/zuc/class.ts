@@ -100,6 +100,7 @@ export class ZUC {
    * @param plaintext - 待加密的数据（字符串或 Uint8Array）
    * @param options - 输出编码；默认 Hex
    * @returns 十六进制字符串形式的密文
+   * @throws key、IV、输入类型或输出格式无效时抛出错误
    */
   encrypt(plaintext: string | Uint8Array, options?: ZUCOptions): string {
     return encryptFunc(this.key, this.iv, plaintext, options);
@@ -110,6 +111,7 @@ export class ZUC {
    * @param ciphertext - 十六进制字符串形式的密文
    * @param options - 字符串输入编码；省略时自动识别 Hex/Base64
    * @returns 解密后的字符串
+   * @throws key、IV、密文编码或输入类型无效时抛出错误
    */
   decrypt(ciphertext: string | Uint8Array, options?: ZUCDecryptOptions): string {
     return decryptFunc(this.key, this.iv, ciphertext, options);
@@ -130,6 +132,7 @@ export class ZUC {
    * 生成 ZUC 密钥流
    * @param length - 需要生成的字节长度
    * @returns 十六进制字符串形式的密钥流
+   * @throws key、IV 或长度不是合法的 ZUC-128 输入时抛出错误
    */
   keystream(length: number): string {
     return getKeystreamFunc(this.key, this.iv, length);
@@ -184,6 +187,7 @@ export class ZUC {
    * @param message - 待加密消息；字符串按 UTF-8
    * @param bitLength - 参与加密的消息 bit 数；省略时使用全部字节
    * @returns 小写 Hex 密文；末字节未使用 bit 清零
+   * @throws key、COUNT、BEARER、DIRECTION 或 bitLength 超出协议范围时抛出错误
    */
   static eea3Encrypt(
     key: string | Uint8Array,

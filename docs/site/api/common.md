@@ -168,7 +168,7 @@ Java 使用 `SM2Signatures` 在 raw/DER 间转换，使用 `SM2Ciphertexts` 处�
 
 ## Java 混合加密
 
-`SM2Sm4Hybrid` 是 Java 便利入口：生成随机 SM4 key，使用 SM4 处理载荷，再用 SM2 加密会话 key。`SM2Sm4HybridPayload` 分字段保存 encryptedKey、ciphertext、IV、AAD、tag、mode 与 padding，并提供 Hex/Base64 getter。
+Java 提供 `SM2Sm4Hybrid` 组合流程：随机生成 SM4 会话 key，加密业务载荷后再用 SM2 保护会话 key。字段、认证失败和序列化边界只在 [Java SM2 + SM4 混合加密 API](/api/java/integration.html) 中说明。
 
 该对象没有定义稳定的跨语言序列化 schema。发送到其他系统前必须固定字段编码、版本、SM2 密文排列、SM4 mode/tag 和 key id；TypeScript 对端可使用 SM2/SM4 API 逐字段处理。
 

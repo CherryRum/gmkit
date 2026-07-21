@@ -236,6 +236,14 @@ if (!bytesToHex(der).startsWith('30')) throw new Error('DER must be a SEQUENCE')
 
 弃用只影响类型提示，不改变当前运行时。新代码不要继续引入这些无算法前缀的名称。
 
+## 可执行案例
+
+下面的编码失败断言和 ASN.1 往返直接来自文档测试，站点构建会校验引用区域存在，测试任务会执行同一文件。
+
+```js
+<!-- @include: ../../examples/node/public-api-manual.mjs#ts-common-example -->
+```
+
 ## 相关页面
 
 - [跨语言公共约定](/api/common.html)

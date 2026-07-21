@@ -435,6 +435,14 @@ String s2Hex()
 
 byte[] getter 返回防御性复制。发起方和响应方必须镜像角色、双方身份、静态/临时密钥位置和 `keyBits`；TypeScript 的 `keyLength` 单位是 byte，而 Java `keyBits` 单位是 bit。
 
+## 可执行案例
+
+下面的标准签名、正确消息和篡改消息断言直接来自 JUnit 文档测试。
+
+```java
+<!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-sm2-example -->
+```
+
 ## 相关页面
 
 - [跨语言 SM2 协议与向量](/algorithms/SM2.html)

@@ -323,6 +323,7 @@ export function decodeSequence(data: Uint8Array, offset: number = 0): { elements
  * @param r - 签名分量 r（十六进制字符串或字节数组）
  * @param s - 签名分量 s（十六进制字符串或字节数组）
  * @returns DER 编码的签名
+ * @throws r 或 s 不是有效非负整数编码时抛出错误
  */
 export function encodeSignature(r: string | Uint8Array, s: string | Uint8Array): Uint8Array {
   const rEncoded = encodeInteger(r);
@@ -523,5 +524,4 @@ export function signatureToXml(
     '</SM2Signature>'
   ].join('\n');
 }
-
 

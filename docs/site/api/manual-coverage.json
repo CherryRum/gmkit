@@ -1,5 +1,9 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "memberCoverage": {
+    "typescript": "typedoc-public-members",
+    "java": "declared-public-members"
+  },
   "typescript": {
     "api/typescript/README.md": [
       "sha",

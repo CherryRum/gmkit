@@ -234,6 +234,14 @@ generateKeyword(): number
 
 `initialize` 只接受两个 16 字节数组，`generateKeyword` 每次推进状态并返回一个无符号 32-bit word。普通业务代码优先使用高层密钥流 API；直接管理 `ZUCState` 时不得在不同消息之间复用已推进的状态。
 
+## 可执行案例
+
+下面的 byte/word 长度对照和非法 key 失败断言直接来自文档测试。
+
+```js
+<!-- @include: ../../examples/node/public-api-manual.mjs#ts-zuc-example -->
+```
+
 ## 相关页面
 
 - [跨语言 ZUC/EEA3/EIA3 参数与向量](/algorithms/ZUC.html)

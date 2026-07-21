@@ -44,6 +44,7 @@ export class SM3 {
    * @param data - 要哈希的数据
    * @param options - 哈希选项
    * @returns 哈希摘要（默认返回十六进制字符串）
+   * @throws 输入类型或输出格式无效时抛出错误
    */
   static digest(data: string | Uint8Array, options?: SM3Options): string {
     return digestFunc(data, options);
@@ -55,6 +56,7 @@ export class SM3 {
    * @param data - 要认证的数据
    * @param options - 哈希选项
    * @returns HMAC 值（默认返回十六进制字符串）
+   * @throws key、消息类型或输出格式无效时抛出错误
    */
   static hmac(key: string | Uint8Array, data: string | Uint8Array, options?: SM3Options): string {
     return hmacFunc(key, data, options);
@@ -75,6 +77,7 @@ export class SM3 {
    * 注意：调用此方法后会清空内部状态
    * @param options - 哈希选项（可覆盖实例的输出格式）
    * @returns 哈希摘要
+   * @throws 输出格式无效时抛出错误；失败时当前增量状态不会被重置
    */
   digest(options?: SM3Options): string {
     const outputFormat = options?.outputFormat || this.outputFormat;

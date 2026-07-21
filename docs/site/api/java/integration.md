@@ -194,6 +194,14 @@ SM2Sm4HybridPayload payload =
 - 该对象不包含 key id、证书链或密钥轮换信息，应用需在外层协议补充。
 - TypeScript 对端需要使用 SM2/SM4 API 逐字段实现相同流程，不能直接反序列化成 Java 对象。
 
+## 可执行案例
+
+下面的 GCM 元数据、解密往返和篡改 tag 失败断言直接来自 JUnit 文档测试。
+
+```java
+<!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-hybrid-example -->
+```
+
 ## 相关页面
 
 - [Java SM2 API](/api/java/sm2.html)

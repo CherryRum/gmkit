@@ -227,6 +227,14 @@ invalidSm2RawSignatureEncoding
 
 错误消息文本不属于稳定的机器协议。应用应按异常类型和业务上下文处理，不要解析自然语言字符串。
 
+## 可执行案例
+
+下面的显式 Base64 解码、Hex 输出和非法 Hex 断言直接来自 JUnit 文档测试。
+
+```java
+<!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-core-example -->
+```
+
 ## 相关页面
 
 - [跨语言公共约定](/api/common.html)

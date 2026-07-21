@@ -587,6 +587,7 @@ export function isBase64String(str: string): boolean {
  * 自动检测并解码字符串（十六进制或 Base64）
  * @param str - 十六进制或 Base64 格式的字符串
  * @returns 解码后的 Uint8Array
+ * @throws 输入既不是规范 Hex 也不是规范 Base64 时抛出错误
  */
 export function autoDecodeString(str: string): Uint8Array {
   if (isHexString(str)) {

@@ -30,7 +30,7 @@ async function publicJavaTypes(directory) {
     const match = source.match(/^public\s+(?:(?:final|abstract)\s+)?(?:class|interface|enum)\s+([A-Za-z_$][\w$]*)/m);
     const packageName = source.match(/^package\s+([A-Za-z_$][\w.$]*);/m)?.[1];
     if (match && packageName) {
-      types.push({ name: match[1], fqcn: `${packageName}.${match[1]}` });
+      types.push({ name: match[1], fqcn: `${packageName}.${match[1]}`, source, file: absolute });
     }
   }
   return types.sort((left, right) => left.fqcn.localeCompare(right.fqcn));
@@ -119,6 +119,17 @@ const forbiddenClaims = [
   '全面支持所有',
   '完全符合',
 ];
+const forbiddenPhrases = [
+  'API Reference',
+  '便利入口',
+  '便利封装',
+  '真正',
+  '完整能力',
+  '从这里开始',
+  'wire format',
+  '国内很少使用',
+  '国内使用较少',
+];
 
 async function checkLocalLinks(file, content, relative) {
   const prose = stripFencedCode(content);
@@ -174,6 +185,12 @@ for (const file of markdownFiles) {
   for (const claim of forbiddenClaims) {
     if (prose.includes(claim)) failures.push(`${relative}: 包含缺少证据边界的表述 ${claim}`);
   }
+  for (const phrase of forbiddenPhrases) {
+    if (prose.includes(phrase)) failures.push(`${relative}: 包含需要改写的表述 ${phrase}`);
+  }
+  if (/\/api\/(?:java|typescript)\/latest\//.test(prose)) {
+    failures.push(`${relative}: 包含用户可见的 latest API 链接`);
+  }
 
   await checkLocalLinks(file, content, relative);
 
@@ -214,17 +231,23 @@ for (const sourceRoot of [
 
 const manualCoveragePath = path.join(docsRoot, 'api', 'manual-coverage.json');
 const manualCoverage = JSON.parse(await readFile(manualCoveragePath, 'utf8'));
-if (manualCoverage.schemaVersion !== 1) {
+if (manualCoverage.schemaVersion !== 2) {
   failures.push(`api/manual-coverage.json schemaVersion 不支持: ${manualCoverage.schemaVersion}`);
+}
+if (manualCoverage.memberCoverage?.typescript !== 'typedoc-public-members'
+    || manualCoverage.memberCoverage?.java !== 'declared-public-members') {
+  failures.push('api/manual-coverage.json 缺少双语言成员级覆盖策略');
 }
 
 async function checkManualCoverage(language, entries, expectedSymbols) {
   const assigned = new Map();
+  const pages = new Map();
   for (const [relativePage, symbols] of Object.entries(entries ?? {})) {
     const page = path.join(docsRoot, relativePage);
     let content;
     try {
       content = await readFile(page, 'utf8');
+      pages.set(relativePage, content);
     } catch {
       failures.push(`api/manual-coverage.json 的 ${language} 页面不存在: ${relativePage}`);
       continue;
@@ -255,10 +278,99 @@ async function checkManualCoverage(language, entries, expectedSymbols) {
   for (const symbol of assigned.keys()) {
     if (!expected.has(symbol)) failures.push(`api/manual-coverage.json 包含非公开 ${language} API: ${symbol}`);
   }
+  return { assigned, pages };
 }
 
-await checkManualCoverage('typescript', manualCoverage.typescript, publicExportNames(publicEntry));
-await checkManualCoverage('java', manualCoverage.java, javaTypes.map(({ fqcn }) => fqcn));
+const typescriptCoverage = await checkManualCoverage(
+  'typescript',
+  manualCoverage.typescript,
+  publicExportNames(publicEntry),
+);
+const javaCoverage = await checkManualCoverage(
+  'java',
+  manualCoverage.java,
+  javaTypes.map(({ fqcn }) => fqcn),
+);
+
+function publicJavaMemberNames({ name, source }) {
+  const names = new Set();
+  const constructorPattern = new RegExp(`^\\s*public\\s+${name}\\s*\\(`, 'gm');
+  if (constructorPattern.test(source)) names.add(name);
+
+  const methodPattern = /^\s*public\s+(?:(?:static|final|abstract|synchronized|native|default|strictfp)\s+)*(?:<[^\n;{}]+>\s+)?[^\n;={}]+?\s+([A-Za-z_$][\w$]*)\s*\(/gm;
+  for (const match of source.matchAll(methodPattern)) names.add(match[1]);
+
+  const fieldPattern = /^\s*public\s+(?:(?:static|final|volatile|transient)\s+)+[^\n;={}]+?\s+([A-Za-z_$][\w$]*)\s*(?:=|;)/gm;
+  for (const match of source.matchAll(fieldPattern)) names.add(match[1]);
+
+  const enumBody = source.match(new RegExp(`public\\s+enum\\s+${name}\\s*\\{([\\s\\S]*?)(?:;|\\n})`))?.[1];
+  if (enumBody) {
+    for (const match of enumBody.matchAll(/^\s*([A-Z][A-Z0-9_]*)\s*(?:,|\()/gm)) names.add(match[1]);
+  }
+  return [...names].sort();
+}
+
+for (const javaType of javaTypes) {
+  const relativePage = javaCoverage.assigned.get(javaType.fqcn);
+  const content = javaCoverage.pages.get(relativePage);
+  if (!relativePage || !content) continue;
+  for (const member of publicJavaMemberNames(javaType)) {
+    if (!new RegExp(`\\b${member.replaceAll('$', '\\$')}\\b`).test(content)) {
+      failures.push(`${relativePage} 缺少 Java 公共成员: ${javaType.fqcn}.${member}`);
+    }
+  }
+}
+
+const requiredExamplePages = new Map([
+  ['api/typescript/common.md', ['ts-common-example']],
+  ['api/typescript/sm2.md', ['ts-sm2-example']],
+  ['api/typescript/sm3.md', ['ts-sm3-sha-example']],
+  ['api/typescript/sha.md', ['ts-sm3-sha-example']],
+  ['api/typescript/sm4.md', ['ts-sm4-example']],
+  ['api/typescript/zuc.md', ['ts-zuc-example']],
+  ['api/java/core.md', ['java-core-example']],
+  ['api/java/sm2.md', ['java-sm2-example']],
+  ['api/java/sm3.md', ['java-sm3-example', 'java-sm3-hmac-example']],
+  ['api/java/sm4.md', ['java-sm4-example']],
+  ['api/java/zuc.md', ['java-zuc-example']],
+  ['api/java/sm9.md', ['java-sm9-example', 'java-sm9-pem-example']],
+  ['api/java/integration.md', ['java-hybrid-example']],
+]);
+const exampleRunner = await readFile(path.join(docsRoot, 'scripts', 'test-examples.mjs'), 'utf8');
+const executedSources = new Map([
+  ['examples/node/public-api-manual.mjs', 'public-api-manual.mjs'],
+  ['../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java', 'PublicApiManualExamplesTest'],
+  ['../../packages/java/gmkit-sm9/src/test/java/cn/gmkit/sm9/SM9ManualExamplesTest.java', 'SM9ManualExamplesTest'],
+  ['../../packages/java/gmkit-sm9/src/test/java/cn/gmkit/sm9/SM9KeyPemTest.java', 'SM9KeyPemTest'],
+]);
+
+for (const [relativePage, requiredRegions] of requiredExamplePages) {
+  const page = path.join(docsRoot, relativePage);
+  const content = await readFile(page, 'utf8');
+  const includes = [...content.matchAll(/<!--\s*@include:\s+([^#\s]+)#([A-Za-z0-9_-]+)\s*-->/g)];
+  const includedRegions = new Set(includes.map((match) => match[2]));
+  for (const region of requiredRegions) {
+    if (!includedRegions.has(region)) failures.push(`${relativePage}: 缺少可执行测试区域 ${region}`);
+  }
+  for (const [, includePath, region] of includes) {
+    const source = path.resolve(path.dirname(page), includePath);
+    let sourceContent;
+    try {
+      sourceContent = await readFile(source, 'utf8');
+    } catch {
+      failures.push(`${relativePage}: 示例源文件不存在 ${includePath}`);
+      continue;
+    }
+    if (!sourceContent.includes(`#region ${region}`) || !sourceContent.includes(`#endregion ${region}`)) {
+      failures.push(`${relativePage}: 示例区域不存在或未闭合 ${includePath}#${region}`);
+    }
+    const sourceFromDocs = path.relative(docsRoot, source).replaceAll('\\', '/');
+    const runnerToken = executedSources.get(sourceFromDocs);
+    if (!runnerToken || !exampleRunner.includes(runnerToken)) {
+      failures.push(`${relativePage}: 示例源文件未进入 docs:test-examples ${includePath}`);
+    }
+  }
+}
 
 // 正式发布文档中的版本必须来自构建清单，避免升级后保留可运行但过期的样例。
 const rootPackage = JSON.parse(await readFile(path.join(repoRoot, 'package.json'), 'utf8'));

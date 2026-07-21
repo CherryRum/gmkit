@@ -115,6 +115,14 @@ if (state.getOutputFormat() !== OutputFormat.BASE64) {
 - 摘要输出不是加密，无法从摘要恢复原文。
 - 比较敏感摘要或 MAC 时先解码为字节，再调用 `constantTimeEqual`。
 
+## 可执行案例
+
+下面的固定摘要、增量复用和 HMAC 篡改断言直接来自文档测试。
+
+```js
+<!-- @include: ../../examples/node/public-api-manual.mjs#ts-sm3-sha-example -->
+```
+
 ## 相关页面
 
 - [跨语言 SM3 协议与固定向量](/algorithms/SM3.html)

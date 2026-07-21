@@ -80,26 +80,30 @@ class SM9KeyPemTest {
 
     @Test
     void signUserKeyEncryptedPemRoundTripShouldSign(@TempDir Path dir) {
-        byte[] message = "pem-user".getBytes(StandardCharsets.UTF_8);
+        // #region java-sm9-pem-example
+        byte[] message =
+            "order=GMKIT-DEMO-0001&amount=88.00".getBytes(StandardCharsets.UTF_8);
+        String id = "warehouse@gmkit.cn";
         String keyFile = dir.resolve("sign_user.pem").toString();
         String mpkFile = dir.resolve("sign_mpk3.pem").toString();
 
         try (SM9SignMasterKey master = SM9.generateSignMasterKey()) {
             master.exportPublicMasterKeyPem(mpkFile);
-            try (SM9SignKey signKey = master.extractKey("alice@example.com")) {
+            try (SM9SignKey signKey = master.extractKey(id)) {
                 signKey.exportEncryptedPrivateKeyInfoPem(PASSWORD, keyFile);
             }
         }
 
         byte[] signature;
         try (SM9SignKey reloaded =
-                     SM9SignKey.importEncryptedPrivateKeyInfoPem(PASSWORD, keyFile, "alice@example.com")) {
+                     SM9SignKey.importEncryptedPrivateKeyInfoPem(PASSWORD, keyFile, id)) {
             signature = SM9.sign(reloaded, message);
         }
 
         try (SM9SignMasterKey pub = SM9SignMasterKey.importPublicMasterKeyPem(mpkFile)) {
-            assertTrue(SM9.verify(pub, "alice@example.com", message, signature));
+            assertTrue(SM9.verify(pub, id, message, signature));
         }
+        // #endregion java-sm9-pem-example
     }
 
     @Test

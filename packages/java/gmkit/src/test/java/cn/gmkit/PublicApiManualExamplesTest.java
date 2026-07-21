@@ -75,79 +75,110 @@ class PublicApiManualExamplesTest {
 
     @Test
     void explicitEncodingRoundTrips() {
+        // #region java-core-example
         byte[] bytes = ByteEncodings.decode("AP+AQQ==", InputFormat.BASE64, "payload");
         assertEquals("00ff8041", ByteEncodings.encode(bytes, OutputFormat.HEX));
         assertThrows(GmkitException.class, () -> HexCodec.decodeStrict("0xz1", "payload"));
+        // #endregion java-core-example
     }
 
     @Test
     void objectStyleSm2AndSm3WorkAsDocumented() {
+        // #region java-sm2-example
+        String message = "order=GMKIT-DEMO-0001&amount=88.00";
+        String changedMessage = "order=GMKIT-DEMO-0001&amount=99.00";
+        String userId = "merchant@gmkit.cn";
         SM2 sm2 = new SM2();
         SM2KeyPair keys = sm2.generateKeyPair();
         String signature = sm2.signHex(
             keys.privateKey(),
-            MESSAGE,
-            SM2SignOptions.builder().userId(USER_ID).build());
+            message,
+            SM2SignOptions.builder().userId(userId).build());
 
         assertTrue(sm2.verify(
             keys.publicKey(),
-            MESSAGE,
+            message,
             signature,
-            SM2VerifyOptions.builder().userId(USER_ID).build()));
+            SM2VerifyOptions.builder().userId(userId).build()));
+        assertFalse(sm2.verify(
+            keys.publicKey(),
+            changedMessage,
+            signature,
+            SM2VerifyOptions.builder().userId(userId).build()));
+        // #endregion java-sm2-example
+
+        // #region java-sm3-example
         assertEquals(
             "66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0",
             new SM3().digestHex("abc"));
+        // #endregion java-sm3-example
     }
 
     @Test
     void sm4GcmReturnsCiphertextAndTag() {
+        // #region java-sm4-example
+        String message = "order=GMKIT-DEMO-0001&amount=88.00";
+        byte[] aad = "tenant=demo;schema=1".getBytes(StandardCharsets.UTF_8);
         byte[] key = HexCodec.decodeStrict("0123456789abcdeffedcba9876543210", "SM4 key");
         SM4Options options = SM4Options.builder()
             .mode(GCM)
             .padding(NONE)
             .iv(HexCodec.decodeStrict("000102030405060708090a0b", "SM4 nonce"))
-            .aad(AAD)
+            .aad(aad)
             .tagLength(16)
             .build();
 
         SM4 sm4 = new SM4();
-        SM4CipherResult encrypted = sm4.encrypt(key, MESSAGE, options);
+        SM4CipherResult encrypted = sm4.encrypt(key, message, options);
         assertNotNull(encrypted.tag());
-        assertEquals(MESSAGE, sm4.decryptToUtf8(key, encrypted, options));
+        assertEquals(message, sm4.decryptToUtf8(key, encrypted, options));
 
         byte[] tamperedTag = encrypted.tag();
         tamperedTag[0] ^= 0x01;
         SM4CipherResult tampered = new SM4CipherResult(encrypted.ciphertext(), tamperedTag);
         assertThrows(GmkitException.class, () -> sm4.decryptToUtf8(key, tampered, options));
+        // #endregion java-sm4-example
     }
 
     @Test
     void hmacChangesWhenOrderAmountChanges() {
+        // #region java-sm3-hmac-example
+        String message = "order=GMKIT-DEMO-0001&amount=88.00";
+        String changedMessage = "order=GMKIT-DEMO-0001&amount=99.00";
         byte[] key = "merchant-demo-key".getBytes(StandardCharsets.UTF_8);
-        assertFalse(SM3Util.hmacHex(key, MESSAGE).equals(SM3Util.hmacHex(key, TAMPERED)));
+        assertFalse(SM3Util.hmacHex(key, message).equals(SM3Util.hmacHex(key, changedMessage)));
+        // #endregion java-sm3-hmac-example
     }
 
     @Test
     void zucLengthIsMeasuredInBytes() {
+        // #region java-zuc-example
         assertEquals(
             "27bede74018082da",
             ZUC.keystreamHex(
                 "00000000000000000000000000000000",
                 "00000000000000000000000000000000",
                 8));
+        assertThrows(
+            GmkitException.class,
+            () -> ZUC.keystreamHex("00", "00000000000000000000000000000000", 8));
+        // #endregion java-zuc-example
     }
 
     @Test
     void hybridPayloadCarriesAllDecryptionMetadata() {
+        // #region java-hybrid-example
+        String message = "order=GMKIT-DEMO-0001&amount=88.00";
+        byte[] aad = "tenant=demo;schema=1".getBytes(StandardCharsets.UTF_8);
         SM2KeyPair keys = new SM2().generateKeyPair();
         SM2Sm4Hybrid hybrid = new SM2Sm4Hybrid();
         SM4Options options = SM4Options.builder()
             .mode(GCM)
             .padding(NONE)
-            .aad(AAD)
+            .aad(aad)
             .tagLength(16)
             .build();
-        SM2Sm4HybridPayload payload = hybrid.encrypt(keys.publicKey(), MESSAGE, StandardCharsets.UTF_8, options);
+        SM2Sm4HybridPayload payload = hybrid.encrypt(keys.publicKey(), message, StandardCharsets.UTF_8, options);
 
         assertNotNull(payload.encryptedKey());
         assertNotNull(payload.ciphertext());
@@ -156,7 +187,7 @@ class PublicApiManualExamplesTest {
         assertTrue(payload.hasTag());
         assertEquals(GCM, payload.mode());
         assertArrayEquals(
-            MESSAGE.getBytes(StandardCharsets.UTF_8),
+            message.getBytes(StandardCharsets.UTF_8),
             hybrid.decrypt(keys.privateKey(), payload));
 
         byte[] changedTag = payload.tag();
@@ -170,5 +201,6 @@ class PublicApiManualExamplesTest {
             payload.mode(),
             payload.padding());
         assertThrows(GmkitException.class, () -> hybrid.decrypt(keys.privateKey(), tampered));
+        // #endregion java-hybrid-example
     }
 }
