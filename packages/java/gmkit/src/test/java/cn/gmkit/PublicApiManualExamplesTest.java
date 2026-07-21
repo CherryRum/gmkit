@@ -141,15 +141,34 @@ class PublicApiManualExamplesTest {
     void hybridPayloadCarriesAllDecryptionMetadata() {
         SM2KeyPair keys = new SM2().generateKeyPair();
         SM2Sm4Hybrid hybrid = new SM2Sm4Hybrid();
-        SM2Sm4HybridPayload payload = hybrid.encrypt(keys.publicKey(), "混合加密说明书");
+        SM4Options options = SM4Options.builder()
+            .mode(GCM)
+            .padding(NONE)
+            .aad(AAD)
+            .tagLength(16)
+            .build();
+        SM2Sm4HybridPayload payload = hybrid.encrypt(keys.publicKey(), MESSAGE, StandardCharsets.UTF_8, options);
 
         assertNotNull(payload.encryptedKey());
         assertNotNull(payload.ciphertext());
         assertTrue(payload.hasIv());
+        assertTrue(payload.hasAad());
         assertTrue(payload.hasTag());
         assertEquals(GCM, payload.mode());
         assertArrayEquals(
-            "混合加密说明书".getBytes(StandardCharsets.UTF_8),
+            MESSAGE.getBytes(StandardCharsets.UTF_8),
             hybrid.decrypt(keys.privateKey(), payload));
+
+        byte[] changedTag = payload.tag();
+        changedTag[0] ^= 0x01;
+        SM2Sm4HybridPayload tampered = new SM2Sm4HybridPayload(
+            payload.encryptedKey(),
+            payload.ciphertext(),
+            payload.iv(),
+            payload.aad(),
+            changedTag,
+            payload.mode(),
+            payload.padding());
+        assertThrows(GmkitException.class, () -> hybrid.decrypt(keys.privateKey(), tampered));
     }
 }

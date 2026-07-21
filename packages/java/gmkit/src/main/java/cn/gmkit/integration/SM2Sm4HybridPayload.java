@@ -12,7 +12,8 @@ import cn.gmkit.core.SM4Padding;
  * SM2 + SM4 混合加密载荷。
  * <p>
  * 统一承载会话密钥密文、业务密文以及 IV、AAD、tag、模式和填充等元数据，
- * 便于接口层、消息层或持久化层直接透传。
+ * 并对所有字节数组执行防御性复制。该类型不定义 JSON、CBOR 或二进制序列化格式；
+ * 跨进程使用时必须由调用方固定 schema 版本、字段编码和密钥标识。
  */
 public final class SM2Sm4HybridPayload {
 

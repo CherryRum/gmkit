@@ -15,7 +15,9 @@ tag:
 
 # Java SM2 + SM4 混合加密 API
 
-`SM2Sm4Hybrid` 执行 SM2 + SM4 混合加密：生成一次性 SM4 会话 key，用 SM4 处理业务数据，再用 SM2 公钥加密会话 key。返回对象只是 Java 值对象，不是已经定义的跨语言数据格式。
+`SM2Sm4Hybrid` 执行 SM2 + SM4 混合加密：生成一次性 SM4 会话 key，用 SM4 处理业务数据，再用接收方 SM2 公钥加密会话 key。它适合把超过 SM2 单次加密范围的订单、文件片段或消息交给指定接收方；它不负责证书校验、密钥轮换，也不定义可直接上网传输的序列化格式。
+
+返回的 `SM2Sm4HybridPayload` 是 Java 值对象。跨服务或跨语言使用时，调用方必须在外层协议中固定 schema 版本、字段编码和接收方 key id。
 
 ## 构造和默认值
 
@@ -72,7 +74,7 @@ String decryptToString(
     Charset charset)
 ```
 
-解密会先用 SM2 C1C3C2 恢复会话 key，再按 payload 中的 mode、padding、IV、AAD 和 tag 执行 SM4。任一字段被篡改都可能导致解密或认证失败。
+解密会先用 SM2 C1C3C2 恢复会话 key，再按 payload 中的 mode、padding、IV、AAD 和 tag 执行 SM4。默认 GCM 路径中，密文、nonce、AAD 或 tag 不一致会抛 `GmkitException`，不会返回未认证明文；会话 key 密文损坏也会在 SM2 校验阶段失败。若调用方显式改用 CBC、CTR 等非 AEAD 模式，库无法替应用补上完整性保护。
 
 ## `SM2Sm4HybridPayload`
 
@@ -118,21 +120,36 @@ SM4Padding padding()
 
 所有 byte[] 构造参数和 getter 都执行防御性复制。不存在的 IV/AAD/tag 返回 null，相应 `has*` 返回 false。
 
-## 完整示例
+## 默认 GCM：成功与篡改失败
 
 ```java
 SM2KeyPair keys = SM2Util.generateKeyPair();
 SM2Sm4Hybrid hybrid = new SM2Sm4Hybrid();
 
+String message = "order=GMKIT-DEMO-0001&amount=88.00";
+
 SM2Sm4HybridPayload payload =
-    hybrid.encrypt(keys.publicKey(), "需要保护的业务数据");
+    hybrid.encrypt(keys.publicKey(), message);
 if (!payload.hasIv() || !payload.hasTag()
         || payload.mode() != SM4CipherMode.GCM) {
     throw new IllegalStateException("hybrid metadata incomplete");
 }
 String plaintext = hybrid.decryptToUtf8(keys.privateKey(), payload);
-if (!"需要保护的业务数据".equals(plaintext)) {
+if (!message.equals(plaintext)) {
     throw new IllegalStateException("hybrid round-trip failed");
+}
+
+// 改动 tag 后，GCM 必须拒绝返回明文。
+byte[] changedTag = payload.tag();
+changedTag[0] ^= 0x01;
+SM2Sm4HybridPayload changed = new SM2Sm4HybridPayload(
+    payload.encryptedKey(), payload.ciphertext(), payload.iv(),
+    payload.aad(), changedTag, payload.mode(), payload.padding());
+try {
+    hybrid.decrypt(keys.privateKey(), changed);
+    throw new IllegalStateException("tampered tag must fail");
+} catch (GmkitException expected) {
+    // 预期：认证失败。
 }
 ```
 
@@ -144,11 +161,14 @@ SM2Sm4Hybrid hybrid = new SM2Sm4Hybrid();
 SM4Options options = SM4Options.builder()
     .mode(SM4CipherMode.GCM)
     .padding(SM4Padding.NONE)
-    .aad(Texts.utf8("tenant=example;schema=1"))
+    .aad(Texts.utf8("tenant=demo;schema=1"))
     .tagLength(16)
     .build();
 SM2Sm4HybridPayload payload =
-    hybrid.encrypt(keys.publicKey(), Texts.utf8("binary payload"), options);
+    hybrid.encrypt(
+        keys.publicKey(),
+        Texts.utf8("order=GMKIT-DEMO-0001&amount=88.00"),
+        options);
 ```
 
 ## 序列化边界

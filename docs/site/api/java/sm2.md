@@ -16,7 +16,7 @@ tag:
 
 # Java SM2 API
 
-`cn.gmkit.sm2` 提供实例式 `SM2`、静态式 `SM2Util`、三个选项 Builder、密钥/密文/交换结果值对象和格式转换工具。普通业务从 `SM2` 或 `SM2Util` 开始；协议适配再使用底层格式类型。
+`cn.gmkit.sm2` 提供实例式 `SM2`、静态式 `SM2Util`、三个选项 Builder、密钥/密文/交换结果值对象和格式转换工具。它适合签名、小数据加密和协议级密钥交换；文件或大消息应使用随机 SM4 会话 key 加密，再由 SM2 保护该 key。普通业务从 `SM2` 或 `SM2Util` 开始，只有在对接既有协议时才需要底层格式类型。
 
 ## 常量、构造和密钥
 
@@ -344,7 +344,7 @@ byte[] computeEWithoutZ(String message, Charset charset)
 | 旧 no-Z 兼容 | `SM3(M)` | 非标准且已弃用；只迁移既有旧协议 |
 | 预计算 e | 调用方直接传入 | `signDigest` / `verifyDigest` 高级接口；调用方负责摘要协议正确性 |
 
-`signWithoutZ`、`verifyWithoutZ`、`computeEWithoutZ` 及 `skipZComputation` 方法族已经弃用。它们不调用 Bouncy Castle `SM2Signer`，也不能作为性能优化使用。标准签名会计算 Z；身份不同必须验签失败。预计算 e 则完全信任调用方输入，不能与 no-Z 混为一种语义。
+`signWithoutZ`、`verifyWithoutZ`、`computeEWithoutZ` 及 `skipZComputation` 方法族已经弃用。它们不调用 Bouncy Castle `SM2Signer`，也不能作为性能优化使用。标准签名会计算 Z；身份不同必须验签失败。预计算 e 则完全信任调用方输入，不能与 no-Z 混为一种语义。Bouncy Castle 1.83 的 [`SM2Signer`](https://github.com/bcgit/bc-java/blob/r1rv83/core/src/main/java/org/bouncycastle/crypto/signers/SM2Signer.java) 没有跳过 Z 的公开选项；GMKit 的互操作测试也锁定了标准签名双向通过、no-Z 签名不能由 BC 标准路径验证的边界。
 
 ## 签名与密文格式工具
 
