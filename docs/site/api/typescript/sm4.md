@@ -28,6 +28,7 @@ SM4 是 128 bit 分组密码：key 固定 16 字节，分组也固定 16 字节�
 
 ## 导入与入口选择
 
+<!-- code-reference -->
 ```ts
 import {
   CipherMode,
@@ -68,6 +69,7 @@ import type {
 
 ## 三个函数的完整签名
 
+<!-- code-reference -->
 ```ts
 sm4Encrypt(
   key: string | Uint8Array,
@@ -101,6 +103,7 @@ sm4DecryptBytes(
 
 ## `SM4Options` 与 `SM4DecryptOptions`
 
+<!-- code-reference -->
 ```ts
 interface SM4Options {
   mode?: CipherModeType;
@@ -176,6 +179,7 @@ Java/JCE 中常见的 `PKCS5Padding` 名称在 16 字节分组密码上通常实
 
 ## `SM4CipherResult` 与三个别名
 
+<!-- code-reference -->
 ```ts
 interface SM4CipherResult {
   ciphertext: string;
@@ -204,6 +208,7 @@ type SM4AEADResult = SM4CipherResult;
 
 ## SM4-GCM：推荐的新协议写法
 
+<!-- code-sample id="api-typescript-sm4-05" steps="准备参数|生成 nonce|SM4-GCM 加密|加密结果断言|SM4-GCM 解密|成功断言|构造篡改结果|失败断言" -->
 ```ts
 import {
   CipherMode,
@@ -264,6 +269,7 @@ nonce 不需要保密，但必须与密文一起原样保存。相同 key 下重
 
 ### 密文与 tag 分开传输
 
+<!-- code-sample id="api-typescript-sm4-06" steps="SM4-GCM 解密|成功断言" -->
 ```ts
 import { InputFormat, sm4Decrypt } from 'gmkitx';
 
@@ -285,6 +291,7 @@ if (plaintext !== message) throw new Error('separated GCM fields failed');
 
 ## SM4-CCM：nonce 长度影响消息上限
 
+<!-- code-sample id="api-typescript-sm4-07" steps="准备参数|SM4-CCM 加密|tag 长度断言|SM4-CCM 解密|成功断言" -->
 ```ts
 import { CipherMode, getRandomBytes, sm4Decrypt, sm4Encrypt } from 'gmkitx';
 
@@ -325,6 +332,7 @@ CCM 与 GCM 一样要求相同 key 下 nonce 唯一，AAD 也必须逐字节一�
 
 下面只用 ECB + NONE 暴露单个分组的算法结果，目的是核对实现，不是推荐 ECB 作为业务模式。
 
+<!-- code-sample id="api-typescript-sm4-08" steps="准备固定向量|SM4 单分组加密|加密向量断言|SM4 单分组解密|解密向量断言" -->
 ```ts
 import {
   CipherMode,
@@ -363,6 +371,7 @@ if (decrypted.some((value, index) => value !== plaintext[index])) {
 
 ### CBC 文本往返
 
+<!-- code-sample id="api-typescript-sm4-09" steps="准备参数|SM4-CBC 加密|SM4-CBC 解密|往返断言" -->
 ```ts
 import { CipherMode, PaddingMode, getRandomBytes, sm4Decrypt, sm4Encrypt } from 'gmkitx';
 
@@ -394,6 +403,7 @@ CTR 的 16 字节 `iv` 是初始大端计数器；CFB 使用完整 128 bit 反�
 
 ## 文本解密与二进制解密
 
+<!-- code-sample id="api-typescript-sm4-10" steps="准备二进制输入|SM4-CTR 加密|SM4-CTR 解密|二进制断言" -->
 ```ts
 import { CipherMode, sm4DecryptBytes, sm4Encrypt } from 'gmkitx';
 
@@ -423,6 +433,7 @@ if (decrypted.length !== binary.length
 
 ### 构造器、状态方法与运算方法
 
+<!-- code-reference -->
 ```ts
 new SM4(key: BytesLike, options?: {
   mode?: CipherModeType;
@@ -459,6 +470,7 @@ decryptBytes(encryptedData, options?: Partial<SM4DecryptOptions>): Uint8Array
 
 ### 七个工厂方法
 
+<!-- code-reference -->
 ```ts
 SM4.ECB(key, padding = PaddingMode.PKCS7): SM4
 SM4.CBC(key, iv, padding = PaddingMode.PKCS7): SM4
@@ -471,6 +483,7 @@ SM4.CCM(key, nonce): SM4
 
 CTR、CFB、OFB、GCM、CCM 工厂把 padding 保存为 `NONE`；运行时这些模式本来也会忽略 padding。工厂不会验证 IV 或 nonce，第一次运算时才验证。
 
+<!-- code-sample id="api-typescript-sm4-13" steps="创建实例|SM4-GCM 加密|SM4-GCM 解密|成功断言" -->
 ```ts
 import { SM4, getRandomBytes } from 'gmkitx';
 
@@ -538,6 +551,7 @@ if (decrypted !== message) {
 下面的测试源码覆盖 GCM 结果对象、Base64 编码、文本往返和 tag 篡改失败。站点检查会确认引用区域存在，文档示例任务会执行同一文件。
 
 ::: details 查看测试源码
+<!-- code-sample id="api-typescript-sm4-14" steps="准备输入|SM4-GCM 加密|加密结果断言|SM4-GCM 解密|失败断言" -->
 ```js
 <!-- @include: ../../examples/node/public-api-manual.mjs#ts-sm4-example -->
 ```

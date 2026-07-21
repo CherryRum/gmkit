@@ -64,6 +64,7 @@ ZUC 的 `count` 在 JSON 中以十进制数保存，含义是 API 接收的 32-b
 
 `sm4Encrypt` 返回对象，比较固定密文时必须读取 `result.ciphertext`：
 
+<!-- code-sample id="standards-interop-vectors-01" steps="SM3 摘要|SM3 向量断言|SM4 单分组加密|SM4 向量断言|EIA3 完整性运算|EIA3 向量断言" -->
 ```ts
 import {
   CipherMode,
@@ -114,6 +115,7 @@ if (mac !== '1b3d0f74') {
 
 ## Java 固定断言
 
+<!-- code-sample id="standards-interop-vectors-02" steps="SM3 摘要|SM3 向量断言|EIA3 完整性运算|EIA3 向量断言" -->
 ```java
 import cn.gmkit.core.HexCodec;
 import cn.gmkit.sm3.SM3Util;

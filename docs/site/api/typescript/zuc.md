@@ -27,6 +27,7 @@ tag:
 
 ## 导入与入口选择
 
+<!-- code-reference -->
 ```ts
 import {
   InputFormat,
@@ -88,6 +89,7 @@ import type { ZUCDecryptOptions, ZUCOptions } from 'gmkitx';
 
 ### 完整签名
 
+<!-- code-reference -->
 ```ts
 interface ZUCOptions {
   outputFormat?: 'hex' | 'base64';
@@ -134,6 +136,7 @@ zucDecryptBytes(
 
 `zucDecrypt` 把明文字节解码为 UTF-8 文本；图片、压缩数据、协议帧等任意二进制使用 `zucDecryptBytes`。空消息合法并返回空结果。
 
+<!-- code-sample id="api-typescript-zuc-03" steps="准备参数|ZUC 加密|ZUC 解密|往返断言" -->
 ```ts
 import {
   InputFormat,
@@ -175,6 +178,7 @@ if (decrypted.length !== plaintext.length
 
 ### 完整签名
 
+<!-- code-reference -->
 ```ts
 zucKeystream(
   key: BytesLike,
@@ -207,6 +211,7 @@ zucGenerateKeystream(
 
 三个 `length` 都必须是非负安全整数。`zucKeystream` 和 `zucKeystreamWords` 固定返回小写 Hex，没有输出格式选项；长度为 0 时返回空字符串或空数组。
 
+<!-- code-sample id="api-typescript-zuc-05" steps="准备固定向量|生成字节密钥流|生成 word 密钥流|生成原始 word 数组|固定向量断言" -->
 ```ts
 import {
   zucGenerateKeystream,
@@ -245,6 +250,7 @@ if (words.length !== 2
 
 ### 两个入口不是同一种返回值
 
+<!-- code-reference -->
 ```ts
 eea3(
   key: BytesLike,
@@ -289,6 +295,7 @@ eea3Encrypt(
 
 字符串消息先按 UTF-8 编码，再应用 `bitLength`。当 bit 长度不是 8 的倍数时，返回值最后一个字节未使用的低位会被清零。
 
+<!-- code-sample id="api-typescript-zuc-07" steps="准备 EEA3 参数|EEA3 加密|bit 长度断言|EEA3 解密|解密断言" -->
 ```ts
 import { eea3Encrypt, hexToBytes } from 'gmkitx';
 
@@ -336,6 +343,7 @@ if (recoveredHex !== 'f8') throw new Error('EEA3 decryption failed');
 
 ### 完整签名
 
+<!-- code-reference -->
 ```ts
 eia3(
   key: BytesLike,
@@ -349,6 +357,7 @@ eia3(
 
 EIA3 返回固定 32 bit MAC-I，即 8 个小写 Hex 字符。`bitLength` 省略时认证全部消息字节；显式值不能超过 `message.length × 8`。它不返回布尔值，也没有单独的 verify 函数。
 
+<!-- code-sample id="api-typescript-zuc-09" steps="计算 EIA3 完整性标签|固定向量断言|准备接收值|完整性校验" -->
 ```ts
 import { constantTimeEqual, eia3, hexToBytes } from 'gmkitx';
 
@@ -380,6 +389,7 @@ if (received.length !== 4 || !constantTimeEqual(hexToBytes(mac), received)) {
 
 ### 完整公开成员
 
+<!-- code-reference -->
 ```ts
 new ZUC(key: string | Uint8Array, iv: string | Uint8Array)
 ZUC.ZUC128(key, iv): ZUC
@@ -409,6 +419,7 @@ ZUC.eia3(key, count, bearer, direction, message, bitLength?): string
 
 </ApiTable>
 
+<!-- code-sample id="api-typescript-zuc-11" steps="创建实例|ZUC 加密|ZUC 解密|往返断言|更新 IV" -->
 ```ts
 import { ZUC, getRandomBytes } from 'gmkitx';
 
@@ -438,6 +449,7 @@ cipher.setIV(getRandomBytes(16));
 
 ## `ZUCState` 底层连续状态
 
+<!-- code-reference -->
 ```ts
 new ZUCState()
 initialize(key: Uint8Array, iv: Uint8Array): void
@@ -450,6 +462,7 @@ generateKeyword(): number
 实现没有在 `generateKeyword()` 前检查是否调用过 `initialize()`。未初始化时得到的数值没有协议意义，但不保证抛错。调用方必须把“先 initialize”作为硬性前置条件。
 :::
 
+<!-- code-sample id="api-typescript-zuc-13" steps="初始化底层状态|生成第一个 word 并比对固定向量|生成第二个 word 并比对固定向量|重新初始化|重置断言" -->
 ```ts
 import { ZUCState } from 'gmkitx';
 
@@ -514,6 +527,7 @@ if (state.generateKeyword() !== 0x27bede74) {
 下面的测试源码覆盖 byte/word 长度对照、全零固定向量和非法 key 失败；项目测试还包含 3GPP EEA3 800-bit 与 EIA3 固定向量。
 
 ::: details 查看测试源码
+<!-- code-sample id="api-typescript-zuc-14" steps="准备参数|生成字节密钥流|生成 word 密钥流|非法参数断言" -->
 ```js
 <!-- @include: ../../examples/node/public-api-manual.mjs#ts-zuc-example -->
 ```

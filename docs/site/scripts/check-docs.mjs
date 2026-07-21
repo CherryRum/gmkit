@@ -2,6 +2,8 @@ import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { auditCodeSamples } from './code-sample-audit.mjs';
+
 const docsRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = path.resolve(docsRoot, '..', '..');
 const configPath = path.join(docsRoot, '.vuepress', 'config.ts');
@@ -109,6 +111,7 @@ function linkCandidates(source, link) {
 const markdownFiles = await walk(docsRoot);
 const config = await readFile(configPath, 'utf8');
 const failures = [];
+const seenCodeSampleIds = new Map();
 const forbiddenClaims = [
   '生产级',
   '完全兼容',
@@ -167,6 +170,14 @@ for (const file of markdownFiles) {
   const content = await readFile(file, 'utf8');
   const prose = stripFencedCode(content);
   const frontmatter = readFrontmatter(content);
+
+  failures.push(...await auditCodeSamples({
+    file,
+    displayPath: relative,
+    content,
+    readSource: (source) => readFile(source, 'utf8'),
+    seenSampleIds: seenCodeSampleIds,
+  }));
 
   if (!frontmatter) {
     failures.push(`${relative}: 缺少 YAML frontmatter`);
@@ -366,6 +377,19 @@ const requiredExamplePages = new Map([
   ['api/java/sm9.md', ['java-sm9-example', 'java-sm9-pem-example']],
   ['api/java/integration.md', ['java-hybrid-example']],
 ]);
+const requiredOutcomePages = [
+  'api/typescript/sm2.md',
+  'api/typescript/sm3.md',
+  'api/typescript/sm4.md',
+  'api/typescript/zuc.md',
+  'api/typescript/sha.md',
+  'api/java/sm2.md',
+  'api/java/sm3.md',
+  'api/java/sm4.md',
+  'api/java/zuc.md',
+  'api/java/sm9.md',
+  'api/java/integration.md',
+];
 const exampleRunner = await readFile(path.join(docsRoot, 'scripts', 'test-examples.mjs'), 'utf8');
 const executedSources = new Map([
   ['examples/node/public-api-manual.mjs', 'public-api-manual.mjs'],
@@ -399,6 +423,19 @@ for (const [relativePage, requiredRegions] of requiredExamplePages) {
     if (!runnerToken || !exampleRunner.includes(runnerToken)) {
       failures.push(`${relativePage}: 示例源文件未进入 docs:test-examples ${includePath}`);
     }
+  }
+}
+
+for (const relativePage of requiredOutcomePages) {
+  const content = await readFile(path.join(docsRoot, relativePage), 'utf8');
+  const declaredSteps = [...content.matchAll(/<!--\s+code-sample\s+[^>]*steps="([^"]+)"[^>]*-->/g)]
+    .flatMap((match) => match[1].split('|'));
+  const negative = (step) => /(?:失败|篡改|非法|拒绝).*断言/.test(step);
+  if (!declaredSteps.some((step) => /断言|校验/.test(step) && !negative(step))) {
+    failures.push(`${relativePage}: 密码 API 家族缺少成功或固定结果断言`);
+  }
+  if (!declaredSteps.some(negative)) {
+    failures.push(`${relativePage}: 密码 API 家族缺少失败、篡改或非法输入断言`);
   }
 }
 

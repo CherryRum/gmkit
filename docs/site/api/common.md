@@ -57,6 +57,7 @@ tag: [编码, RNG, Provider, ASN.1, 异常]
 
 </ApiTable>
 
+<!-- code-sample id="api-common-01" steps="Base64 解码|编码断言|兼容行为断言|非法输入断言" -->
 ```ts
 import {
   InputFormat,
@@ -106,6 +107,7 @@ if (!rejected) throw new Error('invalid Hex must be rejected');
 
 </ApiTable>
 
+<!-- code-sample id="api-common-02" steps="清理 Hex 文本|清理结果断言|Base64 解码|编码断言|非法输入断言" -->
 ```java
 // 1. 清理 Hex 文本：移除空白和可选的 0x 前缀。
 String normalized = HexCodec.normalize(" 0xAA BB ", "payload");
@@ -159,6 +161,7 @@ Java 的 `decodeAuto("abc")` 会先认定输入具有 Hex 形态，再因字符�
 
 `warn` 在缺少 CSPRNG 时警告一次并兼容运行，`allow` 静默兼容，二者的降级输出都不具备密码学安全性。安全环境应使用 `strict`；小程序等受限环境应注入平台 CSPRNG，而不是关闭警告。
 
+<!-- code-sample id="api-common-03" steps="设置策略|检查环境|注入提示" -->
 ```ts
 import { configureRNG, getEnvReport, setCustomRNG } from 'gmkitx';
 
@@ -193,6 +196,7 @@ if (!report.hasWebCrypto && !report.hasNodeCrypto) {
 
 </ApiTable>
 
+<!-- code-sample id="api-common-04" steps="创建安全上下文|创建算法实例|配置断言" -->
 ```java
 import cn.gmkit.core.GmSecurityContext;
 import cn.gmkit.core.GmSecurityContexts;

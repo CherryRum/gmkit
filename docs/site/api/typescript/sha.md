@@ -31,6 +31,7 @@ SHA 摘要用于把消息映射为固定长度结果，不能证明消息来自�
 
 ## 导入与入口选择
 
+<!-- code-reference -->
 ```ts
 import {
   OutputFormat,
@@ -98,6 +99,7 @@ import type { SHAOptions } from 'gmkitx';
 
 ### 公开签名
 
+<!-- code-reference -->
 ```ts
 interface SHAOptions {
   outputFormat?: 'hex' | 'base64';
@@ -122,6 +124,7 @@ sha1(data: string | Uint8Array, options?: SHAOptions): string
 
 函数返回编码后的摘要字符串，不会修改输入。空消息合法；输出格式不是 `hex`/`base64` 时抛出 `Error`。
 
+<!-- code-sample id="api-typescript-sha-03" steps="计算 SHA-256 摘要并比对标准 abc 向量|计算 SHA-384 摘要并比对标准 abc 向量|计算 SHA-512 摘要并比对标准 abc 向量|计算 SHA-1 摘要|Base64 编码断言" -->
 ```ts
 import {
   OutputFormat,
@@ -168,6 +171,7 @@ if (sha256('abc', { outputFormat: OutputFormat.BASE64 })
 
 ### 公开签名
 
+<!-- code-reference -->
 ```ts
 hmacSha256(
   key: string | Uint8Array,
@@ -202,6 +206,7 @@ HMAC 用共享密钥认证消息。库按 HMAC 规范处理任意长度 key：�
 
 库没有 HMAC-SHA-1，也没有单独的 `verifyHmac`。接收外部 MAC 时应先按协议解码并检查长度，再对字节调用 `constantTimeEqual`。
 
+<!-- code-sample id="api-typescript-sha-05" steps="准备固定向量|计算 HMAC-SHA-256 并比对 RFC 4231 结果|计算 HMAC-SHA-384 并比对 RFC 4231 结果|计算 HMAC-SHA-512 并比对 RFC 4231 结果|准备业务认证输入|计算发送端和接收端 HMAC-SHA-256，并解码为原始字节|成功断言|失败断言" -->
 ```ts
 import {
   constantTimeEqual,
@@ -262,6 +267,7 @@ if (constantTimeEqual(expectedMac, hexToBytes(hmacSha256(key, tampered)))) {
 
 ### 公开成员
 
+<!-- code-reference -->
 ```ts
 new SHA256(outputFormat?: 'hex' | 'base64')
 new SHA384(outputFormat?: 'hex' | 'base64')
@@ -302,6 +308,7 @@ getOutputFormat(): 'hex' | 'base64'
 
 实例不是并发对象。多个异步任务应各自创建实例；同一实例上的分块顺序就是最终消息的字节顺序。
 
+<!-- code-sample id="api-typescript-sha-07" steps="创建增量 SHA-256 实例|分块计算摘要|增量结果断言|自动重置断言|格式保留断言|主动重置|复用结果断言" -->
 ```ts
 import { OutputFormat, SHA256, sha256 } from 'gmkitx';
 
@@ -376,6 +383,7 @@ if (base64 !== SHA256.digest('abc', OutputFormat.BASE64)) {
 下面的测试源码覆盖 SHA-256 固定摘要、增量复用和 HMAC 篡改断言。站点检查会确认引用区域存在，文档示例任务会执行同一文件。
 
 ::: details 查看测试源码
+<!-- code-sample id="api-typescript-sha-08" steps="准备输入|计算 SM3 摘要|SM3 重置断言|计算 SM3 HMAC|计算 SHA-256 摘要|SHA-256 重置断言|计算 SHA-256 HMAC" -->
 ```js
 <!-- @include: ../../examples/node/public-api-manual.mjs#ts-sm3-sha-example -->
 ```

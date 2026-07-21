@@ -28,6 +28,7 @@ npm run docs:test-examples
 
 核心示例：
 
+<!-- code-sample id="integrations-python-01" steps="SM3 摘要|SM3 向量断言|准备 SM4 单分组向量|初始化 SM4 加密方向|SM4 加密|SM4 向量断言" -->
 ```python
 from gmssl import func, sm3, sm4
 

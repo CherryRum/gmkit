@@ -28,6 +28,7 @@ tag:
 
 ## 导入与四个公开类型
 
+<!-- code-reference -->
 ```java
 import cn.gmkit.core.GmSecurityContext;
 import cn.gmkit.core.GmSecurityContexts;
@@ -76,6 +77,7 @@ SM4 key 固定 128 bit（16 字节），分组大小也是 16 字节。key 的 H
 
 ### `SM4` 公开成员
 
+<!-- code-reference -->
 ```java
 public SM4();
 public SM4(GmSecurityContext securityContext);
@@ -98,6 +100,7 @@ public String generateKeyHex();
 
 `SM4Util` 提供四个静态密钥生成入口：
 
+<!-- code-reference -->
 ```java
 static byte[] generateKey();
 static byte[] generateKey(GmSecurityContext securityContext);
@@ -111,6 +114,7 @@ static String generateKeyHex(GmSecurityContext securityContext);
 
 ### Builder 完整签名
 
+<!-- code-reference -->
 ```java
 static SM4Options.Builder builder();
 
@@ -142,6 +146,7 @@ SM4Options build();
 
 ### Getter 完整签名
 
+<!-- code-reference -->
 ```java
 SM4CipherMode mode();
 SM4Padding padding();
@@ -155,6 +160,7 @@ boolean hasTag();
 
 `iv()`、`aad()`、`tag()` 每次返回防御性副本；未设置时返回 `null`。`hasTag()` 只有在 tag 非 `null` 且长度大于 0 时才返回 `true`。`tagLength()` 返回 Builder 中的原值，未设置时仍是 `null`，不会直接显示运行时默认的 16。
 
+<!-- code-sample id="api-java-sm4-06" steps="准备 GCM 参数|构建选项" -->
 ```java
 // 1. 准备 GCM 参数：nonce 为 12 字节，AAD 使用 UTF-8。
 byte[] nonce = HexCodec.decodeStrict(
@@ -175,6 +181,7 @@ SM4Options gcm = SM4Options.builder()
 
 ### `SM4` 全部加密重载
 
+<!-- code-reference -->
 ```java
 SM4CipherResult encryptHex(
     String keyHex, String data, SM4Options options);
@@ -209,6 +216,7 @@ SM4CipherResult encrypt(
 
 ### `SM4` 全部解密重载
 
+<!-- code-reference -->
 ```java
 byte[] decryptHex(
     String keyHex, String ciphertextHex, SM4Options options);
@@ -249,6 +257,7 @@ byte[] decrypt(
 
 ### 完整签名
 
+<!-- code-reference -->
 ```java
 public SM4CipherResult(byte[] ciphertext, byte[] tag);
 
@@ -279,6 +288,7 @@ String tagBase64();
 
 ## GCM：成功与篡改失败
 
+<!-- code-sample id="api-java-sm4-10" steps="准备参数|构建 GCM 选项|SM4-GCM 加密|加密结果断言|SM4-GCM 解密|成功断言|构造篡改结果|失败断言" -->
 ```java
 // 1. 准备参数：固定测试 key、12 字节 nonce、订单明文和业务 AAD。
 byte[] key = HexCodec.decodeStrict(
@@ -333,6 +343,7 @@ try {
 
 ## CBC：兼容模式示例
 
+<!-- code-sample id="api-java-sm4-11" steps="准备参数|SM4-CBC 加密|模式结果断言|SM4-CBC 解密|往返断言" -->
 ```java
 // 1. 准备参数：CBC 使用 16 字节 IV 和 PKCS7 padding。
 byte[] key = HexCodec.decodeStrict(
@@ -389,6 +400,7 @@ CBC 往返成功只证明参数配对正确，不证明密文未被篡改。新�
 JUnit 文档测试覆盖 GCM 往返和篡改 tag 失败；SM4 专项测试还覆盖模式矩阵、标准向量、数组防御性复制和参数错误。
 
 ::: details 查看 GCM 文档案例
+<!-- code-sample id="api-java-sm4-12" steps="准备参数|SM4-GCM 加密|加密结果断言|SM4-GCM 解密|成功断言|构造篡改结果|失败断言" -->
 ```java
 <!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-sm4-example -->
 ```

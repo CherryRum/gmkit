@@ -33,12 +33,14 @@ tag:
 
 历史版本把空字符串当作“未提供”，大量调用方依赖这一行为。为避免旧签名和旧业务升级后改变语义，当前版本继续采用：
 
+<!-- code-reference -->
 ```ts
 options?.userId || DEFAULT_USER_ID
 ```
 
 因此 `{ userId: '' }` **不是**真实空 ID，而是选择 `DEFAULT_USER_ID`。跨系统签名必须显式约定同一个非空 userId，或者双方都使用默认值。
 
+<!-- code-sample id="standards-gmt-0009-compliance-02" steps="准备参数|SM2 签名|SM2 验签|验签断言" -->
 ```ts
 import { sm2GenerateKeyPair, sm2Sign, sm2Verify } from 'gmkitx';
 

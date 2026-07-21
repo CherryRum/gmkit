@@ -22,12 +22,14 @@ GMKitX 尚未完成独立第三方安全审计，也不负责密钥托管、证�
 
 安全敏感应用应选择其一：
 
+<!-- code-sample id="guide-security-01" steps="启用严格策略|注入平台随机源" -->
 ```ts
 import { configureRNG, setCustomRNG } from 'gmkitx';
 
+// 1. 启用严格策略：环境没有 CSPRNG 时立即拒绝随机操作。
 configureRNG('strict');
 
-// 或在受限平台注入经过平台保证的安全随机源：
+// 2. 注入平台随机源：受限平台应接入自身保证的 CSPRNG。
 setCustomRNG((length) => platformSecureRandom(length));
 ```
 

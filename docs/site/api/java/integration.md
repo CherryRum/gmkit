@@ -50,6 +50,7 @@ tag:
 
 ## 构造器与安全上下文
 
+<!-- code-reference -->
 ```java
 public SM2Sm4Hybrid();
 public SM2Sm4Hybrid(GmSecurityContext securityContext);
@@ -85,6 +86,7 @@ public SM2Sm4Hybrid(GmSecurityContext securityContext);
 
 ### 完整签名
 
+<!-- code-reference -->
 ```java
 SM2Sm4HybridPayload encrypt(
     String publicKeyHex,
@@ -123,6 +125,7 @@ SM2Sm4HybridPayload encrypt(
 
 ### 完整签名
 
+<!-- code-reference -->
 ```java
 byte[] decrypt(
     String privateKeyHex,
@@ -154,6 +157,7 @@ String decryptToString(
 
 ### 构造器
 
+<!-- code-reference -->
 ```java
 public SM2Sm4HybridPayload(
     byte[] encryptedKey,
@@ -183,6 +187,7 @@ public SM2Sm4HybridPayload(
 
 ### 全部访问器
 
+<!-- code-reference -->
 ```java
 byte[] encryptedKey();
 String encryptedKeyHex();
@@ -226,6 +231,7 @@ SM4Padding padding();
 
 ## 默认 GCM：成功与篡改失败
 
+<!-- code-sample id="api-java-integration-06" steps="准备参数|混合加密|载荷字段断言|混合解密|成功断言|构造篡改载荷|失败断言" -->
 ```java
 // 1. 准备参数：生成接收方 SM2 密钥对和订单明文。
 SM2KeyPair keys = SM2Util.generateKeyPair();
@@ -275,6 +281,7 @@ try {
 
 ### 绑定业务上下文 AAD
 
+<!-- code-sample id="api-java-integration-07" steps="配置 AAD|混合加密" -->
 ```java
 // 1. 配置 AAD：租户和 schema 可公开，但必须参与 GCM 认证。
 SM4Options options = SM4Options.builder()
@@ -338,6 +345,7 @@ AAD 不会被加密，应只放允许公开但必须防篡改的协议字段。�
 JUnit 文档测试覆盖默认 GCM 元数据、往返解密和篡改 tag 失败；集成专项测试覆盖更多算法组合。
 
 ::: details 查看混合加密文档案例
+<!-- code-sample id="api-java-integration-08" steps="准备参数|混合加密|载荷字段断言|混合解密|成功断言|构造篡改载荷|失败断言" -->
 ```java
 <!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-hybrid-example -->
 ```

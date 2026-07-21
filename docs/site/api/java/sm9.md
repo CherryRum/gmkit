@@ -67,6 +67,7 @@ SM9 位于独立制品，不包含在 `cn.gmkit:gmkit` 主包中：
 
 ## 启动诊断
 
+<!-- code-reference -->
 ```java
 SM9.isAvailable()
 SM9.nativeVersion()
@@ -85,6 +86,7 @@ SM9.nativeLoadErrorMessage()
 
 </ApiTable>
 
+<!-- code-sample id="api-java-sm9-02" steps="检查本地动态库|诊断失败" -->
 ```java
 // 1. 检查本地动态库：应用启动时确认当前平台可以加载 SM9。
 if (!SM9.isAvailable()) {
@@ -101,6 +103,7 @@ if (!SM9.isAvailable()) {
 
 `SM9` 提供一次性操作：
 
+<!-- code-reference -->
 ```java
 SM9SignMasterKey generateSignMasterKey()
 SM9EncMasterKey generateEncMasterKey()
@@ -142,6 +145,7 @@ byte[] decrypt(SM9EncKey encKey, byte[] ciphertext)
 
 ### `SM9SignMasterKey`
 
+<!-- code-reference -->
 ```java
 static SM9SignMasterKey generate()
 SM9SignKey extractKey(String id)
@@ -157,6 +161,7 @@ void close()
 
 ### `SM9SignKey`
 
+<!-- code-reference -->
 ```java
 String getId()
 void exportEncryptedPrivateKeyInfoPem(String password, String file)
@@ -179,6 +184,7 @@ void close()
 
 ## 签名示例
 
+<!-- code-sample id="api-java-sm9-06" steps="准备身份与消息|创建 KGC 主密钥并派生身份签名私钥，句柄由 try-with-resources 关闭|SM9 签名|SM9 验签|失败断言" -->
 ```java
 // 1. 准备身份与消息：正常订单和篡改金额分别保存为 UTF-8 字节。
 byte[] data = "order=GMKIT-DEMO-0001&amount=88.00"
@@ -212,6 +218,7 @@ try (SM9SignMasterKey master = SM9.generateSignMasterKey();
 
 ### `SM9EncMasterKey`
 
+<!-- code-reference -->
 ```java
 static final int MAX_PLAINTEXT_SIZE  // 255
 
@@ -230,6 +237,7 @@ void close()
 
 ### `SM9EncKey`
 
+<!-- code-reference -->
 ```java
 static final int MAX_CIPHERTEXT_SIZE  // 367
 
@@ -253,6 +261,7 @@ void close()
 
 SM9 单次明文必须为 1–255 字节；API 接收 `byte[]`，因此单位始终是实际字节数。若业务先把 `String` 转成 UTF-8，应检查编码后的数组长度，而不是 Java 字符数。DER 密文必须为 1–367 字节。更大数据应使用混合加密：随机生成 16 字节 SM4 会话 key，用 SM4-GCM 等认证加密处理正文，只用 SM9 保护会话 key。算法、接收方身份、nonce、AAD、tag 和载荷版本都必须随密文保存。
 
+<!-- code-sample id="api-java-sm9-09" steps="准备接收方身份和不超过 255 字节的订单明文|创建 KGC 加密主密钥并派生接收方身份私钥|SM9 IBE 加密|SM9 IBE 解密|成功断言" -->
 ```java
 // 1. 准备接收方身份和不超过 255 字节的订单明文。
 byte[] plaintext =
@@ -278,6 +287,7 @@ try (SM9EncMasterKey master = SM9.generateEncMasterKey();
 
 对 256 字节输入，API 会在进入 native 前抛 `SM9Exception`：
 
+<!-- code-sample id="api-java-sm9-10" steps="创建 KGC 加密主密钥，句柄由 try-with-resources 关闭|构造超长输入|长度失败断言" -->
 ```java
 // 1. 创建 KGC 加密主密钥，句柄由 try-with-resources 关闭。
 try (SM9EncMasterKey master = SM9.generateEncMasterKey()) {
@@ -296,6 +306,7 @@ try (SM9EncMasterKey master = SM9.generateEncMasterKey()) {
 
 ## 流式 `SM9Signature`
 
+<!-- code-reference -->
 ```java
 new SM9Signature(boolean doSign)
 void reset(boolean doSign)
@@ -326,6 +337,7 @@ void close()
 
 </ApiTable>
 
+<!-- code-sample id="api-java-sm9-12" steps="准备分块消息|创建 KGC 密钥、身份私钥、签名上下文和验签上下文|流式签名|流式验签|成功断言" -->
 ```java
 // 1. 准备分块消息：8192 字节分成两个 4096 字节片段。
 byte[] data = new byte[8192];
@@ -362,6 +374,7 @@ try (SM9SignMasterKey master = SM9.generateSignMasterKey();
 
 下面的测试式示例把 KGC 持有的主私钥留在生成端，只向验签端交付公开主密钥，同时把身份和用户私钥作为一条记录保存：
 
+<!-- code-sample id="api-java-sm9-13" steps="准备 PEM 路径、身份、测试口令和订单消息|生成 KGC 签名主密钥，并派生身份私钥|导出 PEM|重新导入公开主密钥和口令加密身份私钥|SM9 签名|SM9 验签断言" -->
 ```java
 // 1. 准备 PEM 路径、身份、测试口令和订单消息。
 java.nio.file.Path directory = java.nio.file.Files.createTempDirectory("gmkit-sm9-");
@@ -411,6 +424,7 @@ try (SM9SignMasterKey verifierKey =
 
 两个公开异常类型的签名如下：
 
+<!-- code-reference -->
 ```java
 public SM9Exception(String message);
 public SM9Exception(String message, Throwable cause);
@@ -442,10 +456,12 @@ public SM9UnsupportedPlatformException(String message, Throwable cause);
 第一段覆盖签名、错误身份、消息篡改、IBE 和 256 字节失败；第二段覆盖口令加密用户私钥与公开主密钥的 PEM 往返。两段都由需要本地动态库的 JUnit 测试执行。
 
 ::: details 查看测试源码
+<!-- code-sample id="api-java-sm9-15" steps="准备身份与消息|创建 KGC 主密钥并派生身份私钥|SM9 签名|SM9 验签|身份失败断言|消息篡改断言|SM9 IBE 加密|SM9 IBE 解密|成功断言|长度失败断言" -->
 ```java
 <!-- @include: ../../../../packages/java/gmkit-sm9/src/test/java/cn/gmkit/sm9/SM9ManualExamplesTest.java#java-sm9-example -->
 ```
 
+<!-- code-sample id="api-java-sm9-16" steps="准备身份、订单消息和临时 PEM 文件路径|生成 KGC 签名主密钥，并导出可分发的主公钥 PEM|派生身份私钥，并使用口令加密后写入 PEM|重新导入加密身份私钥，并用它签名订单消息|导入主公钥 PEM，使用相同身份完成验签|成功断言" -->
 ```java
 <!-- @include: ../../../../packages/java/gmkit-sm9/src/test/java/cn/gmkit/sm9/SM9KeyPemTest.java#java-sm9-pem-example -->
 ```

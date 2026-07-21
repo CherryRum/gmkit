@@ -27,6 +27,7 @@ SM3 把任意长度消息映射为固定 256 bit（32 字节）摘要。`SM3` �
 
 ## 导入与入口选择
 
+<!-- code-reference -->
 ```java
 import cn.gmkit.core.Bytes;
 import cn.gmkit.core.HexCodec;
@@ -45,6 +46,7 @@ import cn.gmkit.sm3.SM3Util;
 
 两个入口的结果、参数校验和异常行为相同。`SM3` 不是 TypeScript 版本那样的增量对象：它没有 `update()`、`reset()` 或 `close()`，也不会在调用间保存消息。
 
+<!-- code-reference -->
 ```java
 public static final int SM3.DIGEST_LENGTH = 32;
 public static final int SM3Util.DIGEST_LENGTH = 32;
@@ -79,6 +81,7 @@ public SM3();
 
 以下九个实例方法均存在；`SM3Util` 提供方法名、参数和返回值完全相同的 `static` 重载。
 
+<!-- code-reference -->
 ```java
 byte[] digest(byte[] data);
 byte[] digest(String data);
@@ -105,6 +108,7 @@ String digestBase64(String data, Charset charset);
 
 </ApiTable>
 
+<!-- code-sample id="api-java-sm3-04" steps="计算 SM3 摘要|固定向量断言|计算文本与字节摘要|输入等价断言" -->
 ```java
 import cn.gmkit.sm3.SM3;
 import cn.gmkit.sm3.SM3Util;
@@ -141,6 +145,7 @@ HMAC-SM3 使用共享密钥认证消息内容。调用方负责安全生成、�
 
 以下九个实例方法同样在 `SM3Util` 中提供对应的 `static` 重载。
 
+<!-- code-reference -->
 ```java
 byte[] hmac(byte[] key, byte[] data);
 byte[] hmac(byte[] key, String data);
@@ -167,6 +172,7 @@ String hmacBase64(byte[] key, String data, Charset charset);
 
 返回格式与摘要方法一致：`hmac` 返回新的 32 字节数组，`hmacHex` 返回 64 位小写 Hex，`hmacBase64` 返回标准 Base64。
 
+<!-- code-sample id="api-java-sm3-06" steps="准备认证输入|计算发送端和接收端 HMAC-SM3|成功断言|计算篡改消息 HMAC|失败断言" -->
 ```java
 import cn.gmkit.core.Bytes;
 import cn.gmkit.core.HexCodec;
@@ -224,12 +230,14 @@ if (Bytes.constantTimeEquals(
 固定摘要和订单篡改断言均收录在 JUnit 文档测试中；页面示例与测试使用同一组输入。
 
 ::: details 查看固定向量测试
+<!-- code-sample id="api-java-sm3-07" steps="计算 SM3 摘要|固定向量断言" -->
 ```java
 <!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-sm3-example -->
 ```
 :::
 
 ::: details 查看 HMAC 篡改测试
+<!-- code-sample id="api-java-sm3-08" steps="准备认证输入|计算 HMAC-SM3 并断言" -->
 ```java
 <!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-sm3-hmac-example -->
 ```

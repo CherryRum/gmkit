@@ -27,6 +27,7 @@ SM3 把任意长度消息映射为固定 256 bit（32 字节）摘要。`gmkitx`
 
 ## 导入与入口选择
 
+<!-- code-reference -->
 ```ts
 import {
   OutputFormat,
@@ -73,6 +74,7 @@ import type { SM3Options } from 'gmkitx';
 
 ### 公开签名
 
+<!-- code-reference -->
 ```ts
 interface SM3Options {
   outputFormat?: 'hex' | 'base64';
@@ -91,6 +93,7 @@ sm3Digest(
 
 函数总是返回字符串。空字符串会计算标准 SM3 空消息摘要；输出格式不是 `hex`/`base64` 时抛出 `Error`。
 
+<!-- code-sample id="api-typescript-sm3-03" steps="计算摘要|固定向量断言|Base64 编码|Base64 结果断言|字节输入摘要|输入等价断言" -->
 ```ts
 import { OutputFormat, sm3Digest } from 'gmkitx';
 
@@ -120,6 +123,7 @@ if (sm3Digest(utf8) !== actual) throw new Error('SM3 UTF-8 mismatch');
 
 ### 公开签名
 
+<!-- code-reference -->
 ```ts
 sm3Hmac(
   key: string | Uint8Array,
@@ -140,6 +144,7 @@ HMAC-SM3 用共享密钥认证消息内容。key 超过 64 字节时会先做一
 
 </ApiTable>
 
+<!-- code-sample id="api-typescript-sm3-05" steps="准备认证输入|计算 HMAC-SM3|成功断言|计算篡改消息 HMAC|失败断言" -->
 ```ts
 import {
   constantTimeEqual,
@@ -176,6 +181,7 @@ if (constantTimeEqual(hexToBytes(expectedMac), hexToBytes(tamperedMac))) {
 
 ### 公开成员
 
+<!-- code-reference -->
 ```ts
 new SM3(outputFormat?: 'hex' | 'base64')
 
@@ -213,6 +219,7 @@ getOutputFormat(): 'hex' | 'base64'
 
 如果 `digest({ outputFormat })` 收到非法输出格式，它会在完成摘要之前抛错，当前累计消息仍可继续使用或手动重置。实例不是并发对象；多个异步任务应各自创建实例。
 
+<!-- code-sample id="api-typescript-sm3-07" steps="创建增量实例|分块计算摘要|增量结果断言|自动重置断言|格式保留断言|主动重置|主动重置断言" -->
 ```ts
 import { OutputFormat, SM3, sm3Digest } from 'gmkitx';
 
@@ -252,6 +259,7 @@ if (hasher.update('abc').digest() !== sm3Digest('abc')) {
 
 `SM3HashState` 通过 `sm3` 命名空间公开，不是根级具名导出。一般业务使用 `SM3` 类即可；需要直接取得原始 32 字节摘要时才使用低层状态。
 
+<!-- code-reference -->
 ```ts
 new sm3.SM3HashState()
 
@@ -262,6 +270,7 @@ reset(): this
 
 它与 `SM3` 类最重要的差异是：`digestBytes()` 完成后不会自动重置。再次调用 `digestBytes()`，或在未 `reset()` 时继续 `update()`，都会抛出 `Error`。
 
+<!-- code-sample id="api-typescript-sm3-09" steps="创建低层状态并分块计算 abc 的原始摘要字节|摘要长度断言|已完成状态断言|显式重置|复用结果断言" -->
 ```ts
 import { sm3, sm3Digest } from 'gmkitx';
 
@@ -321,6 +330,7 @@ if (Array.from(reused, (value) => value.toString(16).padStart(2, '0')).join('')
 下面的测试源码覆盖固定摘要、增量实例复用和 HMAC 篡改断言。站点检查会确认引用区域存在，文档示例任务会执行同一文件。
 
 ::: details 查看测试源码
+<!-- code-sample id="api-typescript-sm3-10" steps="准备输入|计算 SM3 摘要|SM3 重置断言|计算 SM3 HMAC|计算 SHA-256 摘要|SHA-256 重置断言|计算 SHA-256 HMAC" -->
 ```js
 <!-- @include: ../../examples/node/public-api-manual.mjs#ts-sm3-sha-example -->
 ```

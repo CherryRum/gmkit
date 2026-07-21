@@ -28,6 +28,7 @@ tag:
 
 ## 导入示例
 
+<!-- code-reference -->
 ```ts
 import {
   CipherMode,
@@ -84,6 +85,7 @@ import type {
 
 ## 公共类型
 
+<!-- code-reference -->
 ```ts
 type BytesLike = string | Uint8Array;
 type OutputFormatType = 'hex' | 'base64';
@@ -114,6 +116,7 @@ type RNGPolicy = 'strict' | 'warn' | 'allow';
 
 ### 字符串常量对象
 
+<!-- code-reference -->
 ```ts
 OutputFormat.HEX      // 'hex'
 OutputFormat.BASE64   // 'base64'
@@ -151,6 +154,7 @@ SM2CipherMode.C1C2C3  // 'C1C2C3'
 
 ### `OID`
 
+<!-- code-reference -->
 ```ts
 OID.SM2           // '1.2.156.10197.1.301'
 OID.SM2_SM3       // '1.2.156.10197.1.501'
@@ -163,6 +167,7 @@ OID.EC_PUBLIC_KEY // '1.2.840.10045.2.1'
 
 ### `DEFAULT_USER_ID`
 
+<!-- code-reference -->
 ```ts
 DEFAULT_USER_ID === '1234567812345678'
 ```
@@ -173,6 +178,7 @@ DEFAULT_USER_ID === '1234567812345678'
 
 ### `hexToBytes`
 
+<!-- code-reference -->
 ```ts
 hexToBytes(hex: string): Uint8Array
 ```
@@ -187,12 +193,14 @@ hexToBytes(hex: string): Uint8Array
 
 ### `bytesToHex`
 
+<!-- code-reference -->
 ```ts
 bytesToHex(bytes: Uint8Array): string
 ```
 
 按原顺序返回小写 Hex；每个字节固定两个字符，空数组返回空字符串。函数按公开类型假定参数是 `Uint8Array`，不承担运行时结构校验。
 
+<!-- code-sample id="api-typescript-common-08" steps="Hex 解码|Hex 往返断言|奇数长度断言|非法输入断言" -->
 ```ts
 import { bytesToHex, hexToBytes } from 'gmkitx';
 
@@ -223,6 +231,7 @@ if (!rejected) throw new Error('invalid Hex must be rejected');
 
 ### 完整签名
 
+<!-- code-reference -->
 ```ts
 bytesToBase64(bytes: Uint8Array): string
 base64ToBytes(base64: string): Uint8Array
@@ -241,6 +250,7 @@ base64ToBytes(base64: string): Uint8Array
 
 </ApiTable>
 
+<!-- code-sample id="api-typescript-common-10" steps="准备二进制输入|Base64 编码断言|Base64 解码断言|非规范输入断言" -->
 ```ts
 import { base64ToBytes, bytesToBase64, bytesToHex, hexToBytes } from 'gmkitx';
 
@@ -271,6 +281,7 @@ if (!rejected) throw new Error('non-canonical Base64 must be rejected');
 
 ### 文本转换函数
 
+<!-- code-reference -->
 ```ts
 stringToBytes(str: string): Uint8Array
 bytesToString(bytes: Uint8Array): string
@@ -281,6 +292,7 @@ normalizeInput(data: string | Uint8Array): Uint8Array
 
 `normalizeInput` 是算法消息入口的公共规则：字符串转 UTF-8；`Uint8Array` 原样返回同一引用，不复制，也不猜测 Hex。
 
+<!-- code-sample id="api-typescript-common-12" steps="UTF-8 编码|编码结果断言|UTF-8 解码断言|字节输入断言" -->
 ```ts
 import { bytesToHex, bytesToString, normalizeInput, stringToBytes } from 'gmkitx';
 
@@ -306,6 +318,7 @@ if (normalizeInput(original) !== original) {
 
 ### `TextCodec` 与 `setTextCodec`
 
+<!-- code-reference -->
 ```ts
 type TextCodec = {
   encode(input: string): Uint8Array;
@@ -334,6 +347,7 @@ setTextCodec(codec: TextCodec): void
 
 ### 完整签名
 
+<!-- code-reference -->
 ```ts
 decodeInput(
   data: string | Uint8Array,
@@ -364,6 +378,7 @@ isBase64String(str: string): boolean
 
 `encodeOutput` 的 TypeScript 类型只允许 `hex`/`base64`，但运行时没有对其他值抛错，而是返回 Hex。跨边界接收动态配置时先自行校验，不要依赖这个回落行为。
 
+<!-- code-sample id="api-typescript-common-15" steps="Base64 解码|Hex 编码断言" -->
 ```ts
 import { InputFormat, OutputFormat, decodeInput, encodeOutput } from 'gmkitx';
 
@@ -378,6 +393,7 @@ if (encodeOutput(bytes, OutputFormat.HEX) !== '00ff8041') {
 
 ### 自动识别的歧义
 
+<!-- code-sample id="api-typescript-common-16" steps="自动解码" -->
 ```ts
 import { autoDecodeString, bytesToHex } from 'gmkitx';
 
@@ -393,6 +409,7 @@ if (bytesToHex(autoDecodeString('ABC')) !== '0abc') {
 
 ### 完整签名
 
+<!-- code-reference -->
 ```ts
 xor(a: Uint8Array, b: Uint8Array): Uint8Array
 rotl(value: number, shift: number): number
@@ -416,6 +433,7 @@ constantTimeEqual(
 
 </ApiTable>
 
+<!-- code-sample id="api-typescript-common-18" steps="字节异或|异或结果断言|大端编码|大端往返断言" -->
 ```ts
 import {
   bytes4ToUint32BE,
@@ -448,6 +466,7 @@ if (bytes4ToUint32BE(encoded) !== 0x89abcdef) {
 
 ### 策略与完整签名
 
+<!-- code-reference -->
 ```ts
 configureRNG(policy: RNGPolicy): void
 
@@ -481,6 +500,7 @@ getRandomBytes(length: number = 32): Uint8Array
 
 ### 生产启动检查
 
+<!-- code-sample id="api-typescript-common-20" steps="启用严格随机策略|注入状态断言|生成 nonce|长度断言" -->
 ```ts
 import { configureRNG, getRandomBytes, hasCustomRNG } from 'gmkitx';
 
@@ -501,6 +521,7 @@ if (nonce.length !== 12) throw new Error('RNG length mismatch');
 
 ### 受限宿主与测试注入
 
+<!-- code-sample id="api-typescript-common-21" steps="注入测试随机源|生成测试 key|长度断言|清理测试状态" -->
 ```ts
 import { clearCustomRNG, getRandomBytes, setCustomRNG } from 'gmkitx';
 
@@ -522,6 +543,7 @@ try {
 
 ## 环境探测
 
+<!-- code-reference -->
 ```ts
 type EnvReport = {
   hasBigInt: boolean;
@@ -548,6 +570,7 @@ getEnvReport(): EnvReport
 
 `getEnvReport` 是只读快照，不修改 RNG 或文本配置，也不包含 `hasCustomRNG`；自定义 RNG 状态用 `hasCustomRNG()` 查询。
 
+<!-- code-sample id="api-typescript-common-23" steps="读取环境快照|能力检查" -->
 ```ts
 import { getEnvReport } from 'gmkitx';
 
@@ -566,6 +589,7 @@ if (!env.hasWebCrypto && !env.hasNodeCrypto) {
 
 ### 签名转换函数
 
+<!-- code-reference -->
 ```ts
 encodeSignature(
   r: string | Uint8Array,
@@ -594,6 +618,7 @@ derToRaw(derSignature: Uint8Array): string
 
 `decodeSignature` 返回的 r/s 不保证各有 64 个字符。例如整数 1 返回 `'01'`。需要固定宽度 raw 签名时使用 `derToRaw`。
 
+<!-- code-sample id="api-typescript-common-25" steps="准备 raw 签名|raw 转 DER|往返断言|DER 结构断言|DER 解码|整数结果断言|非法 DER 断言" -->
 ```ts
 import {
   bytesToHex,
@@ -634,6 +659,7 @@ if (!rejected) throw new Error('trailing DER data must be rejected');
 
 ### 诊断 XML
 
+<!-- code-reference -->
 ```ts
 asn1ToXml(data: Uint8Array, indent: number = 0): string
 
@@ -657,6 +683,7 @@ signatureToXml(
 
 `indent` 必须是 0–64 的安全整数。`signatureFormat: 'auto'` 存在结构歧义：如果 raw 签名第一个字节恰好为 `0x30`，会先按 DER 处理。协议已知格式时总是显式传 `raw` 或 `der`。
 
+<!-- code-sample id="api-typescript-common-27" steps="准备 raw 签名|生成诊断 XML|XML 内容断言" -->
 ```ts
 import { signatureToXml } from 'gmkitx';
 
@@ -732,6 +759,7 @@ XML 仅供调试和人工查看，不是稳定交换格式，也不提供 XML→
 下面的测试源码覆盖显式编码、非法 Hex 和 raw/DER 签名往返。站点检查会确认引用区域存在，文档示例任务会执行同一文件。
 
 ::: details 查看测试源码
+<!-- code-sample id="api-typescript-common-28" steps="Base64 解码|Hex 编码断言|非法输入断言|签名格式转换|往返断言" -->
 ```js
 <!-- @include: ../../examples/node/public-api-manual.mjs#ts-common-example -->
 ```

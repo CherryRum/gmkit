@@ -58,6 +58,7 @@ tag:
 
 </ApiTable>
 
+<!-- code-reference -->
 ```java
 public SM2();
 public SM2(GmSecurityContext securityContext);
@@ -72,6 +73,7 @@ public GmSecurityContext securityContext();
 
 ### `SM2` 实例方法
 
+<!-- code-reference -->
 ```java
 SM2KeyPair generateKeyPair();
 SM2KeyPair generateKeyPair(boolean compressedPublicKey);
@@ -82,6 +84,7 @@ String decompressPublicKey(String publicKeyHex);
 
 ### `SM2Util` 静态方法
 
+<!-- code-reference -->
 ```java
 static SM2KeyPair generateKeyPair();
 static SM2KeyPair generateKeyPair(boolean compressedPublicKey);
@@ -111,6 +114,7 @@ static String decompressPublicKey(String publicKeyHex);
 
 ### `SM2KeyPair`
 
+<!-- code-reference -->
 ```java
 public SM2KeyPair(String publicKey, String privateKey);
 String publicKey();
@@ -119,6 +123,7 @@ String privateKey();
 
 该构造器只是字符串容器，不会立即验证密钥。库生成的值符合上表格式；外部输入会在执行加密、解密或签名时校验。
 
+<!-- code-sample id="api-java-sm2-05" steps="生成密钥对|派生公钥|派生结果断言|压缩公钥|解压公钥断言" -->
 ```java
 // 1. 生成密钥对：默认返回非压缩公钥。
 SM2 sm2 = new SM2();
@@ -149,6 +154,7 @@ SM2 加密具有随机性，同一公钥和明文的两次密文通常不同。�
 
 ### `SM2` 全部加密重载
 
+<!-- code-reference -->
 ```java
 byte[] encrypt(String publicKeyHex, byte[] data);
 byte[] encrypt(String publicKeyHex, String data);
@@ -195,6 +201,7 @@ String encryptBase64(
 
 ### `SM2Util` 全部加密重载
 
+<!-- code-reference -->
 ```java
 static byte[] encrypt(String publicKeyHex, byte[] data);
 static byte[] encrypt(
@@ -264,6 +271,7 @@ static String encryptBase64(
 
 下面七个签名同时存在于实例类和静态类；`SM2Util` 只多出 `static`：
 
+<!-- code-reference -->
 ```java
 byte[] decrypt(String privateKeyHex, byte[] ciphertext);
 byte[] decrypt(
@@ -295,6 +303,7 @@ String decryptToString(
 
 `decrypt` 返回原始明文字节；`decryptToUtf8` 按 UTF-8 解码；`decryptToString` 的 `charset == null` 也回退 UTF-8。C1 曲线点、密文结构或 C3 完整性检查失败会抛 `GmkitException`，不会返回部分明文。
 
+<!-- code-sample id="api-java-sm2-09" steps="准备二进制输入|SM2 加密|SM2 解密|往返断言" -->
 ```java
 // 1. 准备二进制输入：包含 NUL、非 ASCII 字节和普通字符。
 SM2 sm2 = new SM2();
@@ -319,6 +328,7 @@ if (!java.util.Arrays.equals(binary, recovered)) {
 
 ### `SM2SignOptions`
 
+<!-- code-reference -->
 ```java
 static SM2SignOptions.Builder builder();
 
@@ -347,6 +357,7 @@ GmSecurityContext securityContext();
 
 ### `SM2VerifyOptions`
 
+<!-- code-reference -->
 ```java
 static SM2VerifyOptions.Builder builder();
 
@@ -366,6 +377,7 @@ String userId();
 
 ### `SM2` 全部签名重载
 
+<!-- code-reference -->
 ```java
 byte[] sign(String privateKeyHex, byte[] message);
 byte[] sign(
@@ -413,6 +425,7 @@ String signBase64(
 
 `SM2Util` 提供后九个带 options 的静态重载；它没有 `sign(privateKeyHex, byte[])` 简写。`options == null` 使用 RAW、默认 user ID、标准 Z 和默认安全上下文。字符串消息默认 UTF-8，显式 `charset == null` 也回退 UTF-8。空消息可以签名，`null` 消息会抛异常。
 
+<!-- code-sample id="api-java-sm2-13" steps="准备输入|配置签名|配置验签|SM2 签名|SM2 验签|篡改断言" -->
 ```java
 // 1. 准备输入：正常订单、篡改订单和签名身份分别保存。
 SM2KeyPair keys = SM2Util.generateKeyPair();
@@ -453,6 +466,7 @@ if (SM2Util.verify(keys.publicKey(), tampered, signature, verifyOptions)) {
 
 ### `SM2` 全部验签重载
 
+<!-- code-reference -->
 ```java
 boolean verify(
     String publicKeyHex,
@@ -513,6 +527,7 @@ e = SM3(Z || M)
 
 以下方法同时存在于 `SM2` 和 `SM2Util`：
 
+<!-- code-reference -->
 ```java
 @Deprecated byte[] signWithoutZ(
     String privateKeyHex,
@@ -560,6 +575,7 @@ byte[] computeE(
 
 ## 签名格式工具 `SM2Signatures`
 
+<!-- code-reference -->
 ```java
 static byte[] normalizeToRequested(
     byte[] signature,
@@ -588,6 +604,7 @@ static byte[] rawToDer(byte[] rawSignature);
 
 ### `SM2Ciphertext`
 
+<!-- code-reference -->
 ```java
 public SM2Ciphertext(
     byte[] c1,
@@ -605,6 +622,7 @@ SM2CipherMode mode();
 
 ### `SM2Ciphertexts`
 
+<!-- code-reference -->
 ```java
 static SM2Ciphertext parse(
     byte[] ciphertext,
@@ -647,6 +665,7 @@ static byte[] decodeAuto(
 
 ### `SM2KeyExchangeOptions`
 
+<!-- code-reference -->
 ```java
 static SM2KeyExchangeOptions.Builder builder();
 
@@ -682,6 +701,7 @@ TypeScript 的 `keyLength` 单位是 byte，Java `keyBits` 单位是 bit；例�
 
 以下三个方法同时存在于 `SM2` 和 `SM2Util`：
 
+<!-- code-reference -->
 ```java
 byte[] keyExchange(
     String selfStaticPrivateKeyHex,
@@ -706,6 +726,7 @@ boolean confirmResponder(
 
 ### `SM2KeyExchangeResult`
 
+<!-- code-reference -->
 ```java
 public SM2KeyExchangeResult(byte[] key, byte[] s1, byte[] s2);
 
@@ -724,6 +745,7 @@ String s2Hex();
 
 ### 带确认标签的顺序
 
+<!-- code-sample id="api-java-sm2-22" steps="生成长期与临时密钥|响应方计算|发起方计算|共享密钥断言|响应方确认" -->
 ```java
 // 1. 生成长期与临时密钥：Alice 和 Bob 每方各有两组密钥。
 SM2KeyPair aliceStatic = SM2Util.generateKeyPair(false);
@@ -795,6 +817,7 @@ if (!SM2Util.confirmResponder(bob.s2(), alice.s2())) {
 JUnit 文档测试覆盖标准 Z 签名、正确消息和金额篡改；SM2 专项测试还覆盖 BC 双向互操作、user ID 不同、no-Z 边界、标准向量、密文格式和密钥交换确认。
 
 ::: details 查看标准签名文档案例
+<!-- code-sample id="api-java-sm2-23" steps="准备输入|生成 SM2 密钥对|SM2 签名|SM2 验签|篡改断言" -->
 ```java
 <!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-sm2-example -->
 ```

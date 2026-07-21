@@ -28,6 +28,7 @@ tag:
 
 ## 导入
 
+<!-- code-reference -->
 ```java
 import cn.gmkit.core.Base64Codec;
 import cn.gmkit.core.BcProviders;
@@ -53,6 +54,7 @@ import cn.gmkit.core.Texts;
 
 ### 完整公开签名
 
+<!-- code-reference -->
 ```java
 public static byte[] decodeStrict(String input, String label)
 public static String encode(byte[] input)
@@ -75,6 +77,7 @@ public static String normalize(String input, String label)
 
 `normalize` 会移除字符串中所有 `Character.isWhitespace` 识别的空白，并去掉开头的 `0x`/`0X`；它不转小写，也不检查剩余字符是不是 Hex。完整解码使用 `decodeStrict`。
 
+<!-- code-sample id="api-java-core-03" steps="清理 Hex 文本|清理结果断言|严格 Hex 解码|Hex 往返断言|非法输入断言" -->
 ```java
 // 1. 清理 Hex 文本：移除空白和 0x 前缀，但保留字母大小写。
 String normalized = HexCodec.normalize(" 0xAA BB ", "payload");
@@ -104,6 +107,7 @@ org.junit.jupiter.api.Assertions.assertThrows(
 
 ### 完整公开签名
 
+<!-- code-reference -->
 ```java
 public static byte[] decode(String input, String label)
 public static String encode(byte[] input)
@@ -126,6 +130,7 @@ public static boolean looksLikeBase64(String input)
 
 </ApiTable>
 
+<!-- code-sample id="api-java-core-05" steps="Base64 解码|解码结果断言|语法探测断言|Base64 编码断言|非规范输入断言" -->
 ```java
 // 1. Base64 解码：允许省略尾部 padding。
 byte[] bytes = Base64Codec.decode("AP+AQQ", "payload");
@@ -157,6 +162,7 @@ org.junit.jupiter.api.Assertions.assertThrows(
 
 ### 完整公开签名
 
+<!-- code-reference -->
 ```java
 public static String encode(byte[] input, OutputFormat outputFormat)
 public static byte[] decode(
@@ -178,6 +184,7 @@ public static byte[] decodeAuto(String input, String label)
 
 自动识别遇到全 Hex 字符时不会回退 Base64。`"abc"` 会先被判断为 Hex 候选，再因为奇数长度抛错。稳定协议应把格式作为显式字段并调用 `decode(..., InputFormat, ...)`。
 
+<!-- code-sample id="api-java-core-07" steps="Base64 解码|Hex 编码|转换结果断言|自动识别失败断言" -->
 ```java
 // 1. Base64 解码：显式声明协议字段的输入格式。
 byte[] bytes = ByteEncodings.decode(
@@ -203,6 +210,7 @@ org.junit.jupiter.api.Assertions.assertThrows(
 
 ### 完整公开签名
 
+<!-- code-reference -->
 ```java
 public static final Charset UTF_8
 
@@ -225,6 +233,7 @@ public static String text(byte[] input, Charset charset)
 
 JDK 字符串解码会按 Charset 默认替换策略处理无法映射的字节；任意二进制不要经过 `Texts.utf8(byte[])`。图片、压缩包、密钥和密文保留为 `byte[]`。
 
+<!-- code-sample id="api-java-core-09" steps="UTF-8 编码|编码结果断言|UTF-8 解码断言" -->
 ```java
 // 1. UTF-8 编码：将中文和 emoji 转换为原始字节。
 byte[] utf8 = Texts.utf8("国密🔐");
@@ -244,6 +253,7 @@ if (!"国密🔐".equals(Texts.utf8(utf8))) {
 
 ### 完整公开签名
 
+<!-- code-reference -->
 ```java
 public static byte[] clone(byte[] input)
 public static byte[] requireNonNull(byte[] input, String label)
@@ -270,6 +280,7 @@ public static byte[] copyOfRange(byte[] input, int from, int to)
 
 `concat((byte[][]) null)` 会因 varargs 数组本身为 null 抛 `NullPointerException`；只有数组中的 null 元素会被跳过。`copyOfRange` 还可能抛出 JDK 的 `NullPointerException`、`IllegalArgumentException` 或 `ArrayIndexOutOfBoundsException`。
 
+<!-- code-sample id="api-java-core-11" steps="拼接字节|拼接结果断言|范围复制|范围结果断言|常量时间比较断言" -->
 ```java
 // 1. 拼接字节：null 元素被跳过，其他数组保持原顺序。
 byte[] first = new byte[] {0x00, (byte) 0xff};
@@ -302,6 +313,7 @@ org.junit.jupiter.api.Assertions.assertTrue(
 
 ### 完整公开签名
 
+<!-- code-reference -->
 ```java
 public static <T> T requireNonNull(T value, String label)
 public static String requireNonBlank(String value, String label)
@@ -328,6 +340,7 @@ public static boolean hasBytes(byte[] value)
 
 ### 完整公开签名
 
+<!-- code-reference -->
 ```java
 public static Provider create()
 public static Provider getIfPresent()
@@ -352,6 +365,7 @@ public static Provider registerIfNeeded(Provider provider)
 
 容器、应用服务器和有统一安全基线的进程应由启动层管理 Provider。库内部运算通常也可以直接向 JCA/BC API 传一个未全局注册的 Provider 实例。
 
+<!-- code-sample id="api-java-core-14" steps="创建隔离 Provider|Provider 名称断言|默认 Provider 断言" -->
 ```java
 // 1. 创建隔离 Provider：不修改 JVM 全局 Provider 列表。
 Provider isolated = BcProviders.create();
@@ -372,6 +386,7 @@ if (BcProviders.getIfPresent() == null
 
 ### 完整公开成员
 
+<!-- code-reference -->
 ```java
 public static GmSecurityContext.Builder builder()
 public Provider provider()
@@ -399,6 +414,7 @@ public static final class Builder {
 
 Builder setter 都返回同一 Builder，可链式调用。`build()` 后继续修改 Builder 不影响已构建 context。
 
+<!-- code-sample id="api-java-core-16" steps="准备依赖|构建安全上下文|上下文断言" -->
 ```java
 // 1. 准备依赖：创建未注册 Provider 和 SecureRandom 实例。
 Provider provider = BcProviders.create();
@@ -425,6 +441,7 @@ if (context.provider() != provider
 
 ### 完整公开签名
 
+<!-- code-reference -->
 ```java
 public static GmSecurityContext defaults()
 public static GmSecurityContext withProvider(Provider provider)
@@ -451,6 +468,7 @@ public static GmSecurityContext withSecureRandom(SecureRandom secureRandom)
 
 ### `InputFormat` 与 `OutputFormat`
 
+<!-- code-reference -->
 ```java
 enum InputFormat  { HEX, BASE64 }
 enum OutputFormat { HEX, BASE64 }
@@ -460,6 +478,7 @@ enum OutputFormat { HEX, BASE64 }
 
 ### SM2 枚举
 
+<!-- code-reference -->
 ```java
 enum SM2CipherMode {
     C1C3C2,
@@ -491,6 +510,7 @@ enum SM2SignatureInputFormat {
 
 ### SM4 枚举
 
+<!-- code-reference -->
 ```java
 enum SM4CipherMode {
     ECB, CBC, CTR, CFB, OFB, GCM, CCM;
@@ -508,6 +528,7 @@ enum SM4Padding {
 
 ## `GmkitException`
 
+<!-- code-reference -->
 ```java
 public class GmkitException extends RuntimeException {
     public GmkitException(String message)
@@ -519,6 +540,7 @@ GMKit 的参数、编码、加解密和签名包装错误优先使用这个非�
 
 不是所有错误都会被包装：`Arrays.copyOfRange` 的范围异常、Provider 全局注册的 `SecurityException`、内存错误等 JDK 异常可能直接传播。业务不要通过解析 message 判断错误类型。
 
+<!-- code-sample id="api-java-core-22" steps="触发编码错误|诊断信息断言" -->
 ```java
 // 1. 触发编码错误：严格 Hex 解码必须拒绝非 Hex 文本。
 try {
@@ -594,6 +616,7 @@ try {
 下面的 JUnit 区域覆盖显式 Base64 解码、Hex 输出和非法 Hex 异常。Java 主包测试会编译并执行同一源码。
 
 ::: details 查看测试源码
+<!-- code-sample id="api-java-core-23" steps="Base64 解码|Hex 编码断言|非法输入断言" -->
 ```java
 <!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-core-example -->
 ```

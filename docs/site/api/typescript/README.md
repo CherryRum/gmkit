@@ -47,6 +47,7 @@ npm install gmkitx@0.10.1
 
 ## 30 秒确认安装正确
 
+<!-- code-sample id="api-typescript-index-01" steps="计算摘要|固定向量断言" -->
 ```ts
 import { sm3Digest } from 'gmkitx';
 
@@ -66,6 +67,7 @@ if (actual !== expected) {
 
 ### 1. 具名导出：应用代码首选
 
+<!-- code-reference -->
 ```ts
 import {
   CipherMode,
@@ -81,6 +83,7 @@ import {
 
 带算法前缀的名称在调用点就能看出归属，也利于静态分析和 tree-shaking。类型使用 `import type`，避免把纯类型误当运行时值：
 
+<!-- code-reference -->
 ```ts
 import type { KeyPair, SM4Options } from 'gmkitx';
 ```
@@ -89,6 +92,7 @@ import type { KeyPair, SM4Options } from 'gmkitx';
 
 根入口导出五个算法对象：`sm2`、`sm3`、`sm4`、`zuc`、`sha`。每个对象聚合同算法函数和类，适合依赖注入或按算法分组。
 
+<!-- code-sample id="api-typescript-index-04" steps="生成密钥|计算摘要|长度断言" -->
 ```ts
 import { sm2, sm3 } from 'gmkitx';
 
@@ -106,6 +110,7 @@ if (digest.length !== 64) throw new Error('SM3 output length mismatch');
 
 ### 3. 类：保存配置或增量状态
 
+<!-- code-reference -->
 ```ts
 import { SM2, SM3, SM4, SHA256, ZUC } from 'gmkitx';
 ```
@@ -126,6 +131,7 @@ import { SM2, SM3, SM4, SHA256, ZUC } from 'gmkitx';
 
 ### 4. 包命名空间导入：需要全部根导出时
 
+<!-- code-sample id="api-typescript-index-06" steps="计算摘要" -->
 ```ts
 import * as gmkit from 'gmkitx';
 
@@ -137,6 +143,7 @@ const digest = gmkit.sm3Digest('abc');
 
 ### 5. 默认导出：IIFE 和旧整体导入兼容
 
+<!-- code-sample id="api-typescript-index-07" steps="计算摘要" -->
 ```ts
 import GMKit from 'gmkitx';
 
@@ -159,8 +166,13 @@ const digest = GMKit.sm3Digest('abc');
 ```html
 <script src="https://cdn.jsdelivr.net/npm/gmkitx@0.10.1/dist/index.global.js"></script>
 <script>
+  // 1. 准备固定向量：浏览器样例使用公开的 SM3 abc 结果。
   const expected = '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0';
+
+  // 2. 计算摘要：IIFE 构建通过全局 GMKit 对象调用 SM3。
   const actual = GMKit.sm3Digest('abc');
+
+  // 3. 固定向量断言：结果不一致时立即终止页面自检。
   if (actual !== expected) throw new Error('SM3 browser vector mismatch');
 </script>
 ```
@@ -171,6 +183,7 @@ const digest = GMKit.sm3Digest('abc');
 
 现代 Node 和浏览器通常已有 UTF-8 与 Web Crypto。受限小程序需要在应用启动时检查并注入宿主能力：
 
+<!-- code-sample id="api-typescript-index-08" steps="启用严格随机策略|检查密码能力|检查文本能力" -->
 ```ts
 import {
   configureRNG,
@@ -252,6 +265,7 @@ if (!env.hasTextEncoder || !env.hasTextDecoder) {
 
 ## 错误处理示例
 
+<!-- code-sample id="api-typescript-index-09" steps="准备输入|SM2 签名|SM2 验签|篡改断言" -->
 ```ts
 import {
   sm2GenerateKeyPair,

@@ -28,6 +28,7 @@ SM2 适合数字签名、小体积密钥材料加密和协议级密钥交换。�
 
 ## 导入与入口选择
 
+<!-- code-sample id="api-typescript-sm2-01" steps="配置随机源" -->
 ```ts
 import {
   DEFAULT_USER_ID,
@@ -119,6 +120,7 @@ configureRNG('strict');
 
 ### 公开签名
 
+<!-- code-reference -->
 ```ts
 interface KeyPair {
   publicKey: string;
@@ -156,6 +158,7 @@ sm2DecompressPublicKey(publicKey: string | Uint8Array): string
 
 字符串私钥短于 64 个 Hex 字符时会在左侧补零，这是兼容行为；长于 64 个字符、包含非 Hex 字符或标量越界时会抛出 `Error`。公钥会校验长度、`02`/`03`/`04` 前缀和曲线点合法性。
 
+<!-- code-sample id="api-typescript-sm2-03" steps="生成密钥对|密钥长度断言|派生公钥|公钥断言|压缩公钥|压缩长度断言|解压公钥" -->
 ```ts
 import {
   sm2CompressPublicKey,
@@ -196,6 +199,7 @@ if (sm2DecompressPublicKey(compressed) !== keys.publicKey) {
 
 ### 公开签名
 
+<!-- code-reference -->
 ```ts
 interface SM2EncryptOptions {
   mode?: 'C1C3C2' | 'C1C2C3';
@@ -251,6 +255,7 @@ sm2DecryptBytes(
 
 ### 文本、二进制与失败断言
 
+<!-- code-sample id="api-typescript-sm2-05" steps="生成 SM2 密钥对并准备 UTF-8 订单明文|SM2 文本加密|SM2 文本解密|文本往返断言|准备二进制输入|SM2 二进制加密|SM2 二进制解密|二进制往返断言|构造篡改密文|失败断言" -->
 ```ts
 import {
   InputFormat,
@@ -315,6 +320,7 @@ if (!rejected) throw new Error('tampered SM2 ciphertext must be rejected');
 
 ### 公开签名
 
+<!-- code-reference -->
 ```ts
 type SM2SignatureFormat = 'raw' | 'der';
 type SM2SignatureInputFormat = 'raw' | 'der' | 'auto';
@@ -378,6 +384,7 @@ sm2Verify(
 - `sm2Verify` 成功时返回 `true`。
 - 消息或 user ID 不一致、签名被篡改、`r/s` 越界、签名编码错误、公钥错误或验签选项无效时，`sm2Verify` 都返回 `false`。该函数内部会收敛解析异常，不依靠 `try/catch` 区分失败原因。
 
+<!-- code-sample id="api-typescript-sm2-07" steps="准备输入|SM2 签名|SM2 验签|成功断言|消息篡改断言|身份篡改断言" -->
 ```ts
 import {
   InputFormat,
@@ -440,6 +447,7 @@ if (sm2Verify(keys.publicKey, message, signature, {
 
 ## 曲线参数兼容声明
 
+<!-- code-reference -->
 ```ts
 interface SM2CurveParams {
   p?: string;
@@ -459,6 +467,7 @@ interface SM2CurveParams {
 
 ### 参数与返回值
 
+<!-- code-reference -->
 ```ts
 interface SM2KeyExchangeParams {
   privateKey: string | Uint8Array;
@@ -508,6 +517,7 @@ sm2KeyExchange(params: SM2KeyExchangeParams): SM2KeyExchangeResult
 
 双方需要先交换临时公钥，再以镜像身份和相反角色调用。为了让临时公钥在调用前可发送给对方，最直接的方式是先用 `sm2GenerateKeyPair()` 生成临时密钥对，并把临时私钥传给 `tempPrivateKey`。
 
+<!-- code-sample id="api-typescript-sm2-10" steps="生成长期密钥|生成临时密钥|发起方计算|响应方计算|密钥与确认值断言" -->
 ```ts
 import { sm2GenerateKeyPair, sm2KeyExchange } from 'gmkitx';
 
@@ -560,6 +570,7 @@ if (resultA.sharedKey.length !== 64
 
 ### 公开成员
 
+<!-- code-reference -->
 ```ts
 new SM2(keyPair?: Partial<KeyPair>, curveParams?: SM2CurveParams)
 
@@ -627,6 +638,7 @@ keyExchange(
 
 实例没有 `reset` 或 `close`，可以重复使用。除 `setCurveParams` 外，密码操作不会修改实例状态。`getCurveParams()` 返回构造或设置时保存的对象引用，不会复制；调用方不应在外部继续修改该对象。
 
+<!-- code-sample id="api-typescript-sm2-12" steps="准备实例|SM2 签名|SM2 验签|缺少私钥断言" -->
 ```ts
 import { SM2 } from 'gmkitx';
 
@@ -692,6 +704,7 @@ if (!missingPrivateKeyRejected) {
 下面的测试源码覆盖标准签名、正确消息以及篡改消息返回 `false`。站点检查会确认引用区域存在，文档示例任务会执行同一文件。
 
 ::: details 查看测试源码
+<!-- code-sample id="api-typescript-sm2-13" steps="准备输入|生成 SM2 密钥对|SM2 签名|SM2 验签|篡改断言" -->
 ```js
 <!-- @include: ../../examples/node/public-api-manual.mjs#ts-sm2-example -->
 ```

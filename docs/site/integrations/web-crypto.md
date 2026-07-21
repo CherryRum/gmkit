@@ -28,6 +28,7 @@ node docs/site/examples/node/international-crypto.mjs
 
 ## AES-GCM
 
+<!-- code-sample id="integrations-web-crypto-01" steps="准备参数|导入密钥|准备明文|AES-GCM 加密|AES-GCM 解密|成功断言" -->
 ```js
 // 1. 准备参数：生成 256-bit AES key 原始字节。
 const encoder = new TextEncoder();
@@ -64,6 +65,7 @@ Web Crypto 将 GCM tag 附在密文尾部。跨语言协议必须固定这个布
 
 ## RSA-OAEP
 
+<!-- code-sample id="integrations-web-crypto-02" steps="生成密钥|准备明文|RSA-OAEP 加密|RSA-OAEP 解密|成功断言" -->
 ```js
 // 1. 生成密钥：创建只用于 RSA-OAEP 加解密的 2048-bit 密钥对。
 const keys = await crypto.subtle.generateKey(

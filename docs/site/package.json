@@ -18,7 +18,7 @@
     "check:api": "node scripts/check-api.mjs",
     "check:links": "linkinator .vuepress/dist/index.html --recurse --skip \"^https?://(?!127\\.0\\.0\\.1)(?!localhost)\" --skip \"^mailto:\" --check-fragments --verbosity error",
     "clean": "node scripts/clean.mjs",
-    "check": "node scripts/check-docs.mjs",
+    "check": "node --test scripts/code-sample-audit.test.mjs && node scripts/check-docs.mjs",
     "test:examples": "node scripts/test-examples.mjs"
   },
   "devDependencies": {

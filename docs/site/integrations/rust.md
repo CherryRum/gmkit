@@ -25,6 +25,7 @@ cd docs/site/examples/rust
 cargo test --locked
 ```
 
+<!-- code-sample id="integrations-rust-01" steps="SM3 摘要|SM3 向量断言|准备 SM4 单分组向量|SM4 单分组加密|SM4 向量断言" -->
 ```rust
 use hex_literal::hex;
 use sm3::{Digest, Sm3};

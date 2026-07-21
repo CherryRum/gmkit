@@ -31,6 +31,7 @@ GMKit Java 主包提供 core、SM2、SM3、SM4、ZUC 和混合加密；SM9 是�
 
 ## 1. 固定向量自检
 
+<!-- code-sample id="guide-java-01" steps="计算摘要|固定向量断言" -->
 ```java
 import cn.gmkit.sm3.SM3Util;
 
@@ -61,6 +62,7 @@ if (!expected.equals(actual)) {
 
 ## 3. 签名与认证加密闭环
 
+<!-- code-sample id="guide-java-02" steps="准备输入|生成 SM2 密钥对|SM2 签名|SM2 验签|SM2 篡改断言|准备 SM4-GCM 参数|SM4-GCM 加密|SM4-GCM 解密|成功断言|构造篡改结果|失败断言" -->
 ```java
 import cn.gmkit.core.SM4CipherMode;
 import cn.gmkit.core.SM4Padding;
@@ -151,6 +153,7 @@ try {
 
 默认入口会解析可用的 Bouncy Castle Provider。需要固定 Provider 或注入 `SecureRandom` 时使用：
 
+<!-- code-sample id="guide-java-03" steps="创建安全上下文|创建 SM2 实例" -->
 ```java
 import cn.gmkit.core.GmSecurityContext;
 import cn.gmkit.sm2.SM2;

@@ -34,6 +34,7 @@ mvn -f docs/site/examples/hutool/pom.xml -B -ntp test
 
 它验证 Hutool SM3 入口与 BC SM4 原语能在固定版本组合下加载并通过标准向量：
 
+<!-- code-sample id="integrations-java-hutool-01" steps="SM3 摘要|SM3 向量断言|准备 SM4 单分组向量|SM4 单分组加密|SM4 向量断言" -->
 ```java
 import cn.hutool.core.util.HexUtil;
 import cn.hutool.crypto.SmUtil;
@@ -89,6 +90,7 @@ Hutool 的便捷 API 不等于协议默认值一致。迁移或互通时明确�
 
 ## GMKit Java 最小自检
 
+<!-- code-sample id="integrations-java-hutool-02" steps="SM3 摘要|固定向量断言" -->
 ```java
 import cn.gmkit.sm3.SM3Util;
 

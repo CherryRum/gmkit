@@ -27,6 +27,7 @@ EEA3/EIA3 适用于明确规定这些参数和比特顺序的通信协议。普�
 
 ## 导入、常量与入口
 
+<!-- code-reference -->
 ```java
 import cn.gmkit.core.Bytes;
 import cn.gmkit.core.HexCodec;
@@ -63,6 +64,7 @@ ZUCUtil.IV_LENGTH;    // 16 字节
 
 以下四个方法同时存在于 `ZUC` 和 `ZUCUtil`：
 
+<!-- code-reference -->
 ```java
 static byte[] keystream(byte[] key, byte[] iv, int lengthBytes);
 static String keystreamHex(String keyHex, String ivHex, int lengthBytes);
@@ -83,6 +85,7 @@ static String keystreamWordsHex(String keyHex, String ivHex, int lengthWords);
 
 Java 的 `int` 有符号，但 `keystreamWords` 中每个元素保存的是原样 32-bit 位模式。需要十进制展示时可用 `Integer.toUnsignedLong(word)`；跨语言序列化时按大端 4 字节写出，不要输出有符号十进制文本。
 
+<!-- code-sample id="api-java-zuc-03" steps="准备固定向量|生成字节密钥流|字节向量断言|生成 word 密钥流|单位换算断言" -->
 ```java
 // 1. 准备固定向量：ZUC-128 的 key 和 IV 都为 16 字节全零。
 String zero = "00000000000000000000000000000000";
@@ -112,6 +115,7 @@ ZUC 是流密码，加密和解密都把输入与同一密钥流异或。相同 
 
 以下六个方法同时存在于 `ZUC` 和 `ZUCUtil`：
 
+<!-- code-reference -->
 ```java
 static byte[] encrypt(byte[] key, byte[] iv, byte[] plaintext);
 static byte[] decrypt(byte[] key, byte[] iv, byte[] ciphertext);
@@ -139,6 +143,7 @@ static String decryptBase64ToUtf8(
 
 空消息合法，返回空数组或空字符串。`byte[]` API 不修改输入数组。`decrypt*ToUtf8` 只适合原文确实是 UTF-8 的情况；任意二进制内容应使用 `decrypt(byte[], ...)`。
 
+<!-- code-sample id="api-java-zuc-05" steps="准备参数|ZUC 加密|ZUC 解密|往返断言" -->
 ```java
 // 1. 准备参数：ZUC-128 使用 16 字节 key、16 字节 IV 和原始二进制明文。
 byte[] key = HexCodec.decodeStrict(
@@ -167,6 +172,7 @@ EEA3 处理带 `COUNT`、`BEARER` 和 `DIRECTION` 的消息机密性。协议以
 
 以下三个方法同时存在于 `ZUC` 和 `ZUCUtil`：
 
+<!-- code-reference -->
 ```java
 static String eea3(
     String keyHex,
@@ -203,6 +209,7 @@ static byte[] eea3Encrypt(
 
 `eea3` 返回字对齐密钥流，是为现有调用保留的低层入口；要得到消息密文应使用 `eea3Encrypt`。`bitLength` 从消息首 bit 起算，每字节先处理最高位。
 
+<!-- code-sample id="api-java-zuc-07" steps="准备 EEA3 消息|EEA3 加密|输出长度断言" -->
 ```java
 // 1. 准备 EEA3 消息：8 字节输入按 64 bit 完整处理。
 byte[] message = HexCodec.decodeStrict("5bad724710ba1c56", "EEA3 message");
@@ -230,6 +237,7 @@ EIA3 为协议消息计算固定 32-bit MAC-I。它不是通用 HMAC 替代品�
 
 以下三个方法同时存在于 `ZUC` 和 `ZUCUtil`：
 
+<!-- code-reference -->
 ```java
 static String eia3(
     String keyHex,
@@ -264,6 +272,7 @@ static String eia3(
 
 </ApiTable>
 
+<!-- code-sample id="api-java-zuc-09" steps="计算 EIA3 完整性标签|固定向量断言|准备接收值|完整性校验" -->
 ```java
 // 1. 计算 EIA3 完整性标签：使用固定协议字段和 64 bit 消息。
 String mac = ZUC.eia3(
@@ -318,6 +327,7 @@ if (!Bytes.constantTimeEquals(expectedMac, receivedMac)) {
 JUnit 文档测试同时断言 8 字节固定密钥流和非法 key 的失败路径；标准测试还覆盖 EEA3 800-bit 向量与多个 EIA3 向量。
 
 ::: details 查看文档案例
+<!-- code-sample id="api-java-zuc-10" steps="生成 ZUC 字节密钥流|固定向量断言|非法参数断言" -->
 ```java
 <!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-zuc-example -->
 ```

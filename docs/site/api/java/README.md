@@ -63,6 +63,7 @@ GMKit Java 当前版本为 `0.10.1`，由主包 `cn.gmkit:gmkit` 和独立 SM9 �
 
 ## 30 秒确认安装正确
 
+<!-- code-sample id="api-java-index-01" steps="计算摘要|固定向量断言" -->
 ```java
 import cn.gmkit.sm3.SM3Util;
 
@@ -96,6 +97,7 @@ SM2、SM3、SM4 同时提供实例类和 `*Util` 静态类；ZUC 的两个公开
 
 </ApiTable>
 
+<!-- code-sample id="api-java-index-02" steps="创建实例式入口，并分别计算同一条消息的摘要|入口一致性断言" -->
 ```java
 import cn.gmkit.sm3.SM3;
 import cn.gmkit.sm3.SM3Util;
@@ -178,6 +180,7 @@ if (!byInstance.equals(byUtility)) {
 
 `GmSecurityContext` 把 Bouncy Castle Provider、`SecureRandom` 和是否注册 Provider 的策略放在同一个对象中：
 
+<!-- code-sample id="api-java-index-03" steps="创建安全上下文|创建 SM2 实例|上下文断言" -->
 ```java
 import cn.gmkit.core.GmSecurityContext;
 import cn.gmkit.sm2.SM2;
@@ -202,6 +205,7 @@ if (sm2.securityContext() != context) {
 
 ## 错误处理示例
 
+<!-- code-sample id="api-java-index-04" steps="准备输入|SM2 签名|SM2 验签|篡改断言" -->
 ```java
 import cn.gmkit.core.GmkitException;
 import cn.gmkit.sm2.SM2KeyPair;

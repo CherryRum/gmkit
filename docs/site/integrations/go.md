@@ -18,6 +18,7 @@ cd docs/site/examples/go
 go test ./...
 ```
 
+<!-- code-sample id="integrations-go-01" steps="SM3 摘要|SM3 向量断言|准备 SM4 单分组向量|创建 SM4 分组原语|SM4 单分组加密|SM4 向量断言" -->
 ```go
 package main
 

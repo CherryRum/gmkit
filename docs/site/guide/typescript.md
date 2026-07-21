@@ -27,6 +27,7 @@ npm install gmkitx@0.10.1
 
 包支持 Node.js 18+，同时发布 ESM、CommonJS、浏览器 IIFE 和 TypeScript 声明。Monorepo 的开发与文档构建基线是 Node.js 22.12+，这不改变发布包的 Node.js 18 消费边界。
 
+<!-- code-reference -->
 ```ts
 // ESM / TypeScript，推荐
 import { sm3Digest } from 'gmkitx';
@@ -37,6 +38,7 @@ const { sm3Digest: sm3DigestCjs } = require('gmkitx');
 
 ## 1. 固定向量自检
 
+<!-- code-sample id="guide-typescript-02" steps="计算摘要|固定向量断言" -->
 ```ts
 import { sm3Digest } from 'gmkitx';
 
@@ -54,6 +56,7 @@ if (actual !== expected) {
 
 ## 2. 检查安全随机源
 
+<!-- code-sample id="guide-typescript-03" steps="启用严格随机策略|检查环境" -->
 ```ts
 import { configureRNG, getEnvReport, hasCustomRNG } from 'gmkitx';
 
@@ -71,6 +74,7 @@ if (!env.hasWebCrypto && !env.hasNodeCrypto && !hasCustomRNG()) {
 
 ## 3. 签名与认证加密闭环
 
+<!-- code-sample id="guide-typescript-04" steps="准备输入|生成 SM2 密钥对|SM2 签名|SM2 验签|SM2 篡改断言|准备 SM4-GCM 参数|SM4-GCM 加密|SM4-GCM 解密|成功断言|构造篡改密文|失败断言" -->
 ```ts
 import {
   CipherMode,
