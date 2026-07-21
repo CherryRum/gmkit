@@ -104,6 +104,7 @@ export class SM3 {
 
   /**
    * 获取当前输出格式
+   * @returns 当前实例使用的 `hex` 或 `base64`
    */
   getOutputFormat(): OutputFormatType {
     return this.outputFormat;

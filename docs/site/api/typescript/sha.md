@@ -69,12 +69,19 @@ hmacSha512(key, data, options?: SHAOptions): string
 ```ts
 import { hexToBytes, hmacSha256, hmacSha384, hmacSha512 } from 'gmkitx';
 
-const key = hexToBytes('0b'.repeat(20));
-if (hmacSha256(key, 'Hi There') !== 'b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7') {
+// RFC 固定向量保留原始输入，用来确认实现没有偏差。
+const vectorKey = hexToBytes('0b'.repeat(20));
+if (hmacSha256(vectorKey, 'Hi There') !== 'b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7') {
   throw new Error('HMAC-SHA-256 vector mismatch');
 }
-if (hmacSha384(key, 'Hi There').length !== 96) throw new Error('HMAC-SHA-384 length');
-if (hmacSha512(key, 'Hi There').length !== 128) throw new Error('HMAC-SHA-512 length');
+if (hmacSha384(vectorKey, 'Hi There').length !== 96) throw new Error('HMAC-SHA-384 length');
+if (hmacSha512(vectorKey, 'Hi There').length !== 128) throw new Error('HMAC-SHA-512 length');
+
+const message = 'order=GMKIT-DEMO-0001&amount=88.00';
+const tampered = 'order=GMKIT-DEMO-0001&amount=99.00';
+if (hmacSha256('merchant-demo-key', message) === hmacSha256('merchant-demo-key', tampered)) {
+  throw new Error('tampered order must produce a different MAC');
+}
 ```
 
 库没有 HMAC-SHA-1 公共入口。验证 MAC 时对解码后的字节使用 `constantTimeEqual`。

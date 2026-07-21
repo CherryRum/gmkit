@@ -332,6 +332,8 @@ export function normalizeInput(data: string | Uint8Array): Uint8Array {
  * 将 BytesLike 统一解码为 Uint8Array
  * @param data - Hex/Base64 字符串或 Uint8Array
  * @param inputFormat - 输入格式（默认 hex）
+ * @returns 解码后的原始字节；传入 Uint8Array 时原样返回
+ * @throws 字符串不符合指定编码，或 inputFormat 不受支持时抛出错误
  */
 export function decodeInput(data: BytesLike, inputFormat: InputFormatType = InputFormat.HEX): Uint8Array {
   if (data instanceof Uint8Array) return data;
@@ -344,6 +346,7 @@ export function decodeInput(data: BytesLike, inputFormat: InputFormatType = Inpu
  * 将 Uint8Array 编码为字符串输出
  * @param bytes - 要编码的数据
  * @param outputFormat - 输出格式（默认 hex）
+ * @returns 小写 Hex 或标准 Base64 字符串
  */
 export function encodeOutput(bytes: Uint8Array, outputFormat: OutputFormatType = OutputFormat.HEX): string {
   return outputFormat === OutputFormat.BASE64 ? bytesToBase64(bytes) : bytesToHex(bytes);
@@ -378,6 +381,9 @@ export function rotl(value: number, shift: number): number {
 
 /**
  * 将 4 个字节转换为 32 位大端整数
+ * @param bytes - 包含待读取字节的数组
+ * @param offset - 起始偏移，默认 0；调用方必须保证从此处至少还有 4 字节
+ * @returns 0 到 0xffffffff 范围内的无符号整数
  */
 export function bytes4ToUint32BE(bytes: Uint8Array, offset: number = 0): number {
   return (
@@ -390,6 +396,8 @@ export function bytes4ToUint32BE(bytes: Uint8Array, offset: number = 0): number 
 
 /**
  * 将 32 位大端整数转换为 4 个字节
+ * @param value - 按 32 位无符号位模式写出的数值
+ * @returns 固定 4 字节的大端数组
  */
 export function uint32ToBytes4BE(value: number): Uint8Array {
   return new Uint8Array([
@@ -617,7 +625,10 @@ export function configureRNG(policy: RNGPolicy): void {
 }
 
 /**
- * 向后兼容别名：setRNGPolicy -> configureRNG
+ * 配置缺少系统 CSPRNG 时的处理策略，行为与 {@link configureRNG} 相同。
+ *
+ * @param policy - `strict`、`warn` 或 `allow`
+ * @deprecated 请使用名称更明确的 {@link configureRNG}
  */
 export function setRNGPolicy(policy: RNGPolicy) {
   configureRNG(policy);
@@ -651,6 +662,8 @@ export function clearCustomRNG(): void {
 /**
  * 是否已注入自定义 RNG。生产启动代码可断言 `!hasCustomRNG()`
  * 以防 deterministic 测试 RNG 误入产物。
+ *
+ * @returns 已通过 {@link setCustomRNG} 注入函数时返回 true
  */
 export function hasCustomRNG(): boolean {
   return customRNG !== null;
@@ -725,6 +738,10 @@ function unsafeFallbackRandom(len: number, warn: boolean): Uint8Array {
  *
  * 3. Node.js crypto.randomBytes - 兼容没有 globalThis.crypto 的旧版 Node.js/CJS
  * 4. 非安全 fallback - warn（默认）会提示一次，allow 静默兼容，strict 直接拒绝
+ *
+ * @param len - 需要的字节数，默认 32；必须是正安全整数
+ * @returns 精确包含 len 个随机字节的 Uint8Array
+ * @throws 长度非法、自定义 RNG 返回类型/长度错误，或 strict 模式下没有 CSPRNG 时抛出错误
  */
 export function getRandomBytes(len: number = 32): Uint8Array {
   if (!Number.isSafeInteger(len) || len <= 0) {

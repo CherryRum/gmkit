@@ -53,12 +53,17 @@ if (digest !== '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0
   throw new Error('SM3 vector mismatch');
 }
 
-const macHex = sm3Hmac('secret-key', 'hmac-payload');
-const macBase64 = sm3Hmac('secret-key', 'hmac-payload', {
+const message = 'order=GMKIT-DEMO-0001&amount=88.00';
+const tampered = 'order=GMKIT-DEMO-0001&amount=99.00';
+const macHex = sm3Hmac('merchant-demo-key', message);
+const macBase64 = sm3Hmac('merchant-demo-key', message, {
   outputFormat: OutputFormat.BASE64,
 });
 if (macHex.length !== 64 || macBase64.length === 0) {
   throw new Error('SM3-HMAC output mismatch');
+}
+if (sm3Hmac('merchant-demo-key', tampered) === macHex) {
+  throw new Error('tampered message must produce a different MAC');
 }
 ```
 

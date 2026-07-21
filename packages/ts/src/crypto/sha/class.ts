@@ -200,6 +200,8 @@ export class SHA512 extends SHABase {
  * 输出长度：160 位（20 字节）40 个十六进制字符）
  * 
  * ⚠️ 警告：SHA-1 已被证明存在安全漏洞，不推荐用于安全敏感场景
+ *
+ * @deprecated 只用于读取或核对无法立即迁移的旧协议；新协议使用 {@link SHA256} 或更高版本
  */
 export class SHA1 extends SHABase {
   /**

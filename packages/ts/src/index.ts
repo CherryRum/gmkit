@@ -148,7 +148,10 @@ export const sha256 = shaFunctions.sha256;
 export const sha384 = shaFunctions.sha384;
 /** 计算 SHA-512；字符串按 UTF-8 编码，默认返回小写十六进制。 */
 export const sha512 = shaFunctions.sha512;
-/** 计算 SHA-1，仅用于旧协议兼容；新协议不应继续选择 SHA-1。 */
+/**
+ * 计算 SHA-1，仅用于核对无法立即迁移的旧协议。
+ * @deprecated 新协议请使用 {@link sha256} 或更高版本。
+ */
 export const sha1 = shaFunctions.sha1;
 /** 计算 HMAC-SHA-256；key 与消息字符串均按 UTF-8 编码。 */
 export const hmacSha256 = shaFunctions.hmacSha256;
@@ -161,31 +164,58 @@ export const hmacSha512 = shaFunctions.hmacSha512;
 // 弃用别名（无算法前缀的旧名）
 // ============================================================================
 
-/** @deprecated 请改用 {@link sm2GenerateKeyPair}。 */
+/**
+ * 旧版无前缀 SM2 密钥生成入口。
+ * @deprecated 请改用 {@link sm2GenerateKeyPair}。
+ */
 export const generateKeyPair = sm2GenerateKeyPair;
 
-/** @deprecated 请改用 {@link sm2GetPublicKeyFromPrivateKey}。 */
+/**
+ * 旧版无前缀 SM2 公钥派生入口。
+ * @deprecated 请改用 {@link sm2GetPublicKeyFromPrivateKey}。
+ */
 export const getPublicKeyFromPrivateKey = sm2GetPublicKeyFromPrivateKey;
 
-/** @deprecated 请改用 {@link sm2CompressPublicKey}。 */
+/**
+ * 旧版无前缀 SM2 公钥压缩入口。
+ * @deprecated 请改用 {@link sm2CompressPublicKey}。
+ */
 export const compressPublicKey = sm2CompressPublicKey;
 
-/** @deprecated 请改用 {@link sm2DecompressPublicKey}。 */
+/**
+ * 旧版无前缀 SM2 公钥解压入口。
+ * @deprecated 请改用 {@link sm2DecompressPublicKey}。
+ */
 export const decompressPublicKey = sm2DecompressPublicKey;
 
-/** @deprecated 请改用 {@link sm2Sign}。 */
+/**
+ * 旧版无前缀 SM2 签名入口。
+ * @deprecated 请改用 {@link sm2Sign}。
+ */
 export const sign = sm2Sign;
 
-/** @deprecated 请改用 {@link sm2Verify}。 */
+/**
+ * 旧版无前缀 SM2 验签入口。
+ * @deprecated 请改用 {@link sm2Verify}。
+ */
 export const verify = sm2Verify;
 
-/** @deprecated 请改用 {@link sm2KeyExchange}。 */
+/**
+ * 旧版无前缀 SM2 密钥交换入口。
+ * @deprecated 请改用 {@link sm2KeyExchange}。
+ */
 export const keyExchange = sm2KeyExchange;
 
-/** @deprecated 请改用 {@link sm3Digest}。 */
+/**
+ * 旧版无前缀 SM3 摘要入口。
+ * @deprecated 请改用 {@link sm3Digest}。
+ */
 export const digest = sm3Digest;
 
-/** @deprecated 请改用 {@link sm3Hmac}。 */
+/**
+ * 旧版无前缀 HMAC-SM3 入口。
+ * @deprecated 请改用 {@link sm3Hmac}。
+ */
 export const hmac = sm3Hmac;
 
 // ============================================================================

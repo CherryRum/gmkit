@@ -47,6 +47,8 @@ type SM2CipherModeType = 'C1C3C2' | 'C1C2C3';
 
 ## Hex、Base64 与 UTF-8
 
+这组函数只负责确定性的编码转换，适合协议字段和日志边界；它们不加密数据，也不会自动判断一个普通字符串是否“看起来像”Hex。
+
 | 签名 | 返回 | 失败条件 |
 |:--|:--|:--|
 | `hexToBytes(hex: string): Uint8Array` | Hex 解码后的字节 | 奇数长度、非 Hex 字符 |
@@ -74,9 +76,20 @@ if (bytesToHex(base64ToBytes('AP+AQQ==')) !== '00ff8041') {
 if (bytesToHex(stringToBytes('国密')) !== 'e59bbde5af86') {
   throw new Error('UTF-8 mismatch');
 }
+
+// 非法 Hex 必须失败，不能静默截断或替换。
+let rejected = false;
+try {
+  hexToBytes('0xz1');
+} catch {
+  rejected = true;
+}
+if (!rejected) throw new Error('invalid Hex must be rejected');
 ```
 
 ## 统一输入输出
+
+当调用方已经从协议知道输入编码时使用 `decodeInput`；只有兼容无法修改的旧输入时才使用 `autoDecodeString`。新协议应始终携带明确的格式字段。
 
 ```ts
 normalizeInput(data: string | Uint8Array): Uint8Array
@@ -107,6 +120,8 @@ if (encodeOutput(bytes, OutputFormat.HEX) !== '00ff8041') {
 
 ## 字节和整数工具
 
+这些工具用于实现二进制协议和固定宽度算法步骤，不负责数组越界、业务长度或数值范围之外的协议校验。
+
 | 签名 | 说明 |
 |:--|:--|
 | `xor(a: Uint8Array, b: Uint8Array): Uint8Array` | 等长数组逐字节异或；长度不同抛错 |
@@ -118,6 +133,8 @@ if (encodeOutput(bytes, OutputFormat.HEX) !== '00ff8041') {
 `constantTimeEqual` 只避免源码中按内容提前退出；JavaScript JIT 和宿主运行时不保证严格恒时。它适合比较摘要、MAC 和 tag，不负责校验结构。
 
 ## 随机源与运行环境
+
+随机源配置影响 SM2/SM4 等需要随机数的操作。服务启动时应先选择策略；测试注入的确定性 RNG 必须在用例结束后清除。
 
 ```ts
 type RNGPolicy = 'strict' | 'warn' | 'allow';
@@ -169,6 +186,8 @@ setTextCodec(codec: TextCodec): void
 只在缺少标准 `TextEncoder`/`TextDecoder` 的宿主中注入。实现必须是 UTF-8，并正确处理代理对、非 BMP 字符和非法字节序列；不能用 `charCodeAt` 直接截成单字节。
 
 ## ASN.1 与 SM2 签名
+
+这里的 ASN.1 能力用于 SM2 raw/DER 签名转换和受限诊断输出，不是证书、私钥容器或任意 ASN.1 schema 的解析器。
 
 ```ts
 encodeSignature(r: string | Uint8Array, s: string | Uint8Array): Uint8Array
