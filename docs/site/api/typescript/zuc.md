@@ -2,6 +2,8 @@
 title: TypeScript ZUC API
 description: 说明 gmkitx ZUC-128、字节与字长度、EEA3、EIA3、ZUC 类和底层状态。
 pageInfo: false
+contributors: false
+editLink: false
 icon: signal
 order: 5
 category:
@@ -238,9 +240,11 @@ generateKeyword(): number
 
 下面的 byte/word 长度对照和非法 key 失败断言直接来自文档测试。
 
+::: details 查看测试源码
 ```js
 <!-- @include: ../../examples/node/public-api-manual.mjs#ts-zuc-example -->
 ```
+:::
 
 ## 相关页面
 

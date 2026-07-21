@@ -2,6 +2,8 @@
 title: TypeScript SM2 API
 description: 说明 gmkitx SM2 密钥、压缩公钥、加解密、raw/DER 签名和密钥交换。
 pageInfo: false
+contributors: false
+editLink: false
 icon: key
 order: 2
 category:
@@ -361,9 +363,11 @@ if (!verifier.verify('class API', signature)) {
 
 下面的成功验签与篡改失败断言直接来自文档测试。
 
+::: details 查看测试源码
 ```js
 <!-- @include: ../../examples/node/public-api-manual.mjs#ts-sm2-example -->
 ```
+:::
 
 ## 相关页面
 

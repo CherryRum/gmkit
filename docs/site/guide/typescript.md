@@ -2,6 +2,8 @@
 title: TypeScript 快速入门
 description: 安装 gmkitx，完成环境自检、SM2 签名、SM3 摘要和 SM4-GCM 认证加密。
 pageInfo: false
+contributors: false
+editLink: false
 icon: code
 order: 3
 category:
@@ -76,18 +78,26 @@ import {
   sm4Encrypt,
 } from 'gmkitx';
 
-const message = 'GMKitX quick start';
+const message = 'order=GMKIT-DEMO-0001&amount=88.00';
+const changedMessage = 'order=GMKIT-DEMO-0001&amount=99.00';
+const userId = 'merchant@gmkit.cn';
 
 const keys = sm2GenerateKeyPair();
 const signature = sm2Sign(keys.privateKey, message, {
-  userId: 'quick-start@example',
+  userId,
   signatureFormat: 'der',
 });
 if (!sm2Verify(keys.publicKey, message, signature, {
-  userId: 'quick-start@example',
+  userId,
   signatureFormat: 'der',
 })) {
   throw new Error('SM2 verification failed');
+}
+if (sm2Verify(keys.publicKey, changedMessage, signature, {
+  userId,
+  signatureFormat: 'der',
+})) {
+  throw new Error('tampered order must not verify');
 }
 
 const key = bytesToHex(getRandomBytes(16));
@@ -96,7 +106,7 @@ const options = {
   mode: CipherMode.GCM,
   padding: PaddingMode.NONE,
   iv: nonce,
-  aad: 'gmkit-quick-start-v1',
+  aad: 'tenant=demo;schema=1',
 } as const;
 const encrypted = sm4Encrypt(key, message, options);
 if (sm4Decrypt(key, encrypted, options) !== message) {

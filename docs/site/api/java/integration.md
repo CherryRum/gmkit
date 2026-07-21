@@ -2,6 +2,8 @@
 title: Java SM2 + SM4 混合加密 API
 description: 说明 SM2Sm4Hybrid、混合载荷字段、编码 getter 和序列化稳定性边界。
 pageInfo: false
+contributors: false
+editLink: false
 icon: boxes-stacked
 order: 7
 category:
@@ -39,7 +41,7 @@ new SM2Sm4Hybrid(GmSecurityContext securityContext)
 
 传入自定义 `SM4Options` 时，缺少必需 IV/nonce 会按模式自动生成：GCM/CCM 为 12 字节，其他非 ECB 模式为 16 字节。
 
-## 加密完整重载
+## 加密重载
 
 ```java
 SM2Sm4HybridPayload encrypt(
@@ -59,7 +61,7 @@ SM2Sm4HybridPayload encrypt(
 
 字符串简写使用 UTF-8；需要二进制或其他 Charset 时使用对应重载。自定义 options 可以改用 CBC/CTR 等模式，但调用方同时承担完整性设计责任。
 
-## 解密完整重载
+## 解密重载
 
 ```java
 byte[] decrypt(
@@ -198,9 +200,11 @@ SM2Sm4HybridPayload payload =
 
 下面的 GCM 元数据、解密往返和篡改 tag 失败断言直接来自 JUnit 文档测试。
 
+::: details 查看测试源码
 ```java
 <!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-hybrid-example -->
 ```
+:::
 
 ## 相关页面
 

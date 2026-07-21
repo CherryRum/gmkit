@@ -59,7 +59,7 @@ public final class Base64Codec {
     /**
      * 轻量判断字符串是否符合 Base64 字符集和填充规则。
      * <p>
-     * 这里不做真正解码，避免把“格式探测”变成一次完整的分配和解码。
+     * 这里只检查编码形态，不分配结果缓冲区，也不执行解码。
      *
      * @param input 待判断字符串
      * @return 看起来像标准 Base64 时返回 {@code true}

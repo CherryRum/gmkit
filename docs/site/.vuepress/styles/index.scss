@@ -4,6 +4,10 @@
 $gmkit-sans: Inter, 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei UI', system-ui, sans-serif;
 $gmkit-mono: 'JetBrains Maple Mono', 'Cascadia Mono', 'Noto Sans Mono CJK SC', 'Microsoft YaHei UI', ui-monospace, monospace;
 
+:root {
+  --gmkit-accent: var(--vp-c-accent, #3eaf7c);
+}
+
 html,
 body,
 button,
@@ -136,7 +140,7 @@ code, kbd, pre, samp {
     border: 1px solid var(--vp-c-border, rgba(127, 127, 127, 0.22));
     border-radius: 10px;
     background:
-      linear-gradient(145deg, color-mix(in srgb, var(--theme-color) 7%, transparent), transparent 55%),
+      linear-gradient(145deg, color-mix(in srgb, var(--gmkit-accent) 7%, transparent), transparent 55%),
       var(--vp-c-bg, transparent);
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     transition:
@@ -146,13 +150,13 @@ code, kbd, pre, samp {
 
     &:hover {
       color: var(--vp-c-text, inherit);
-      border-color: color-mix(in srgb, var(--theme-color) 55%, transparent);
+      border-color: color-mix(in srgb, var(--gmkit-accent) 55%, transparent);
       box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
       transform: translateY(-2px);
     }
 
     &:focus-visible {
-      outline: 3px solid color-mix(in srgb, var(--theme-color) 45%, transparent);
+      outline: 3px solid color-mix(in srgb, var(--gmkit-accent) 45%, transparent);
       outline-offset: 2px;
     }
 
@@ -171,13 +175,13 @@ code, kbd, pre, samp {
   .doc-path-label {
     align-self: flex-start;
     padding: 0.1rem 0.45rem;
-    color: var(--theme-color);
+    color: var(--gmkit-accent);
     font-family: $gmkit-mono;
     font-size: 0.72rem;
     line-height: 1.55;
-    border: 1px solid color-mix(in srgb, var(--theme-color) 30%, transparent);
+    border: 1px solid color-mix(in srgb, var(--gmkit-accent) 30%, transparent);
     border-radius: 999px;
-    background: color-mix(in srgb, var(--theme-color) 7%, transparent);
+    background: color-mix(in srgb, var(--gmkit-accent) 7%, transparent);
   }
 
   .quickstart-grid {
@@ -201,9 +205,9 @@ code, kbd, pre, samp {
     box-shadow: 0 8px 30px rgba(15, 23, 42, 0.055);
 
     .quickstart-artifact {
-      color: var(--theme-color);
-      background: color-mix(in srgb, var(--theme-color) 8%, transparent);
-      border-color: color-mix(in srgb, var(--theme-color) 22%, transparent);
+      color: var(--gmkit-accent);
+      background: color-mix(in srgb, var(--gmkit-accent) 8%, transparent);
+      border-color: color-mix(in srgb, var(--gmkit-accent) 22%, transparent);
       white-space: nowrap;
     }
 
@@ -224,7 +228,7 @@ code, kbd, pre, samp {
       margin-top: auto;
       padding: 0.4rem 0.72rem;
       color: var(--vp-c-accent-text, #fff);
-      background: var(--theme-color);
+      background: var(--gmkit-accent);
       border-radius: 8px;
       font-size: 0.84rem;
       font-weight: 650;
@@ -237,7 +241,7 @@ code, kbd, pre, samp {
       }
 
       &:focus-visible {
-        outline: 3px solid color-mix(in srgb, var(--theme-color) 42%, transparent);
+        outline: 3px solid color-mix(in srgb, var(--gmkit-accent) 42%, transparent);
         outline-offset: 2px;
       }
     }
@@ -257,7 +261,7 @@ code, kbd, pre, samp {
       min-width: 0;
       margin: 0;
       padding: 2.75rem 0.85rem 0.9rem;
-      border-top: 2px solid color-mix(in srgb, var(--theme-color) 38%, transparent);
+      border-top: 2px solid color-mix(in srgb, var(--gmkit-accent) 38%, transparent);
       counter-increment: quickstart-step;
 
       &::before {
@@ -265,7 +269,7 @@ code, kbd, pre, samp {
         position: absolute;
         top: 0.55rem;
         left: 0.85rem;
-        color: var(--theme-color);
+        color: var(--gmkit-accent);
         font-family: $gmkit-mono;
         font-size: 0.78rem;
         font-weight: 650;
@@ -302,8 +306,8 @@ code, kbd, pre, samp {
       gap: 0.8rem;
       margin: 0;
       padding: 0.8rem 0.9rem;
-      border-left: 3px solid color-mix(in srgb, var(--theme-color) 55%, transparent);
-      background: color-mix(in srgb, var(--theme-color) 4%, transparent);
+      border-left: 3px solid color-mix(in srgb, var(--gmkit-accent) 55%, transparent);
+      background: color-mix(in srgb, var(--gmkit-accent) 4%, transparent);
     }
 
     strong {
@@ -362,7 +366,7 @@ code, kbd, pre, samp {
     tbody {
       tr {
         &:hover {
-          background-color: color-mix(in srgb, var(--theme-color) 3.5%, transparent);
+          background-color: color-mix(in srgb, var(--gmkit-accent) 3.5%, transparent);
         }
 
         &:last-child td {
@@ -409,7 +413,7 @@ code, kbd, pre, samp {
       -webkit-overflow-scrolling: touch;
 
       &:focus-visible {
-        outline: 3px solid color-mix(in srgb, var(--theme-color) 42%, transparent);
+        outline: 3px solid color-mix(in srgb, var(--gmkit-accent) 42%, transparent);
         outline-offset: 2px;
       }
     }
@@ -445,7 +449,7 @@ code, kbd, pre, samp {
       user-select: none;
 
       &:focus-visible {
-        outline: 2px solid var(--theme-color);
+        outline: 2px solid var(--gmkit-accent);
         outline-offset: -2px;
       }
     }
@@ -557,7 +561,7 @@ html.dark :not(pre) > code {
 .vp-sidebar-link:focus-visible,
 .vp-navbar-link:focus-visible,
 .vp-navbar-item:focus-visible {
-  outline: 2px solid var(--theme-color);
+  outline: 2px solid var(--gmkit-accent);
   outline-offset: 2px;
 }
 
@@ -578,6 +582,14 @@ html.dark :not(pre) > code {
   font-size: 12px;
 }
 
+// 页内目录随正文滚走，避免吸顶层覆盖标题、表格和代码块。
+.vp-toc-placeholder {
+  position: static;
+  z-index: auto;
+  top: auto;
+  margin-bottom: 0.75rem;
+}
+
 // 提示框样式优化
 .hint-container {
   box-sizing: border-box;
@@ -596,7 +608,7 @@ html.dark :not(pre) > code {
 }
 
 .icp-link:hover {
-  color: var(--theme-color);
+  color: var(--gmkit-accent);
   border-color: currentColor;
 }
 
@@ -692,13 +704,6 @@ html.dark :not(pre) > code {
     padding: 0.875rem 1rem;
   }
 
-  // 移动端页内目录跟随正文排列，避免吸顶层遮住表格和代码。
-  .vp-toc-placeholder {
-    position: static;
-    z-index: auto;
-    top: auto;
-    margin-bottom: 0.75rem;
-  }
 }
 
 @media print {

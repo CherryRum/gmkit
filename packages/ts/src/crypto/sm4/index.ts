@@ -734,11 +734,11 @@ function resolveCcmTagLength(tagLength?: number): number {
  *
  * @example
  * // ECB 模式
- * const encrypted = encrypt(key, 'Hello', { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
+ * const encrypted = encrypt(key, 'order=GMKIT-DEMO-0001&amount=88.00', { mode: CipherMode.ECB, padding: PaddingMode.PKCS7 });
  *
  * @example
  * // GCM 模式（包含认证标签）
- * const result = encrypt(key, 'Secret', { mode: CipherMode.GCM, iv: '000000000000000000000000', aad: 'metadata' });
+ * const result = encrypt(key, 'order=GMKIT-DEMO-0001&amount=88.00', { mode: CipherMode.GCM, iv: '000000000000000000000000', aad: 'tenant=demo;schema=1' });
  * console.log(result.ciphertext, result.tag);
  */
 export function encrypt(

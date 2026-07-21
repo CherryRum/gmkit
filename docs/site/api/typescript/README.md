@@ -2,6 +2,8 @@
 title: TypeScript API 说明书
 description: 按公共工具、SM2、SM3、SM4、ZUC 和 SHA 查阅 gmkitx 全部根导出。
 pageInfo: false
+contributors: false
+editLink: false
 icon: code
 category:
   - API 说明书
@@ -47,11 +49,13 @@ import {
 } from 'gmkitx';
 
 const keys = sm2GenerateKeyPair();
-const ciphertext = sm2Encrypt(keys.publicKey, 'hello');
-const digest = sm3Digest('hello');
-const result = sm4Encrypt('0123456789abcdeffedcba9876543210', 'hello', {
+const message = 'order=GMKIT-DEMO-0001&amount=88.00';
+const ciphertext = sm2Encrypt(keys.publicKey, message);
+const digest = sm3Digest('abc');
+const result = sm4Encrypt('0123456789abcdeffedcba9876543210', message, {
   mode: CipherMode.GCM,
   iv: '000102030405060708090a0b',
+  aad: 'tenant=demo;schema=1',
 });
 ```
 

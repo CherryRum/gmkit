@@ -2,6 +2,8 @@
 title: TypeScript SHA API
 description: 说明 gmkitx SHA-1、SHA-256、SHA-384、SHA-512、HMAC 和增量类。
 pageInfo: false
+contributors: false
+editLink: false
 icon: fingerprint
 order: 7
 category:
@@ -139,9 +141,11 @@ if (base64.length === 0) throw new Error('static class digest failed');
 
 下面的 SHA-256 固定摘要、增量复用和 HMAC 篡改断言直接来自文档测试。
 
+::: details 查看测试源码
 ```js
 <!-- @include: ../../examples/node/public-api-manual.mjs#ts-sm3-sha-example -->
 ```
+:::
 
 ## 相关页面
 

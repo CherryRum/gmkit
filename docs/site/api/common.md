@@ -2,6 +2,8 @@
 title: 公共能力与输入约定
 description: 统一说明双语言 API 的文本、字节、Hex、Base64、随机源、Provider 和错误约定。
 pageInfo: false
+contributors: false
+editLink: false
 icon: toolbox
 order: 2
 category: [API 说明书]

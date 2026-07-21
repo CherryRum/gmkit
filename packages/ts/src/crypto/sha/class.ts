@@ -95,11 +95,11 @@ function assertOutputFormat(format: OutputFormatType): void {
  * @example
  * ```typescript
  * // 静态方法
- * const hash = SHA256.digest('Hello, World!');
+ * const hash = SHA256.digest('abc');
  *
  * // 增量哈希
  * const sha = new SHA256();
- * sha.update('Hello, ').update('World!');
+ * sha.update('a').update('bc');
  * const result = sha.digest();
  * ```
  */

@@ -17,6 +17,20 @@ function measure() {
   overflowed.value = Boolean(element && element.scrollWidth > element.clientWidth + 1);
 }
 
+function scrollHorizontal(delta: number) {
+  const element = viewport.value;
+  if (!element) return;
+  element.scrollLeft += delta;
+  measure();
+}
+
+function scrollHorizontalEdge(toEnd: boolean) {
+  const element = viewport.value;
+  if (!element) return;
+  element.scrollLeft = toEnd ? element.scrollWidth : 0;
+  measure();
+}
+
 onMounted(async () => {
   await nextTick();
   measure();
@@ -38,6 +52,10 @@ onBeforeUnmount(() => observer?.disconnect());
       :aria-label="props.label"
       tabindex="0"
       @scroll="measure"
+      @keydown.left.prevent="scrollHorizontal(-96)"
+      @keydown.right.prevent="scrollHorizontal(96)"
+      @keydown.home.prevent="scrollHorizontalEdge(false)"
+      @keydown.end.prevent="scrollHorizontalEdge(true)"
     >
       <slot />
     </div>

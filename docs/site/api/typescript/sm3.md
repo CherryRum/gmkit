@@ -2,6 +2,8 @@
 title: TypeScript SM3 API
 description: 说明 gmkitx SM3 摘要、HMAC、输出编码、增量状态与 reset 行为。
 pageInfo: false
+contributors: false
+editLink: false
 icon: fingerprint
 order: 3
 category:
@@ -119,9 +121,11 @@ if (state.getOutputFormat() !== OutputFormat.BASE64) {
 
 下面的固定摘要、增量复用和 HMAC 篡改断言直接来自文档测试。
 
+::: details 查看测试源码
 ```js
 <!-- @include: ../../examples/node/public-api-manual.mjs#ts-sm3-sha-example -->
 ```
+:::
 
 ## 相关页面
 

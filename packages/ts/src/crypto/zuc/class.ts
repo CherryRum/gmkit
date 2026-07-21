@@ -30,7 +30,7 @@ import {
  * );
  * 
  * // 加密数据
- * const encrypted = zuc.encrypt('Hello, ZUC!');
+ * const encrypted = zuc.encrypt('order=GMKIT-DEMO-0001&amount=88.00');
  * 
  * // 解密数据
  * const decrypted = zuc.decrypt(encrypted);

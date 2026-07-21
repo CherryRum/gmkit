@@ -54,10 +54,10 @@ function formatOutput(bytes: Uint8Array, format: OutputFormatType = OutputFormat
  *
  * @example
  * ```typescript
- * const hash = sha256('Hello, World!');
+ * const hash = sha256('abc');
  * console.log(hash); // 十六进制格式
  *
- * const hash64 = sha256('Hello, World!', { outputFormat: OutputFormat.BASE64 });
+ * const hash64 = sha256('abc', { outputFormat: OutputFormat.BASE64 });
  * console.log(hash64); // Base64 格式
  * ```
  */
@@ -75,7 +75,7 @@ export function sha256(data: string | Uint8Array, options?: SHAOptions): string 
  *
  * @example
  * ```typescript
- * const hash = sha384('Hello, World!');
+ * const hash = sha384('abc');
  * console.log(hash); // 十六进制格式
  * ```
  */
@@ -93,7 +93,7 @@ export function sha384(data: string | Uint8Array, options?: SHAOptions): string 
  *
  * @example
  * ```typescript
- * const hash = sha512('Hello, World!');
+ * const hash = sha512('abc');
  * console.log(hash); // 十六进制格式
  * ```
  */
@@ -117,7 +117,7 @@ export function sha512(data: string | Uint8Array, options?: SHAOptions): string 
  *
  * @example
  * ```typescript
- * const hash = sha1('Hello, World!');
+ * const hash = sha1('abc');
  * console.log(hash); // 十六进制格式
  * ```
  * 

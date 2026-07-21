@@ -2,6 +2,8 @@
 title: Java 核心公共 API
 description: 说明 Java 编码、字节、Provider、安全上下文、格式枚举和公共异常类型。
 pageInfo: false
+contributors: false
+editLink: false
 icon: toolbox
 order: 1
 category:
@@ -231,9 +233,11 @@ invalidSm2RawSignatureEncoding
 
 下面的显式 Base64 解码、Hex 输出和非法 Hex 断言直接来自 JUnit 文档测试。
 
+::: details 查看测试源码
 ```java
 <!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-core-example -->
 ```
+:::
 
 ## 相关页面
 

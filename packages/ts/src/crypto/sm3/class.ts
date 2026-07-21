@@ -15,11 +15,11 @@ import { OutputFormat, type OutputFormatType } from '../../types/constants';
  * @example
  * ```typescript
  * // 静态方法
- * const hash = SM3.digest('Hello, SM3!');
+ * const hash = SM3.digest('abc');
  * 
  * // 增量哈希
  * const sm3 = new SM3();
- * sm3.update('Hello, ').update('SM3!');
+ * sm3.update('a').update('bc');
  * const result = sm3.digest();
  * ```
  */

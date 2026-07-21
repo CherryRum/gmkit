@@ -2,6 +2,8 @@
 title: TypeScript 公共类型与工具
 description: 说明 gmkitx 常量、类型、编码、随机源、环境、ASN.1、字节工具和兼容别名。
 pageInfo: false
+contributors: false
+editLink: false
 icon: toolbox
 order: 1
 category:
@@ -240,9 +242,11 @@ if (!bytesToHex(der).startsWith('30')) throw new Error('DER must be a SEQUENCE')
 
 下面的编码失败断言和 ASN.1 往返直接来自文档测试，站点构建会校验引用区域存在，测试任务会执行同一文件。
 
+::: details 查看测试源码
 ```js
 <!-- @include: ../../examples/node/public-api-manual.mjs#ts-common-example -->
 ```
+:::
 
 ## 相关页面
 

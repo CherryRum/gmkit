@@ -2,6 +2,8 @@
 title: TypeScript SM4 API
 description: 说明 gmkitx SM4 全部模式、填充、AEAD、结果对象、类工厂和失败行为。
 pageInfo: false
+contributors: false
+editLink: false
 icon: lock
 order: 4
 category:
@@ -106,7 +108,7 @@ type SM4AEADResult = SM4CipherResult;
 
 所有模式都返回对象，不是裸字符串。GCM/CCM 的 `tag` 必填，其他模式没有 `tag`；三个结果类型是兼容别名，认证标签字段始终叫 `tag`。
 
-## GCM 完整示例
+## GCM 认证加密示例
 
 ```ts
 import {
@@ -242,9 +244,11 @@ if (cipher.decrypt(encrypted, { aad }) !== message) {
 
 下面的 GCM 往返和认证失败断言直接来自文档测试。
 
+::: details 查看测试源码
 ```js
 <!-- @include: ../../examples/node/public-api-manual.mjs#ts-sm4-example -->
 ```
+:::
 
 ## 相关页面
 

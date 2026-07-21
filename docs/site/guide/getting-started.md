@@ -2,6 +2,8 @@
 title: 快速开始总览
 description: 在接入 GMKit 前完成语言选择、环境确认、固定向量自检和协议字段检查。
 pageInfo: false
+contributors: false
+editLink: false
 icon: route
 order: 2
 category:

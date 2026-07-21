@@ -45,7 +45,7 @@ tag:
 2. 公共 API 变化先更新源码注释、语言说明书、覆盖映射和可执行示例。
 3. 执行[发布流程](/maintenance/publishing.html)中的定向检查。
 4. 用[发布精简清单](/maintenance/release-audit.html)核对版本、制品内容和变更记录。
-5. 按[文档构建与部署](/maintenance/documentation-deployment.html)生成不可变 Reference 并验证站点。
+5. 按[文档构建与部署](/maintenance/documentation-deployment.html)生成不可变版本签名快照并验证站点。
 
 ## 验证与证据
 
@@ -56,4 +56,4 @@ tag:
 - [安全保证边界](/maintenance/reports/security-boundaries.html)：哪些结论不能由测试推出。
 - [SM2 兼容策略](/maintenance/reports/sm2-compatibility.html)：密文、签名、公钥与身份字段的兼容原则。
 
-维护文档中的命令必须能在仓库中执行。性能数字需要关联可复现 benchmark；标准结论需要关联标准编号或固定 reference；内部互操作向量不能标成外部标准向量。
+维护文档中的命令必须能在仓库中执行。性能数字需要关联可复现 benchmark；标准结论需要关联标准编号或可核查来源；内部互操作向量不能标成外部标准向量。

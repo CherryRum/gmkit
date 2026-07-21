@@ -223,7 +223,7 @@ for (const reflection of tsReflection.children ?? []) {
 const publicApi = path.join(docsRoot, '.vuepress', 'public', 'api');
 for (const entry of catalog.packages ?? []) {
   const apiIndex = path.join(docsRoot, '.vuepress', 'public', entry.api.replace(/^\//, ''), 'index.html');
-  await requireFile(apiIndex, `${entry.name} latest Reference 首页`);
+  await requireFile(apiIndex, `${entry.name} 主线签名索引首页`);
 }
 await requireFile(path.join(publicApi, 'typescript', 'latest', 'index.html'), 'TypeDoc 首页');
 await requireFile(path.join(publicApi, 'java', 'latest', 'index.html'), 'Javadoc 首页');

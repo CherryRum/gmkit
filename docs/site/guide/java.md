@@ -2,6 +2,8 @@
 title: Java 快速入门
 description: 引入 GMKit Maven 制品，完成 SM3 自检、SM2 签名、SM4-GCM 加密并按需启用 SM9。
 pageInfo: false
+contributors: false
+editLink: false
 icon: coffee
 order: 4
 category:
@@ -66,18 +68,27 @@ import cn.gmkit.sm4.SM4Options;
 
 SM2 sm2 = new SM2();
 SM2KeyPair keys = sm2.generateKeyPair();
-String message = "GMKit Java quick start";
+String message = "order=GMKIT-DEMO-0001&amount=88.00";
+String changedMessage = "order=GMKIT-DEMO-0001&amount=99.00";
+String userId = "merchant@gmkit.cn";
 
 String signature = sm2.signHex(
     keys.privateKey(),
     message,
-    SM2SignOptions.builder().userId("quick-start@example").build());
+    SM2SignOptions.builder().userId(userId).build());
 if (!sm2.verify(
         keys.publicKey(),
         message,
         signature,
-        SM2VerifyOptions.builder().userId("quick-start@example").build())) {
+        SM2VerifyOptions.builder().userId(userId).build())) {
     throw new IllegalStateException("SM2 verification failed");
+}
+if (sm2.verify(
+        keys.publicKey(),
+        changedMessage,
+        signature,
+        SM2VerifyOptions.builder().userId(userId).build())) {
+    throw new IllegalStateException("tampered order must not verify");
 }
 
 byte[] sm4Key = new SM4().generateKey();
@@ -85,7 +96,7 @@ SM4Options options = SM4Options.builder()
     .mode(SM4CipherMode.GCM)
     .padding(SM4Padding.NONE)
     .iv(HexCodec.decodeStrict("000102030405060708090a0b", "nonce"))
-    .aad("gmkit-quick-start-v1".getBytes("UTF-8"))
+    .aad("tenant=demo;schema=1".getBytes("UTF-8"))
     .tagLength(16)
     .build();
 SM4CipherResult encrypted = new SM4().encrypt(sm4Key, message, options);

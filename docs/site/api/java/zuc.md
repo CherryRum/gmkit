@@ -2,6 +2,8 @@
 title: Java ZUC API
 description: 说明 ZUC、ZUCUtil、密钥流、EEA3、EIA3 和各接口长度单位。
 pageInfo: false
+contributors: false
+editLink: false
 icon: signal
 order: 5
 category:
@@ -180,9 +182,11 @@ if (!"1b3d0f74".equals(mac)) {
 
 下面的 byte 长度固定向量和非法 key 失败断言直接来自 JUnit 文档测试。
 
+::: details 查看测试源码
 ```java
 <!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-zuc-example -->
 ```
+:::
 
 ## 相关页面
 

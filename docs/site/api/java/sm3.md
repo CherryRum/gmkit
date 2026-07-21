@@ -2,6 +2,8 @@
 title: Java SM3 API
 description: 说明 SM3 与 SM3Util 的字节、字符串、Charset、Hex 和 Base64 公共重载。
 pageInfo: false
+contributors: false
+editLink: false
 icon: fingerprint
 order: 3
 category:
@@ -28,7 +30,7 @@ new SM3()
 
 `SM3` 实例不保存消息状态，重复调用不会互相影响。
 
-## 摘要完整重载矩阵
+## 摘要重载矩阵
 
 以下九个重载同时存在于 `SM3` 和 `SM3Util`；静态类只多出 `static`：
 
@@ -62,7 +64,7 @@ if (!"66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0"
 }
 ```
 
-## HMAC 完整重载矩阵
+## HMAC 重载矩阵
 
 以下九个重载同样同时存在于 `SM3` 和 `SM3Util`：
 
@@ -104,6 +106,7 @@ if (mac.equals(SM3Util.hmacHex(key, tampered))) {
 
 下面的固定摘要和 HMAC 篡改断言直接来自 JUnit 文档测试。
 
+::: details 查看测试源码
 ```java
 <!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-sm3-example -->
 ```
@@ -111,6 +114,7 @@ if (mac.equals(SM3Util.hmacHex(key, tampered))) {
 ```java
 <!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-sm3-hmac-example -->
 ```
+:::
 
 ## 相关页面
 

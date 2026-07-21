@@ -10,10 +10,10 @@ GMKit 是一个 Java + TypeScript monorepo，维护 JVM 后端与前端/Node.js 
 gmkit/
 ├── packages/
 │   ├── ts/        # npm 包 gmkitx；SM2/SM3/SM4/ZUC/SHA，纯 TypeScript
+│   └── java/      # Maven 多模块；主包 gmkit，SM9 独立 JNI/GmSSL 模块
 ├── docs/
 │   ├── site/      # VuePress 全项目文档门户与可执行示例
 │   └── API_STABILITY.md # 项目级 API 稳定性策略
-│   └── java/      # Maven 多模块；主包 gmkit，SM9 独立 JNI/GmSSL 模块
 ├── apps/
 │   └── gmkit-studio/  # Vue3 + Vite 工具站；V5 三栏工具工作台
 ├── vectors/       # Java / TypeScript 共享互操作测试向量

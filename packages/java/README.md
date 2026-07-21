@@ -37,19 +37,28 @@ import cn.gmkit.sm3.SM3;
 
 SM2 sm2 = new SM2();
 SM2KeyPair keys = sm2.generateKeyPair();
-String message = "GMKit Java quick start";
+String message = "order=GMKIT-DEMO-0001&amount=88.00";
+String changedMessage = "order=GMKIT-DEMO-0001&amount=99.00";
+String userId = "merchant@gmkit.cn";
 
 String signature = sm2.signHex(
     keys.privateKey(),
     message,
-    SM2SignOptions.builder().build());
+    SM2SignOptions.builder().userId(userId).build());
 boolean valid = sm2.verify(
     keys.publicKey(),
     message,
     signature,
-    SM2VerifyOptions.builder().build());
+    SM2VerifyOptions.builder().userId(userId).build());
 if (!valid) {
     throw new IllegalStateException("SM2 verification failed");
+}
+if (sm2.verify(
+        keys.publicKey(),
+        changedMessage,
+        signature,
+        SM2VerifyOptions.builder().userId(userId).build())) {
+    throw new IllegalStateException("tampered order must not verify");
 }
 
 String digest = new SM3().digestHex("abc");

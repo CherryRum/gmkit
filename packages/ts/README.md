@@ -26,27 +26,35 @@ import {
 // 安全环境建议禁止退回非密码学随机源。
 configureRNG('strict');
 
+const message = 'order=GMKIT-DEMO-0001&amount=88.00';
+const changedMessage = 'order=GMKIT-DEMO-0001&amount=99.00';
+const userId = 'merchant@gmkit.cn';
+const aad = 'tenant=demo;schema=1';
+
 const sm2 = SM2.generateKeyPair();
-const signature = sm2.sign('需要签名的消息', {
+const signature = sm2.sign(message, {
   signatureFormat: 'der',
-  userId: 'alice@example',
+  userId,
 });
-if (!sm2.verify('需要签名的消息', signature, {
+if (!sm2.verify(message, signature, {
   signatureFormat: 'der',
-  userId: 'alice@example',
+  userId,
 })) {
   throw new Error('SM2 verification failed');
+}
+if (sm2.verify(changedMessage, signature, { signatureFormat: 'der', userId })) {
+  throw new Error('tampered order must not verify');
 }
 
 const sm4 = SM4.GCM(
   '0123456789abcdeffedcba9876543210',
   '000102030405060708090a0b',
 );
-const encrypted = sm4.encrypt('需要认证的消息', {
+const encrypted = sm4.encrypt(message, {
   mode: CipherMode.GCM,
-  aad: 'example-v1',
+  aad,
 });
-if (sm4.decrypt(encrypted, { aad: 'example-v1' }) !== '需要认证的消息') {
+if (sm4.decrypt(encrypted, { aad }) !== message) {
   throw new Error('SM4-GCM round-trip failed');
 }
 

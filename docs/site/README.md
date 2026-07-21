@@ -16,11 +16,11 @@ actions:
     type: secondary
 features:
   - title: 按能力查阅
-    details: 每个算法页面同时列出 Java 与 TypeScript 的支持范围、参数默认值、格式差异和可验证示例。
-  - title: 按验证证据说明
-    details: 固定标准向量、共享互操作向量、单元测试和外部运行时验证分别记录，避免扩大测试结论。
-  - title: 为扩展包预留目录
-    details: 新工具可以独立登记包、版本、API 入口和测试命令，无需改变现有核心包的使用方式。
+    details: 算法页说明协议差异，语言说明书列出签名、默认值、失败行为和可执行断言。
+  - title: 区分验证证据
+    details: 固定向量、互操作测试、单元测试和运行时验证分别记录，不混用结论。
+  - title: 版本可核对
+    details: 当前说明书面向使用场景；历史签名按已发布 npm 或 Maven 版本保存。
 footer: Apache-2.0 Licensed | Copyright © 2026 GMKit contributors
 ---
 
@@ -36,7 +36,7 @@ footer: Apache-2.0 Licensed | Copyright © 2026 GMKit contributors
 GMKit 当前发布包尚未完成独立第三方安全审计。固定向量和单元测试只能证明已覆盖行为，不能替代密码产品认证、密钥管理设计或目标运行环境的安全评估。
 :::
 
-## 从这里完成第一次接入
+## 选择接入路径
 
 <div class="doc-path-grid">
   <a class="doc-path-card" href="/guide/typescript.html">
@@ -67,8 +67,8 @@ GMKit 当前发布包尚未完成独立第三方安全审计。固定向量和�
 - [算法](/algorithms/)：按 SM2、SM3、SM4、ZUC、SM9、SHA 查阅两端能力与边界。
 - [TypeScript API 说明书](/api/typescript/)：逐项查阅 121 个根导出、默认值、错误和可运行示例。
 - [Java API 说明书](/api/java/)：逐项查阅 46 个公共顶层类型、重载、Builder 和资源生命周期。
-- [公共能力](/api/common.html)：查阅编码、随机源、安全上下文、格式与异常约定。
-- [API 总入口](/api/)：选择说明书、公开审计清单、latest 或已发布版本 Reference。
+- [公共约定](/api/common.html)：查阅编码、随机源、安全上下文、格式与异常约定。
+- [API 总入口](/api/)：选择语言说明书或已发布版本签名索引。
 - [协议与标准](/standards/)：查看输入输出约定、标准来源和测试证据边界。
 - [集成示例](/integrations/)：查看 Java、Hutool、Go、Python、Rust 和 Node 示例。
 - [扩展包](/extensions/)：了解未来工具包如何接入文档、版本和测试。

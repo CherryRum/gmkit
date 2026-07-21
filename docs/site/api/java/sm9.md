@@ -2,6 +2,8 @@
 title: Java SM9 API
 description: 说明 Java SM9 平台诊断、句柄、签名、IBE、PEM、文件限制与资源关闭。
 pageInfo: false
+contributors: false
+editLink: false
 icon: id-card
 order: 6
 category:
@@ -290,6 +292,7 @@ try (SM9SignMasterKey verifierKey =
 
 第一段覆盖签名、错误身份、消息篡改、IBE 和 256 字节失败；第二段覆盖口令加密用户私钥与公开主密钥的 PEM 往返。两段都由需要 native runtime 的 JUnit 测试执行。
 
+::: details 查看测试源码
 ```java
 <!-- @include: ../../../../packages/java/gmkit-sm9/src/test/java/cn/gmkit/sm9/SM9ManualExamplesTest.java#java-sm9-example -->
 ```
@@ -297,6 +300,7 @@ try (SM9SignMasterKey verifierKey =
 ```java
 <!-- @include: ../../../../packages/java/gmkit-sm9/src/test/java/cn/gmkit/sm9/SM9KeyPemTest.java#java-sm9-pem-example -->
 ```
+:::
 
 ## 相关页面
 

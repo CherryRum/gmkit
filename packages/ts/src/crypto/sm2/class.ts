@@ -34,12 +34,13 @@ import type { BytesLike } from '../../core/utils';
  * const sm2 = SM2.generateKeyPair();
  * 
  * // 加密/解密
- * const encrypted = sm2.encrypt('Hello, SM2!');
+ * const message = 'order=GMKIT-DEMO-0001&amount=88.00';
+ * const encrypted = sm2.encrypt(message);
  * const decrypted = sm2.decrypt(encrypted);
- * 
+ *
  * // 签名/验签
- * const signature = sm2.sign('message');
- * const isValid = sm2.verify('message', signature);
+ * const signature = sm2.sign(message, { userId: 'merchant@gmkit.cn' });
+ * const isValid = sm2.verify(message, signature, { userId: 'merchant@gmkit.cn' });
  * ```
  */
 export class SM2 {

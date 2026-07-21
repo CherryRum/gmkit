@@ -2,6 +2,8 @@
 title: API 说明书
 description: 按语言阅读 GMKit 使用说明，并从已发布版本签名索引核对历史制品。
 pageInfo: false
+contributors: false
+editLink: false
 icon: code
 category:
   - API 说明书
@@ -19,7 +21,7 @@ tag:
 
 | 目标 | 入口 | 能解决的问题 |
 |:--|:--|:--|
-| 使用 npm 包 | [TypeScript API 说明书](/api/typescript/) | 导入方式、121 个根导出、参数默认值、错误行为和完整示例 |
+| 使用 npm 包 | [TypeScript API 说明书](/api/typescript/) | 导入方式、121 个根导出、参数默认值、错误行为和可执行示例 |
 | 使用 Maven 包 | [Java API 说明书](/api/java/) | 两个 artifact、46 个公共类型、重载、Builder、异常和资源生命周期 |
 | 设计跨语言协议 | [公共输入与安全约定](/api/common.html) | UTF-8、Hex/Base64、随机源、Provider、ASN.1 和失败语义 |
 | 核对历史签名 | 已发布版本签名索引 | 与 npm/Maven 制品相同版本的函数、成员、字段和弃用标记 |

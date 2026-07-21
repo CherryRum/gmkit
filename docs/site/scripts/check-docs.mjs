@@ -166,6 +166,17 @@ for (const file of markdownFiles) {
     }
   }
 
+  const quietMetaPage = relative.startsWith('docs/site/api/')
+    || [
+      'docs/site/guide/README.md',
+      'docs/site/guide/getting-started.md',
+      'docs/site/guide/typescript.md',
+      'docs/site/guide/java.md',
+    ].includes(relative);
+  if (quietMetaPage && (!/^contributors:\s+false$/m.test(content) || !/^editLink:\s+false$/m.test(content))) {
+    failures.push(`${relative}: API/快速入门页只应在页尾保留更新时间`);
+  }
+
   if (routeFor(file) !== '/') {
     const headings = [...prose.matchAll(/^#\s+(.+?)\s*$/gm)].map((match) => match[1]);
     if (headings.length !== 1) failures.push(`${relative}: 页面正文应只有一个 H1，实际为 ${headings.length}`);
@@ -188,8 +199,8 @@ for (const file of markdownFiles) {
   for (const phrase of forbiddenPhrases) {
     if (prose.includes(phrase)) failures.push(`${relative}: 包含需要改写的表述 ${phrase}`);
   }
-  if (/\/api\/(?:java|typescript)\/latest\//.test(prose)) {
-    failures.push(`${relative}: 包含用户可见的 latest API 链接`);
+  if (/\/api\/[^/\s)]+\/latest\//.test(prose)) {
+    failures.push(`${relative}: 包含用户可见的 latest API 路径`);
   }
 
   await checkLocalLinks(file, content, relative);
@@ -209,7 +220,15 @@ for (const relative of [
   'docs/API_STABILITY.md',
 ]) {
   const file = path.join(repoRoot, relative);
-  await checkLocalLinks(file, await readFile(file, 'utf8'), relative);
+  const content = await readFile(file, 'utf8');
+  const prose = stripFencedCode(content);
+  await checkLocalLinks(file, content, relative);
+  for (const phrase of forbiddenPhrases) {
+    if (prose.includes(phrase)) failures.push(`${relative}: 包含需要改写的表述 ${phrase}`);
+  }
+  if (/\/api\/[^/\s)]+\/latest\//.test(prose)) {
+    failures.push(`${relative}: 包含用户可见的 latest API 路径`);
+  }
 }
 
 const apiDoc = await readFile(path.join(docsRoot, 'api', 'public-api.md'), 'utf8');

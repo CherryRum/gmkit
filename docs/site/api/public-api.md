@@ -2,6 +2,8 @@
 title: 公共 API 覆盖数据
 description: 供维护者核对 gmkitx 根导出与 GMKit Java 公共顶层类型的兼容性边界。
 pageInfo: false
+contributors: false
+editLink: false
 icon: list
 order: 1
 category: [项目维护]
@@ -99,7 +101,7 @@ Java 与 TypeScript 独立版本化。共享向量只冻结指定协议字段，
 
 ## Java 公共类型
 
-以下类型来自两个 Maven 发布 JAR。完整重载、Builder、异常和生命周期说明见 [Java API 说明书](/api/java/)。
+以下类型来自两个 Maven 发布 JAR。各重载、Builder、异常和生命周期说明见 [Java API 说明书](/api/java/)。
 
 ### `cn.gmkit.core`
 

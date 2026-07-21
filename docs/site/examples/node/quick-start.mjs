@@ -16,18 +16,20 @@ import {
 const expectedSm3 = '66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0';
 assert.equal(sm3Digest('abc'), expectedSm3);
 
-const message = 'GMKitX quick start';
+const message = 'order=GMKIT-DEMO-0001&amount=88.00';
+const changedMessage = 'order=GMKIT-DEMO-0001&amount=99.00';
+const userId = 'merchant@gmkit.cn';
 const keys = sm2GenerateKeyPair();
 const signature = sm2Sign(keys.privateKey, message, {
-  userId: 'quick-start@example',
+  userId,
   signatureFormat: 'der',
 });
 assert.equal(sm2Verify(keys.publicKey, message, signature, {
-  userId: 'quick-start@example',
+  userId,
   signatureFormat: 'der',
 }), true);
-assert.equal(sm2Verify(keys.publicKey, `${message}!`, signature, {
-  userId: 'quick-start@example',
+assert.equal(sm2Verify(keys.publicKey, changedMessage, signature, {
+  userId,
   signatureFormat: 'der',
 }), false);
 
@@ -37,7 +39,7 @@ const options = {
   mode: CipherMode.GCM,
   padding: PaddingMode.NONE,
   iv: nonce,
-  aad: 'gmkit-quick-start-v1',
+  aad: 'tenant=demo;schema=1',
 };
 const encrypted = sm4Encrypt(key, message, options);
 assert.equal(sm4Decrypt(key, encrypted, options), message);

@@ -2,6 +2,8 @@
 title: Java SM2 API
 description: 说明 SM2、SM2Util、选项 Builder、密钥、签名、密文转换和密钥交换重载。
 pageInfo: false
+contributors: false
+editLink: false
 icon: key
 order: 2
 category:
@@ -43,7 +45,7 @@ String compressPublicKey(String publicKeyHex)
 String decompressPublicKey(String publicKeyHex)
 ```
 
-静态入口完整变体：
+静态入口变体：
 
 ```java
 SM2Util.generateKeyPair()
@@ -113,7 +115,7 @@ String encryptBase64(
 
 ### `SM2Util` 静态入口
 
-静态入口包含以下完整变体：
+静态入口包含以下变体：
 
 <ApiTable label="SM2Util 加密重载矩阵" min-width="52rem">
 
@@ -439,9 +441,11 @@ byte[] getter 返回防御性复制。发起方和响应方必须镜像角色、
 
 下面的标准签名、正确消息和篡改消息断言直接来自 JUnit 文档测试。
 
+::: details 查看测试源码
 ```java
 <!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-sm2-example -->
 ```
+:::
 
 ## 相关页面
 

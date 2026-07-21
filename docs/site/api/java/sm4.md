@@ -2,6 +2,8 @@
 title: Java SM4 API
 description: 说明 Java SM4 模式、填充、AEAD、选项 Builder、结果对象和静态实例入口。
 pageInfo: false
+contributors: false
+editLink: false
 icon: lock
 order: 4
 category:
@@ -98,7 +100,7 @@ IV、AAD、tag 的 Builder 和 getter 都执行防御性复制。
 
 跨语言 GCM 应选择双方交集：12 字节 nonce。ECB 只为兼容；CBC/CTR/CFB/OFB 不提供完整性。
 
-## 加密完整重载
+## 加密重载
 
 `SM4` 实例：
 
@@ -119,7 +121,7 @@ SM4CipherResult encrypt(
 
 `SM4Util` 提供相同的两个 `encryptHex` 重载，以及后三个带 options 的 `encrypt` 重载；它没有实例类的 `encrypt(byte[] key, byte[] data)` 简写。
 
-## 解密完整重载
+## 解密重载
 
 `SM4` 实例：
 
@@ -164,7 +166,7 @@ String tagBase64()
 
 GCM/CCM 结果含 tag；其他模式的 tag 为 null。byte[] getter 返回防御性复制。传完整结果对象解密时，库会使用对象中的 tag；传裸 ciphertext 时，应在 `SM4Options.tag(...)` 中提供 tag。
 
-## GCM 完整示例
+## GCM 认证加密示例
 
 ```java
 byte[] key =
@@ -234,9 +236,11 @@ CBC 不提供完整性；新协议优先 GCM/CCM。
 
 下面的 GCM 往返与篡改 tag 失败断言直接来自 JUnit 文档测试。
 
+::: details 查看测试源码
 ```java
 <!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-sm4-example -->
 ```
+:::
 
 ## 相关页面
 

@@ -46,7 +46,7 @@ public final class SM2Ciphertexts {
                 "Invalid SM2 ciphertext: missing C1/C3/C2 segments"));
         }
         byte[] c1 = Bytes.copyOfRange(normalizedCiphertext, 0, c1Length);
-        // parse() 也是公开编码入口，不能只在真正解密时才发现 C1 不是曲线上的合法点。
+        // parse() 也是公开编码入口，应在解析阶段确认 C1 是曲线上的合法点。
         SM2KeyOps.toPublicKeyPoint(HexCodec.encode(c1));
         byte[] c2;
         byte[] c3;

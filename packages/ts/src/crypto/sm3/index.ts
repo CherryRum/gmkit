@@ -256,10 +256,10 @@ function assertOutputFormat(format?: OutputFormatType) {
  * @example
  * ```typescript
  * // 十六进制格式（默认）
- * const hash = digest('Hello, SM3!');
+ * const hash = digest('abc');
  *
  * // Base64 格式
- * const hash64 = digest('Hello, SM3!', { outputFormat: OutputFormat.BASE64 });
+ * const hash64 = digest('abc', { outputFormat: OutputFormat.BASE64 });
  * ```
  */
 export function digest(data: string | Uint8Array, options?: SM3Options): string {

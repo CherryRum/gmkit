@@ -15,7 +15,7 @@ function walk(dir, relativeDir = '') {
     const relativePath = path.join(relativeDir, entry.name);
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      // API Reference 由 TypeDoc/Javadoc 生成并由各自门禁检查，不纳入手工静态资源大小限制。
+      // TypeDoc/Javadoc 签名索引由各自门禁检查，不纳入手工静态资源大小限制。
       if (relativeDir === '' && entry.name === 'api') continue;
       files.push(...walk(fullPath, relativePath));
       continue;
