@@ -1,6 +1,7 @@
 ---
 title: API 说明书
 description: 按语言阅读 GMKit 使用说明，并从已发布版本签名索引核对历史制品。
+pageInfo: false
 icon: code
 category:
   - API 说明书

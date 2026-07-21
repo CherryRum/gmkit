@@ -1,6 +1,7 @@
 ---
 title: Java ZUC API
 description: 说明 ZUC、ZUCUtil、密钥流、EEA3、EIA3 和各接口长度单位。
+pageInfo: false
 icon: signal
 order: 5
 category:

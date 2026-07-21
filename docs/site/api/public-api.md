@@ -1,6 +1,7 @@
 ---
 title: 公共 API 覆盖数据
 description: 供维护者核对 gmkitx 根导出与 GMKit Java 公共顶层类型的兼容性边界。
+pageInfo: false
 icon: list
 order: 1
 category: [项目维护]

@@ -1,6 +1,7 @@
 ---
 title: TypeScript 公共类型与工具
 description: 说明 gmkitx 常量、类型、编码、随机源、环境、ASN.1、字节工具和兼容别名。
+pageInfo: false
 icon: toolbox
 order: 1
 category:

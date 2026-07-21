@@ -1,6 +1,7 @@
 ---
 title: TypeScript SHA API
 description: 说明 gmkitx SHA-1、SHA-256、SHA-384、SHA-512、HMAC 和增量类。
+pageInfo: false
 icon: fingerprint
 order: 7
 category:

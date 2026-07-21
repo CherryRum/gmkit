@@ -1,6 +1,7 @@
 ---
 title: TypeScript 快速入门
 description: 安装 gmkitx，完成环境自检、SM2 签名、SM3 摘要和 SM4-GCM 认证加密。
+pageInfo: false
 icon: code
 order: 3
 category:

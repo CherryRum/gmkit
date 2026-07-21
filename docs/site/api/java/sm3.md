@@ -1,6 +1,7 @@
 ---
 title: Java SM3 API
 description: 说明 SM3 与 SM3Util 的字节、字符串、Charset、Hex 和 Base64 公共重载。
+pageInfo: false
 icon: fingerprint
 order: 3
 category:

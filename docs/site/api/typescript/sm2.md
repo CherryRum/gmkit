@@ -1,6 +1,7 @@
 ---
 title: TypeScript SM2 API
 description: 说明 gmkitx SM2 密钥、压缩公钥、加解密、raw/DER 签名和密钥交换。
+pageInfo: false
 icon: key
 order: 2
 category:
@@ -48,8 +49,8 @@ sm2DecompressPublicKey(publicKey: BytesLike): string
 | 项目 | 编码和长度 |
 |:--|:--|
 | 私钥 | 32 字节标量；字符串为 64 个 Hex 字符，可接受 `0x` 前缀；短 Hex 会左侧补零 |
-| 非压缩公钥 | 65 字节，`04 || x || y`，即 130 个 Hex 字符 |
-| 压缩公钥 | 33 字节，`02/03 || x`，即 66 个 Hex 字符 |
+| 非压缩公钥 | 65 字节，`04 \|\| x \|\| y`，即 130 个 Hex 字符 |
+| 压缩公钥 | 33 字节，`02/03 \|\| x`，即 66 个 Hex 字符 |
 | 默认公钥形式 | `compressed` 省略或为 false 时返回非压缩公钥 |
 
 公钥解析会校验点是否位于标准 SM2 曲线上。传入同时包含公私钥的 `SM2` 构造参数时，两者必须匹配。
@@ -180,7 +181,7 @@ sm2Verify(
 
 | 选项 | 默认值 | 约束 |
 |:--|:--|:--|
-| `signatureFormat`（签名） | `raw` | raw 为 64 字节 `r || s`；DER 为可变长度 SEQUENCE |
+| `signatureFormat`（签名） | `raw` | raw 为 64 字节 `r \|\| s`；DER 为可变长度 SEQUENCE |
 | `signatureFormat`（验签） | `raw` | 只有显式传 `auto` 才自动识别 |
 | `outputFormat` | `hex` | raw/DER 字节外层再编码成 Hex 或 Base64 |
 | `inputFormat` | 自动识别 | 字符串优先 Hex；跨系统调用建议显式传 |
@@ -193,7 +194,7 @@ sm2Verify(
 
 | 路径 | e 的计算 | 使用边界 |
 |:--|:--|:--|
-| 标准 SM2 | `SM3(Z || M)` | 默认路径；新协议和跨库互操作都应使用 |
+| 标准 SM2 | `SM3(Z \|\| M)` | 默认路径；新协议和跨库互操作都应使用 |
 | 旧 no-Z 兼容 | `SM3(M)` | 非标准；只迁移双方已经采用相同约定的旧协议 |
 
 `skipZComputation: true` 不是性能选项，也不等同于“调用方传入预计算 e”。它会改用项目内部的摘要签名实现；Bouncy Castle 1.83 的标准 `SM2Signer` 没有跳过 Z 的公开选项，因此两者不能互验。TypeScript 当前没有公开的预计算 e 签名入口。

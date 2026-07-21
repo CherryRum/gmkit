@@ -51,10 +51,10 @@ code, kbd, pre, samp {
     box-sizing: border-box;
     max-width: 100%;
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: 10px;
     margin: 1.5rem 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    border: 1px solid var(--vp-c-divider, rgba(127, 127, 127, 0.16));
 
     pre {
       box-sizing: border-box;
@@ -64,6 +64,7 @@ code, kbd, pre, samp {
       font-size: 13px;
       line-height: 1.65;
       padding: 1rem 1.15rem;
+      scrollbar-gutter: stable;
     }
 
     code {
@@ -71,7 +72,7 @@ code, kbd, pre, samp {
     }
 
     &::before {
-      opacity: 0.6;
+      opacity: 0.72;
       font-size: 0.75rem;
       padding: 0.25rem 0.75rem;
       border-radius: 0 0 4px 4px;
@@ -221,36 +222,57 @@ code, kbd, pre, samp {
     max-width: 100%;
     overflow-x: auto;
     overflow-y: hidden;
-    border-collapse: collapse;
+    border: 1px solid var(--vp-c-divider, rgba(127, 127, 127, 0.16));
+    border-radius: 10px;
+    border-collapse: separate;
+    border-spacing: 0;
     margin: 1.25rem 0;
     width: 100%;
+    scrollbar-gutter: stable;
     -webkit-overflow-scrolling: touch;
 
     thead {
-      background-color: rgba(127, 127, 127, 0.05);
+      background: color-mix(in srgb, var(--vp-c-bg-alt, #f6f6f7) 88%, var(--vp-c-bg, #fff));
 
       th {
-        padding: 0.6rem 0.8rem;
-        font-weight: 600;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        padding: 0.7rem 0.85rem;
+        color: var(--vp-c-text, inherit);
+        background: inherit;
+        font-size: 0.88rem;
+        font-weight: 650;
         text-align: left;
-        border-bottom: 2px solid rgba(127, 127, 127, 0.15);
+        border: 0;
+        border-bottom: 1px solid var(--vp-c-border, rgba(127, 127, 127, 0.22));
         white-space: nowrap;
       }
     }
 
     tbody {
       tr {
-        border-bottom: 1px solid rgba(127, 127, 127, 0.08);
-
         &:hover {
-          background-color: rgba(127, 127, 127, 0.03);
+          background-color: color-mix(in srgb, var(--theme-color) 3.5%, transparent);
+        }
+
+        &:last-child td {
+          border-bottom: 0;
         }
       }
 
       td {
-        padding: 0.6rem 0.8rem;
+        padding: 0.68rem 0.85rem;
         min-width: 7rem;
+        border: 0;
+        border-bottom: 1px solid var(--vp-c-divider, rgba(127, 127, 127, 0.12));
         overflow-wrap: anywhere;
+        vertical-align: top;
+
+        &:first-child {
+          color: var(--vp-c-text, inherit);
+          font-weight: 560;
+        }
       }
     }
 
@@ -261,6 +283,43 @@ code, kbd, pre, samp {
       font-size: 0.9em;
       overflow-wrap: normal;
       word-break: normal;
+      white-space: nowrap;
+    }
+  }
+
+  .api-table {
+    margin: 1.25rem 0;
+
+    .api-table__viewport {
+      max-width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--vp-c-divider, rgba(127, 127, 127, 0.16));
+      border-radius: 10px;
+      scrollbar-gutter: stable;
+      overscroll-behavior-inline: contain;
+      -webkit-overflow-scrolling: touch;
+
+      &:focus-visible {
+        outline: 3px solid color-mix(in srgb, var(--theme-color) 42%, transparent);
+        outline-offset: 2px;
+      }
+    }
+
+    table {
+      display: table;
+      width: max-content;
+      min-width: max(100%, var(--api-table-min-width));
+      margin: 0;
+      overflow: visible;
+      border: 0;
+      border-radius: 0;
+    }
+
+    .api-table__hint {
+      margin-top: 0.35rem;
+      color: var(--vp-c-text-mute, #64748b);
+      font-size: 0.76rem;
+      text-align: right;
     }
   }
 
@@ -466,6 +525,14 @@ html.dark :not(pre) > code {
       }
     }
 
+    .api-table {
+      margin: 1rem 0;
+
+      table {
+        min-width: var(--api-table-min-width);
+      }
+    }
+
     div[class*='language-'] {
       margin-right: 0;
       margin-left: 0;
@@ -504,6 +571,14 @@ html.dark :not(pre) > code {
 
   .hint-container {
     padding: 0.875rem 1rem;
+  }
+
+  // 移动端页内目录跟随正文排列，避免吸顶层遮住表格和代码。
+  .vp-toc-placeholder {
+    position: static;
+    z-index: auto;
+    top: auto;
+    margin-bottom: 0.75rem;
   }
 }
 

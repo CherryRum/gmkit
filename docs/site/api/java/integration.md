@@ -1,6 +1,7 @@
 ---
 title: Java SM2 + SM4 混合加密 API
 description: 说明 SM2Sm4Hybrid、混合载荷字段、编码 getter 和序列化稳定性边界。
+pageInfo: false
 icon: boxes-stacked
 order: 7
 category:

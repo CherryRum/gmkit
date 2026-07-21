@@ -1,6 +1,7 @@
 ---
 title: Java SM4 API
 description: 说明 Java SM4 模式、填充、AEAD、选项 Builder、结果对象和静态实例入口。
+pageInfo: false
 icon: lock
 order: 4
 category:
@@ -79,6 +80,8 @@ IV、AAD、tag 的 Builder 和 getter 都执行防御性复制。
 
 ## 模式矩阵
 
+<ApiTable label="Java SM4 模式参数矩阵" min-width="42rem">
+
 | `SM4CipherMode` | IV/nonce | `SM4Padding` | tag |
 |:--|:--|:--|:--|
 | `ECB` | 无 | PKCS7/NONE/ZERO | 无 |
@@ -88,6 +91,8 @@ IV、AAD、tag 的 Builder 和 getter 都执行防御性复制。
 | `OFB` | 16 字节 | 忽略 | 无 |
 | `GCM` | 12–16 字节 | 忽略 | 12–16 字节 |
 | `CCM` | 7–13 字节 | 忽略 | 4–16 偶数字节 |
+
+</ApiTable>
 
 跨语言 GCM 应选择双方交集：12 字节 nonce。ECB 只为兼容；CBC/CTR/CFB/OFB 不提供完整性。
 

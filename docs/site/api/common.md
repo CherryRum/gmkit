@@ -1,6 +1,7 @@
 ---
 title: 公共能力与输入约定
 description: 统一说明双语言 API 的文本、字节、Hex、Base64、随机源、Provider 和错误约定。
+pageInfo: false
 icon: toolbox
 order: 2
 category: [API 说明书]
@@ -145,7 +146,7 @@ JavaScript 的 JIT 和宿主运行时不提供严格恒时保证，TS 实现只�
 |:--|:--|
 | `encodeSignature(r, s)` | 将两个正整数编码为 canonical DER SEQUENCE |
 | `decodeSignature(signature)` | 解析 DER 签名并返回 r/s |
-| `rawToDer(rawSignature)` | 64 字节 `r || s` -> DER |
+| `rawToDer(rawSignature)` | 64 字节 `r \|\| s` -> DER |
 | `derToRaw(derSignature)` | DER -> 128 字符 raw Hex |
 | `asn1ToXml(data, indent?)` | 受限 DER 结构调试输出 |
 | `signatureToXml(signature, options?)` | 按 raw/DER 输入生成签名调试 XML |

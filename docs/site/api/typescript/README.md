@@ -1,6 +1,7 @@
 ---
 title: TypeScript API 说明书
 description: 按公共工具、SM2、SM3、SM4、ZUC 和 SHA 查阅 gmkitx 全部根导出。
+pageInfo: false
 icon: code
 category:
   - API 说明书

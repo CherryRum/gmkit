@@ -1,6 +1,7 @@
 ---
 title: Java SM2 API
 description: 说明 SM2、SM2Util、选项 Builder、密钥、签名、密文转换和密钥交换重载。
+pageInfo: false
 icon: key
 order: 2
 category:
@@ -114,6 +115,8 @@ String encryptBase64(
 
 静态入口包含以下完整变体：
 
+<ApiTable label="SM2Util 加密重载矩阵" min-width="52rem">
+
 | 返回形式 | 消息变体 | mode | 安全上下文变体 |
 |:--|:--|:--|:--|
 | `encrypt -> byte[]` | `byte[]` | 默认或显式 | `byte[] + mode + GmSecurityContext` |
@@ -125,6 +128,8 @@ String encryptBase64(
 | `encryptBase64 -> String` | `byte[]` | 默认或显式 | `byte[] + mode + GmSecurityContext` |
 | `encryptBase64 -> String` | UTF-8 `String` | 显式 | 无 |
 | `encryptBase64 -> String` | `String + Charset` | 显式 | 无 |
+
+</ApiTable>
 
 每个 `GmSecurityContext` 变体的完整尾部参数顺序都是 `(publicKeyHex, data, mode, securityContext)`。
 
@@ -335,7 +340,7 @@ byte[] computeEWithoutZ(String message, Charset charset)
 
 | 路径 | e 的计算 | 定位 |
 |:--|:--|:--|
-| 标准 SM2 | `SM3(Z || M)` | 默认路径；与 Bouncy Castle `SM2Signer` 双向互操作 |
+| 标准 SM2 | `SM3(Z \|\| M)` | 默认路径；与 Bouncy Castle `SM2Signer` 双向互操作 |
 | 旧 no-Z 兼容 | `SM3(M)` | 非标准且已弃用；只迁移既有旧协议 |
 | 预计算 e | 调用方直接传入 | `signDigest` / `verifyDigest` 高级接口；调用方负责摘要协议正确性 |
 

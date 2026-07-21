@@ -1,6 +1,7 @@
 ---
 title: Java 快速入门
 description: 引入 GMKit Maven 制品，完成 SM3 自检、SM2 签名、SM4-GCM 加密并按需启用 SM9。
+pageInfo: false
 icon: coffee
 order: 4
 category:

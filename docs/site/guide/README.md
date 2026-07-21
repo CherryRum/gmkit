@@ -1,6 +1,7 @@
 ---
 title: 开始使用
 description: 从运行环境、开发语言和业务目标出发，选择 GMKit 的最短接入路径。
+pageInfo: false
 icon: play
 order: 1
 category:

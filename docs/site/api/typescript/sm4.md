@@ -1,6 +1,7 @@
 ---
 title: TypeScript SM4 API
 description: 说明 gmkitx SM4 全部模式、填充、AEAD、结果对象、类工厂和失败行为。
+pageInfo: false
 icon: lock
 order: 4
 category:
@@ -73,6 +74,8 @@ interface SM4DecryptOptions extends SM4Options {
 
 ## 模式矩阵
 
+<ApiTable label="TypeScript SM4 模式参数与使用边界" min-width="56rem">
+
 | mode | IV/nonce | padding | 认证 tag | 适用边界 |
 |:--|:--|:--|:--|:--|
 | `ECB` | 无 | PKCS7/NONE/ZERO | 无 | 泄漏重复分组，只用于既有协议 |
@@ -82,6 +85,8 @@ interface SM4DecryptOptions extends SM4Options {
 | `OFB` | 16 字节 | 忽略 | 无 | 不提供完整性 |
 | `GCM` | 12 字节 | 忽略 | 12–16 字节 | 新协议推荐；nonce 不可复用 |
 | `CCM` | 7–13 字节 | 忽略 | 4–16 偶数字节 | nonce 长度会限制最大消息长度 |
+
+</ApiTable>
 
 `PaddingMode.NONE` 下 ECB/CBC 明文必须是 16 字节的倍数。`PaddingMode.ZERO` 解密会移除尾部零字节，不能无损承载以零结尾的任意二进制。
 
