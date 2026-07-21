@@ -1,6 +1,6 @@
 ---
 title: Java SM2 API
-description: 说明 SM2、SM2Util、选项 Builder、密钥、签名、密文转换和密钥交换重载。
+description: 逐项说明 Java SM2 的密钥、加解密、标准签名、旧 no-Z 兼容、预计算 e、格式转换和密钥交换。
 pageInfo: false
 contributors: false
 editLink: false
@@ -18,389 +18,647 @@ tag:
 
 # Java SM2 API
 
-`cn.gmkit.sm2` 提供实例式 `SM2`、静态式 `SM2Util`、三个选项 Builder、密钥/密文/交换结果值对象和格式转换工具。它适合签名、小数据加密和协议级密钥交换；文件或大消息应使用随机 SM4 会话 key 加密，再由 SM2 保护该 key。普通业务从 `SM2` 或 `SM2Util` 开始，只有在对接既有协议时才需要底层格式类型。
+`cn.gmkit.sm2` 提供实例式 `SM2`、静态式 `SM2Util`，以及签名选项、密文格式和密钥交换所需的值对象。SM2 适合身份签名、小数据加密和协议级密钥交换；文件或大消息应使用随机 SM4 会话 key 加密，再由 SM2 保护会话 key。
 
-## 常量、构造和密钥
+::: warning 标准签名不会跳过 Z
+默认签名计算 `e = SM3(Z || M)`。`skipZComputation=true` 和 `signWithoutZ` 是非标准旧协议兼容路径，不是 Bouncy Castle 的配置项，也不能当作性能优化。
+:::
+
+## 十个公开类型
+
+<ApiTable label="Java SM2 类型分工" min-width="64rem">
+
+| 类型 | 用途 | 普通业务是否直接使用 |
+|:--|:--|:--:|
+| `SM2` | 绑定安全上下文的实例式入口 | 是 |
+| `SM2Util` | 同语义静态入口 | 是 |
+| `SM2KeyPair` | Hex 公私钥结果 | 是 |
+| `SM2SignOptions` | 签名输出格式、user ID、随机源 | 是 |
+| `SM2VerifyOptions` | 验签输入格式和 user ID | 是 |
+| `SM2Signatures` | RAW 与 DER 签名转换 | 对接格式时 |
+| `SM2Ciphertext` | C1/C2/C3 分段值对象 | 分析密文时 |
+| `SM2Ciphertexts` | raw、DER、GmSSL 风格密文转换 | 对接格式时 |
+| `SM2KeyExchangeOptions` | 密钥交换角色、身份和输出位数 | 使用密钥交换时 |
+| `SM2KeyExchangeResult` | 共享 key 与 S1/S2 确认标签 | 使用密钥交换时 |
+
+</ApiTable>
+
+## 常量、构造器和安全上下文
 
 `SM2` 与 `SM2Util` 都公开以下常量：
 
-| 常量 | 值/含义 |
-|:--|:--|
-| `DEFAULT_USER_ID` | `1234567812345678`，兼容默认身份 |
-| `GM_2023_USER_ID` | 已弃用。当前 Builder 会把空字符串映射为 `DEFAULT_USER_ID`，因此该常量没有独立语义 |
-| `CURVE_NAME` | `sm2p256v1` |
-| `SM3_DIGEST_LENGTH` | 32 字节 |
+<ApiTable label="Java SM2 常量" min-width="60rem">
 
-实例入口：
+| 常量 | 值 | 单位/含义 |
+|:--|:--|:--|
+| `DEFAULT_USER_ID` | `1234567812345678` | 16 个 ASCII 字节；未指定身份时的兼容默认值 |
+| `GM_2023_USER_ID` | 空字符串 | 已弃用；当前 Builder 会把空字符串重新映射为默认 ID，不能表示独立空身份 |
+| `CURVE_NAME` | `sm2p256v1` | Bouncy Castle 曲线名称 |
+| `SM3_DIGEST_LENGTH` | `32` | Z、e、C3 的字节长度 |
+
+</ApiTable>
 
 ```java
-new SM2()
-new SM2(GmSecurityContext securityContext)
-GmSecurityContext securityContext()
-
-SM2KeyPair generateKeyPair()
-SM2KeyPair generateKeyPair(boolean compressedPublicKey)
-String getPublicKeyFromPrivateKey(String privateKeyHex, boolean compressed)
-String compressPublicKey(String publicKeyHex)
-String decompressPublicKey(String publicKeyHex)
+public SM2();
+public SM2(GmSecurityContext securityContext);
+public GmSecurityContext securityContext();
 ```
 
-静态入口变体：
+`new SM2()` 使用默认安全上下文：加密和密钥生成使用它，签名还可从 `SM2SignOptions.securityContext()` 取得上下文。`new SM2(context)` 传入非 `null` 上下文后，该实例会固定使用它，并覆盖签名 options 中的上下文；传 `null` 等同默认构造。
+
+每次加解密或签名都会创建新的底层对象，`SM2` 不保存消息状态，无需 `reset()` 或 `close()`。
+
+## 密钥生成与公钥转换
+
+### `SM2` 实例方法
 
 ```java
-SM2Util.generateKeyPair()
-SM2Util.generateKeyPair(boolean compressedPublicKey)
-SM2Util.generateKeyPair(GmSecurityContext securityContext)
-SM2Util.generateKeyPair(
+SM2KeyPair generateKeyPair();
+SM2KeyPair generateKeyPair(boolean compressedPublicKey);
+String getPublicKeyFromPrivateKey(String privateKeyHex, boolean compressed);
+String compressPublicKey(String publicKeyHex);
+String decompressPublicKey(String publicKeyHex);
+```
+
+### `SM2Util` 静态方法
+
+```java
+static SM2KeyPair generateKeyPair();
+static SM2KeyPair generateKeyPair(boolean compressedPublicKey);
+static SM2KeyPair generateKeyPair(GmSecurityContext securityContext);
+static SM2KeyPair generateKeyPair(
     boolean compressedPublicKey,
-    GmSecurityContext securityContext)
-SM2Util.getPublicKeyFromPrivateKey(String privateKeyHex, boolean compressed)
-SM2Util.compressPublicKey(String publicKeyHex)
-SM2Util.decompressPublicKey(String publicKeyHex)
+    GmSecurityContext securityContext);
+
+static String getPublicKeyFromPrivateKey(
+    String privateKeyHex,
+    boolean compressed);
+static String compressPublicKey(String publicKeyHex);
+static String decompressPublicKey(String publicKeyHex);
 ```
 
-`SM2KeyPair` 构造和访问器：
+<ApiTable label="SM2 密钥格式" min-width="70rem">
+
+| 值 | 生成结果 | 输入兼容 | 校验 |
+|:--|:--|:--|:--|
+| 私钥 | 32 字节、64 位小写 Hex | 较短合法标量会左侧补零；单个额外前导 `00` 可接受 | 必须在曲线标量范围内；签名还排除 `n-1` |
+| 非压缩公钥 | `04 || x || y`，65 字节、130 位 Hex | 大小写 Hex 均可 | 必须是曲线上的非无穷点 |
+| 压缩公钥 | `02/03 || x`，33 字节、66 位 Hex | 大小写 Hex 均可 | 解压时验证曲线点 |
+
+</ApiTable>
+
+`generateKeyPair()` 默认返回非压缩公钥。`generateKeyPair(true)` 返回压缩公钥；加密和验签都能读取压缩或非压缩格式。
+
+### `SM2KeyPair`
 
 ```java
-new SM2KeyPair(String publicKey, String privateKey)
-String publicKey()
-String privateKey()
+public SM2KeyPair(String publicKey, String privateKey);
+String publicKey();
+String privateKey();
 ```
 
-私钥是 32 字节标量的 Hex。非压缩公钥为 `04 || x || y`，压缩公钥为 `02/03 || x`；公钥解析会校验曲线点。
+该构造器只是字符串容器，不会立即验证密钥。库生成的值符合上表格式；外部输入会在执行加密、解密或签名时校验。
 
 ```java
 SM2 sm2 = new SM2();
 SM2KeyPair keys = sm2.generateKeyPair();
+
 String derived = sm2.getPublicKeyFromPrivateKey(keys.privateKey(), false);
 if (!keys.publicKey().equals(derived)) {
-    throw new IllegalStateException("public key derivation failed");
+    throw new IllegalStateException("SM2 public key derivation failed");
 }
+
 String compressed = sm2.compressPublicKey(keys.publicKey());
 if (!keys.publicKey().equals(sm2.decompressPublicKey(compressed))) {
-    throw new IllegalStateException("public key round-trip failed");
+    throw new IllegalStateException("SM2 public key conversion failed");
 }
 ```
 
-## 加密重载矩阵
+私钥属于敏感值，不要写入日志、异常消息或源码。`SM2KeyPair` 不会主动清除字符串内容。
 
-默认密文排列是 `SM2CipherMode.C1C3C2`；无 mode 重载只适用于该默认值。字符串消息无 Charset 参数时按 UTF-8。
+## SM2 加密
 
-### `SM2` 实例
+SM2 加密具有随机性，同一公钥和明文的两次密文通常不同。默认排列是 `C1C3C2`；传入 `mode == null` 也回退到该值。Java 不会在解密失败后自动尝试另一种排列，协议应明确记录 `C1C3C2` 或 `C1C2C3`。
+
+### `SM2` 全部加密重载
 
 ```java
-byte[] encrypt(String publicKeyHex, byte[] data)
-byte[] encrypt(String publicKeyHex, String data)
+byte[] encrypt(String publicKeyHex, byte[] data);
+byte[] encrypt(String publicKeyHex, String data);
 byte[] encrypt(
-    String publicKeyHex, String data, Charset charset, SM2CipherMode mode)
+    String publicKeyHex,
+    String data,
+    Charset charset,
+    SM2CipherMode mode);
 byte[] encrypt(
-    String publicKeyHex, byte[] data, SM2CipherMode mode)
+    String publicKeyHex,
+    byte[] data,
+    SM2CipherMode mode);
 
-String encryptHex(String publicKeyHex, byte[] data)
+String encryptHex(String publicKeyHex, byte[] data);
 String encryptHex(
-    String publicKeyHex, String data, SM2CipherMode mode)
+    String publicKeyHex,
+    String data,
+    SM2CipherMode mode);
 String encryptHex(
-    String publicKeyHex, String data, Charset charset, SM2CipherMode mode)
+    String publicKeyHex,
+    String data,
+    Charset charset,
+    SM2CipherMode mode);
 String encryptHex(
-    String publicKeyHex, byte[] data, SM2CipherMode mode)
+    String publicKeyHex,
+    byte[] data,
+    SM2CipherMode mode);
 
-String encryptBase64(String publicKeyHex, byte[] data)
+String encryptBase64(String publicKeyHex, byte[] data);
 String encryptBase64(
-    String publicKeyHex, String data, SM2CipherMode mode)
+    String publicKeyHex,
+    String data,
+    SM2CipherMode mode);
 String encryptBase64(
-    String publicKeyHex, String data, Charset charset, SM2CipherMode mode)
+    String publicKeyHex,
+    String data,
+    Charset charset,
+    SM2CipherMode mode);
 String encryptBase64(
-    String publicKeyHex, byte[] data, SM2CipherMode mode)
+    String publicKeyHex,
+    byte[] data,
+    SM2CipherMode mode);
 ```
 
-### `SM2Util` 静态入口
+### `SM2Util` 全部加密重载
 
-静态入口包含以下变体：
+```java
+static byte[] encrypt(String publicKeyHex, byte[] data);
+static byte[] encrypt(
+    String publicKeyHex, byte[] data, SM2CipherMode mode);
+static byte[] encrypt(
+    String publicKeyHex,
+    byte[] data,
+    SM2CipherMode mode,
+    GmSecurityContext securityContext);
+static byte[] encrypt(String publicKeyHex, String data);
+static byte[] encrypt(
+    String publicKeyHex,
+    String data,
+    Charset charset,
+    SM2CipherMode mode);
 
-<ApiTable label="SM2Util 加密重载矩阵" min-width="52rem">
+static String encryptHex(String publicKeyHex, byte[] data);
+static String encryptHex(
+    String publicKeyHex, byte[] data, SM2CipherMode mode);
+static String encryptHex(
+    String publicKeyHex,
+    byte[] data,
+    SM2CipherMode mode,
+    GmSecurityContext securityContext);
+static String encryptHex(
+    String publicKeyHex, String data, SM2CipherMode mode);
+static String encryptHex(
+    String publicKeyHex,
+    String data,
+    Charset charset,
+    SM2CipherMode mode);
 
-| 返回形式 | 消息变体 | mode | 安全上下文变体 |
-|:--|:--|:--|:--|
-| `encrypt -> byte[]` | `byte[]` | 默认或显式 | `byte[] + mode + GmSecurityContext` |
-| `encrypt -> byte[]` | UTF-8 `String` | 默认 | 无 |
-| `encrypt -> byte[]` | `String + Charset` | 显式 | 无 |
-| `encryptHex -> String` | `byte[]` | 默认或显式 | `byte[] + mode + GmSecurityContext` |
-| `encryptHex -> String` | UTF-8 `String` | 显式 | 无 |
-| `encryptHex -> String` | `String + Charset` | 显式 | 无 |
-| `encryptBase64 -> String` | `byte[]` | 默认或显式 | `byte[] + mode + GmSecurityContext` |
-| `encryptBase64 -> String` | UTF-8 `String` | 显式 | 无 |
-| `encryptBase64 -> String` | `String + Charset` | 显式 | 无 |
+static String encryptBase64(String publicKeyHex, byte[] data);
+static String encryptBase64(
+    String publicKeyHex, byte[] data, SM2CipherMode mode);
+static String encryptBase64(
+    String publicKeyHex,
+    byte[] data,
+    SM2CipherMode mode,
+    GmSecurityContext securityContext);
+static String encryptBase64(
+    String publicKeyHex, String data, SM2CipherMode mode);
+static String encryptBase64(
+    String publicKeyHex,
+    String data,
+    Charset charset,
+    SM2CipherMode mode);
+```
+
+<ApiTable label="SM2 加密参数和返回值" min-width="70rem">
+
+| 位置 | 规则 | 失败行为 |
+|:--|:--|:--|
+| `publicKeyHex` | 33 字节压缩或 65 字节非压缩公钥 Hex | 编码、前缀或曲线点非法时抛 `GmkitException` |
+| `data` | `byte[]` 为原始字节；`String` 默认 UTF-8 | `null` 或空消息都被拒绝 |
+| `charset` | `null` 回退 UTF-8 | 字符编码后仍不得为空 |
+| `mode` | `null`/省略为 `C1C3C2` | 与对端排列不一致会导致解密失败 |
+| 返回 `byte[]` | raw `C1 || C3 || C2` 或 `C1 || C2 || C3` | 新数组 |
+| `encryptHex` | 小写 Hex 密文 | 不含 `0x` |
+| `encryptBase64` | 标准 Base64 密文 | 保留 `=` 填充 |
 
 </ApiTable>
 
-每个 `GmSecurityContext` 变体的完整尾部参数顺序都是 `(publicKeyHex, data, mode, securityContext)`。
+## SM2 解密
 
-## 解密重载矩阵
+### `SM2` 与 `SM2Util` 的七个重载
+
+下面七个签名同时存在于实例类和静态类；`SM2Util` 只多出 `static`：
 
 ```java
-byte[] decrypt(String privateKeyHex, byte[] ciphertext)
+byte[] decrypt(String privateKeyHex, byte[] ciphertext);
 byte[] decrypt(
-    String privateKeyHex, byte[] ciphertext, SM2CipherMode mode)
-byte[] decrypt(String privateKeyHex, String ciphertext)
+    String privateKeyHex,
+    byte[] ciphertext,
+    SM2CipherMode mode);
+byte[] decrypt(String privateKeyHex, String ciphertext);
 byte[] decrypt(
-    String privateKeyHex, String ciphertext, SM2CipherMode mode)
+    String privateKeyHex,
+    String ciphertext,
+    SM2CipherMode mode);
 
 String decryptToUtf8(
-    String privateKeyHex, byte[] ciphertext, SM2CipherMode mode)
+    String privateKeyHex,
+    byte[] ciphertext,
+    SM2CipherMode mode);
 String decryptToUtf8(
-    String privateKeyHex, String ciphertext, SM2CipherMode mode)
+    String privateKeyHex,
+    String ciphertext,
+    SM2CipherMode mode);
 String decryptToString(
     String privateKeyHex,
     byte[] ciphertext,
     Charset charset,
-    SM2CipherMode mode)
+    SM2CipherMode mode);
 ```
 
-`SM2Util` 提供完全相同参数和返回类型的静态版本。字符串密文使用 Hex/Base64 自动识别；网络协议仍应固定编码。Java 不会像 TypeScript 那样在省略 mode 时依次尝试两种排列，调用方应显式传协议 mode。
+字符串密文先自动识别 Hex 或 Base64；若文本同时符合 Hex 形态，会优先按 Hex 处理。对外协议仍应固定一种编码，不要把自动识别当作协议协商。
+
+`decrypt` 返回原始明文字节；`decryptToUtf8` 按 UTF-8 解码；`decryptToString` 的 `charset == null` 也回退 UTF-8。C1 曲线点、密文结构或 C3 完整性检查失败会抛 `GmkitException`，不会返回部分明文。
 
 ```java
 SM2 sm2 = new SM2();
 SM2KeyPair keys = sm2.generateKeyPair();
 byte[] binary = new byte[] {0x00, (byte) 0xff, (byte) 0x80, 0x41};
-String ciphertext =
-    sm2.encryptBase64(keys.publicKey(), binary, SM2CipherMode.C1C3C2);
-byte[] decrypted =
-    sm2.decrypt(keys.privateKey(), ciphertext, SM2CipherMode.C1C3C2);
-if (!java.util.Arrays.equals(binary, decrypted)) {
+
+String ciphertext = sm2.encryptBase64(
+        keys.publicKey(), binary, SM2CipherMode.C1C3C2);
+byte[] recovered = sm2.decrypt(
+        keys.privateKey(), ciphertext, SM2CipherMode.C1C3C2);
+if (!java.util.Arrays.equals(binary, recovered)) {
     throw new IllegalStateException("SM2 binary round-trip failed");
 }
 ```
 
-加密拒绝空明文；密钥、曲线点、编码、密文结构或 C3 校验失败抛 `GmkitException`，不会返回部分明文。
-
-## 签名选项
+## 标准 SM2 签名选项
 
 ### `SM2SignOptions`
 
 ```java
-SM2SignOptions.builder()
-    .signatureFormat(SM2SignatureFormat.RAW) // 默认 RAW
-    .userId(SM2.DEFAULT_USER_ID)             // null/空字符串回落默认值
-    .securityContext(GmSecurityContexts.defaults())
-    .build()
+static SM2SignOptions.Builder builder();
 
-SM2SignatureFormat signatureFormat()
-String userId()
-GmSecurityContext securityContext()
+Builder signatureFormat(SM2SignatureFormat signatureFormat);
+Builder userId(String userId);
+@Deprecated Builder skipZComputation(boolean skip);
+Builder securityContext(GmSecurityContext securityContext);
+SM2SignOptions build();
+
+SM2SignatureFormat signatureFormat();
+String userId();
+@Deprecated boolean skipZComputation();
+GmSecurityContext securityContext();
 ```
+
+<ApiTable label="SM2SignOptions 默认值" min-width="66rem">
+
+| 字段 | 默认值 | `null`/空值行为 | 说明 |
+|:--|:--|:--|:--|
+| `signatureFormat` | `RAW` | `null` 回退 `RAW` | RAW 固定 64 字节；DER 长度可变 |
+| `userId` | `DEFAULT_USER_ID` | `null` 或空字符串回退默认 ID | 以 UTF-8 参与 Z 计算，最长 8191 字节 |
+| `skipZComputation` | `false` | 不适用 | 已弃用；`true` 只迁移旧 no-Z 协议 |
+| `securityContext` | 默认上下文 | `null` 回退默认上下文 | 决定签名随机源 |
+
+</ApiTable>
 
 ### `SM2VerifyOptions`
 
 ```java
-SM2VerifyOptions.builder()
-    .signatureFormat(SM2SignatureInputFormat.AUTO) // 默认 AUTO
-    .userId(SM2.DEFAULT_USER_ID)
-    .build()
+static SM2VerifyOptions.Builder builder();
 
-SM2SignatureInputFormat signatureFormat()
-String userId()
+Builder signatureFormat(SM2SignatureInputFormat signatureFormat);
+Builder userId(String userId);
+@Deprecated Builder skipZComputation(boolean skip);
+SM2VerifyOptions build();
+
+SM2SignatureInputFormat signatureFormat();
+String userId();
+@Deprecated boolean skipZComputation();
 ```
 
-签名端和验签端的 user ID 与消息字节必须一致。当前 Builder 无法表达真实空 ID；传 null 或空字符串都会使用兼容默认身份。`skipZComputation(boolean)` 与对应 getter 仍为二进制兼容保留，但已经弃用，只能迁移明确采用 no-Z 约定的旧协议。
+验签格式默认 `AUTO`：64 字节输入按 RAW，符合 DER 形态的输入按 DER。显式设置 `RAW` 或 `DER` 更适合固定协议。`userId` 的默认、UTF-8 和长度规则与签名端相同；两端身份必须逐字节一致。
 
-## 签名重载矩阵
+## 签名 API
 
-### `SM2` 实例
+### `SM2` 全部签名重载
 
 ```java
-byte[] sign(String privateKeyHex, byte[] message)
+byte[] sign(String privateKeyHex, byte[] message);
 byte[] sign(
-    String privateKeyHex, String message, SM2SignOptions options)
+    String privateKeyHex,
+    String message,
+    SM2SignOptions options);
 byte[] sign(
     String privateKeyHex,
     String message,
     Charset charset,
-    SM2SignOptions options)
+    SM2SignOptions options);
 byte[] sign(
-    String privateKeyHex, byte[] message, SM2SignOptions options)
+    String privateKeyHex,
+    byte[] message,
+    SM2SignOptions options);
 
 String signHex(
-    String privateKeyHex, byte[] message, SM2SignOptions options)
+    String privateKeyHex,
+    byte[] message,
+    SM2SignOptions options);
 String signHex(
-    String privateKeyHex, String message, SM2SignOptions options)
+    String privateKeyHex,
+    String message,
+    SM2SignOptions options);
 String signHex(
     String privateKeyHex,
     String message,
     Charset charset,
-    SM2SignOptions options)
+    SM2SignOptions options);
 
 String signBase64(
-    String privateKeyHex, byte[] message, SM2SignOptions options)
+    String privateKeyHex,
+    byte[] message,
+    SM2SignOptions options);
 String signBase64(
-    String privateKeyHex, String message, SM2SignOptions options)
+    String privateKeyHex,
+    String message,
+    SM2SignOptions options);
 String signBase64(
     String privateKeyHex,
     String message,
     Charset charset,
-    SM2SignOptions options)
+    SM2SignOptions options);
 ```
 
-`SM2Util` 提供除无 options 的 `sign(privateKey, byte[])` 之外的同参数静态版本。`SM2Util.signDigest` 额外提供尾部 `GmSecurityContext` 重载。
+`SM2Util` 提供后九个带 options 的静态重载；它没有 `sign(privateKeyHex, byte[])` 简写。`options == null` 使用 RAW、默认 user ID、标准 Z 和默认安全上下文。字符串消息默认 UTF-8，显式 `charset == null` 也回退 UTF-8。空消息可以签名，`null` 消息会抛异常。
 
 ```java
 SM2KeyPair keys = SM2Util.generateKeyPair();
 String message = "order=GMKIT-DEMO-0001&amount=88.00";
 String tampered = "order=GMKIT-DEMO-0001&amount=99.00";
+String userId = "merchant@gmkit.cn";
+
 SM2SignOptions signOptions = SM2SignOptions.builder()
-    .signatureFormat(SM2SignatureFormat.DER)
-    .userId("merchant@gmkit.cn")
-    .build();
+        .signatureFormat(SM2SignatureFormat.DER)
+        .userId(userId)
+        .build();
 SM2VerifyOptions verifyOptions = SM2VerifyOptions.builder()
-    .signatureFormat(SM2SignatureInputFormat.DER)
-    .userId("merchant@gmkit.cn")
-    .build();
+        .signatureFormat(SM2SignatureInputFormat.DER)
+        .userId(userId)
+        .build();
 
 String signature = SM2Util.signBase64(
-    keys.privateKey(), message, signOptions);
-if (!SM2Util.verify(
-        keys.publicKey(), message, signature, verifyOptions)) {
-    throw new IllegalStateException("SM2 verification failed");
+        keys.privateKey(), message, signOptions);
+if (!SM2Util.verify(keys.publicKey(), message, signature, verifyOptions)) {
+    throw new IllegalStateException("SM2 signature verification failed");
 }
 if (SM2Util.verify(keys.publicKey(), tampered, signature, verifyOptions)) {
-    throw new IllegalStateException("tampered message must not verify");
+    throw new IllegalStateException("tampered order must not verify");
 }
 ```
 
-## 验签重载矩阵
+签名包含随机数，同一私钥、身份和消息的两次签名不要求字节相同。判断正确性应验签或使用固定随机源的标准向量，不要比较两次随机签名文本。
+
+## 验签 API
+
+### `SM2` 全部验签重载
 
 ```java
 boolean verify(
-    String publicKeyHex, byte[] message, byte[] signature)
+    String publicKeyHex,
+    byte[] message,
+    byte[] signature);
 boolean verify(
     String publicKeyHex,
     byte[] message,
     byte[] signature,
-    SM2VerifyOptions options)
+    SM2VerifyOptions options);
 boolean verify(
     String publicKeyHex,
     byte[] message,
     String signature,
-    SM2VerifyOptions options)
+    SM2VerifyOptions options);
 boolean verify(
     String publicKeyHex,
     String message,
     byte[] signature,
-    SM2VerifyOptions options)
+    SM2VerifyOptions options);
 boolean verify(
     String publicKeyHex,
     String message,
     Charset charset,
     byte[] signature,
-    SM2VerifyOptions options)
+    SM2VerifyOptions options);
 boolean verify(
     String publicKeyHex,
     String message,
     String signature,
-    SM2VerifyOptions options)
+    SM2VerifyOptions options);
 ```
 
-`SM2Util` 提供后五个带 options 的静态版本；字符串签名可按形态识别 Hex/Base64，签名内部 RAW/DER 的判断由 `SM2SignatureInputFormat` 控制。验签数学上不成立返回 false，格式或参数非法可能抛异常。
+`SM2Util` 提供后五个带 options 的静态重载；它没有无 options 简写。字符串签名自动识别 Hex/Base64，解码后的 RAW/DER 解释由 `signatureFormat` 决定。
 
-## 高级签名与 e/Z
+正常的签名不匹配、消息被修改、user ID 不同或已解码签名结构不成立时返回 `false`。`null`、非法公钥、字符串签名编码错误等输入校验问题可能抛 `GmkitException`；调用方应把“不可信输入无法解析”和“合法输入验签不通过”分开记录。
 
-`SM2` 和 `SM2Util` 都提供：
+## Z、旧 no-Z 与预计算 e
+
+SM2 的身份绑定通过 Z 完成：
+
+```text
+Z = SM3(ENTL || ID || a || b || xG || yG || xA || yA)
+e = SM3(Z || M)
+```
+
+<ApiTable label="SM2 三种摘要路径" min-width="68rem">
+
+| 路径 | `e` 的来源 | API | 定位 |
+|:--|:--|:--|:--|
+| 标准 SM2 | `SM3(Z || M)` | `sign` / `verify`，`skipZComputation=false` | 默认且推荐；与 BC `SM2Signer` 互操作 |
+| 旧 no-Z | `SM3(M)` | `signWithoutZ` / `verifyWithoutZ` / `computeEWithoutZ`，或弃用开关 | 非标准，只迁移已存在的旧协议 |
+| 预计算 e | 调用方直接提供字节 | `signDigest` / `verifyDigest` | 高级接口；调用方承担摘要协议正确性 |
+
+</ApiTable>
+
+### 高级签名完整签名
+
+以下方法同时存在于 `SM2` 和 `SM2Util`：
 
 ```java
-byte[] signWithoutZ(
+@Deprecated byte[] signWithoutZ(
     String privateKeyHex,
     byte[] message,
-    SM2SignatureFormat signatureFormat)
+    SM2SignatureFormat signatureFormat);
+
 byte[] signDigest(
     String privateKeyHex,
     byte[] eHash,
-    SM2SignatureFormat signatureFormat)
-boolean verifyWithoutZ(
+    SM2SignatureFormat signatureFormat);
+
+@Deprecated boolean verifyWithoutZ(
     String publicKeyHex,
     byte[] message,
     byte[] signature,
-    SM2SignatureInputFormat signatureFormat)
-boolean verifyDigest(
-    String publicKeyHex, byte[] eHash, byte[] derSignature)
+    SM2SignatureInputFormat signatureFormat);
 
-byte[] computeZ(String userId, String publicKeyHex)
+boolean verifyDigest(
+    String publicKeyHex,
+    byte[] eHash,
+    byte[] derSignature);
+
+byte[] computeZ(String userId, String publicKeyHex);
 byte[] computeE(
     String publicKeyHex,
     byte[] message,
     String userId,
-    boolean skipZComputation)
+    boolean skipZComputation);
 byte[] computeE(
     String publicKeyHex,
     String message,
     Charset charset,
     String userId,
-    boolean skipZComputation)
-byte[] computeEWithoutZ(byte[] message)
-byte[] computeEWithoutZ(String message, Charset charset)
+    boolean skipZComputation);
+
+@Deprecated byte[] computeEWithoutZ(byte[] message);
+@Deprecated byte[] computeEWithoutZ(String message, Charset charset);
 ```
 
-`SM2Util.signDigest` 另有 `(privateKeyHex, eHash, signatureFormat, securityContext)`。
+`SM2Util.signDigest` 另有尾部 `GmSecurityContext` 的四参数重载。`computeZ` 和两种 `computeE` 都返回 32 字节。`signDigest` 不强制 `eHash` 必须为 32 字节，`verifyDigest` 只接受 DER 签名；高级调用方必须自行固定 e 的长度、来源和签名格式。
 
-| 路径 | e 的计算 | 定位 |
-|:--|:--|:--|
-| 标准 SM2 | `SM3(Z \|\| M)` | 默认路径；与 Bouncy Castle `SM2Signer` 双向互操作 |
-| 旧 no-Z 兼容 | `SM3(M)` | 非标准且已弃用；只迁移既有旧协议 |
-| 预计算 e | 调用方直接传入 | `signDigest` / `verifyDigest` 高级接口；调用方负责摘要协议正确性 |
+`GM_2023_USER_ID`、`skipZComputation` Builder/getter、`signWithoutZ`、`verifyWithoutZ`、`computeEWithoutZ` 均已弃用。当前实现中的 no-Z 路径使用项目内部签名器计算 `e = SM3(M)`，不调用 BC `SM2Signer`；BC 1.83 的 [`SM2Signer`](https://github.com/bcgit/bc-java/blob/r1rv83/core/src/main/java/org/bouncycastle/crypto/signers/SM2Signer.java) 没有跳过 Z 的公开选项。
 
-`signWithoutZ`、`verifyWithoutZ`、`computeEWithoutZ` 及 `skipZComputation` 方法族已经弃用。它们不调用 Bouncy Castle `SM2Signer`，也不能作为性能优化使用。标准签名会计算 Z；身份不同必须验签失败。预计算 e 则完全信任调用方输入，不能与 no-Z 混为一种语义。Bouncy Castle 1.83 的 [`SM2Signer`](https://github.com/bcgit/bc-java/blob/r1rv83/core/src/main/java/org/bouncycastle/crypto/signers/SM2Signer.java) 没有跳过 Z 的公开选项；GMKit 的互操作测试也锁定了标准签名双向通过、no-Z 签名不能由 BC 标准路径验证的边界。
+项目互操作测试锁定了四条边界：GMKit 标准签名可由 BC 验证，BC 标准签名可由 GMKit 验证，user ID 不同必须失败，no-Z 签名不能通过 BC 标准验签。
 
-## 签名与密文格式工具
-
-### `SM2Signatures`
+## 签名格式工具 `SM2Signatures`
 
 ```java
 static byte[] normalizeToRequested(
-    byte[] signature, SM2SignatureFormat format)
+    byte[] signature,
+    SM2SignatureFormat format);
 static byte[] normalizeToDer(
-    byte[] signature, SM2SignatureInputFormat inputFormat)
-static byte[] derToRaw(byte[] derSignature)
-static byte[] rawToDer(byte[] rawSignature)
+    byte[] signature,
+    SM2SignatureInputFormat inputFormat);
+static byte[] derToRaw(byte[] derSignature);
+static byte[] rawToDer(byte[] rawSignature);
 ```
 
-RAW 固定为 64 字节 `r || s`；DER 是 ASN.1 SEQUENCE。解析拒绝错误长度、非规范 DER 和超出 SM2 标量宽度的整数。
+<ApiTable label="SM2 签名编码工具" min-width="70rem">
 
-### `SM2Ciphertext` 与 `SM2Ciphertexts`
+| 方法 | 输入 | 返回 | 注意事项 |
+|:--|:--|:--|:--|
+| `derToRaw` | ASN.1 DER `(r,s)` | 固定 64 字节 `r || s` | DER 或标量非法时抛异常 |
+| `rawToDer` | 恰好 64 字节 `r || s` | ASN.1 DER | 长度或标量非法时抛异常 |
+| `normalizeToRequested` | 约定为 DER 的签名 | RAW 或 DER | `format == DER` 时原样返回，不额外校验 |
+| `normalizeToDer` | RAW、DER 或 AUTO | DER | 显式 `DER` 时原样返回；AUTO 按长度和前缀识别 |
+
+</ApiTable>
+
+对不可信 DER 做规范性验证时不要只调用“原样返回”的分支；使用 `derToRaw` 解析后再按需 `rawToDer`，或直接交给验签路径。
+
+## 密文格式 `SM2Ciphertext` 与 `SM2Ciphertexts`
+
+### `SM2Ciphertext`
 
 ```java
-new SM2Ciphertext(byte[] c1, byte[] c2, byte[] c3, SM2CipherMode mode)
-byte[] c1()
-byte[] c2()
-byte[] c3()
-SM2CipherMode mode()
+public SM2Ciphertext(
+    byte[] c1,
+    byte[] c2,
+    byte[] c3,
+    SM2CipherMode mode);
 
-SM2Ciphertexts.parse(byte[] ciphertext, SM2CipherMode mode)
-SM2Ciphertexts.encodeDer(byte[] ciphertext, SM2CipherMode mode)
-SM2Ciphertexts.encodeAsn1(byte[] ciphertext, SM2CipherMode mode)
-SM2Ciphertexts.decodeDer(byte[] derCiphertext, SM2CipherMode mode)
-SM2Ciphertexts.decodeAsn1(byte[] asn1Ciphertext, SM2CipherMode mode)
-SM2Ciphertexts.decodeAuto(byte[] ciphertext, SM2CipherMode mode)
+byte[] c1();
+byte[] c2();
+byte[] c3();
+SM2CipherMode mode();
 ```
 
-`encodeAsn1`/`decodeAsn1` 是兼容名称，分别与 DER 方法同义。`decodeAuto` 可识别 DER 与 raw C1 开头形式，但排列 mode 仍由调用方提供。
+构造器和三个数组 getter 都执行防御性复制，但构造器不验证分段长度或曲线点。需要验证外部密文时使用 `SM2Ciphertexts.parse()`：C1 应为 65 字节非压缩点，C3 应为 32 字节，C2 至少 1 字节。
 
-## 密钥交换
+### `SM2Ciphertexts`
 
 ```java
-SM2KeyExchangeOptions.builder()
-    .initiator(boolean)
-    .keyBits(int)            // 默认 128，单位 bit
-    .selfId(String)          // 默认兼容 ID
-    .peerId(String)          // 默认兼容 ID
-    .confirmationTag(byte[]) // 可选，对端确认标签
-    .build()
-
-boolean initiator()
-int keyBits()
-String selfId()
-String peerId()
-byte[] confirmationTag()
+static SM2Ciphertext parse(
+    byte[] ciphertext,
+    SM2CipherMode mode);
+static byte[] encodeDer(
+    byte[] ciphertext,
+    SM2CipherMode mode);
+static byte[] encodeAsn1(
+    byte[] ciphertext,
+    SM2CipherMode mode);
+static byte[] decodeDer(
+    byte[] derCiphertext,
+    SM2CipherMode mode);
+static byte[] decodeAsn1(
+    byte[] asn1Ciphertext,
+    SM2CipherMode mode);
+static byte[] decodeAuto(
+    byte[] ciphertext,
+    SM2CipherMode mode);
 ```
 
-实例和静态入口都有以下两个方法：
+<ApiTable label="SM2 密文格式转换" min-width="70rem">
+
+| 方法 | 输入 | 输出 | 识别/校验 |
+|:--|:--|:--|:--|
+| `parse` | raw C1/C2/C3 | `SM2Ciphertext` | 校验最短长度、C1 曲线点和 C3 分段 |
+| `encodeDer` | raw 密文 | 规范 DER SEQUENCE | x、y、C3、C2 顺序随 mode 固定 |
+| `encodeAsn1` | raw 密文 | DER | `encodeDer` 的兼容名称 |
+| `decodeDer` | DER SEQUENCE | raw 密文 | 拒绝非规范 DER、错误元素数、坐标和 C3 长度 |
+| `decodeAsn1` | DER SEQUENCE | raw 密文 | `decodeDer` 的兼容名称 |
+| `decodeAuto` | DER 或 raw | 规范化 raw | 可补回可恢复的 GmSSL 风格缺失 `0x04` 前缀 |
+
+</ApiTable>
+
+所有方法的 `mode == null` 都按 `C1C3C2`。自动识别只判断 DER 与 raw 外层形式，不推断 C2/C3 排列；mode 仍必须由协议提供。
+
+## SM2 密钥交换
+
+密钥交换同时使用双方静态密钥、双方一次性临时密钥、角色和身份。临时私钥不得跨会话复用，交换完成后应尽快从应用状态中清除。
+
+### `SM2KeyExchangeOptions`
+
+```java
+static SM2KeyExchangeOptions.Builder builder();
+
+Builder initiator(boolean initiator);
+Builder keyBits(int keyBits);
+Builder selfId(String selfId);
+Builder peerId(String peerId);
+Builder confirmationTag(byte[] confirmationTag);
+SM2KeyExchangeOptions build();
+
+boolean initiator();
+int keyBits();
+String selfId();
+String peerId();
+byte[] confirmationTag();
+```
+
+<ApiTable label="SM2 密钥交换选项" min-width="70rem">
+
+| 字段 | 默认值 | 约束 | 两端关系 |
+|:--|:--|:--|:--|
+| `initiator` | `false` | 布尔值 | 两端必须一真一假 |
+| `keyBits` | `128` | 操作时要求正数；建议使用 8 的倍数 | 两端必须相同；Java 单位是 bit |
+| `selfId` | 默认 user ID | `null`/空字符串回退默认；UTF-8 最长 8191 字节 | 等于对端的 `peerId` |
+| `peerId` | 默认 user ID | 同上 | 等于对端的 `selfId` |
+| `confirmationTag` | `null` | 数组防御性复制 | 发起方确认调用时必须传响应方 S1 |
+
+</ApiTable>
+
+TypeScript 的 `keyLength` 单位是 byte，Java `keyBits` 单位是 bit；例如 TypeScript `16` 对应 Java `128`。
+
+### 交换方法
+
+以下三个方法同时存在于 `SM2` 和 `SM2Util`：
 
 ```java
 byte[] keyExchange(
@@ -408,46 +666,130 @@ byte[] keyExchange(
     String selfEphemeralPrivateKeyHex,
     String peerStaticPublicKeyHex,
     String peerEphemeralPublicKeyHex,
-    SM2KeyExchangeOptions options)
+    SM2KeyExchangeOptions options);
 
 SM2KeyExchangeResult keyExchangeWithConfirmation(
     String selfStaticPrivateKeyHex,
     String selfEphemeralPrivateKeyHex,
     String peerStaticPublicKeyHex,
     String peerEphemeralPublicKeyHex,
-    SM2KeyExchangeOptions options)
+    SM2KeyExchangeOptions options);
 
-boolean confirmResponder(byte[] expectedS2, byte[] confirmationTag)
+boolean confirmResponder(
+    byte[] expectedS2,
+    byte[] confirmationTag);
 ```
 
-`SM2KeyExchangeResult`：
+四个密钥参数始终从“当前调用方”视角命名。发起方传自己的静态/临时私钥和响应方的静态/临时公钥；响应方反过来传。`options == null` 使用响应方角色和默认身份，正式协议不应依赖这个角色默认值。
+
+### `SM2KeyExchangeResult`
 
 ```java
-new SM2KeyExchangeResult(byte[] key, byte[] s1, byte[] s2)
-byte[] key()
-byte[] s1()
-byte[] s2()
-boolean hasS1()
-boolean hasS2()
-String keyHex()
-String keyBase64()
-String s1Hex()
-String s2Hex()
+public SM2KeyExchangeResult(byte[] key, byte[] s1, byte[] s2);
+
+byte[] key();
+byte[] s1();
+byte[] s2();
+boolean hasS1();
+boolean hasS2();
+String keyHex();
+String keyBase64();
+String s1Hex();
+String s2Hex();
 ```
 
-byte[] getter 返回防御性复制。发起方和响应方必须镜像角色、双方身份、静态/临时密钥位置和 `keyBits`；TypeScript 的 `keyLength` 单位是 byte，而 Java `keyBits` 单位是 bit。
+构造器和数组 getter 使用防御性复制。`hasS1()`/`hasS2()` 只在数组非空时返回 `true`，对应 Hex getter 在缺失时返回 `null`。构造器不主动验证 key 或标签；正常交换结果中共享 key 长度由 `keyBits` 决定，确认标签为 32 字节。
+
+### 带确认标签的顺序
+
+```java
+SM2KeyPair aliceStatic = SM2Util.generateKeyPair(false);
+SM2KeyPair aliceEphemeral = SM2Util.generateKeyPair(false);
+SM2KeyPair bobStatic = SM2Util.generateKeyPair(false);
+SM2KeyPair bobEphemeral = SM2Util.generateKeyPair(false);
+
+// 1. 响应方 Bob 先计算共享 key、S1 和 S2，并把 S1 发给 Alice。
+SM2KeyExchangeResult bob = SM2Util.keyExchangeWithConfirmation(
+        bobStatic.privateKey(),
+        bobEphemeral.privateKey(),
+        aliceStatic.publicKey(),
+        aliceEphemeral.publicKey(),
+        SM2KeyExchangeOptions.builder()
+                .initiator(false)
+                .keyBits(128)
+                .selfId("warehouse@gmkit.cn")
+                .peerId("merchant@gmkit.cn")
+                .build());
+
+// 2. 发起方 Alice 把收到的 S1 放入 confirmationTag，验证后得到 key 和 S2。
+SM2KeyExchangeResult alice = SM2Util.keyExchangeWithConfirmation(
+        aliceStatic.privateKey(),
+        aliceEphemeral.privateKey(),
+        bobStatic.publicKey(),
+        bobEphemeral.publicKey(),
+        SM2KeyExchangeOptions.builder()
+                .initiator(true)
+                .keyBits(128)
+                .selfId("merchant@gmkit.cn")
+                .peerId("warehouse@gmkit.cn")
+                .confirmationTag(bob.s1())
+                .build());
+
+if (!java.util.Arrays.equals(alice.key(), bob.key())) {
+    throw new IllegalStateException("SM2 shared key mismatch");
+}
+
+// 3. Alice 把 S2 发回 Bob；Bob 用常量时间比较确认。
+if (!SM2Util.confirmResponder(bob.s2(), alice.s2())) {
+    throw new IllegalStateException("SM2 responder confirmation failed");
+}
+```
+
+发起方调用 `keyExchangeWithConfirmation` 时缺少 S1 会抛 `GmkitException`。`confirmResponder` 在任一标签为 `null` 或空数组时返回 `false`，其余情况使用常量时间比较。
+
+## 失败行为速查
+
+<ApiTable label="Java SM2 失败行为" min-width="72rem">
+
+| 场景 | 结果 |
+|:--|:--|
+| 私钥、公钥、Hex/Base64、曲线点或密文结构非法 | 抛出 `GmkitException` |
+| 加密明文为 `null` 或空 | 抛出 `GmkitException` |
+| 解密 C3 校验失败或 mode 不匹配 | 抛出 `GmkitException`，不返回部分明文 |
+| 签名消息为 `null` | 抛出 `GmkitException`；空消息合法 |
+| 合法输入但消息、身份或签名不匹配 | `verify` 返回 `false` |
+| 字节签名格式无法规范化 | 通常由 `verify` 转为 `false` |
+| 字符串签名无法按 Hex/Base64 解码 | 抛出 `GmkitException` |
+| user ID 的 UTF-8 长度达到 8192 字节 | 抛出 `GmkitException` |
+| `keyBits <= 0` | 执行密钥交换时抛出 `GmkitException` |
+| 发起方确认交换缺少响应方 S1 | 抛出 `GmkitException` |
+
+</ApiTable>
 
 ## 可执行案例
 
-下面的标准签名、正确消息和篡改消息断言直接来自 JUnit 文档测试。
+JUnit 文档测试覆盖标准 Z 签名、正确消息和金额篡改；SM2 专项测试还覆盖 BC 双向互操作、user ID 不同、no-Z 边界、标准向量、密文格式和密钥交换确认。
 
-::: details 查看测试源码
+::: details 查看标准签名文档案例
 ```java
 <!-- @include: ../../../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java#java-sm2-example -->
 ```
 :::
 
+运行测试：
+
+```bash
+cd packages/java
+mvn -pl gmkit -Dtest=PublicApiManualExamplesTest,SM2StandardVectorsTest,SM2BouncyCastleInteropTest,SM2UtilTest,SM2ContractsTest test
+```
+
+## 公共项覆盖
+
+本页覆盖 `SM2`、`SM2Util`、`SM2KeyPair`、`SM2SignOptions`、`SM2VerifyOptions`、`SM2Signatures`、`SM2Ciphertext`、`SM2Ciphertexts`、`SM2KeyExchangeOptions`、`SM2KeyExchangeResult` 十个公开顶层类型及其全部公开成员。
+
 ## 相关页面
 
-- [跨语言 SM2 协议与向量](/algorithms/SM2.html)
-- [core 格式与安全上下文](/api/java/core.html)
+- [跨语言 SM2 协议与固定向量](/algorithms/SM2.html)
+- [Java 核心格式、异常和安全上下文](/api/java/core.html)
+- [Java SM2 + SM4 混合加密 API](/api/java/integration.html)
+- [TypeScript SM2 API](/api/typescript/sm2.html)
