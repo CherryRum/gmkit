@@ -131,6 +131,17 @@ const forbiddenPhrases = [
   '国内使用较少',
 ];
 
+// 首页必须继承全站页脚；单页 footer 会覆盖主题配置中的备案信息。
+const homePage = await readFile(path.join(docsRoot, 'README.md'), 'utf8');
+const homeFrontmatter = homePage.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)?.[1] ?? '';
+if (/^footer:/m.test(homeFrontmatter)) {
+  failures.push('docs/site/README.md: 不应覆盖全站页脚，否则备案信息不会显示');
+}
+if (!config.includes('https://beian.miit.gov.cn/')
+    || !config.includes('京ICP备2023009505号-2')) {
+  failures.push('docs/site/.vuepress/config.ts: 全站页脚缺少备案链接或备案号');
+}
+
 async function checkLocalLinks(file, content, relative) {
   const prose = stripFencedCode(content);
   const links = [

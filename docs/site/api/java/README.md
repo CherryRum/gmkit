@@ -18,7 +18,7 @@ tag:
 
 GMKit Java 当前版本为 `0.10.1`，由主包 `cn.gmkit:gmkit` 和独立 SM9 包 `cn.gmkit:gmkit-sm9` 组成。本说明书覆盖 46 个公开顶层类型，并继续说明公开构造器、方法重载、Builder 字段、默认值、异常和资源生命周期。
 
-先按本页完成依赖、固定向量和入口选择，再进入具体算法页。应用代码只使用发布 JAR 中的 public 类型，不依赖 package-private 实现。
+先添加依赖并运行固定向量，确认 Provider 和运行环境正常。查具体方法时，可直接从下方 API 目录进入对应包。应用代码只使用发布 JAR 中的 public 类型，不依赖 package-private 实现。
 
 ::: warning 使用前先确认安全边界
 当前发布包尚未完成独立第三方安全审计。固定向量和自动测试用于发现实现偏差，不能替代密码产品认证、协议评审、密钥管理或目标运行环境的安全评估。
@@ -107,7 +107,7 @@ if (!byInstance.equals(byUtility)) {
 
 `SM2` 和 `SM4` 保存安全上下文但不保存某次密码运算状态；`SM3` 无状态；SM9 的密钥和签名上下文持有 native 句柄。可变上下文不要跨线程共享，SM9 句柄始终用 try-with-resources。
 
-## 选择说明页
+## API 目录
 
 <div class="doc-path-grid">
   <a class="doc-path-card" href="/api/java/core.html">
@@ -147,7 +147,7 @@ if (!byInstance.equals(byUtility)) {
   </a>
 </div>
 
-以上七页合计覆盖 46 个公开顶层类型。每页末尾的“公共项覆盖”说明该页负责的类型与成员，避免同一组字段在多处重复维护。
+上面七页合计覆盖 46 个公开顶层类型。需要按类名或方法名核对时，可查看各页末尾的“公共项覆盖”。
 
 ## 输入、返回与失败总则
 

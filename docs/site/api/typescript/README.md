@@ -18,7 +18,7 @@ tag:
 
 `gmkitx` 是面向 TypeScript 和 JavaScript 的密码工具包，当前发布版为 `0.10.1`。本说明书覆盖包根入口的 121 个导出，并继续说明公开类成员、选项字段、默认值、编码、状态变化和失败行为。
 
-先按本页完成安装、导入和环境检查，再进入具体算法页。所有应用代码只从 `gmkitx` 包根导入；不要依赖仓库 `src/*` 或 Node/bundler 的 `dist/*` 深度路径。
+先安装并运行固定向量，确认包入口和运行环境正常。查具体方法时，可直接从下方 API 目录进入对应算法页。应用代码只从 `gmkitx` 包根导入；不要依赖仓库 `src/*` 或 Node/bundler 的 `dist/*` 深度路径。
 
 ::: warning 使用前先确认安全边界
 当前发布包尚未完成独立第三方安全审计。固定向量和自动测试用于发现实现偏差，不能替代密码产品认证、协议评审、密钥管理或目标运行环境的安全评估。
@@ -180,7 +180,7 @@ if (!env.hasTextEncoder || !env.hasTextDecoder) {
 
 `getEnvReport()` 在 Node ESM 中可能显示 `hasNodeCrypto: false`，因为该字段只探测 CommonJS `require('node:crypto')`；Node 18+ 通常同时有 `hasWebCrypto: true`。随机源与 `TextCodec` 的精确优先级见 [公共类型与工具](/api/typescript/common.html)。
 
-## 选择说明页
+## API 目录
 
 <div class="doc-path-grid">
   <a class="doc-path-card" href="/api/typescript/common.html">
@@ -215,7 +215,7 @@ if (!env.hasTextEncoder || !env.hasTextDecoder) {
   </a>
 </div>
 
-五个算法命名空间归属本页，其余 116 个根导出分别归属上面六张说明页；总计 121 个。每张页面末尾还有“本页覆盖的公共 API”，便于核对名称。
+上面六页合计覆盖包根入口的 121 个导出。需要按名称核对时，可查看各页末尾的“本页覆盖的公共 API”。
 
 ## 输入与返回值总则
 

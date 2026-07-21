@@ -21,7 +21,6 @@ features:
     details: 固定向量、互操作测试、单元测试和运行时验证分别记录，不混用结论。
   - title: 版本可核对
     details: 当前说明书面向使用场景；历史签名按已发布 npm 或 Maven 版本保存。
-footer: Apache-2.0 Licensed | Copyright © 2026 GMKit contributors
 ---
 
 ## 当前发布包
