@@ -56,7 +56,7 @@ GMKit 当前发布包尚未完成独立第三方安全审计。固定向量和�
   <a class="doc-path-card" href="/guide/troubleshooting.html">
     <span class="doc-path-label">调用失败</span>
     <strong>按症状排查</strong>
-    <small>从依赖、编码、SM2 字段、AEAD 参数、随机源和 native runtime 逐层定位。</small>
+    <small>从依赖、编码、SM2 字段、AEAD 参数、随机源和本地动态库逐层定位。</small>
   </a>
   <a class="doc-path-card" href="/api/">
     <span class="doc-path-label">查 API</span>

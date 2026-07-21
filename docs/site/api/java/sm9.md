@@ -405,7 +405,7 @@ public SM9UnsupportedPlatformException(String message, Throwable cause);
 
 ## 可执行案例
 
-第一段覆盖签名、错误身份、消息篡改、IBE 和 256 字节失败；第二段覆盖口令加密用户私钥与公开主密钥的 PEM 往返。两段都由需要 native runtime 的 JUnit 测试执行。
+第一段覆盖签名、错误身份、消息篡改、IBE 和 256 字节失败；第二段覆盖口令加密用户私钥与公开主密钥的 PEM 往返。两段都由需要本地动态库的 JUnit 测试执行。
 
 ::: details 查看测试源码
 ```java

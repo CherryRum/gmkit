@@ -57,7 +57,7 @@ GMKit Java 当前版本为 `0.10.1`，由主包 `cn.gmkit:gmkit` 和独立 SM9 �
 | 制品 | 包 | 能力 | 额外运行条件 |
 |:--|:--|:--|:--|
 | `cn.gmkit:gmkit` | `cn.gmkit.core/sm2/sm3/sm4/zuc/integration` | 主体算法和公共工具 | Bouncy Castle 依赖随 Maven 解析 |
-| `cn.gmkit:gmkit-sm9` | `cn.gmkit.sm9` | SM9 签名、IBE、PEM | 当前操作系统/CPU 必须有内置 native runtime |
+| `cn.gmkit:gmkit-sm9` | `cn.gmkit.sm9` | SM9 签名、IBE、PEM | 当前操作系统和 CPU 必须有配套的本地动态库 |
 
 </ApiTable>
 

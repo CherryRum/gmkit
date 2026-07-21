@@ -9,7 +9,7 @@ tag: [SM9, Java, JNI, GmSSL]
 
 # SM9 标识密码算法
 
-SM9 使用身份字符串参与密钥派生和密码运算。GMKit 当前只通过 Java 制品 `cn.gmkit:gmkit-sm9:0.10.1` 提供签名、验签、基于身份的加密（IBE）、PEM 和流式签名；底层由 JNI 调用随 JAR 分发的 GmSSL 本地动态库（native runtime）。`gmkitx` 不提供 SM9、WASM 占位或浏览器降级实现。
+SM9 使用身份字符串参与密钥派生和密码运算。GMKit 当前只通过 Java 制品 `cn.gmkit:gmkit-sm9:0.10.1` 提供签名、验签、基于身份的加密（IBE）、PEM 和流式签名；底层由 JNI 调用随 JAR 分发的 GmSSL 本地动态库。`gmkitx` 不提供 SM9、WASM 占位或浏览器降级实现。
 
 <div class="doc-path-grid doc-path-grid-compact">
   <a class="doc-path-card" href="/api/java/sm9.html">
