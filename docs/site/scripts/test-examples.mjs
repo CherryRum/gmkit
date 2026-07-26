@@ -33,6 +33,16 @@ const examples = [
     cwd: path.join(repoRoot, 'packages', 'java'),
   },
   {
+    name: 'manual-java-common',
+    ...mavenExample([
+      '-pl',
+      'gmkit',
+      '-Dtest=ManualJavaStartTest,ManualJavaCoreTest,ManualJavaSm2Test,ManualJavaSm3Test,ManualJavaSm4Test,ManualJavaZucTest',
+      'test',
+    ]),
+    cwd: path.join(repoRoot, 'packages', 'java'),
+  },
+  {
     name: 'api-java-sm9',
     ...mavenExample(['-pl', 'gmkit-sm9', '-Dtest=SM9ManualExamplesTest,SM9KeyPemTest', 'test']),
     cwd: path.join(repoRoot, 'packages', 'java'),
