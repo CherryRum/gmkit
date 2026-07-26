@@ -54,6 +54,16 @@ export default defineUserConfig({
     navbar: [
       { text: '快速入门', link: '/guide/' },
       {
+        text: '使用手册',
+        children: [
+          { text: '手册阅读路径', link: '/manual/' },
+          { text: 'TypeScript 使用手册', link: '/manual/typescript/' },
+          { text: 'Java 使用手册', link: '/manual/java/' },
+          { text: '跨语言协议接入', link: '/manual/interoperability' },
+          { text: '旧系统迁移', link: '/manual/migration' },
+        ],
+      },
+      {
         text: 'API 说明书',
         children: [
           { text: 'TypeScript 说明书', link: '/api/typescript/' },
@@ -105,6 +115,41 @@ export default defineUserConfig({
             '/guide/about-guomi',
             '/guide/security',
             '/guide/troubleshooting',
+          ],
+        },
+      ],
+      '/manual/': [
+        {
+          text: '阅读路径',
+          children: [
+            '/manual/',
+            '/manual/interoperability',
+            '/manual/migration',
+          ],
+        },
+        {
+          text: 'TypeScript 使用手册',
+          children: [
+            '/manual/typescript/',
+            '/manual/typescript/data',
+            '/manual/typescript/sm2',
+            '/manual/typescript/digest-hmac',
+            '/manual/typescript/sm4',
+            '/manual/typescript/zuc',
+            '/manual/typescript/advanced',
+          ],
+        },
+        {
+          text: 'Java 使用手册',
+          children: [
+            '/manual/java/',
+            '/manual/java/core',
+            '/manual/java/sm2',
+            '/manual/java/sm3',
+            '/manual/java/sm4',
+            '/manual/java/zuc',
+            '/manual/java/sm9',
+            '/manual/java/hybrid',
           ],
         },
       ],

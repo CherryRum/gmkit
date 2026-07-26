@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "baselineVersion": "0.10.1",
+  "chapters": [
+    { "id": "manual-home", "language": "common", "level": "start", "page": "manual/README.md" },
+    { "id": "ts-start", "language": "typescript", "level": "start", "page": "manual/typescript/README.md" },
+    { "id": "ts-data", "language": "typescript", "level": "common", "page": "manual/typescript/data.md" },
+    { "id": "ts-sm2", "language": "typescript", "level": "common", "page": "manual/typescript/sm2.md" },
+    { "id": "ts-digest-hmac", "language": "typescript", "level": "common", "page": "manual/typescript/digest-hmac.md" },
+    { "id": "ts-sm4", "language": "typescript", "level": "common", "page": "manual/typescript/sm4.md" },
+    { "id": "ts-zuc", "language": "typescript", "level": "advanced", "page": "manual/typescript/zuc.md" },
+    { "id": "ts-advanced", "language": "typescript", "level": "advanced", "page": "manual/typescript/advanced.md" },
+    { "id": "java-start", "language": "java", "level": "start", "page": "manual/java/README.md" },
+    { "id": "java-core", "language": "java", "level": "common", "page": "manual/java/core.md" },
+    { "id": "java-sm2", "language": "java", "level": "common", "page": "manual/java/sm2.md" },
+    { "id": "java-sm3", "language": "java", "level": "common", "page": "manual/java/sm3.md" },
+    { "id": "java-sm4", "language": "java", "level": "common", "page": "manual/java/sm4.md" },
+    { "id": "java-zuc", "language": "java", "level": "advanced", "page": "manual/java/zuc.md" },
+    { "id": "java-sm9", "language": "java", "level": "advanced", "page": "manual/java/sm9.md" },
+    { "id": "java-hybrid", "language": "java", "level": "advanced", "page": "manual/java/hybrid.md" },
+    { "id": "interoperability", "language": "common", "level": "protocol", "page": "manual/interoperability.md" },
+    { "id": "migration", "language": "common", "level": "migration", "page": "manual/migration.md" }
+  ]
+}
