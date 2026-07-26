@@ -1,6 +1,6 @@
 ---
 title: Java 快速入门
-description: 引入 GMKit Maven 制品，完成 SM3 自检、SM2 签名、SM4-GCM 加密并按需启用 SM9。
+description: 安装 GMKit 0.10.1，检查 Java 8、Bouncy Castle Provider、安全上下文和 SM3 固定向量。
 pageInfo: false
 contributors: false
 editLink: false
@@ -17,9 +17,9 @@ tag:
 
 # Java 快速入门
 
-GMKit Java 主包提供 core、SM2、SM3、SM4、ZUC 和混合加密；SM9 是带 JNI/GmSSL runtime 的独立模块。主包最低支持 Java 8。
+主包提供 core、SM2、SM3、SM4、ZUC 和 SM2 + SM4 混合加密，最低支持 Java 8。先用最小测试确认制品、Provider、安全随机源和 SM3 结果，再进入任务手册。
 
-## 安装主包
+## 1. 安装主包
 
 ```xml
 <dependency>
@@ -29,149 +29,64 @@ GMKit Java 主包提供 core、SM2、SM3、SM4、ZUC 和混合加密；SM9 是�
 </dependency>
 ```
 
-## 1. 固定向量自检
+如果项目使用 Gradle，请仍以 Maven Central 的 `cn.gmkit:gmkit:0.10.1` 为坐标；不要依赖仓库内部模块路径。
 
-<!-- code-sample id="guide-java-01" steps="计算摘要|固定向量断言" -->
+## 2. 运行最小验证
+
+下面的 JUnit 5 源码会检查 Provider、`SecureRandom`、SM2 密钥生成和 SM3 `abc` 固定向量。
+
+<!-- code-sample id="guide-java-start" steps="创建 Provider|生成 SM2 密钥|计算 SM3 固定向量|随机源断言" -->
 ```java
-import cn.gmkit.sm3.SM3Util;
-
-// 1. 计算摘要：使用标准输入 abc 计算 SM3。
-String actual = SM3Util.digestHex("abc");
-String expected = "66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0";
-
-// 2. 固定向量断言：摘要必须与标准结果完全一致。
-if (!expected.equals(actual)) {
-    throw new IllegalStateException("SM3 vector mismatch: " + actual);
-}
+<!-- @include: ../../../packages/java/gmkit/src/test/java/cn/gmkit/ManualJavaStartTest.java#manual-java-start -->
 ```
 
-## 2. 选择实例式或静态式入口
+仓库内可直接运行：
 
-<ApiTable label="Java API 入口选择" min-width="62rem">
+```bash
+mvn -f packages/java/pom.xml -B -ntp \
+  -pl gmkit -Dtest=ManualJavaStartTest test
+```
 
-| 需求 | 推荐入口 |
-|:--|:--|
-| 复用 `GmSecurityContext` 或固定 Provider/SecureRandom | `SM2`、`SM4` 实例 |
-| 简单的一次性调用 | `SM2Util`、`SM3Util`、`SM4Util` |
-| ZUC、EEA3、EIA3 | `ZUC` 或 `ZUCUtil` 静态入口 |
-| SM9 | `SM9` 门面和实现 `AutoCloseable` 的句柄类型 |
+<ApiTable label="Java 最小验证结果" min-width="60rem">
+
+| 检查项 | 通过条件 | 还没有证明什么 |
+|:--|:--|:--|
+| Provider | 能取得并注册 BC Provider | 全局 Provider 顺序适合所有应用 |
+| 安全上下文 | `SecureRandom` 和 Provider 可解析 | 生产密钥存储与轮换已经完成 |
+| SM2 密钥 | 私钥 64 个 Hex 字符，公钥为非压缩点 | 证书、身份绑定和授权已经完成 |
+| SM3 固定向量 | `abc` 得到 `66c7…a8e0` | 签名、认证加密和跨语言协议已经接通 |
+| 非法输入 | `SM3Util.digest(null)` 抛 `GmkitException` | 所有上游参数都已清洗 |
 
 </ApiTable>
 
-实例类没有声明线程安全。并发任务使用独立实例，或只调用没有共享状态的静态工具。
+## 3. 接着完成业务任务
 
-## 3. 签名与认证加密闭环
+<div class="doc-path-grid doc-path-grid-compact">
+  <a class="doc-path-card" href="/manual/java/core.html">
+    <span class="doc-path-label">先固定环境</span>
+    <strong>编码、Provider 与异常</strong>
+    <small>明确 UTF-8、Hex/Base64、安全上下文和服务错误映射。</small>
+  </a>
+  <a class="doc-path-card" href="/manual/java/sm2.html">
+    <span class="doc-path-label">身份与小数据</span>
+    <strong>标准 SM2 签名和加解密</strong>
+    <small>使用非空 userId、标准 Z、DER 签名和 C1C3C2 密文。</small>
+  </a>
+  <a class="doc-path-card" href="/manual/java/sm4.html">
+    <span class="doc-path-label">业务数据</span>
+    <strong>SM4-GCM 认证加密</strong>
+    <small>配置 nonce、AAD 和 tag，并确认认证失败不返回明文。</small>
+  </a>
+  <a class="doc-path-card" href="/manual/java/sm9.html">
+    <span class="doc-path-label">独立制品</span>
+    <strong>评估并接入 SM9</strong>
+    <small>先检查平台，再处理 KGC、身份私钥、PEM、IBE 和资源关闭。</small>
+  </a>
+</div>
 
-<!-- code-sample id="guide-java-02" steps="准备输入|生成 SM2 密钥对|SM2 签名|SM2 验签|SM2 篡改断言|准备 SM4-GCM 参数|SM4-GCM 加密|SM4-GCM 解密|成功断言|构造篡改结果|失败断言" -->
-```java
-import cn.gmkit.core.SM4CipherMode;
-import cn.gmkit.core.SM4Padding;
-import cn.gmkit.sm2.SM2;
-import cn.gmkit.sm2.SM2KeyPair;
-import cn.gmkit.sm2.SM2SignOptions;
-import cn.gmkit.sm2.SM2VerifyOptions;
-import cn.gmkit.sm4.SM4;
-import cn.gmkit.sm4.SM4CipherResult;
-import cn.gmkit.sm4.SM4Options;
-import java.security.SecureRandom;
+需要精确重载和异常时查 [Java API 说明书](/api/java/)；维护旧数据时才进入[旧系统迁移](/manual/migration.html)。
 
-// 1. 准备输入：正常订单、篡改订单和签名身份分别保存。
-SM2 sm2 = new SM2();
-String message = "order=GMKIT-DEMO-0001&amount=88.00";
-String changedMessage = "order=GMKIT-DEMO-0001&amount=99.00";
-String userId = "merchant@gmkit.cn";
-
-// 2. 生成 SM2 密钥对：私钥签名，公钥验签。
-SM2KeyPair keys = sm2.generateKeyPair();
-
-// 3. SM2 签名：userId 参与 Z 值计算，输出使用默认 Hex。
-String signature = sm2.signHex(
-    keys.privateKey(),
-    message,
-    SM2SignOptions.builder().userId(userId).build());
-
-// 4. SM2 验签：原消息和相同 userId 必须验证成功。
-if (!sm2.verify(
-        keys.publicKey(),
-        message,
-        signature,
-        SM2VerifyOptions.builder().userId(userId).build())) {
-    throw new IllegalStateException("SM2 verification failed");
-}
-
-// 5. SM2 篡改断言：金额变化后必须验证失败。
-if (sm2.verify(
-        keys.publicKey(),
-        changedMessage,
-        signature,
-        SM2VerifyOptions.builder().userId(userId).build())) {
-    throw new IllegalStateException("tampered order must not verify");
-}
-
-// 6. 准备 SM4-GCM 参数：生成随机 key、12 字节 nonce，并固定 AAD。
-SM4 sm4 = new SM4();
-byte[] sm4Key = sm4.generateKey();
-byte[] nonce = new byte[12];
-new SecureRandom().nextBytes(nonce);
-SM4Options options = SM4Options.builder()
-    .mode(SM4CipherMode.GCM)
-    .padding(SM4Padding.NONE)
-    .iv(nonce)
-    .aad("tenant=demo;schema=1".getBytes("UTF-8"))
-    .tagLength(16)
-    .build();
-
-// 7. SM4-GCM 加密：结果包含 ciphertext 和认证 tag。
-SM4CipherResult encrypted = sm4.encrypt(sm4Key, message, options);
-
-// 8. SM4-GCM 解密：使用相同 key、nonce 和 AAD 恢复文本。
-String decrypted = sm4.decryptToUtf8(sm4Key, encrypted, options);
-
-// 9. 成功断言：解密结果必须等于订单原文。
-if (!message.equals(decrypted)) {
-    throw new IllegalStateException("SM4-GCM round-trip failed");
-}
-
-// 10. 构造篡改结果：复制 tag 后修改第一个字节。
-byte[] tamperedTag = encrypted.tag();
-tamperedTag[0] ^= 0x01;
-SM4CipherResult tampered =
-    new SM4CipherResult(encrypted.ciphertext(), tamperedTag);
-
-// 11. 失败断言：认证失败必须抛错，不能返回未认证明文。
-try {
-    sm4.decryptToUtf8(sm4Key, tampered, options);
-    throw new IllegalStateException("tampered tag must be rejected");
-} catch (cn.gmkit.core.GmkitException expected) {
-    // 预期：认证失败，不返回明文。
-}
-```
-
-示例为每次加密生成新的 12 字节 nonce，并同时验证错误 tag 必须失败。生产环境还必须在相同 key 下保证 nonce 唯一。Java 8 项目也可以使用 `StandardCharsets.UTF_8` 代替字符串字符集名称。
-
-## Provider 与安全上下文
-
-默认入口会解析可用的 Bouncy Castle Provider。需要固定 Provider 或注入 `SecureRandom` 时使用：
-
-<!-- code-sample id="guide-java-03" steps="创建安全上下文|创建 SM2 实例" -->
-```java
-import cn.gmkit.core.GmSecurityContext;
-import cn.gmkit.sm2.SM2;
-import java.security.SecureRandom;
-
-// 1. 创建安全上下文：显式注入 SecureRandom 并注册 Provider。
-GmSecurityContext context = GmSecurityContext.builder()
-    .secureRandom(new SecureRandom())
-    .registerProvider(true)
-    .build();
-
-// 2. 创建 SM2 实例：后续运算统一使用该上下文。
-SM2 sm2 = new SM2(context);
-```
-
-完整注册和全局副作用说明见 [Java 核心 API](/api/java/core.html)。
-
-## 按需启用 SM9
+## SM9 依赖按需添加
 
 ```xml
 <dependency>
@@ -181,13 +96,8 @@ SM2 sm2 = new SM2(context);
 </dependency>
 ```
 
-应用启动时先检查 `SM9.isAvailable()`。SM9 主密钥、用户私钥和签名上下文持有本地动态库（native）资源，必须使用 try-with-resources；不使用 SM9 时不要添加该模块。
+不使用 SM9 的服务不添加这个制品。使用时必须先验证目标平台，所有持有本地动态库（native）句柄的类型都用 try-with-resources 关闭。
 
-## 接下来
-
-- [Java API 说明书](/api/java/)
-- [Java 核心公共 API](/api/java/core.html)
-- [Java SM9 API](/api/java/sm9.html)
-- [Java SM2 + SM4 混合加密 API](/api/java/integration.html)
-- [常见问题与故障排查](/guide/troubleshooting.html)
-- [安全边界](/guide/security.html)
+::: warning 上线边界
+当前发布包尚未完成独立第三方安全审计。固定向量和示例测试不能替代 Provider 策略、密钥管理、协议评审、密码产品认证或目标环境安全评估。
+:::

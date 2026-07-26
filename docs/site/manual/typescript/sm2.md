@@ -117,6 +117,6 @@ Uint8Array 明文
 - 空 `userId` 在 0.10.1 中会回落到 `DEFAULT_USER_ID`，不能表达独立的空身份。
 - no-Z 签名计算 `SM3(M)`，不是标准 SM2 签名，也不能由标准 BC `SM2Signer` 直接验证。
 - 传入的 `SM2CurveParams` 只能重复声明标准 `sm2p256v1` 参数；0.10.1 不支持自定义曲线。
-- C1C2C3、自动识别签名/密文和无前缀函数只用于既有系统。
+- 既有系统的格式分支统一在迁移层处理，不混入本页的标准调用。
 
 替代方案和风险见[旧系统迁移](/manual/migration.html)。全部函数、选项和类成员见 [TypeScript SM2 API](/api/typescript/sm2.html)。

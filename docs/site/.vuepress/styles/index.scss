@@ -293,6 +293,44 @@ code, kbd, pre, samp {
     }
   }
 
+  .manual-levels {
+    display: grid;
+    gap: 0;
+    padding: 0;
+    margin: 1.25rem 0 1.75rem;
+    border-top: 1px solid var(--vp-c-divider, rgba(127, 127, 127, 0.16));
+    counter-reset: manual-step;
+    list-style: none;
+
+    li {
+      display: grid;
+      grid-template-columns: 2.25rem minmax(8.5rem, 0.6fr) minmax(0, 1.8fr);
+      gap: 0.75rem;
+      align-items: baseline;
+      margin: 0;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--vp-c-divider, rgba(127, 127, 127, 0.16));
+      counter-increment: manual-step;
+
+      &::before {
+        content: counter(manual-step, decimal-leading-zero);
+        color: var(--gmkit-accent);
+        font-family: $gmkit-mono;
+        font-size: 0.76rem;
+        font-weight: 650;
+      }
+    }
+
+    strong {
+      font-size: 0.92rem;
+    }
+
+    span {
+      color: var(--vp-c-text-mute, #64748b);
+      font-size: 0.88rem;
+    }
+  }
+
   .doc-steps {
     display: grid;
     gap: 0.7rem;
@@ -518,6 +556,7 @@ html.dark :not(pre) > code {
 // 使用当前 VuePress 主题的实际类名控制导航密度。
 .vp-navbar,
 .vp-sidebar,
+.vp-page,
 .vp-page-title,
 .vp-page-meta,
 .vp-page-nav {
@@ -546,6 +585,10 @@ html.dark :not(pre) > code {
 
 .vp-sidebar {
   font-size: 13px;
+}
+
+.vp-page {
+  min-width: 0;
 }
 
 .vp-sidebar-header {
@@ -698,10 +741,23 @@ html.dark :not(pre) > code {
       grid-template-columns: minmax(0, 1fr);
       gap: 0.25rem;
     }
+
+    .manual-levels li {
+      grid-template-columns: 1.8rem minmax(0, 1fr);
+      gap: 0.2rem 0.55rem;
+
+      span {
+        grid-column: 2;
+      }
+    }
   }
 
   .hint-container {
     padding: 0.875rem 1rem;
+  }
+
+  body:not(.no-copy-code) div[class*='language-'] .vp-copy-code-button {
+    opacity: 0.82;
   }
 
 }

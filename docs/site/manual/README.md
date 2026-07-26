@@ -24,10 +24,10 @@ tag:
   <li><strong>常用任务</strong><span>完成签名验签、认证加密、摘要与 HMAC，并验证篡改失败。</span></li>
   <li><strong>协议接入</strong><span>固定编码、userId、mode、nonce、AAD、tag 和载荷版本。</span></li>
   <li><strong>高级能力</strong><span>按需使用密钥交换、增量状态、Provider、SM9 和混合加密。</span></li>
-  <li><strong>旧系统迁移</strong><span>只在维护既有数据时查阅弃用入口和自动识别行为。</span></li>
+  <li><strong>旧系统迁移</strong><span>只在维护既有数据时查阅替代 API、行为差异和迁移验收。</span></li>
 </ol>
 
-## 选择语言
+## 按项目语言阅读
 
 <div class="doc-path-grid">
   <a class="doc-path-card" href="/manual/typescript/">
@@ -48,23 +48,22 @@ tag:
   <a class="doc-path-card" href="/manual/migration.html">
     <span class="doc-path-label">仅维护旧系统</span>
     <strong>旧系统迁移</strong>
-    <small>查询弃用别名、自动识别、no-Z、SHA-1 和旧 EEA3 入口的替代方案。</small>
+    <small>查询已发布兼容入口的替代 API、协议风险、双算步骤和下线条件。</small>
   </a>
 </div>
 
-## 手册与 API 的分工
+## 查到哪一层就够了
 
 <ApiTable label="文档层级分工" min-width="62rem">
 
 | 文档 | 用于解决的问题 | 不承担的内容 |
 |:--|:--|:--|
-| 快速入门 | 依赖是否安装正确 | 完整协议设计 |
-| 使用手册 | 一个业务任务怎样正确完成 | 枚举全部重载 |
-| API 说明书 | 参数、返回值、异常和成员签名 | 替应用选择协议 |
-| 算法与标准 | 标准字段、算法边界和双语言差异 | 语言调用细节 |
-| 迁移手册 | 旧入口如何替换 | 新代码的首选路径 |
+| 快速入门 | 依赖是否安装正确 | 协议字段设计 |
+| 使用手册 | 一个业务任务怎样接通 | 枚举全部重载 |
+| API 说明书 | 某个参数或成员怎样使用 | 替应用决定协议 |
+| 算法与标准 | 标准字段和双语言差异 | 重复语言调用代码 |
+| 迁移附录 | 旧入口怎样替换 | 新接入流程 |
 
 </ApiTable>
 
 手册中的随机密文和签名只检查能否解密、验签和拒绝篡改；只有公开固定向量才比较完整 Hex 结果。
-

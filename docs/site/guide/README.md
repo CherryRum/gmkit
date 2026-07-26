@@ -44,6 +44,8 @@ GMKit `0.10.1` 分别发布 TypeScript 和 Java 制品。先选语言，跑通�
 
 ## 跑通以后
 
+- [TypeScript 使用手册](/manual/typescript/)：按数据、SM2、摘要/HMAC、SM4、ZUC 和高级能力继续。
+- [Java 使用手册](/manual/java/)：按 core、SM2、SM3、SM4、ZUC、SM9 和混合加密继续。
 - [算法与协议](/algorithms/)：确定 user ID、mode、padding、IV/nonce、AAD、tag 和长度单位。
 - [TypeScript API 说明书](/api/typescript/)：查询 `gmkitx` 的参数、返回值和失败行为。
 - [Java API 说明书](/api/java/)：查询主包、SM9 与 SM2 + SM4 混合加密接口。

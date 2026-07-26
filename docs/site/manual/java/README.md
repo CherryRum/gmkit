@@ -100,4 +100,4 @@ mvn -B -ntp -pl gmkit \
   <a class="doc-path-card" href="/manual/java/hybrid.html"><span class="doc-path-label">大消息</span><strong>SM2 + SM4</strong><small>会话 key、GCM 载荷、篡改失败和 schema。</small></a>
 </div>
 
-旧 no-Z、空用户标识常量、自动编码识别和其他兼容入口统一见[旧系统迁移](/manual/migration.html)。全部签名见 [Java API 说明书](/api/java/)。
+已发布兼容入口统一见[旧系统迁移](/manual/migration.html)，不要带入新协议。全部签名见 [Java API 说明书](/api/java/)。

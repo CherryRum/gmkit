@@ -1,10 +1,10 @@
 # GMKit Java
 
-GMKit Java 提供 SM2、SM3、SM4、ZUC 和 SM2 + SM4 混合加密；SM9 通过独立的 `gmkit-sm9` 模块提供。全部公共类型、重载、Builder 默认值、编码、异常和资源生命周期统一维护在 [Java API 说明书](https://gmkit.cn/api/java/)。
+GMKit Java 主包提供 SM2、SM3、SM4、ZUC 和 SM2 + SM4 混合加密；SM9 位于独立制品。接入流程统一维护在 [Java 使用手册](https://gmkit.cn/manual/java/)；本页只保留依赖与最小自检。
 
-> 当前 `0.x` 版本是公开测试版，尚未完成独立第三方安全审计。生产接入前请评估密钥管理、随机源、Provider、协议字段和合规要求。
+> 当前 `0.x` 版本尚未完成独立第三方安全审计。上线前仍需完成 Provider、随机源、密钥管理、协议字段和合规评估。
 
-## Maven 依赖
+## 安装
 
 主包最低支持 Java 8：
 
@@ -16,7 +16,7 @@ GMKit Java 提供 SM2、SM3、SM4、ZUC 和 SM2 + SM4 混合加密；SM9 通过�
 </dependency>
 ```
 
-只在需要 SM9 时增加独立模块：
+只在使用 SM9 时增加：
 
 ```xml
 <dependency>
@@ -26,58 +26,35 @@ GMKit Java 提供 SM2、SM3、SM4、ZUC 和 SM2 + SM4 混合加密；SM9 通过�
 </dependency>
 ```
 
-## 快速开始
+## 30 秒自检
 
 ```java
-import cn.gmkit.sm2.SM2;
-import cn.gmkit.sm2.SM2KeyPair;
-import cn.gmkit.sm2.SM2SignOptions;
-import cn.gmkit.sm2.SM2VerifyOptions;
-import cn.gmkit.sm3.SM3;
+import cn.gmkit.sm3.SM3Util;
 
-SM2 sm2 = new SM2();
-SM2KeyPair keys = sm2.generateKeyPair();
-String message = "order=GMKIT-DEMO-0001&amount=88.00";
-String changedMessage = "order=GMKIT-DEMO-0001&amount=99.00";
-String userId = "merchant@gmkit.cn";
+// 1. 计算摘要：使用标准输入 abc 检查制品和 UTF-8 路径。
+String actual = SM3Util.digestHex("abc");
+String expected =
+    "66c7f0f462eeedd9d1f2d46bdc10e4e2"
+    + "4167c4875cf2f7a2297da02b8f4ba8e0";
 
-String signature = sm2.signHex(
-    keys.privateKey(),
-    message,
-    SM2SignOptions.builder().userId(userId).build());
-boolean valid = sm2.verify(
-    keys.publicKey(),
-    message,
-    signature,
-    SM2VerifyOptions.builder().userId(userId).build());
-if (!valid) {
-    throw new IllegalStateException("SM2 verification failed");
-}
-if (sm2.verify(
-        keys.publicKey(),
-        changedMessage,
-        signature,
-        SM2VerifyOptions.builder().userId(userId).build())) {
-    throw new IllegalStateException("tampered order must not verify");
-}
-
-String digest = new SM3().digestHex("abc");
-String expected = "66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0";
-if (!expected.equals(digest)) {
-    throw new IllegalStateException("SM3 vector mismatch");
+// 2. 固定向量断言：结果不一致时停止接入，不继续测试随机算法。
+if (!expected.equals(actual)) {
+    throw new IllegalStateException("SM3 vector mismatch: " + actual);
 }
 ```
 
-SM9 的密钥和签名上下文持有 native 资源，必须使用 try-with-resources；启动时先检查 `SM9.isAvailable()`。完整平台矩阵、PEM、文件路径和大小限制见 [Java SM9 API](https://gmkit.cn/api/java/sm9.html)。
+这段代码只证明依赖和固定摘要路径可用。接着应在手册中完成 Provider、安全上下文、SM2 签名验签、SM4-GCM 加解密和篡改失败测试。
 
 ## 文档
 
-- [Java API 说明书](https://gmkit.cn/api/java/)：按 core、SM2、SM3、SM4、ZUC、SM9、SM2 + SM4 混合加密分页说明全部公共类型。
-- [已发布版本签名索引](https://gmkit.cn/api/#已发布版本签名索引)：核对与 Maven 制品相同版本的逐成员签名。
-- [跨语言算法与协议](https://gmkit.cn/algorithms/)：Java/TypeScript 默认值和协议差异。
-- [安全边界](https://gmkit.cn/guide/security.html)：上线前检查 Provider、随机源、密钥、nonce、认证和异常处理。
+- [五分钟快速入门](https://gmkit.cn/guide/java.html)
+- [Java 使用手册](https://gmkit.cn/manual/java/)
+- [Java API 参数](https://gmkit.cn/api/java/)
+- [Java SM9 手册](https://gmkit.cn/manual/java/sm9.html)
+- [跨语言协议接入](https://gmkit.cn/manual/interoperability.html)
+- [旧系统迁移](https://gmkit.cn/manual/migration.html)
 
-## 本地验证
+## 仓库内验证
 
 ```bash
 mvn -f packages/java/pom.xml -B -ntp test

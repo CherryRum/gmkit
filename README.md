@@ -28,9 +28,9 @@ gmkit/
 | SM2 | 支持     | 支持         | 加解密、签名/验签、密钥交换；跨语言需固定 userId、密文模式和签名格式                             |
 | SM3 | 支持     | 支持         | 摘要与 HMAC                                                           |
 | SM4 | 支持     | 支持         | ECB/CBC/CTR/CFB/OFB/GCM/CCM，AEAD 需传递 tag/AAD                       |
-| ZUC | 支持     | 支持         | ZUC-128、标准 EEA3 消息加密、EIA3 MAC；保留旧密钥流入口，不支持 ZUC-256             |
+| ZUC | 支持     | 支持         | ZUC-128、标准 EEA3 消息加密、EIA3 MAC；不支持 ZUC-256                              |
 | SM9 | 支持     | 不支持        | 仅 Java 侧提供；添加单一 `gmkit-sm9` 依赖即可使用内置 JNI/GmSSL runtime |
-| SHA | JDK 自带 | 支持         | TS 包提供 SHA-1/256/384/512 与 HMAC；SHA-1 仅用于兼容旧系统                     |
+| SHA | JDK 自带 | 支持         | TS 包提供 SHA-256/384/512 与 HMAC；旧协议边界见迁移附录                         |
 
 ## 统一命令
 
@@ -73,6 +73,10 @@ SM9 Java native runtime 可在需要时本地构建：
 
 ## 文档入口
 
+- [五分钟快速入门](https://gmkit.cn/guide/)
+- [TypeScript 使用手册](https://gmkit.cn/manual/typescript/)
+- [Java 使用手册](https://gmkit.cn/manual/java/)
+- [跨语言协议接入](https://gmkit.cn/manual/interoperability.html)
 - [TypeScript API 说明书](https://gmkit.cn/api/typescript/)
 - [Java API 说明书](https://gmkit.cn/api/java/)
 - [TypeScript 包说明](packages/ts/README.md)

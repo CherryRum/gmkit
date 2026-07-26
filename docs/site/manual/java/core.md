@@ -50,7 +50,7 @@ Java 密码 API 处理 `byte[]`。`String` 重载只是把文本按某个 `Chars
 
 </ApiTable>
 
-主手册不传 `format = null`，也不使用自动解码入口。自动识别会让同一字符串存在两种解释，只保留给无法立即修改字段定义的旧系统，规则见[旧系统迁移](/manual/migration.html#密文和签名自动识别)。
+主手册不传 `format = null`。新 schema 必须携带 `HEX` 或 `BASE64`，接收端按该枚举解码；没有格式字段的历史数据见[旧系统迁移](/manual/migration.html#密文和签名自动识别)。
 
 ## 数组所有权
 
@@ -78,7 +78,7 @@ Java 密码 API 处理 `byte[]`。`String` 重载只是把文本按某个 `Chars
 | 操作 | 结果 | 说明 |
 |:--|:--|:--|
 | SM2 签名不匹配 | `verify(...)` 返回 `false` | 已解码的签名字节结构非法也会返回 `false` |
-| SM2 字符串签名无法自动解码 | 抛 `GmkitException` | 解码发生在验签内部捕获区之前；主手册先显式 Base64 解码 |
+| SM2 字符串签名的 Base64 非法 | 抛 `GmkitException` | 主手册先显式 Base64 解码，再把字节交给验签 |
 | SM2 公钥、参数或密文非法 | 抛 `GmkitException` | 不返回部分结果 |
 | SM4-GCM/CCM 认证失败 | 抛 `GmkitException` | 丢弃输出 |
 | SM2 密钥交换确认失败 | 0.10.1 由 BC 抛 `IllegalStateException` | 在协议边界按协商失败处理 |

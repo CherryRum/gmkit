@@ -90,7 +90,7 @@ TypeScript manual start example passed
 
 </ApiTable>
 
-旧的无前缀别名、输入自动识别、no-Z 签名、SHA-1 和旧 EEA3 密钥流入口不用于新接入，统一见[旧系统迁移](/manual/migration.html)。
+本手册只使用新接入路径。维护已发布兼容行为时，统一查阅[旧系统迁移](/manual/migration.html)，不要把迁移分支带回新协议。
 
 ## 对接完成条件
 

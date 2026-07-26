@@ -60,6 +60,7 @@ tag:
 
 ## 完成后继续
 
+- [TypeScript 使用手册](/manual/typescript/) 或 [Java 使用手册](/manual/java/)：按业务任务完成可运行接入。
 - [算法选择与协议设计](/guide/about-guomi.html)：确定算法、模式和跨端字段。
 - [安全边界](/guide/security.html)：检查密钥、nonce、认证和运行环境。
 - [常见问题与故障排查](/guide/troubleshooting.html)：排查安装、编码、验签和 AEAD 错误。

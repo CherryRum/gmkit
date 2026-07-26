@@ -189,6 +189,7 @@ for (const file of markdownFiles) {
   }
 
   const quietMetaPage = relative.startsWith('docs/site/api/')
+    || relative.startsWith('docs/site/manual/')
     || [
       'docs/site/guide/README.md',
       'docs/site/guide/getting-started.md',
@@ -196,7 +197,7 @@ for (const file of markdownFiles) {
       'docs/site/guide/java.md',
     ].includes(relative);
   if (quietMetaPage && (!/^contributors:\s+false$/m.test(content) || !/^editLink:\s+false$/m.test(content))) {
-    failures.push(`${relative}: API/快速入门页只应在页尾保留更新时间`);
+    failures.push(`${relative}: API、手册和快速入门页只应在页尾保留更新时间`);
   }
 
   if (routeFor(file) !== '/') {
