@@ -20,6 +20,12 @@ function mavenExample(args) {
 
 const examples = [
   { name: 'quickstart-typescript', command: process.execPath, args: ['quick-start.mjs'], cwd: path.join(examplesRoot, 'node') },
+  { name: 'manual-typescript-start', command: process.execPath, args: ['manual-typescript-start.mjs'], cwd: path.join(examplesRoot, 'node') },
+  { name: 'manual-typescript-data', command: process.execPath, args: ['manual-typescript-data.mjs'], cwd: path.join(examplesRoot, 'node') },
+  { name: 'manual-typescript-sm2', command: process.execPath, args: ['manual-typescript-sm2.mjs'], cwd: path.join(examplesRoot, 'node') },
+  { name: 'manual-typescript-digest-hmac', command: process.execPath, args: ['manual-typescript-digest-hmac.mjs'], cwd: path.join(examplesRoot, 'node') },
+  { name: 'manual-typescript-sm4', command: process.execPath, args: ['manual-typescript-sm4.mjs'], cwd: path.join(examplesRoot, 'node') },
+  { name: 'manual-typescript-zuc', command: process.execPath, args: ['manual-typescript-zuc.mjs'], cwd: path.join(examplesRoot, 'node') },
   {
     name: 'quickstart-java',
     ...mavenExample(['-pl', 'gmkit', '-Dtest=PublicApiManualExamplesTest', 'test']),
