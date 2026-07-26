@@ -44,7 +44,17 @@ const examples = [
   },
   {
     name: 'api-java-sm9',
-    ...mavenExample(['-pl', 'gmkit-sm9', '-Dtest=SM9ManualExamplesTest,SM9KeyPemTest', 'test']),
+    ...mavenExample([
+      '-pl',
+      'gmkit-sm9',
+      '-Dtest=SM9ManualExamplesTest,SM9KeyPemTest,ManualJavaSm9UserGuideTest',
+      'test',
+    ]),
+    cwd: path.join(repoRoot, 'packages', 'java'),
+  },
+  {
+    name: 'manual-java-hybrid',
+    ...mavenExample(['-pl', 'gmkit', '-Dtest=ManualJavaHybridTest', 'test']),
     cwd: path.join(repoRoot, 'packages', 'java'),
   },
   { name: 'gmkit', command: process.execPath, args: ['gmkit-release.mjs'], cwd: path.join(examplesRoot, 'node') },
