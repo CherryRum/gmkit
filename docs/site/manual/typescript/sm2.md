@@ -105,6 +105,13 @@ Uint8Array 明文
 
 双方的 `sharedKey` 必须相同。确认值按对端关系校验：一方发出的确认值必须与另一方期望接收的确认值一致。完整可执行流程见[高级能力中的 SM2 密钥交换](/manual/typescript/advanced.html#sm2-密钥交换)。
 
+<!-- code-sample id="manual-ts-sm2-key-exchange" steps="生成长期密钥|生成临时密钥|发起方计算|响应方计算|派生密钥断言|确认标签断言|身份错误断言" -->
+```js
+<!-- @include: ../../examples/node/manual-typescript-advanced.mjs#manual-ts-sm2-key-exchange -->
+```
+
+0.10.1 的结果同时返回 `s1` 和 `s2`。应用协议应明确谁先发送哪个确认值、在什么时点销毁临时私钥，并在确认失败时丢弃 `sharedKey`。示例中的 `sharedKey` 只做双方一致性断言，不直接当作长期存储 key。
+
 ## 不在主流程使用的兼容能力
 
 - 空 `userId` 在 0.10.1 中会回落到 `DEFAULT_USER_ID`，不能表达独立的空身份。

@@ -26,6 +26,7 @@ const examples = [
   { name: 'manual-typescript-digest-hmac', command: process.execPath, args: ['manual-typescript-digest-hmac.mjs'], cwd: path.join(examplesRoot, 'node') },
   { name: 'manual-typescript-sm4', command: process.execPath, args: ['manual-typescript-sm4.mjs'], cwd: path.join(examplesRoot, 'node') },
   { name: 'manual-typescript-zuc', command: process.execPath, args: ['manual-typescript-zuc.mjs'], cwd: path.join(examplesRoot, 'node') },
+  { name: 'manual-typescript-advanced', command: process.execPath, args: ['manual-typescript-advanced.mjs'], cwd: path.join(examplesRoot, 'node') },
   {
     name: 'quickstart-java',
     ...mavenExample(['-pl', 'gmkit', '-Dtest=PublicApiManualExamplesTest', 'test']),
