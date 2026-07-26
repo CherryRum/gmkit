@@ -29,13 +29,16 @@ SHA 摘要用于把消息映射为固定长度结果，不能证明消息来自�
 以下签名和默认值按 `gmkitx 0.10.1` 说明。字符串消息与字符串 HMAC key 均按 UTF-8 编码，不会自动解释为 Hex 或 Base64。
 :::
 
+::: tip 先按任务接入
+摘要、HMAC、增量状态与篡改断言见 [TypeScript 摘要与 HMAC 使用手册](/manual/typescript/digest-hmac.html)。新代码只从 SHA-256、SHA-384、SHA-512 中按协议选择。
+:::
+
 ## 导入与入口选择
 
 <!-- code-reference -->
 ```ts
 import {
   OutputFormat,
-  SHA1,
   SHA256,
   SHA384,
   SHA512,
@@ -45,7 +48,6 @@ import {
   hmacSha384,
   hmacSha512,
   sha,
-  sha1,
   sha256,
   sha384,
   sha512,
@@ -61,7 +63,6 @@ import type { SHAOptions } from 'gmkitx';
 | 一次性摘要 | `sha256`、`sha384`、`sha512` | 已经拿到整段消息 | 不保存状态 |
 | 一次性 HMAC | `hmacSha256`、`hmacSha384`、`hmacSha512` | 已经拿到完整 key 和消息 | 不保存状态 |
 | 增量摘要 | `SHA256`、`SHA384`、`SHA512` | 文件、网络流或分块消息 | `digest()` 后自动清空消息状态 |
-| 旧 SHA-1 | `sha1`、`SHA1` | 读取或核对无法立即迁移的旧数据 | 已弃用 |
 | 命名空间 | `sha.*` | 需要按算法组织调用 | 与同名根入口一致 |
 
 </ApiTable>
@@ -109,8 +110,6 @@ sha256(data: string | Uint8Array, options?: SHAOptions): string
 sha384(data: string | Uint8Array, options?: SHAOptions): string
 sha512(data: string | Uint8Array, options?: SHAOptions): string
 
-/** @deprecated 只用于旧协议兼容 */
-sha1(data: string | Uint8Array, options?: SHAOptions): string
 ```
 
 <ApiTable label="一次性 SHA 参数" min-width="48rem">
@@ -124,11 +123,10 @@ sha1(data: string | Uint8Array, options?: SHAOptions): string
 
 函数返回编码后的摘要字符串，不会修改输入。空消息合法；输出格式不是 `hex`/`base64` 时抛出 `Error`。
 
-<!-- code-sample id="api-typescript-sha-03" steps="计算 SHA-256 摘要并比对标准 abc 向量|计算 SHA-384 摘要并比对标准 abc 向量|计算 SHA-512 摘要并比对标准 abc 向量|计算 SHA-1 摘要|Base64 编码断言" -->
+<!-- code-sample id="api-typescript-sha-03" steps="计算 SHA-256 摘要并比对标准 abc 向量|计算 SHA-384 摘要并比对标准 abc 向量|计算 SHA-512 摘要并比对标准 abc 向量|Base64 编码断言" -->
 ```ts
 import {
   OutputFormat,
-  sha1,
   sha256,
   sha384,
   sha512,
@@ -155,12 +153,7 @@ if (sha512('abc')
   throw new Error('SHA-512 vector mismatch');
 }
 
-// 4. 计算 SHA-1 摘要：只确认旧协议兼容，不用于新协议设计。
-if (sha1('abc') !== 'a9993e364706816aba3e25717850c26c9cd0d89d') {
-  throw new Error('legacy SHA-1 vector mismatch');
-}
-
-// 5. Base64 编码断言：outputFormat 只改变摘要文本表示。
+// 4. Base64 编码断言：outputFormat 只改变摘要文本表示。
 if (sha256('abc', { outputFormat: OutputFormat.BASE64 })
   !== 'ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0=') {
   throw new Error('SHA-256 Base64 output mismatch');
@@ -261,9 +254,9 @@ if (constantTimeEqual(expectedMac, hexToBytes(hmacSha256(key, tampered)))) {
 }
 ```
 
-## `SHA256`、`SHA384`、`SHA512` 与 `SHA1`
+## `SHA256`、`SHA384` 与 `SHA512`
 
-四个类具有相同的公开成员，只有算法与输出长度不同。`SHA1` 类和 `sha1` 函数一样，仅保留给旧协议。
+三个类具有相同的公开成员，只有算法与输出长度不同。
 
 ### 公开成员
 
@@ -273,13 +266,9 @@ new SHA256(outputFormat?: 'hex' | 'base64')
 new SHA384(outputFormat?: 'hex' | 'base64')
 new SHA512(outputFormat?: 'hex' | 'base64')
 
-/** @deprecated 只用于旧协议兼容 */
-new SHA1(outputFormat?: 'hex' | 'base64')
-
 SHA256.digest(data: string | Uint8Array, outputFormat?: 'hex' | 'base64'): string
 SHA384.digest(data: string | Uint8Array, outputFormat?: 'hex' | 'base64'): string
 SHA512.digest(data: string | Uint8Array, outputFormat?: 'hex' | 'base64'): string
-SHA1.digest(data: string | Uint8Array, outputFormat?: 'hex' | 'base64'): string
 
 update(data: string | Uint8Array): this
 digest(): string
@@ -377,6 +366,25 @@ if (base64 !== SHA256.digest('abc', OutputFormat.BASE64)) {
 - 根类：`SHA1`、`SHA256`、`SHA384`、`SHA512`。
 - 类型：`SHAOptions`。
 - 命名空间：`sha` 及其中的同名函数和类。
+
+## SHA-1 兼容成员
+
+<details>
+<summary>只在核对无法立即迁移的旧数据时展开</summary>
+
+<!-- code-reference -->
+```ts
+/** @deprecated 只用于旧协议兼容 */
+sha1(data: string | Uint8Array, options?: SHAOptions): string
+
+/** @deprecated 只用于旧协议兼容 */
+new SHA1(outputFormat?: 'hex' | 'base64')
+SHA1.digest(data: string | Uint8Array, outputFormat?: 'hex' | 'base64'): string
+```
+
+`sha1('abc')` 的固定结果为 `a9993e364706816aba3e25717850c26c9cd0d89d`。这个向量只能证明实现与旧数据一致，不能说明 SHA-1 适合新安全协议。替换顺序和双算校验方法见[旧系统迁移](/manual/migration.html#sha-1)。
+
+</details>
 
 ## 可执行案例
 

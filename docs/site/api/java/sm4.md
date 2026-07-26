@@ -26,6 +26,10 @@ tag:
 `options == null` 的兼容默认值是 `ECB + PKCS7`。新代码应始终显式设置模式、padding 和 IV/nonce。
 :::
 
+::: tip 先完成认证加密闭环
+nonce、AAD、ciphertext、tag、解密和 tag 篡改失败见 [Java SM4 使用手册](/manual/java/sm4.html)。本页再用于选择重载、模式和填充。
+:::
+
 ## 导入与四个公开类型
 
 <!-- code-reference -->

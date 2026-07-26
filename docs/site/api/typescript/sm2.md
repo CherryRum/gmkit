@@ -26,6 +26,10 @@ SM2 适合数字签名、小体积密钥材料加密和协议级密钥交换。�
 以下签名和默认值按 `gmkitx 0.10.1` 说明。字符串消息统一按 UTF-8 编码；Hex、Base64 和原始字节的区别会在各接口下单独标明。
 :::
 
+::: tip 先完成一条可运行链路
+第一次接入请先按 [TypeScript SM2 使用手册](/manual/typescript/sm2.html) 完成 DER/Base64 签名验签、C1C3C2/Base64 加解密和失败断言，再回到本页核对参数。
+:::
+
 ## 导入与入口选择
 
 <!-- code-sample id="api-typescript-sm2-01" steps="配置随机源" -->
@@ -74,27 +78,10 @@ configureRNG('strict');
 | 具名函数 | `sm2GenerateKeyPair`、`sm2Encrypt`、`sm2Sign` 等 | 一次性调用、按需导入 | 不保存密钥或消息状态 |
 | 算法命名空间 | `sm2.generateKeyPair`、`sm2.encrypt`、`sm2.SM2` | 需要把整组算法注入其他模块 | 与对应具名函数行为相同 |
 | 对象式 API | `SM2` | 同一密钥连续执行加密、解密、签名或验签 | 保存密钥和曲线兼容声明 |
-| 旧无前缀函数 | `generateKeyPair`、`sign`、`verify` 等 | 只用于旧代码迁移 | 已弃用 |
 
 </ApiTable>
 
 命名空间中的函数名不带 `sm2` 前缀，例如 `sm2Encrypt(...)` 对应 `sm2.encrypt(...)`。本页以具名函数为主，两种入口的参数、返回值和失败行为相同。
-
-### 弃用别名
-
-<ApiTable label="SM2 弃用别名" min-width="40rem">
-
-| 旧名称 | 替代名称 |
-|:--|:--|
-| `generateKeyPair` | `sm2GenerateKeyPair` |
-| `getPublicKeyFromPrivateKey` | `sm2GetPublicKeyFromPrivateKey` |
-| `compressPublicKey` | `sm2CompressPublicKey` |
-| `decompressPublicKey` | `sm2DecompressPublicKey` |
-| `sign` | `sm2Sign` |
-| `verify` | `sm2Verify` |
-| `keyExchange` | `sm2KeyExchange` |
-
-</ApiTable>
 
 ## 输入、编码与随机源
 
@@ -107,12 +94,12 @@ configureRNG('strict');
 | `data` 消息或明文 | UTF-8 文本 | 原始消息字节 | 跨语言协议先固定字符编码 |
 | 私钥 | Hex，可带 `0x` 前缀 | 32 字节私钥 | 传输和存储时固定为 64 个 Hex 字符 |
 | 公钥 | 压缩或非压缩点的 Hex，可带 `0x` 前缀 | 33 或 65 字节点编码 | 协议中明确是否压缩 |
-| 密文、签名 | Hex 或 Base64，由选项指定或自动识别 | 已解码的原始字节 | 跨系统调用显式传 `inputFormat` |
+| 密文、签名 | 协议指定的 Hex 或 Base64 | 已解码的原始字节 | 外部字符串调用显式传 `inputFormat` |
 | `userId` | UTF-8 文本 | 不接受字节数组 | 签名端和验签端使用同一非空值 |
 
 </ApiTable>
 
-自动识别字符串时优先判断 Hex，再判断 Base64。若一段 Base64 恰好也满足 Hex 形态，库会把它当成 Hex，因此线上协议不应依赖自动识别。
+已发布接口允许省略部分输入格式。该行为只用于读取旧数据；新协议必须显式保存并传入编码。兼容优先级见[旧系统迁移](/manual/migration.html#密文和签名自动识别)。
 
 密钥生成、加密、签名以及未提供临时私钥的密钥交换都需要安全随机数。浏览器通常使用 Web Crypto，Node.js 使用系统密码学随机源；受限运行环境应先注入平台 CSPRNG，详见[随机源 API](/api/typescript/common.html#随机数与环境)。
 
@@ -330,8 +317,6 @@ interface SignOptions {
   outputFormat?: 'hex' | 'base64';
   userId?: string;
   curveParams?: SM2CurveParams;
-  /** @deprecated 非标准旧协议兼容选项 */
-  skipZComputation?: boolean;
 }
 
 interface VerifyOptions {
@@ -339,8 +324,6 @@ interface VerifyOptions {
   inputFormat?: 'hex' | 'base64';
   userId?: string;
   curveParams?: SM2CurveParams;
-  /** @deprecated 非标准旧协议兼容选项 */
-  skipZComputation?: boolean;
 }
 
 sm2Sign(
@@ -370,7 +353,6 @@ sm2Verify(
 | `inputFormat` | 不适用 | 自动识别 | 字符串签名的 Hex/Base64 外层编码 |
 | `userId` | `DEFAULT_USER_ID` | `DEFAULT_USER_ID` | 省略或空字符串均使用 `1234567812345678` |
 | `curveParams` | 标准曲线 | 标准曲线 | 只接受与标准参数相同的兼容声明 |
-| `skipZComputation` | `false` | `false` | 已弃用；只迁移采用 `SM3(M)` 的旧协议 |
 
 </ApiTable>
 
@@ -436,14 +418,7 @@ if (sm2Verify(keys.publicKey, message, signature, {
 }
 ```
 
-### 标准签名与旧 no-Z 兼容
-
-| 路径 | `e` 的计算 | 使用边界 |
-|:--|:--|:--|
-| 标准 SM2 | `SM3(Z \|\| M)` | 默认路径；新协议和跨库互操作使用 |
-| 旧 no-Z 兼容 | `SM3(M)` | 非标准；只迁移双方已经采用相同约定的旧协议 |
-
-`skipZComputation: true` 不是性能选项，也不是“调用方传入预计算 e”。它改用项目内部签名实现，并产生不能由标准 Bouncy Castle `SM2Signer` 验证的 no-Z 签名。TypeScript 当前没有公开的预计算 `e` 签名入口。
+标准签名固定计算 `e = SM3(Z || M)`。若旧系统曾使用 `SM3(M)`，不要把它混入新协议；迁移边界和弃用成员列在本页末尾。
 
 ## 曲线参数兼容声明
 
@@ -698,6 +673,29 @@ if (!missingPrivateKeyRejected) {
 - 函数：`sm2GenerateKeyPair`、`sm2GetPublicKeyFromPrivateKey`、`sm2CompressPublicKey`、`sm2DecompressPublicKey`、`sm2Encrypt`、`sm2Decrypt`、`sm2DecryptBytes`、`sm2Sign`、`sm2Verify`、`sm2KeyExchange`。
 - 类型：`KeyPair`、`SM2CurveParams`、`SM2EncryptOptions`、`SM2DecryptOptions`、`SignOptions`、`VerifyOptions`、`SM2SignatureFormat`、`SM2SignatureInputFormat`、`SM2KeyExchangeParams`、`SM2KeyExchangeResult`。
 - 对象式入口：`SM2` 构造器、3 个静态工厂和全部公开实例方法。
+
+## 兼容成员
+
+<details>
+<summary>只在维护旧调用或 no-Z 协议时展开</summary>
+
+无算法前缀函数已弃用：
+
+| 旧名称 | 替代名称 |
+|:--|:--|
+| `generateKeyPair` | `sm2GenerateKeyPair` |
+| `getPublicKeyFromPrivateKey` | `sm2GetPublicKeyFromPrivateKey` |
+| `compressPublicKey` | `sm2CompressPublicKey` |
+| `decompressPublicKey` | `sm2DecompressPublicKey` |
+| `sign` | `sm2Sign` |
+| `verify` | `sm2Verify` |
+| `keyExchange` | `sm2KeyExchange` |
+
+`SignOptions.skipZComputation?: boolean` 和 `VerifyOptions.skipZComputation?: boolean` 也已弃用，默认值均为 `false`。设为 `true` 时计算 `e = SM3(M)`，不会计算标准 SM2 的 Z 值；这不是性能选项，也不是预计算摘要接口。此类签名不能由标准 Bouncy Castle `SM2Signer` 验证。
+
+TypeScript 0.10.1 没有公开的预计算 `e` 签名接口。替代方案和互操作风险见[旧系统迁移](/manual/migration.html#sm2-no-z)。
+
+</details>
 
 ## 可执行案例
 

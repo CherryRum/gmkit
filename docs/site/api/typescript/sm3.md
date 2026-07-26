@@ -25,6 +25,10 @@ SM3 把任意长度消息映射为固定 256 bit（32 字节）摘要。`gmkitx`
 以下签名和默认值按 `gmkitx 0.10.1` 说明。字符串消息与字符串 HMAC key 均按 UTF-8 编码，不会自动解释为 Hex。
 :::
 
+::: tip 先运行完整案例
+固定摘要、HMAC、增量状态和金额篡改断言见 [TypeScript 摘要与 HMAC 使用手册](/manual/typescript/digest-hmac.html)。
+:::
+
 ## 导入与入口选择
 
 <!-- code-reference -->

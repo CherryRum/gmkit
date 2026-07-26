@@ -61,9 +61,9 @@ if (actual !== expected) {
 }
 ```
 
-这个固定向量同时检查包入口、UTF-8 文本路径和摘要输出，不涉及随机源。随后按 [TypeScript 快速入门](/guide/typescript.html) 完成随机源、SM2 签名和 SM4-GCM 认证失败测试。
+这个固定向量同时检查包入口、UTF-8 文本路径和摘要输出，不涉及随机源。随后按 [TypeScript 使用手册](/manual/typescript/) 完成随机源、SM2 签名和 SM4-GCM 认证失败测试。
 
-## 五种使用方式
+## 三种主线使用方式
 
 ### 1. 具名导出：应用代码首选
 
@@ -123,41 +123,11 @@ import { SM2, SM3, SM4, SHA256, ZUC } from 'gmkitx';
 | `SM3` | 增量摘要状态、输出格式 | `digest()` 后自动清空消息状态，输出格式保留 |
 | `SM4` | key、mode、padding、IV/nonce | 不自动更换 nonce；GCM/CCM/CTR 复用前必须更新 IV |
 | `ZUC` | key、IV | 每次运算从同一 key/IV 起点重建；不会自动推进或换 IV |
-| `SHA1/256/384/512` | 增量摘要状态、输出格式 | `digest()` 后自动清空消息状态；`SHA1` 只兼容旧协议 |
+| `SHA256/384/512` | 增量摘要状态、输出格式 | `digest()` 后自动清空消息状态 |
 
 </ApiTable>
 
 可变类不要跨异步任务共享。具体构造器、setter、reset 和生命周期见对应算法页。
-
-### 4. 包命名空间导入：需要全部根导出时
-
-<!-- code-sample id="api-typescript-index-06" steps="计算摘要" -->
-```ts
-import * as gmkit from 'gmkitx';
-
-// 1. 计算摘要：包命名空间中仍使用带算法前缀的公开名称。
-const digest = gmkit.sm3Digest('abc');
-```
-
-这种写法获得整个包模块对象，包括常量、工具、函数、类、五个算法命名空间和 `default` 属性。普通业务按需具名导入更容易审查依赖范围。
-
-### 5. 默认导出：IIFE 和旧整体导入兼容
-
-<!-- code-sample id="api-typescript-index-07" steps="计算摘要" -->
-```ts
-import GMKit from 'gmkitx';
-
-// 1. 计算摘要：默认导出只用于整体对象兼容场景。
-const digest = GMKit.sm3Digest('abc');
-```
-
-默认对象包含：
-
-- `sm2`、`sm3`、`sm4`、`zuc`、`sha` 五个算法命名空间；
-- 带算法前缀的推荐顶层函数；
-- `generateKeyPair`、`sign`、`digest` 等弃用兼容名称。
-
-默认对象不直接包含 `hexToBytes`、RNG、环境、ASN.1 等公共工具，也不直接包含根类；类可从对应算法命名空间取得。模块化新代码优先具名导出。
 
 ## 浏览器脚本
 
@@ -253,15 +223,15 @@ if (!env.hasTextEncoder || !env.hasTextDecoder) {
 |:--|:--|:--|
 | 消息 `string` | UTF-8 | key、IV、nonce、密文等字段按具体参数的 Hex/Base64 约定 |
 | 原始二进制 | `Uint8Array` | 不要经过字符串中转 |
-| 默认输出编码 | 通常为小写 Hex | SM4 返回结果对象；部分 API 固定 Hex；各页明确列出 |
+| 输出编码 | 没有跨算法统一默认值 | 每个函数页列出确切默认值；跨系统调用显式传格式 |
 | 文本解密 | 返回 `string` | 二进制使用 `sm2DecryptBytes`、`sm4DecryptBytes`、`zucDecryptBytes` |
-| 验签不匹配 | 返回 `false` | 输入格式、密钥或参数非法仍抛错 |
+| SM2 验签不接受 | 返回 `false` | 0.10.1 的 TypeScript SM2 验签会把解析和参数错误一并收敛为 `false` |
 | AEAD 认证失败 | 抛出 `Error` | 不返回未认证明文 |
 | 其他参数错误 | 抛出 `Error` | 不使用 `null` 作为通用失败值 |
 
 </ApiTable>
 
-自动识别输入时通常优先 Hex，但不同函数的兼容逻辑并不完全相同。稳定协议必须保存格式、算法模式、字段长度和版本，调用时显式传 `InputFormat`、签名格式或密文排列。
+稳定协议必须保存格式、算法模式、字段长度和版本，调用时显式传 `InputFormat`、签名格式或密文排列。自动识别规则只在[旧系统迁移](/manual/migration.html#密文和签名自动识别)中使用。
 
 ## 错误处理示例
 
@@ -302,13 +272,42 @@ if (verified) throw new Error('tampered order must not verify');
 
 实际错误边界以算法页为准。例如 SM4-GCM 的 tag 错误一定抛异常，SM2 验签对合法但不匹配的签名返回 `false`，`ZUCState` 未初始化却不会主动报错。
 
+## 兼容导入
+
+<details>
+<summary>只在迁移整体导入的旧代码时展开</summary>
+
+包命名空间导入会取得全部根导出：
+
+<!-- code-sample id="api-typescript-index-06" steps="计算摘要" -->
+```ts
+import * as gmkit from 'gmkitx';
+
+// 1. 计算摘要：包命名空间中使用带算法前缀的公开名称。
+const digest = gmkit.sm3Digest('abc');
+```
+
+默认聚合导出为旧整体导入和 IIFE 兼容保留：
+
+<!-- code-sample id="api-typescript-index-07" steps="计算摘要" -->
+```ts
+import GMKit from 'gmkitx';
+
+// 1. 计算摘要：默认聚合导出只用于迁移旧整体导入。
+const digest = GMKit.sm3Digest('abc');
+```
+
+新 ESM/CommonJS 代码使用具名导出。无算法前缀的 `sign`、`digest` 等名称和完整替代表见[旧系统迁移](/manual/migration.html#typescript-无前缀别名)。
+
+</details>
+
 ## 已发布版本签名
 
 本说明书解释用途、约束和案例。需要核对某个历史 npm 制品的逐成员 TypeScript 签名时，从 [已发布版本签名索引](/api/#已发布版本签名索引) 选择与 lockfile 相同的版本。
 
 ## 接下来
 
-- [TypeScript 快速入门](/guide/typescript.html)：完成环境自检、签名和认证加密闭环
+- [TypeScript 使用手册](/manual/typescript/)：按业务任务完成环境自检、签名和认证加密闭环
 - [跨语言公共约定](/api/common.html)：统一编码、错误和安全边界
 - [常见问题与故障排查](/guide/troubleshooting.html)
 - [安全边界](/guide/security.html)

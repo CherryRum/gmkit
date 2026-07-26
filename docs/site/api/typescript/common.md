@@ -26,6 +26,10 @@ tag:
 以下签名和行为按 `gmkitx 0.10.1` 说明。`BytesLike` 只表示“字符串或字节”，字符串究竟是 UTF-8、Hex 还是 Base64，仍由每个 API 参数决定。
 :::
 
+::: tip 先看数据边界
+如果正在设计传输字段，请先读 [TypeScript 数据、编码与失败边界](/manual/typescript/data.html)。本页用于核对函数签名，不把自动识别当作新协议入口。
+:::
+
 ## 导入示例
 
 <!-- code-reference -->
@@ -39,7 +43,6 @@ import {
   PaddingMode,
   SM2CipherMode,
   asn1ToXml,
-  autoDecodeString,
   base64ToBytes,
   bytes4ToUint32BE,
   bytesToBase64,
@@ -359,7 +362,6 @@ encodeOutput(
   outputFormat: 'hex' | 'base64' = 'hex',
 ): string
 
-autoDecodeString(str: string): Uint8Array
 isHexString(str: string): boolean
 isBase64String(str: string): boolean
 ```
@@ -370,7 +372,6 @@ isBase64String(str: string): boolean
 |:--|:--|:--|
 | `decodeInput` | 协议已经知道输入编码 | 字符串严格按指定格式；字节输入原样返回，并忽略 `inputFormat` |
 | `encodeOutput` | 把字节写成协议字符串 | `base64` 时 Base64；其余运行时值当前回落为 Hex |
-| `autoDecodeString` | 读取没有格式字段的旧数据 | 非空全 Hex 字符时优先 Hex，否则尝试规范 Base64，最后按 Hex 抛错 |
 | `isHexString` | 语法探测 | 非空且全部为 Hex 字符即 true；奇数长度也 true，不接受 `0x` |
 | `isBase64String` | 语法探测 | 非空规范 Base64 才 true；允许可忽略空白和省略尾部填充 |
 
@@ -390,20 +391,6 @@ if (encodeOutput(bytes, OutputFormat.HEX) !== '00ff8041') {
   throw new Error('explicit encoding conversion failed');
 }
 ```
-
-### 自动识别的歧义
-
-<!-- code-sample id="api-typescript-common-16" steps="自动解码" -->
-```ts
-import { autoDecodeString, bytesToHex } from 'gmkitx';
-
-// 1. 自动解码：ABC 同时像 Hex 和 Base64，当前规则优先按 Hex 处理。
-if (bytesToHex(autoDecodeString('ABC')) !== '0abc') {
-  throw new Error('auto-decode precedence changed');
-}
-```
-
-新协议应始终携带明确编码字段并调用 `decodeInput`。`autoDecodeString` 只用于无法修改的历史输入。
 
 ## 字节与 32-bit 整数工具
 
@@ -706,9 +693,24 @@ if (!xml.includes('<SM2Signature>')
 
 XML 仅供调试和人工查看，不是稳定交换格式，也不提供 XML→签名的反向 API。
 
-## 弃用兼容名称
+## 兼容成员
 
-以下根导出仍可运行，但类型声明已标记 `@deprecated`。它们没有算法前缀，容易在同一文件中混淆来源；新代码使用右侧名称。
+<details>
+<summary>只在读取无格式历史数据或迁移旧名称时展开</summary>
+
+`autoDecodeString(str: string): Uint8Array` 会先判断非空 Hex，再尝试规范 Base64，最后按 Hex 抛错。`ABC` 因为全部是 Hex 字符，会得到 `0abc`，不会按 Base64 解码。新协议应保存格式字段并调用 `decodeInput`。
+
+<!-- code-sample id="api-typescript-common-16" steps="自动解码" -->
+```ts
+import { autoDecodeString, bytesToHex } from 'gmkitx';
+
+// 1. 自动解码：只复现无格式旧数据的 Hex 优先规则。
+if (bytesToHex(autoDecodeString('ABC')) !== '0abc') {
+  throw new Error('auto-decode precedence changed');
+}
+```
+
+以下根导出仍可运行，但类型声明已标记 `@deprecated`。新代码使用右侧带算法归属的名称。
 
 <ApiTable label="TypeScript 弃用兼容名称" min-width="56rem">
 
@@ -727,7 +729,9 @@ XML 仅供调试和人工查看，不是稳定交换格式，也不提供 XML→
 
 </ApiTable>
 
-弃用只影响迁移提示，不改变当前运行结果。`sha1`/`SHA1` 也已弃用，但它们是旧算法而非无前缀别名，使用边界见 [TypeScript SHA API](/api/typescript/sha.html)。
+弃用只影响迁移提示，不改变 0.10.1 的运行结果。完整替代步骤见[旧系统迁移](/manual/migration.html)。
+
+</details>
 
 ## 失败处理速查
 

@@ -25,6 +25,10 @@ tag:
 以下签名和默认值按 `gmkitx 0.10.1` 说明。ZUC 页同时出现 byte、32-bit word 和 bit 三种长度单位，调用前先确认对应表格。
 :::
 
+::: tip 先按任务接入
+普通流加解密、byte/word 对照和 EEA3/EIA3 失败边界见 [TypeScript ZUC 使用手册](/manual/typescript/zuc.html)。本页用于逐项核对签名和长度单位。
+:::
+
 ## 导入与入口选择
 
 <!-- code-reference -->
@@ -35,7 +39,6 @@ import {
   ZUC,
   ZUCState,
   constantTimeEqual,
-  eea3,
   eea3Encrypt,
   eia3,
   getRandomBytes,
@@ -60,7 +63,6 @@ import type { ZUCDecryptOptions, ZUCOptions } from 'gmkitx';
 | `zucKeystream` | 取得指定字节数的密钥流 | byte | 小写 Hex |
 | `zucKeystreamWords` | 取得指定数量的密钥流字 | 32-bit word | 大端拼接的小写 Hex |
 | `zucGenerateKeystream` | 取得原始密钥流字数组 | 32-bit word | `Uint32Array` |
-| `eea3` | 旧版 EEA3 密钥流兼容入口 | bit | 向上补齐到 32-bit word 的 Hex |
 | `eea3Encrypt` | 按 EEA3 参数加解密消息 bit 串 | bit | 按 byte 向上取整的 Hex |
 | `eia3` | 按 EIA3 参数计算 MAC-I | bit | 固定 32-bit / 8 位 Hex |
 | `ZUC` | 保存 key/IV 的对象式调用 | 随方法变化 | 与对应函数相同 |
@@ -246,20 +248,10 @@ if (words.length !== 2
 
 `zucKeystream(key, iv, 5)` 内部生成两个 word，再只返回前 5 字节；`zucKeystreamWords(key, iv, 5)` 则返回完整 20 字节。不要只凭同一个数字比较两个函数。
 
-## EEA3 密钥流与消息加密
-
-### 两个入口不是同一种返回值
+## EEA3 消息加密
 
 <!-- code-reference -->
 ```ts
-eea3(
-  key: BytesLike,
-  count: number,
-  bearer: number,
-  direction: number,
-  length: number,
-): string
-
 eea3Encrypt(
   key: BytesLike,
   count: number,
@@ -270,16 +262,13 @@ eea3Encrypt(
 ): string
 ```
 
-<ApiTable label="EEA3 两个入口的差异" min-width="68rem">
+<ApiTable label="EEA3 消息入口" min-width="62rem">
 
-| 入口 | 输入 | `length` 单位 | 输出 |
+| 入口 | 输入 | 长度单位 | 输出 |
 |:--|:--|:--|:--|
-| `eea3` | 不接收消息 | bit | 只生成密钥流，并向上补齐到完整 32-bit word |
 | `eea3Encrypt` | 接收消息 | `bitLength` 为 bit | 消息与密钥流异或，只返回 `ceil(bitLength / 8)` 字节 |
 
 </ApiTable>
-
-`eea3` 是保留的旧兼容入口，不会加密消息。实际处理协议消息使用 `eea3Encrypt`。
 
 <ApiTable label="EEA3/EIA3 公共参数" min-width="62rem">
 
@@ -401,7 +390,6 @@ decrypt(ciphertext, options?: ZUCDecryptOptions): string
 decryptBytes(ciphertext, options?: ZUCDecryptOptions): Uint8Array
 keystream(lengthInBytes: number): string
 
-ZUC.eea3(key, count, bearer, direction, bitLength): string
 ZUC.eea3Encrypt(key, count, bearer, direction, message, bitLength?): string
 ZUC.eia3(key, count, bearer, direction, message, bitLength?): string
 ```
@@ -415,7 +403,7 @@ ZUC.eia3(key, count, bearer, direction, message, bitLength?): string
 | `getIV` | 返回保存值 | `Uint8Array` 会返回同一引用 |
 | `encrypt/decrypt/decryptBytes` | 每次从保存的 key/IV 重新初始化 | 调用后不会推进实例中的持久密钥流状态 |
 | `keystream` | 每次从保存的 key/IV 重新初始化 | `length` 单位为 byte，固定返回 Hex |
-| 三个静态 EEA3/EIA3 方法 | 不使用实例状态 | 与同名根函数一致 |
+| 两个静态 EEA3/EIA3 消息方法 | 不使用实例状态 | 与同名根函数一致 |
 
 </ApiTable>
 
@@ -521,6 +509,28 @@ if (state.generateKeyword() !== 0x27bede74) {
 - 根类：`ZUC` 与 `ZUCState` 的全部公开成员。
 - 类型：`ZUCOptions`、`ZUCDecryptOptions`。
 - 命名空间：`zuc` 及其中同名函数、类和底层 `generateKeystream`。
+
+## 兼容成员
+
+<details>
+<summary>只在维护旧 EEA3 密钥流调用时展开</summary>
+
+<!-- code-reference -->
+```ts
+eea3(
+  key: BytesLike,
+  count: number,
+  bearer: number,
+  direction: number,
+  length: number,
+): string
+
+ZUC.eea3(key, count, bearer, direction, bitLength): string
+```
+
+这两个入口不接收消息，只返回按 32-bit word 向上补齐的密钥流 Hex。它们不能代替“加密”动作。新调用使用 `eea3Encrypt`；迁移时必须先确认旧调用消费的是密钥流还是密文，见[旧系统迁移](/manual/migration.html#旧-eea3-密钥流入口)。
+
+</details>
 
 ## 可执行案例
 

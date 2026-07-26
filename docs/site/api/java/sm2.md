@@ -20,8 +20,8 @@ tag:
 
 `cn.gmkit.sm2` 提供实例式 `SM2`、静态式 `SM2Util`，以及签名选项、密文格式和密钥交换所需的值对象。SM2 适合身份签名、小数据加密和协议级密钥交换；文件或大消息应使用随机 SM4 会话 key 加密，再由 SM2 保护会话 key。
 
-::: warning 标准签名不会跳过 Z
-默认签名计算 `e = SM3(Z || M)`。`skipZComputation=true` 和 `signWithoutZ` 是非标准旧协议兼容路径，不是 Bouncy Castle 的配置项，也不能当作性能优化。
+::: tip 先按标准路径接入
+默认签名计算 `e = SM3(Z || M)`。请先按 [Java SM2 使用手册](/manual/java/sm2.html) 完成标准 Z 签名、C1C3C2 加解密和身份篡改测试；旧 no-Z 成员统一列在本页末尾。
 :::
 
 ## 十个公开类型
@@ -52,7 +52,6 @@ tag:
 | 常量 | 值 | 单位/含义 |
 |:--|:--|:--|
 | `DEFAULT_USER_ID` | `1234567812345678` | 16 个 ASCII 字节；未指定身份时的兼容默认值 |
-| `GM_2023_USER_ID` | 空字符串 | 已弃用；当前 Builder 会把空字符串重新映射为默认 ID，不能表示独立空身份 |
 | `CURVE_NAME` | `sm2p256v1` | Bouncy Castle 曲线名称 |
 | `SM3_DIGEST_LENGTH` | `32` | Z、e、C3 的字节长度 |
 
@@ -334,13 +333,11 @@ static SM2SignOptions.Builder builder();
 
 Builder signatureFormat(SM2SignatureFormat signatureFormat);
 Builder userId(String userId);
-@Deprecated Builder skipZComputation(boolean skip);
 Builder securityContext(GmSecurityContext securityContext);
 SM2SignOptions build();
 
 SM2SignatureFormat signatureFormat();
 String userId();
-@Deprecated boolean skipZComputation();
 GmSecurityContext securityContext();
 ```
 
@@ -350,7 +347,6 @@ GmSecurityContext securityContext();
 |:--|:--|:--|:--|
 | `signatureFormat` | `RAW` | `null` 回退 `RAW` | RAW 固定 64 字节；DER 长度可变 |
 | `userId` | `DEFAULT_USER_ID` | `null` 或空字符串回退默认 ID | 以 UTF-8 参与 Z 计算，最长 8191 字节 |
-| `skipZComputation` | `false` | 不适用 | 已弃用；`true` 只迁移旧 no-Z 协议 |
 | `securityContext` | 默认上下文 | `null` 回退默认上下文 | 决定签名随机源 |
 
 </ApiTable>
@@ -363,12 +359,10 @@ static SM2VerifyOptions.Builder builder();
 
 Builder signatureFormat(SM2SignatureInputFormat signatureFormat);
 Builder userId(String userId);
-@Deprecated Builder skipZComputation(boolean skip);
 SM2VerifyOptions build();
 
 SM2SignatureInputFormat signatureFormat();
 String userId();
-@Deprecated boolean skipZComputation();
 ```
 
 验签格式默认 `AUTO`：64 字节输入按 RAW，符合 DER 形态的输入按 DER。显式设置 `RAW` 或 `DER` 更适合固定协议。`userId` 的默认、UTF-8 和长度规则与签名端相同；两端身份必须逐字节一致。
@@ -504,7 +498,7 @@ boolean verify(
 
 正常的签名不匹配、消息被修改、user ID 不同或已解码签名结构不成立时返回 `false`。`null`、非法公钥、字符串签名编码错误等输入校验问题可能抛 `GmkitException`；调用方应把“不可信输入无法解析”和“合法输入验签不通过”分开记录。
 
-## Z、旧 no-Z 与预计算 e
+## Z 与预计算 e
 
 SM2 的身份绑定通过 Z 完成：
 
@@ -513,12 +507,11 @@ Z = SM3(ENTL || ID || a || b || xG || yG || xA || yA)
 e = SM3(Z || M)
 ```
 
-<ApiTable label="SM2 三种摘要路径" min-width="68rem">
+<ApiTable label="SM2 摘要路径" min-width="66rem">
 
 | 路径 | `e` 的来源 | API | 定位 |
 |:--|:--|:--|:--|
-| 标准 SM2 | `SM3(Z || M)` | `sign` / `verify`，`skipZComputation=false` | 默认且推荐；与 BC `SM2Signer` 互操作 |
-| 旧 no-Z | `SM3(M)` | `signWithoutZ` / `verifyWithoutZ` / `computeEWithoutZ`，或弃用开关 | 非标准，只迁移已存在的旧协议 |
+| 标准 SM2 | `SM3(Z || M)` | `sign` / `verify` | 默认路径；与 BC `SM2Signer` 互操作 |
 | 预计算 e | 调用方直接提供字节 | `signDigest` / `verifyDigest` | 高级接口；调用方承担摘要协议正确性 |
 
 </ApiTable>
@@ -529,21 +522,10 @@ e = SM3(Z || M)
 
 <!-- code-reference -->
 ```java
-@Deprecated byte[] signWithoutZ(
-    String privateKeyHex,
-    byte[] message,
-    SM2SignatureFormat signatureFormat);
-
 byte[] signDigest(
     String privateKeyHex,
     byte[] eHash,
     SM2SignatureFormat signatureFormat);
-
-@Deprecated boolean verifyWithoutZ(
-    String publicKeyHex,
-    byte[] message,
-    byte[] signature,
-    SM2SignatureInputFormat signatureFormat);
 
 boolean verifyDigest(
     String publicKeyHex,
@@ -562,16 +544,9 @@ byte[] computeE(
     Charset charset,
     String userId,
     boolean skipZComputation);
-
-@Deprecated byte[] computeEWithoutZ(byte[] message);
-@Deprecated byte[] computeEWithoutZ(String message, Charset charset);
 ```
 
-`SM2Util.signDigest` 另有尾部 `GmSecurityContext` 的四参数重载。`computeZ` 和两种 `computeE` 都返回 32 字节。`signDigest` 不强制 `eHash` 必须为 32 字节，`verifyDigest` 只接受 DER 签名；高级调用方必须自行固定 e 的长度、来源和签名格式。
-
-`GM_2023_USER_ID`、`skipZComputation` Builder/getter、`signWithoutZ`、`verifyWithoutZ`、`computeEWithoutZ` 均已弃用。当前实现中的 no-Z 路径使用项目内部签名器计算 `e = SM3(M)`，不调用 BC `SM2Signer`；BC 1.83 的 [`SM2Signer`](https://github.com/bcgit/bc-java/blob/r1rv83/core/src/main/java/org/bouncycastle/crypto/signers/SM2Signer.java) 没有跳过 Z 的公开选项。
-
-项目互操作测试锁定了四条边界：GMKit 标准签名可由 BC 验证，BC 标准签名可由 GMKit 验证，user ID 不同必须失败，no-Z 签名不能通过 BC 标准验签。
+`SM2Util.signDigest` 另有尾部 `GmSecurityContext` 的四参数重载。`computeZ` 和 `computeE(..., false)` 都返回 32 字节。`computeE` 的布尔参数是 0.10.1 已发布签名，新调用必须传 `false`。`signDigest` 不强制 `eHash` 必须为 32 字节，`verifyDigest` 只接受 DER 签名；高级调用方必须自行固定 e 的长度、来源和签名格式。
 
 ## 签名格式工具 `SM2Signatures`
 
@@ -833,6 +808,39 @@ mvn -pl gmkit -Dtest=PublicApiManualExamplesTest,SM2StandardVectorsTest,SM2Bounc
 ## 公共项覆盖
 
 本页覆盖 `SM2`、`SM2Util`、`SM2KeyPair`、`SM2SignOptions`、`SM2VerifyOptions`、`SM2Signatures`、`SM2Ciphertext`、`SM2Ciphertexts`、`SM2KeyExchangeOptions`、`SM2KeyExchangeResult` 十个公开顶层类型及其全部公开成员。
+
+## 兼容成员
+
+<details>
+<summary>只在维护 no-Z 或空身份旧协议时展开</summary>
+
+`SM2.GM_2023_USER_ID` 与 `SM2Util.GM_2023_USER_ID` 均为空字符串且已弃用。0.10.1 的 Builder 会把空字符串重新映射为 `DEFAULT_USER_ID`，因此该常量不能表达独立的空身份。
+
+<!-- code-reference -->
+```java
+@Deprecated SM2SignOptions.Builder skipZComputation(boolean skip);
+@Deprecated boolean SM2SignOptions.skipZComputation();
+@Deprecated SM2VerifyOptions.Builder skipZComputation(boolean skip);
+@Deprecated boolean SM2VerifyOptions.skipZComputation();
+
+@Deprecated byte[] signWithoutZ(
+    String privateKeyHex,
+    byte[] message,
+    SM2SignatureFormat signatureFormat);
+@Deprecated boolean verifyWithoutZ(
+    String publicKeyHex,
+    byte[] message,
+    byte[] signature,
+    SM2SignatureInputFormat signatureFormat);
+@Deprecated byte[] computeEWithoutZ(byte[] message);
+@Deprecated byte[] computeEWithoutZ(String message, Charset charset);
+```
+
+公开 `computeE` 还保留尾部 `boolean skipZComputation` 的已发布重载。传 `true` 或调用上述方法时，项目内部签名器计算 `e = SM3(M)`，不会调用 BC `SM2Signer`；BC 1.83 没有跳过 Z 的公开配置。项目测试锁定：标准签名可与 BC 双向互验，不同 user ID 必须失败，no-Z 签名不能通过 BC 标准验签。
+
+这组成员不是性能优化，也不是预计算 `e`。迁移方案见[旧系统迁移](/manual/migration.html#sm2-no-z)。
+
+</details>
 
 ## 相关页面
 

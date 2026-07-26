@@ -25,6 +25,10 @@ EEA3/EIA3 适用于明确规定这些参数和比特顺序的通信协议。普�
 `lengthBytes` 按字节计数，`lengthWords` 按 32-bit word 计数，`bitLength` 按 bit 计数。它们不能互换。
 :::
 
+::: tip 先按协议任务接入
+密钥流、普通流加解密、EEA3/EIA3 和 bit 长度示例见 [Java ZUC 使用手册](/manual/java/zuc.html)。本页用于核对全部重载。
+:::
+
 ## 导入、常量与入口
 
 <!-- code-reference -->
@@ -170,17 +174,10 @@ EEA3 处理带 `COUNT`、`BEARER` 和 `DIRECTION` 的消息机密性。协议以
 
 ### 完整签名
 
-以下三个方法同时存在于 `ZUC` 和 `ZUCUtil`：
+以下两个消息加密重载同时存在于 `ZUC` 和 `ZUCUtil`：
 
 <!-- code-reference -->
 ```java
-static String eea3(
-    String keyHex,
-    int count,
-    int bearer,
-    int direction,
-    int bitLength);
-
 static byte[] eea3Encrypt(
     String keyHex,
     int count,
@@ -201,13 +198,12 @@ static byte[] eea3Encrypt(
 
 | 方法 | 输入 | 返回值 | 边界行为 |
 |:--|:--|:--|:--|
-| `eea3` | 只给协议字段与 `bitLength` | 按 32-bit word 向上对齐的密钥流 Hex | 长度为 `ceil(bitLength / 32) × 8` 个字符；0 bit 返回空串 |
 | `eea3Encrypt(..., bitLength)` | 消息字节和有效 bit 数 | `ceil(bitLength / 8)` 字节密文 | 最后一字节未使用的低位清零 |
 | `eea3Encrypt(..., message)` | 完整字节消息 | 与消息等长的密文 | 等同 `bitLength = message.length × 8` |
 
 </ApiTable>
 
-`eea3` 返回字对齐密钥流，是为现有调用保留的低层入口；要得到消息密文应使用 `eea3Encrypt`。`bitLength` 从消息首 bit 起算，每字节先处理最高位。
+`bitLength` 从消息首 bit 起算，每字节先处理最高位。
 
 <!-- code-sample id="api-java-zuc-07" steps="准备 EEA3 消息|EEA3 加密|输出长度断言" -->
 ```java
@@ -343,6 +339,25 @@ mvn -pl gmkit -Dtest=PublicApiManualExamplesTest,ZUCStandardVectorsTest,ZUCError
 ## 公共项覆盖
 
 本页覆盖 `ZUC`、`ZUCUtil` 两个公开顶层类型、四个长度常量，以及每个类型公开的 16 个静态方法。两个类没有实例状态，也不需要 `reset()` 或 `close()`。
+
+## 兼容成员
+
+<details>
+<summary>只在维护旧 EEA3 密钥流调用时展开</summary>
+
+<!-- code-reference -->
+```java
+static String eea3(
+    String keyHex,
+    int count,
+    int bearer,
+    int direction,
+    int bitLength);
+```
+
+`ZUC.eea3` 与 `ZUCUtil.eea3` 不接收消息，只返回按 32-bit word 向上补齐的密钥流 Hex；0 bit 返回空字符串。它们不能代替加密动作。迁移时先确认旧调用消费的是密钥流还是密文，再改用 `eea3Encrypt`，详见[旧系统迁移](/manual/migration.html#旧-eea3-密钥流入口)。
+
+</details>
 
 ## 相关页面
 

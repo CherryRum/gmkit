@@ -26,6 +26,10 @@ SM4 是 128 bit 分组密码：key 固定 16 字节，分组也固定 16 字节�
 以下签名和默认值按 `gmkitx 0.10.1` 说明。key、IV、nonce 的字符串形式是 Hex；明文和 AAD 字符串按 UTF-8 编码。
 :::
 
+::: tip 先完成认证加密闭环
+nonce、AAD、ciphertext、tag、解密和 tag 篡改失败见 [TypeScript SM4 使用手册](/manual/typescript/sm4.html)。本页用于核对模式、填充、重载和状态。
+:::
+
 ## 导入与入口选择
 
 <!-- code-reference -->

@@ -26,6 +26,10 @@ tag:
 以下签名和行为按 `cn.gmkit:gmkit:0.10.1` 说明。Java 最低版本为 8。示例使用 JUnit 5 断言；普通应用可换成自己的测试框架。
 :::
 
+::: tip 先确定传输字段
+新协议请先按 [Java core 使用手册](/manual/java/core.html) 固定 UTF-8、Hex/Base64、随机源和异常映射。本页用于逐成员查阅；自动识别只在兼容区说明。
+:::
+
 ## 导入
 
 <!-- code-reference -->
@@ -169,7 +173,6 @@ public static byte[] decode(
     String input,
     InputFormat inputFormat,
     String label)
-public static byte[] decodeAuto(String input, String label)
 ```
 
 <ApiTable label="ByteEncodings 成员" min-width="70rem">
@@ -177,14 +180,11 @@ public static byte[] decodeAuto(String input, String label)
 | 方法 | 默认值 | 精确语义 |
 |:--|:--|:--|
 | `encode` | outputFormat 为 null 时 `HEX` | 委托 `HexCodec` 或 `Base64Codec`；input 为 null 时抛错 |
-| `decode` | inputFormat 为 null 时自动识别 | 显式 HEX/BASE64 时直接委托相应 codec |
-| `decodeAuto` | Hex 优先 | 首尾先 trim；Hex 允许内部空白；Base64 自动识别要求四字符对齐 |
+| `decode` | 新代码必须传 `HEX` 或 `BASE64` | 显式委托相应 codec；`null` 是已发布兼容行为，不是新协议的格式值 |
 
 </ApiTable>
 
-自动识别遇到全 Hex 字符时不会回退 Base64。`"abc"` 会先被判断为 Hex 候选，再因为奇数长度抛错。稳定协议应把格式作为显式字段并调用 `decode(..., InputFormat, ...)`。
-
-<!-- code-sample id="api-java-core-07" steps="Base64 解码|Hex 编码|转换结果断言|自动识别失败断言" -->
+<!-- code-sample id="api-java-core-07" steps="Base64 解码|Hex 编码|转换结果断言|非法输入断言" -->
 ```java
 // 1. Base64 解码：显式声明协议字段的输入格式。
 byte[] bytes = ByteEncodings.decode(
@@ -200,10 +200,10 @@ if (!"00ff8041".equals(hex)) {
     throw new IllegalStateException("encoding mismatch");
 }
 
-// 4. 自动识别失败断言：abc 先按奇数长度 Hex 处理并抛错。
+// 4. 非法输入断言：显式 Hex 输入的字符数为奇数时必须抛错。
 org.junit.jupiter.api.Assertions.assertThrows(
     GmkitException.class,
-    () -> ByteEncodings.decodeAuto("abc", "payload"));
+    () -> ByteEncodings.decode("abc", InputFormat.HEX, "payload"));
 ```
 
 ## `Texts`
@@ -610,6 +610,20 @@ try {
 - Provider 与随机源：`BcProviders`、`GmSecurityContext`、`GmSecurityContext.Builder`、`GmSecurityContexts`。
 - 算法格式：`SM2CipherMode`、`SM2SignatureFormat`、`SM2SignatureInputFormat`、`SM4CipherMode`、`SM4Padding`。
 - 异常与消息：`GmkitException`、`Messages`。
+
+## 兼容成员
+
+<details>
+<summary>只在读取没有格式字段的历史数据时展开</summary>
+
+<!-- code-reference -->
+```java
+public static byte[] ByteEncodings.decodeAuto(String input, String label)
+```
+
+`decode(..., null, ...)` 与 `decodeAuto(...)` 都先判断 Hex，再判断 Base64。`"abc"` 会被识别为 Hex 候选，然后因为字符数为奇数抛出 `GmkitException`；实现不会再回退 Base64。迁移完成后应把格式写入协议字段并传 `InputFormat.HEX` 或 `InputFormat.BASE64`，详见[旧系统迁移](/manual/migration.html#密文和签名自动识别)。
+
+</details>
 
 ## 可执行案例
 
