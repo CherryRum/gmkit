@@ -1,24 +1,263 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "baselineVersion": "0.10.1",
   "chapters": [
-    { "id": "manual-home", "language": "common", "level": "start", "page": "manual/README.md" },
-    { "id": "ts-start", "language": "typescript", "level": "start", "page": "manual/typescript/README.md" },
-    { "id": "ts-data", "language": "typescript", "level": "common", "page": "manual/typescript/data.md" },
-    { "id": "ts-sm2", "language": "typescript", "level": "common", "page": "manual/typescript/sm2.md" },
-    { "id": "ts-digest-hmac", "language": "typescript", "level": "common", "page": "manual/typescript/digest-hmac.md" },
-    { "id": "ts-sm4", "language": "typescript", "level": "common", "page": "manual/typescript/sm4.md" },
-    { "id": "ts-zuc", "language": "typescript", "level": "advanced", "page": "manual/typescript/zuc.md" },
-    { "id": "ts-advanced", "language": "typescript", "level": "advanced", "page": "manual/typescript/advanced.md" },
-    { "id": "java-start", "language": "java", "level": "start", "page": "manual/java/README.md" },
-    { "id": "java-core", "language": "java", "level": "common", "page": "manual/java/core.md" },
-    { "id": "java-sm2", "language": "java", "level": "common", "page": "manual/java/sm2.md" },
-    { "id": "java-sm3", "language": "java", "level": "common", "page": "manual/java/sm3.md" },
-    { "id": "java-sm4", "language": "java", "level": "common", "page": "manual/java/sm4.md" },
-    { "id": "java-zuc", "language": "java", "level": "advanced", "page": "manual/java/zuc.md" },
-    { "id": "java-sm9", "language": "java", "level": "advanced", "page": "manual/java/sm9.md" },
-    { "id": "java-hybrid", "language": "java", "level": "advanced", "page": "manual/java/hybrid.md" },
-    { "id": "interoperability", "language": "common", "level": "protocol", "page": "manual/interoperability.md" },
-    { "id": "migration", "language": "common", "level": "migration", "page": "manual/migration.md" }
+    {
+      "id": "manual-home",
+      "language": "common",
+      "level": "start",
+      "page": "manual/README.md",
+      "apis": [],
+      "sampleIds": [],
+      "sourceRegions": []
+    },
+    {
+      "id": "ts-start",
+      "language": "typescript",
+      "level": "start",
+      "page": "manual/typescript/README.md",
+      "apis": ["configureRNG", "getEnvReport", "getRandomBytes", "sm3Digest"],
+      "sampleIds": ["manual-ts-start"],
+      "sourceRegions": [
+        {
+          "path": "examples/node/manual-typescript-start.mjs",
+          "region": "manual-ts-start",
+          "runner": "manual-typescript-start"
+        }
+      ]
+    },
+    {
+      "id": "ts-data",
+      "language": "typescript",
+      "level": "common",
+      "page": "manual/typescript/data.md",
+      "apis": ["decodeInput", "encodeOutput", "stringToBytes", "bytesToString", "constantTimeEqual"],
+      "sampleIds": ["manual-ts-data"],
+      "sourceRegions": [
+        {
+          "path": "examples/node/manual-typescript-data.mjs",
+          "region": "manual-ts-data",
+          "runner": "manual-typescript-data"
+        }
+      ]
+    },
+    {
+      "id": "ts-sm2",
+      "language": "typescript",
+      "level": "common",
+      "page": "manual/typescript/sm2.md",
+      "apis": ["sm2GenerateKeyPair", "sm2Sign", "sm2Verify", "sm2Encrypt", "sm2Decrypt", "sm2CompressPublicKey", "sm2KeyExchange"],
+      "sampleIds": ["manual-ts-sm2", "manual-ts-sm2-key-exchange"],
+      "sourceRegions": [
+        {
+          "path": "examples/node/manual-typescript-sm2.mjs",
+          "region": "manual-ts-sm2",
+          "runner": "manual-typescript-sm2"
+        },
+        {
+          "path": "examples/node/manual-typescript-advanced.mjs",
+          "region": "manual-ts-sm2-key-exchange",
+          "runner": "manual-typescript-advanced"
+        }
+      ]
+    },
+    {
+      "id": "ts-digest-hmac",
+      "language": "typescript",
+      "level": "common",
+      "page": "manual/typescript/digest-hmac.md",
+      "apis": ["sm3Digest", "sm3Hmac", "sha256", "sha384", "sha512", "hmacSha256", "SM3", "SHA256"],
+      "sampleIds": ["manual-ts-digest-hmac"],
+      "sourceRegions": [
+        {
+          "path": "examples/node/manual-typescript-digest-hmac.mjs",
+          "region": "manual-ts-digest-hmac",
+          "runner": "manual-typescript-digest-hmac"
+        }
+      ]
+    },
+    {
+      "id": "ts-sm4",
+      "language": "typescript",
+      "level": "common",
+      "page": "manual/typescript/sm4.md",
+      "apis": ["sm4Encrypt", "sm4Decrypt", "sm4DecryptBytes"],
+      "sampleIds": ["manual-ts-sm4"],
+      "sourceRegions": [
+        {
+          "path": "examples/node/manual-typescript-sm4.mjs",
+          "region": "manual-ts-sm4",
+          "runner": "manual-typescript-sm4"
+        }
+      ]
+    },
+    {
+      "id": "ts-zuc",
+      "language": "typescript",
+      "level": "advanced",
+      "page": "manual/typescript/zuc.md",
+      "apis": ["zucKeystream", "zucKeystreamWords", "zucEncrypt", "zucDecrypt", "eea3Encrypt", "eia3"],
+      "sampleIds": ["manual-ts-zuc"],
+      "sourceRegions": [
+        {
+          "path": "examples/node/manual-typescript-zuc.mjs",
+          "region": "manual-ts-zuc",
+          "runner": "manual-typescript-zuc"
+        }
+      ]
+    },
+    {
+      "id": "ts-advanced",
+      "language": "typescript",
+      "level": "advanced",
+      "page": "manual/typescript/advanced.md",
+      "apis": ["setCustomRNG", "clearCustomRNG", "setTextCodec", "rawToDer", "derToRaw", "SM3", "SM4", "ZUCState"],
+      "sampleIds": ["manual-ts-advanced"],
+      "sourceRegions": [
+        {
+          "path": "examples/node/manual-typescript-advanced.mjs",
+          "region": "manual-ts-advanced",
+          "runner": "manual-typescript-advanced"
+        }
+      ]
+    },
+    {
+      "id": "java-start",
+      "language": "java",
+      "level": "start",
+      "page": "manual/java/README.md",
+      "apis": ["BcProviders", "GmSecurityContext", "SM2.generateKeyPair", "SM3Util.digestHex"],
+      "sampleIds": ["manual-java-start"],
+      "sourceRegions": [
+        {
+          "path": "../../packages/java/gmkit/src/test/java/cn/gmkit/ManualJavaStartTest.java",
+          "region": "manual-java-start",
+          "runner": "manual-java-common"
+        }
+      ]
+    },
+    {
+      "id": "java-core",
+      "language": "java",
+      "level": "common",
+      "page": "manual/java/core.md",
+      "apis": ["ByteEncodings.decode", "ByteEncodings.encode", "Texts.bytes", "Texts.text", "HexCodec.decodeStrict", "GmSecurityContext"],
+      "sampleIds": ["manual-java-core"],
+      "sourceRegions": [
+        {
+          "path": "../../packages/java/gmkit/src/test/java/cn/gmkit/ManualJavaCoreTest.java",
+          "region": "manual-java-core",
+          "runner": "manual-java-common"
+        }
+      ]
+    },
+    {
+      "id": "java-sm2",
+      "language": "java",
+      "level": "common",
+      "page": "manual/java/sm2.md",
+      "apis": ["SM2.generateKeyPair", "SM2.sign", "SM2.verify", "SM2.encrypt", "SM2.decrypt", "SM2.keyExchangeWithConfirmation"],
+      "sampleIds": ["manual-java-sm2"],
+      "sourceRegions": [
+        {
+          "path": "../../packages/java/gmkit/src/test/java/cn/gmkit/ManualJavaSm2Test.java",
+          "region": "manual-java-sm2",
+          "runner": "manual-java-common"
+        }
+      ]
+    },
+    {
+      "id": "java-sm3",
+      "language": "java",
+      "level": "common",
+      "page": "manual/java/sm3.md",
+      "apis": ["SM3Util.digest", "SM3Util.digestHex", "SM3Util.hmac"],
+      "sampleIds": ["manual-java-sm3"],
+      "sourceRegions": [
+        {
+          "path": "../../packages/java/gmkit/src/test/java/cn/gmkit/ManualJavaSm3Test.java",
+          "region": "manual-java-sm3",
+          "runner": "manual-java-common"
+        }
+      ]
+    },
+    {
+      "id": "java-sm4",
+      "language": "java",
+      "level": "common",
+      "page": "manual/java/sm4.md",
+      "apis": ["SM4Options", "SM4.encrypt", "SM4.decrypt", "SM4CipherResult"],
+      "sampleIds": ["manual-java-sm4"],
+      "sourceRegions": [
+        {
+          "path": "../../packages/java/gmkit/src/test/java/cn/gmkit/ManualJavaSm4Test.java",
+          "region": "manual-java-sm4",
+          "runner": "manual-java-common"
+        }
+      ]
+    },
+    {
+      "id": "java-zuc",
+      "language": "java",
+      "level": "advanced",
+      "page": "manual/java/zuc.md",
+      "apis": ["ZUC.keystreamHex", "ZUC.keystreamWordsHex", "ZUC.encrypt", "ZUC.decrypt", "ZUC.eea3Encrypt", "ZUC.eia3"],
+      "sampleIds": ["manual-java-zuc"],
+      "sourceRegions": [
+        {
+          "path": "../../packages/java/gmkit/src/test/java/cn/gmkit/ManualJavaZucTest.java",
+          "region": "manual-java-zuc",
+          "runner": "manual-java-common"
+        }
+      ]
+    },
+    {
+      "id": "java-sm9",
+      "language": "java",
+      "level": "advanced",
+      "page": "manual/java/sm9.md",
+      "apis": ["SM9.isAvailable", "SM9.sign", "SM9.verify", "SM9.encrypt", "SM9.decrypt", "SM9SignMasterKey", "SM9SignKey", "SM9EncMasterKey", "SM9EncKey", "SM9Signature"],
+      "sampleIds": ["manual-java-sm9"],
+      "sourceRegions": [
+        {
+          "path": "../../packages/java/gmkit-sm9/src/test/java/cn/gmkit/sm9/ManualJavaSm9UserGuideTest.java",
+          "region": "manual-java-sm9",
+          "runner": "api-java-sm9"
+        }
+      ]
+    },
+    {
+      "id": "java-hybrid",
+      "language": "java",
+      "level": "advanced",
+      "page": "manual/java/hybrid.md",
+      "apis": ["SM2Sm4Hybrid.encrypt", "SM2Sm4Hybrid.decrypt", "SM2Sm4HybridPayload"],
+      "sampleIds": ["manual-java-hybrid"],
+      "sourceRegions": [
+        {
+          "path": "../../packages/java/gmkit/src/test/java/cn/gmkit/ManualJavaHybridTest.java",
+          "region": "manual-java-hybrid",
+          "runner": "manual-java-hybrid"
+        }
+      ]
+    },
+    {
+      "id": "interoperability",
+      "language": "common",
+      "level": "protocol",
+      "page": "manual/interoperability.md",
+      "apis": [],
+      "sampleIds": [],
+      "sourceRegions": []
+    },
+    {
+      "id": "migration",
+      "language": "common",
+      "level": "migration",
+      "page": "manual/migration.md",
+      "apis": [],
+      "sampleIds": [],
+      "sourceRegions": []
+    }
   ]
 }

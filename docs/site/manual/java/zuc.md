@@ -52,7 +52,7 @@ Java `int` 是有符号类型，但 `keystreamWords` 中每个元素按无符号
 
 EEA3 只保护机密性，EIA3 提供 32-bit 完整性标签。只执行 EEA3 不会检测密文翻转。EIA3 是协议算法，不作为通用业务 HMAC 替代品。
 
-旧的 `ZUC.eea3(...)` 返回 word 对齐密钥流，只用于兼容；新调用对消息使用 `eea3Encrypt(...)`。
+已发布版本另有一个只返回 word 对齐密钥流的兼容入口。新调用对消息使用 `eea3Encrypt(...)`；旧入口签名和迁移判断见[旧系统迁移](/manual/migration.html#旧-eea3-密钥流入口)。
 
 ## 普通 ZUC 流
 

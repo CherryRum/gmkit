@@ -92,6 +92,6 @@ tag: [SM2, 签名, 加密]
 
 ## 兼容边界
 
-空 `userId` 会被 Builder 改成 `SM2.DEFAULT_USER_ID`，不能表达独立的空身份。`GM_2023_USER_ID`、no-Z 方法、自动字符串解码和 C1C2C3 不进入新接入，详见[旧系统迁移](/manual/migration.html)。
+空 `userId` 会被 Builder 改成 `SM2.DEFAULT_USER_ID`，不能表达独立的空身份。空身份常量、no-Z 方法和自动字符串解码不进入新接入，详见[旧系统迁移](/manual/migration.html)；C1C2C3 只在对端协议明确要求时使用。
 
 全部构造器、重载、Builder 和转换成员见 [Java SM2 API](/api/java/sm2.html)。

@@ -391,6 +391,206 @@ const requiredOutcomePages = [
   'api/java/integration.md',
 ];
 const exampleRunner = await readFile(path.join(docsRoot, 'scripts', 'test-examples.mjs'), 'utf8');
+
+const userManualCoveragePath = path.join(docsRoot, 'manual', 'manual-coverage.json');
+const userManualCoverage = JSON.parse(await readFile(userManualCoveragePath, 'utf8'));
+const manualRootPackage = JSON.parse(await readFile(path.join(repoRoot, 'package.json'), 'utf8'));
+const allowedManualLanguages = new Set(['common', 'typescript', 'java']);
+const allowedManualLevels = new Set(['start', 'common', 'advanced', 'protocol', 'migration']);
+const seenManualChapterIds = new Set();
+const seenManualPages = new Set();
+const legacyManualPatterns = new Map([
+  ['setRNGPolicy', /`setRNGPolicy\b/],
+  ['autoDecodeString', /`autoDecodeString\b/],
+  ['decodeAuto', /`(?:ByteEncodings\.)?decodeAuto\b/],
+  ['skipZComputation', /`skipZComputation\b/],
+  ['signWithoutZ', /`signWithoutZ\b/],
+  ['verifyWithoutZ', /`verifyWithoutZ\b/],
+  ['computeEWithoutZ', /`computeEWithoutZ\b/],
+  ['GM_2023_USER_ID', /`GM_2023_USER_ID\b/],
+  ['SHA-1 API', /`(?:sha1|SHA1)\b/],
+  ['旧 eea3 API', /`(?:ZUC\.)?eea3(?:\(|`)/],
+  ['默认聚合导出', /(?:默认聚合导出|默认导出|default export)/i],
+]);
+
+if (userManualCoverage.schemaVersion !== 2) {
+  failures.push(`manual/manual-coverage.json schemaVersion 不支持: ${userManualCoverage.schemaVersion}`);
+}
+if (userManualCoverage.baselineVersion !== manualRootPackage.version) {
+  failures.push(
+    `manual/manual-coverage.json 基线版本 ${userManualCoverage.baselineVersion}`
+      + ` 与发布版本 ${manualRootPackage.version} 不一致`,
+  );
+}
+if (!Array.isArray(userManualCoverage.chapters) || userManualCoverage.chapters.length === 0) {
+  failures.push('manual/manual-coverage.json 缺少章节清单');
+}
+
+for (const chapter of userManualCoverage.chapters ?? []) {
+  const label = chapter.id || chapter.page || '<unknown>';
+  if (typeof chapter.id !== 'string' || chapter.id.length === 0) {
+    failures.push(`manual/manual-coverage.json 章节缺少 id: ${JSON.stringify(chapter)}`);
+  } else if (seenManualChapterIds.has(chapter.id)) {
+    failures.push(`manual/manual-coverage.json 章节 id 重复: ${chapter.id}`);
+  }
+  seenManualChapterIds.add(chapter.id);
+
+  if (!allowedManualLanguages.has(chapter.language)) {
+    failures.push(`manual/manual-coverage.json ${label} 的 language 非法: ${chapter.language}`);
+  }
+  if (!allowedManualLevels.has(chapter.level)) {
+    failures.push(`manual/manual-coverage.json ${label} 的 level 非法: ${chapter.level}`);
+  }
+  if (typeof chapter.page !== 'string' || !chapter.page.startsWith('manual/') || !chapter.page.endsWith('.md')) {
+    failures.push(`manual/manual-coverage.json ${label} 的 page 非法: ${chapter.page}`);
+    continue;
+  }
+  if (seenManualPages.has(chapter.page)) {
+    failures.push(`manual/manual-coverage.json 页面重复: ${chapter.page}`);
+  }
+  seenManualPages.add(chapter.page);
+
+  const pagePath = path.join(docsRoot, chapter.page);
+  let pageContent;
+  try {
+    pageContent = await readFile(pagePath, 'utf8');
+  } catch {
+    failures.push(`manual/manual-coverage.json 页面不存在: ${chapter.page}`);
+    continue;
+  }
+
+  const route = routeFor(pagePath);
+  if (!config.includes(`'${route}'`)) {
+    failures.push(`manual/manual-coverage.json 页面未进入导航: ${chapter.page}`);
+  }
+
+  for (const property of ['apis', 'sampleIds', 'sourceRegions']) {
+    if (!Array.isArray(chapter[property])) {
+      failures.push(`manual/manual-coverage.json ${label} 的 ${property} 必须是数组`);
+    }
+  }
+  if (!Array.isArray(chapter.apis)
+      || !Array.isArray(chapter.sampleIds)
+      || !Array.isArray(chapter.sourceRegions)) {
+    continue;
+  }
+
+  if (!['manual-home', 'interoperability', 'migration'].includes(chapter.id)
+      && (chapter.apis.length === 0 || chapter.sampleIds.length === 0 || chapter.sourceRegions.length === 0)) {
+    failures.push(`manual/manual-coverage.json ${label} 缺少 API、样例 ID 或源码区域`);
+  }
+
+  const declaredSamples = new Map(
+    [...pageContent.matchAll(/<!--\s+code-sample\s+id="([^"]+)"\s+steps="([^"]+)"[^>]*-->/g)]
+      .map((match) => [match[1], match[2].split('|')]),
+  );
+  const includedRegions = new Set();
+  let searchableContent = pageContent;
+  for (const include of pageContent.matchAll(/<!--\s*@include:\s+([^#\s]+)#([A-Za-z0-9_-]+)\s*-->/g)) {
+    const sourcePath = path.resolve(path.dirname(pagePath), include[1]);
+    includedRegions.add(`${sourcePath}#${include[2]}`);
+    try {
+      searchableContent += `\n${await readFile(sourcePath, 'utf8')}`;
+    } catch {
+      // 通用站内示例检查会报告具体的源文件缺失，此处只避免二次抛错。
+    }
+  }
+
+  if (new Set(chapter.apis).size !== chapter.apis.length) {
+    failures.push(`manual/manual-coverage.json ${label} 包含重复 API`);
+  }
+  for (const api of chapter.apis) {
+    if (typeof api !== 'string' || api.length === 0) {
+      failures.push(`manual/manual-coverage.json ${label} 包含空 API 名称`);
+      continue;
+    }
+    const apiName = api.split('.').at(-1);
+    if (!new RegExp(`\\b${apiName.replaceAll('$', '\\$')}\\b`).test(searchableContent)) {
+      failures.push(`${chapter.page}: 清单中的 API 未出现在页面或样例源码: ${api}`);
+    }
+  }
+
+  if (new Set(chapter.sampleIds).size !== chapter.sampleIds.length) {
+    failures.push(`manual/manual-coverage.json ${label} 包含重复样例 ID`);
+  }
+  for (const sampleId of chapter.sampleIds) {
+    if (!declaredSamples.has(sampleId)) {
+      failures.push(`${chapter.page}: 缺少清单声明的 code-sample ${sampleId}`);
+    }
+  }
+  for (const sampleId of declaredSamples.keys()) {
+    if (!chapter.sampleIds.includes(sampleId)) {
+      failures.push(`${chapter.page}: code-sample ${sampleId} 未进入手册清单`);
+    }
+  }
+
+  for (const sourceRegion of chapter.sourceRegions) {
+    if (!sourceRegion || typeof sourceRegion.path !== 'string'
+        || typeof sourceRegion.region !== 'string'
+        || typeof sourceRegion.runner !== 'string') {
+      failures.push(`manual/manual-coverage.json ${label} 的源码区域字段不完整`);
+      continue;
+    }
+    const sourcePath = path.resolve(docsRoot, sourceRegion.path);
+    let sourceContent;
+    try {
+      sourceContent = await readFile(sourcePath, 'utf8');
+    } catch {
+      failures.push(`manual/manual-coverage.json ${label} 的源码不存在: ${sourceRegion.path}`);
+      continue;
+    }
+    if (!sourceContent.includes(`#region ${sourceRegion.region}`)
+        || !sourceContent.includes(`#endregion ${sourceRegion.region}`)) {
+      failures.push(
+        `manual/manual-coverage.json ${label} 的源码区域不存在或未闭合:`
+          + ` ${sourceRegion.path}#${sourceRegion.region}`,
+      );
+    }
+    if (!includedRegions.has(`${sourcePath}#${sourceRegion.region}`)) {
+      failures.push(
+        `${chapter.page}: 未引用清单声明的源码区域`
+          + ` ${sourceRegion.path}#${sourceRegion.region}`,
+      );
+    }
+    const runnerName = `name: '${sourceRegion.runner}'`;
+    const sourceToken = path.basename(sourceRegion.path).replace(/\.(?:mjs|java)$/, '');
+    if (!exampleRunner.includes(runnerName) || !exampleRunner.includes(sourceToken)) {
+      failures.push(
+        `manual/manual-coverage.json ${label} 的源码未进入执行任务`
+          + ` ${sourceRegion.runner}: ${sourceRegion.path}`,
+      );
+    }
+  }
+
+  if (chapter.id !== 'migration') {
+    const prose = stripFencedCode(pageContent);
+    for (const [legacyName, pattern] of legacyManualPatterns) {
+      if (pattern.test(prose)) {
+        failures.push(`${chapter.page}: 主手册出现旧入口 ${legacyName}，应移到迁移附录`);
+      }
+    }
+  }
+
+  if (['common', 'advanced'].includes(chapter.level) && chapter.sampleIds.length > 0) {
+    const steps = chapter.sampleIds.flatMap((sampleId) => declaredSamples.get(sampleId) ?? []);
+    const isNegativeStep = (step) => /(?:失败|篡改|非法|拒绝|错误).*断言/.test(step);
+    if (!steps.some((step) => !isNegativeStep(step)
+        && /(?:断言|往返|解码|验签|解密|计算|生成|创建)/.test(step))) {
+      failures.push(`${chapter.page}: 任务案例缺少成功结果或固定结果断言`);
+    }
+    if (!steps.some(isNegativeStep)) {
+      failures.push(`${chapter.page}: 任务案例缺少失败、篡改或非法输入断言`);
+    }
+  }
+}
+
+for (const file of markdownFiles.filter((entry) => entry.includes(`${path.sep}manual${path.sep}`))) {
+  const relative = path.relative(docsRoot, file).replaceAll('\\', '/');
+  if (!seenManualPages.has(relative)) {
+    failures.push(`manual/manual-coverage.json 缺少手册页面: ${relative}`);
+  }
+}
+
 const executedSources = new Map([
   ['examples/node/public-api-manual.mjs', 'public-api-manual.mjs'],
   ['../../packages/java/gmkit/src/test/java/cn/gmkit/PublicApiManualExamplesTest.java', 'PublicApiManualExamplesTest'],

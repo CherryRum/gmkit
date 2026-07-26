@@ -53,7 +53,7 @@ ZUC 是流密码：加密和解密都是明文/密文与同一密钥流异或。
 
 </ApiTable>
 
-`eea3Encrypt` 已构造 EEA3 所需 IV 并对消息执行机密性运算。旧的 `eea3` 只返回 word 对齐密钥流，不进入新代码。
+`eea3Encrypt` 已构造 EEA3 所需 IV 并对消息执行机密性运算。只返回 word 对齐密钥流的旧入口不进入新代码，迁移时见[旧系统迁移](/manual/migration.html#旧-eea3-密钥流入口)。
 
 ## 普通 ZUC 流的传输字段
 
